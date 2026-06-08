@@ -1162,19 +1162,13 @@ async function loadFromCloud(){
       const rows=await res.json();
       if(rows&&rows.length>0&&rows[0].data){
         const cd=rows[0].data,ct=rows[0].updated_at;
-        const lr=localStorage.getItem(KEY);
-        let lt=0; if(lr){try{lt=JSON.parse(lr).ts||0;}catch(e){}}
         const ctMs=new Date(ct).getTime();
-        if(ctMs>lt){
-          applyAll(cd);
-          localStorage.setItem(KEY,JSON.stringify({data:cd,ts:ctMs}));
+        // Always apply cloud data on explicit sync
+        applyAll(cd);
+        localStorage.setItem(KEY,JSON.stringify({data:cd,ts:ctMs}));
           document.getElementById('last-saved').textContent='Caricato dal cloud · '+new Date(ct).toLocaleString('it-IT');
           setSyncStatus('ok');
           setTimeout(refreshCharts,200);
-        } else {
-          document.getElementById('last-saved').textContent='Dati locali aggiornati';
-          setSyncStatus('ok');
-        }
       } else {
         document.getElementById('last-saved').textContent='Nessun dato nel cloud';
         setSyncStatus('—');
