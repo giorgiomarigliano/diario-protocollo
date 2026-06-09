@@ -852,31 +852,88 @@ const SPLIT = {
   3:{type:'Pull',      badge:'badge-pull',  label:'PULL'},
   4:{type:'Riposo',    badge:'badge-rest',  label:'RIPOSO'},
   5:{type:'Legs',      badge:'badge-legs',  label:'LEGS'},
-  6:{type:'Upper Body',badge:'badge-upper', label:'UPPER'},
+  6:{type:'Upper Sab', badge:'badge-upper', label:'UPPER SAB'},
 };
 
 const SENTINELS = [
-  {id:'bench',    name:'BB Bench Press',       baseline:'55kg · 4×8'},
-  {id:'milpress', name:'Military Press',       baseline:'40kg · 4×5-6'},
-  {id:'tripress', name:'Machine Tricep Press', baseline:'75kg · 4×10'},
-  {id:'legpress', name:'Leg Press',            baseline:'117.5kg · 4×12'},
-  {id:'rdl',      name:'RDL',                  baseline:'60kg · 4×10'},
-  {id:'hipthrust',name:'Hip Thrust Machine',   baseline:'45kg · 4×10'},
+  // PETTO
+  {id:'bench',      name:'Petto compound',        group:'chest',   baseline:'55kg · 4×8'},
+  {id:'pecdec',     name:'Petto isolamento',       group:'chest',   baseline:'55kg · 4×10'},
+  // SPALLE
+  {id:'milpress',   name:'Shoulder Press',         group:'shoulder',baseline:'40kg · 4×5-6'},
+  {id:'lateraise',  name:'Lateral Raise',          group:'shoulder',baseline:'12kg · 4×12'},
+  {id:'facepull',   name:'Face Pull / Rear Delt',  group:'shoulder',baseline:'—'},
+  {id:'frontraise', name:'Front Raise / Upright Row', group:'shoulder', baseline:'—'},
+  // TRICIPITI
+  {id:'tridown',    name:'Tricep Pushdown',        group:'tricep',  baseline:'50kg · 4×10'},
+  {id:'triover',    name:'Overhead Tricep Ext',    group:'tricep',  baseline:'35kg · 4×10'},
+  // DORSO
+  {id:'lat',        name:'Lat Machine',            group:'back',    baseline:'—'},
+  {id:'row',        name:'Rematore / Row',         group:'back',    baseline:'—'},
+  // BICIPITI
+  {id:'curl',       name:'Curl',                   group:'bicep',   baseline:'—'},
+  {id:'hammercurl', name:'Hammer Curl',            group:'bicep',   baseline:'—'},
+  // GAMBE
+  {id:'legext',     name:'Leg Extension',          group:'legs',    baseline:'80kg · 4×10'},
+  {id:'legpress',   name:'Leg Press',              group:'legs',    baseline:'117.5kg · 4×12'},
+  {id:'legcurl',    name:'Leg Curl',               group:'legs',    baseline:'—'},
+  {id:'hipthrust',  name:'Hip Thrust Machine',     group:'legs',    baseline:'45kg · 4×10'},
+  {id:'calf',       name:'Calf Seduto',            group:'legs',    baseline:'—'},
+  {id:'rdl',        name:'RDL / Stacco Rumeno',    group:'legs',    baseline:'60kg · 4×10'},
 ];
 
 const SESSION_SENTINELS = {
-  'Push':       ['bench','milpress','tripress'],
-  'Pull':       ['rdl'],
-  'Legs':       ['legpress','rdl','hipthrust'],
-  'Upper Body': ['bench','milpress','tripress'],
+  'Push':         ['bench','pecdec','milpress','lateraise','tridown','triover'],
+  'Pull':         ['lat','row','curl','hammercurl','facepull'],
+  'Legs':         ['legext','legpress','legcurl','hipthrust','calf','rdl'],
+  'Upper Sab':    ['milpress','lateraise','facepull','curl','hammercurl','tridown','triover'],
+  'Upper Dom':    ['bench','pecdec','lat','row','milpress','lateraise'],
+  'Upper Body':   ['bench','pecdec','milpress','lateraise','tridown','triover'],
 };
 
 const SESSION_EXERCISES = {
-  'Push':       ['BB Bench Press','Incline Press','Military Press','DB Shoulder Press','Cable Lateral Raise','Cable Upright Row','Tricep Pushdown','OH Tricep Ext'],
-  'Pull':       ['Lat Pulldown','Seated Cable Row','T-Bar Row','Hammer Row','BB Curl','EZ Curl','DB Curl','Face Pull','RDL'],
-  'Legs':       ['Leg Press','RDL','Hip Thrust Machine','Leg Curl','Leg Extension','Calf Raise','Goblet Squat'],
-  'Upper Body': ['BB Bench Press','Incline Press','Cable Row','Lat Pulldown','Military Press','DB Lateral Raise','Curl','Tricep Pushdown'],
-  'BKK_FREE':   ['Smith Bench','Smith Incline','Smith Shoulder Press','Smith RDL','Smith Bent Row','DB Curl','DB Shoulder Press','Shotgun Row','Face Pull','Tricep Pushdown','Goblet Squat','Cable Row'],
+  'Push': [
+    'BB Bench Press','Machine Incline Bench Press','DB Bench Press','DB Incline Press','Machine Chest Press','Machine Fly (Pec Dec)','Cable Fly',
+    'Military Press (BB)','DB Shoulder Press','Machine Shoulder Press',
+    'DB Lateral Raise','Cable Lateral Raise','Machine Lateral Raise',
+    'Cable Upright Row','Front Raise','Cable Rope Tricep Pushdown / Extension','Cable Tricep Pushdown (Bar)',
+    'Cable Rope Overhead Tricep Extension High','Dip Machine','Machine Leg Extension',
+  ],
+  'Pull': [
+    'Lat Pulldown (Wide)','Lat Pulldown (Close)','Lat Pulldown (Reverse)','Lat Pulldown (Neutral)',
+    'Barbell Row','Seated Cable Row','T-Bar Row','Machine Row','DB Row','Pulley Row',
+    'DB Incline Curl','DB Curl','DB Hammer Curl','EZ Bar Curl','BB Curl',
+    'Cable Curl (Bar)','Cable Curl (Rope)','Preacher Curl',
+    'Cable Rope Face Pull','Rear Delt Fly','RDL','Deadlift',
+  ],
+  'Legs': [
+    'Machine Leg Extension','Leg Press','Machine Leg Curl','Hip Thrust Machine',
+    'Seated Calf Raise','Standing Calf Raise','RDL','Deadlift',
+    'Goblet Squat','Walking Lunges',
+  ],
+  'Upper Sab': [
+    'Military Press (BB)','DB Shoulder Press','Machine Shoulder Press',
+    'DB Lateral Raise','Cable Lateral Raise','Cable Upright Row','Front Raise','Cable Rope Face Pull',
+    'DB Incline Curl','DB Curl','DB Hammer Curl','EZ Bar Curl','Cable Curl (Bar)','Cable Curl (Rope)',
+    'Cable Rope Tricep Pushdown / Extension','Cable Tricep Pushdown (Bar)',
+    'Cable Rope Overhead Tricep Extension High','Dip Machine',
+  ],
+  'Upper Dom': [
+    'BB Bench Press','Machine Incline Bench Press','DB Bench Press','DB Incline Press','Machine Chest Press','Machine Fly (Pec Dec)','Cable Fly',
+    'Lat Pulldown (Wide)','Lat Pulldown (Close)','Barbell Row','Seated Cable Row','Machine Row',
+    'Military Press (BB)','DB Shoulder Press','DB Lateral Raise','Cable Lateral Raise',
+  ],
+  'Upper Body': [
+    'BB Bench Press','Machine Incline Bench Press','DB Bench Press','Machine Fly (Pec Dec)',
+    'Military Press (BB)','DB Shoulder Press','DB Lateral Raise',
+    'Lat Pulldown (Wide)','Seated Cable Row',
+    'Cable Rope Tricep Pushdown / Extension','Cable Rope Overhead Tricep Extension High',
+  ],
+  'BKK_FREE': [
+    'Smith Bench','Smith Incline','Smith Shoulder Press','Smith RDL','Smith Bent Row',
+    'DB Curl','DB Shoulder Press','Cable Rope Face Pull','Cable Rope Tricep Pushdown / Extension',
+    'Goblet Squat','Cable Row','Machine Leg Extension','Machine Leg Curl',
+  ],
 };
 
 function getPhase(dayIdx) {
@@ -903,6 +960,8 @@ function getDotColor(type){
   if(type==='Push')return '#ff3b30';
   if(type==='Pull')return '#34c759';
   if(type==='Legs')return '#ff9500';
+  if(type==='Upper Sab')return '#af52de';
+  if(type==='Upper Dom')return '#8e44ad';
   if(type.includes('Upper'))return '#af52de';
   if(type==='BKK_FREE')return '#0071e3';
   return '#aeaeb2';
@@ -913,7 +972,7 @@ function getWorkout(i){
   const dow=d.getDay();
   if(isBKK(i)) return {type:'BKK_FREE', badge:'badge-bkk', label:'BKK'};
   if(dow===4) return {type:'Riposo', badge:'badge-rest', label:'RIPOSO'};
-  if(dow===0) return {type:'Upper Body', badge:'badge-upper', label:'UPPER'};
+  if(dow===0) return {type:'Upper Dom', badge:'badge-upper', label:'UPPER DOM'};
   return SPLIT[dow];
 }
 
@@ -2111,6 +2170,7 @@ function getWeeklyVolume(weeks) {
       if (wo.type === 'Push') entry.push += vol;
       else if (wo.type === 'Pull') entry.pull += vol;
       else if (wo.type === 'Legs') entry.legs += vol;
+      else if (wo.type === 'Upper Sab' || wo.type === 'Upper Dom' || wo.type === 'Upper Body') entry.other += vol;
       else entry.other += vol;
     }
     result.push(entry);
@@ -2610,7 +2670,7 @@ function refreshDashCharts() {
   const sessions30 = getWorkoutSessions(30);
 
   // Volume per sessione - colored bars by type
-  const typeColors = { Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Body':'#af52de', BKK_FREE:'#0071e3' };
+  const typeColors = { Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#8e44ad', 'Upper Body':'#af52de', BKK_FREE:'#0071e3' };
   const volBars = sessions30.map(s => ({
     label: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}).replace('/',''),
     value: s.volume,
@@ -2817,33 +2877,76 @@ function importMotra(dayId) {
     }
 
     // Auto-fill sentinel lifts from parsed exercises
+    // Each entry: sentinelId → [keywords to match in exercise name]
+    // More specific keywords first to avoid false matches
     const sentinelMap = {
-      'bench':     ['bench press','bench','panca','incline bench','chest press'],
-      'milpress':  ['military press','overhead press','shoulder press','ohp','lento avanti'],
-      'tripress':  ['tricep press','tricep machine','pushdown','tricep push','machine tri'],
-      'legpress':  ['leg press','pressa'],
-      'rdl':       ['rdl','romanian','stacco rumeno','stiff'],
-      'hipthrust': ['hip thrust','hip-thrust'],
+      // PETTO — compound (bench/incline/chest press, NOT pec dec/fly)
+      'bench':      ['incline bench press','bench press','chest press','panca inclinata','panca piana','db bench','db incline','incline press'],
+      // PETTO — isolamento (pec dec, fly, crossover — NOT bench)
+      'pecdec':     ['pec dec','pec-dec','machine fly','cable fly','crossover','croci','chest fly','pectoral'],
+      // SPALLE — press (military, shoulder press, overhead)
+      'milpress':   ['military press','shoulder press','overhead press','lento avanti','ohp','db shoulder press','machine shoulder press','smith shoulder'],
+      // SPALLE — laterale
+      'lateraise':  ['lateral raise','alzate laterali','lat raise','side raise','laterali'],
+      // SPALLE — rear/face pull
+      'facepull':   ['face pull','rear delt','alzate posteriori','tirate al viso','tirate alla corda','rear fly','reverse fly'],
+      // SPALLE — frontale/upright
+      'frontrise':  ['front raise','alzate frontali','upright row','tirate al mento','frontal raise'],
+      // TRICIPITI — pushdown/estensione bassa
+      'tridown':    ['tricep pushdown','tricep extension','pushdown','tricep push','corda tricipite','rope pushdown','bar pushdown','tricep rope'],
+      // TRICIPITI — overhead/estensione alta
+      'triover':    ['overhead tricep','tricep overhead','estensione sopra','french press','overhead ext','high cable tri','dip machine','dip alla macchina'],
+      // DORSO — lat machine (pulldown)
+      'lat':        ['lat pulldown','lat machine','pulley alto','gran dorsale','pulldown','pull down'],
+      // DORSO — rematore/row
+      'row':        ['barbell row','seated row','cable row','t-bar row','machine row','db row','pulley row','rematore','vogatore','pulley basso','bent row'],
+      // BICIPITI — curl standard
+      'curl':       ['incline curl','ez bar curl','ez curl','bb curl','barbell curl','cable curl','preacher curl','curl bilanciere','curl manubri','db curl'],
+      // BICIPITI — martello
+      'hammercurl': ['hammer curl','curl martello','neutral curl','hammer'],
+      // GAMBE — leg extension
+      'legext':     ['leg extension','estensione gambe','quadricipiti macchina'],
+      // GAMBE — leg press
+      'legpress':   ['leg press','pressa','hack squat'],
+      // GAMBE — leg curl
+      'legcurl':    ['leg curl','curl femoral','femoral','curl gambe','lying curl','seated curl'],
+      // GAMBE — hip thrust
+      'hipthrust':  ['hip thrust','hip-thrust','glute bridge','glutei macchina'],
+      // GAMBE — calf
+      'calf':       ['calf','polpacci','seated calf','standing calf','gastrocnemio'],
+      // GAMBE — RDL/stacco
+      'rdl':        ['romanian deadlift','rdl','stacco rumeno','stiff','stiff leg','romanian','sumo deadlift','deadlift','stacco'],
     };
 
+    // Get session type to know which sentinels are expected
+    const woEl = document.querySelector(\`[data-id="\${dayId}"][data-f="wo_tipo"]\`);
+    const sessionType = woEl?.value || document.querySelector(\`[data-id="\${dayId}"][data-f="wo_rpe"]\`) ? null : null;
+    const expectedSentinels = SESSION_SENTINELS[
+      document.querySelector(\`[data-id="\${dayId}"][data-f="wo_tipo"]\`)?.value
+    ] || Object.keys(sentinelMap);
+
     for (const [sentinelId, keywords] of Object.entries(sentinelMap)) {
-      // Find matching exercise in parsed data
+      // Find matching exercise in parsed data — try most specific keyword first
       const match = data.exercises.find(ex => {
         const name = ex.name.toLowerCase();
-        return keywords.some(kw => name.includes(kw));
+        return keywords.some(kw => name.includes(kw.toLowerCase()));
       });
-      if (match && match.sets.length > 0) {
-        // Use the heaviest work set (exclude warmup)
-        const workSets = match.sets.filter(s => s.label !== 'W');
-        if (workSets.length === 0) continue;
-        const heaviest = workSets.reduce((a, b) => parseFloat(b.kg) > parseFloat(a.kg) ? b : a);
-        const kgEl = document.querySelector(`[data-id="${dayId}"][data-f="sl_${sentinelId}_kg"]`);
-        const repsEl = document.querySelector(`[data-id="${dayId}"][data-f="sl_${sentinelId}_reps"]`);
-        const setsEl = document.querySelector(`[data-id="${dayId}"][data-f="sl_${sentinelId}_sets"]`);
-        if (kgEl) kgEl.value = heaviest.kg;
-        if (repsEl) repsEl.value = heaviest.reps;
-        if (setsEl) setsEl.value = workSets.length;
-      }
+      if (!match || !match.sets.length) continue;
+
+      const workSets = match.sets.filter(s => s.label !== 'W');
+      if (!workSets.length) continue;
+
+      // Best set = most reps at highest weight (work set logic)
+      const maxKg = Math.max(...workSets.map(s => parseFloat(s.kg)));
+      const topSets = workSets.filter(s => parseFloat(s.kg) >= maxKg * 0.97);
+      const best = topSets.reduce((a, b) => parseInt(b.reps) > parseInt(a.reps) ? b : a);
+
+      const kgEl   = document.querySelector(\`[data-id="\${dayId}"][data-f="sl_\${sentinelId}_kg"]\`);
+      const repsEl = document.querySelector(\`[data-id="\${dayId}"][data-f="sl_\${sentinelId}_reps"]\`);
+      const setsEl = document.querySelector(\`[data-id="\${dayId}"][data-f="sl_\${sentinelId}_sets"]\`);
+      if (kgEl) kgEl.value = best.kg;
+      if (repsEl) repsEl.value = best.reps;
+      if (setsEl) setsEl.value = workSets.length;
     }
 
     // Store parsed data as JSON in a hidden field
