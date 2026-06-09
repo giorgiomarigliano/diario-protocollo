@@ -348,6 +348,18 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 /* Injection row */
 .inj-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-top: 8px; }
 
+.sent-tab {
+  font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--surface2); color: var(--muted);
+  cursor: pointer; transition: all .15s;
+}
+.sent-tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.sent-tab:hover:not(.active) { background: var(--surface3, #e8e8ed); }
+.comp-bar-row { display:flex; align-items:center; gap:8px; }
+.comp-bar-label { font-size:12px; font-weight:500; color:var(--text); min-width:72px; }
+.comp-bar-track { flex:1; height:7px; background:var(--border); border-radius:4px; overflow:hidden; }
+.comp-bar-fill { height:100%; border-radius:4px; transition: width .4s ease; }
+.comp-bar-pct { font-size:11px; color:var(--muted); min-width:36px; text-align:right; }
 /* Workout box */
 .wo-box {
   background: var(--surface2);
@@ -2016,7 +2028,18 @@ function getComplianceData() {
     const allChecked = checks.every(c => document.querySelector(`[data-id="${id}"][data-f="${c}"]`)?.checked);
     if (allChecked) stackDone++;
   }
-  return { injPrev, injDone, woPrev, woDone, stackDays, stackDone };
+  // Per-type breakdown
+  const woCounts = { Push:0, Pull:0, Legs:0, 'Upper Sab':0, 'Upper Dom':0 };
+  const woDones  = { Push:0, Pull:0, Legs:0, 'Upper Sab':0, 'Upper Dom':0 };
+  for (let i = 0; i <= elapsed && i < TOTAL_DAYS; i++) {
+    const wo2 = getWorkout(i);
+    if (wo2.type in woCounts) {
+      woCounts[wo2.type]++;
+      const rpe2 = document.querySelector(`[data-id="day_${i}"][data-f="wo_rpe"]`)?.value;
+      if (rpe2) woDones[wo2.type]++;
+    }
+  }
+  return { injPrev, injDone, woPrev, woDone, stackDays, stackDone, woCounts, woDones };
 }
 
 function drawDashChart(canvasId, datasets, options = {}) {
@@ -2160,7 +2183,7 @@ function getWeeklyVolume(weeks) {
   const fromWeek = Math.max(0, currentWeek - (weeks - 1));
   const result = [];
   for (let w = fromWeek; w <= currentWeek; w++) {
-    const entry = { week: w + 1, push: 0, pull: 0, legs: 0, other: 0, total: 0 };
+    const entry = { week: w + 1, push: 0, pull: 0, legs: 0, upperSab: 0, upperDom: 0, total: 0 };
     for (let d = w * 7; d < (w + 1) * 7 && d < TOTAL_DAYS; d++) {
       const id = 'day_' + d;
       const wo = getWorkout(d);
@@ -2171,12 +2194,31 @@ function getWeeklyVolume(weeks) {
       if (wo.type === 'Push') entry.push += vol;
       else if (wo.type === 'Pull') entry.pull += vol;
       else if (wo.type === 'Legs') entry.legs += vol;
-      else if (wo.type === 'Upper Sab' || wo.type === 'Upper Dom' || wo.type === 'Upper Body') entry.other += vol;
-      else entry.other += vol;
+      else if (wo.type === 'Upper Sab') entry.upperSab += vol;
+      else if (wo.type === 'Upper Dom' || wo.type === 'Upper Body') entry.upperDom += vol;
     }
     result.push(entry);
   }
   return result;
+}
+
+function getWorkoutBreakdown() {
+  // Returns per-type workout counts for entire elapsed period
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today - start) / 86400000);
+  const counts = { Push:0, Pull:0, Legs:0, 'Upper Sab':0, 'Upper Dom':0, BKK_FREE:0 };
+  const done   = { Push:0, Pull:0, Legs:0, 'Upper Sab':0, 'Upper Dom':0, BKK_FREE:0 };
+  for (let i = 0; i <= elapsed && i < TOTAL_DAYS; i++) {
+    const wo = getWorkout(i);
+    if (wo.type === 'Riposo') continue;
+    const t = wo.type;
+    if (!(t in counts)) continue;
+    counts[t]++;
+    const rpe = document.querySelector(`[data-id="day_${i}"][data-f="wo_rpe"]`)?.value;
+    if (rpe) done[t]++;
+  }
+  return { counts, done };
 }
 
 function getHrvVsVolume(days) {
@@ -2271,7 +2313,7 @@ function drawBarChart(canvasId, bars, options = {}) {
 }
 
 function drawStackedBarChart(canvasId, weeks, options = {}) {
-  // weeks: [{label, push, pull, legs, other}]
+  // weeks: [{week, push, pull, legs, upperSab, upperDom, total}]
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -2291,19 +2333,36 @@ function drawStackedBarChart(canvasId, weeks, options = {}) {
   const labelH = 16, barAreaH = H - labelH - 4;
   const bw = Math.max(4, (W - 8) / weeks.length - 4);
   const gap = (W - 8 - bw * weeks.length) / Math.max(weeks.length - 1, 1);
-  const colors = { push: '#ff3b30', pull: '#34c759', legs: '#ff9500', other: '#af52de' };
+  const colors = { push:'#ff3b30', pull:'#34c759', legs:'#ff9500', upperSab:'#af52de', upperDom:'#8e44ad' };
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1;
+  [0.25,0.5,0.75].forEach(r => {
+    const y = barAreaH - r * (barAreaH-4) + 2;
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+  });
 
   weeks.forEach((wk, i) => {
     const x = 4 + i * (bw + gap);
     let yOffset = barAreaH + 2;
-    ['push','pull','legs','other'].forEach(type => {
+    ['push','pull','legs','upperSab','upperDom'].forEach(type => {
       const v = wk[type] || 0;
       if (!v) return;
-      const bh = (v / maxV) * (barAreaH - 4);
+      const bh = Math.max(1, (v / maxV) * (barAreaH - 4));
       yOffset -= bh;
       ctx.fillStyle = colors[type];
       ctx.fillRect(x, yOffset, bw, bh);
     });
+    // Total label on bar
+    if (wk.total > 0) {
+      const totalH = (wk.total / maxV) * (barAreaH - 4);
+      const topY = barAreaH + 2 - totalH;
+      if (totalH > 18) {
+        ctx.font = '500 8px -apple-system'; ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.fillText((wk.total/1000).toFixed(1)+'t', x + bw/2, topY + 10);
+      }
+    }
     ctx.font = '9px -apple-system'; ctx.fillStyle = '#aeaeb2';
     ctx.textAlign = 'center';
     ctx.fillText('W' + wk.week, x + bw/2, H - 1);
@@ -2382,6 +2441,43 @@ function drawScatterChart(canvasId, points, options = {}) {
   }
 }
 
+
+// Sentinel lift group definitions for dashboard tabs
+const SENTINEL_GROUPS = {
+  chest:    { ids:['bench','pecdec'],         colors:['#0071e3','#5ac8fa'],  labels:['Compound','Isolamento'] },
+  shoulder: { ids:['milpress','lateraise','facepull','frontrise'], colors:['#ff9500','#ffcc02','#ff6b6b','#ff3b30'], labels:['Press','Lateral','Face Pull','Front/Upright'] },
+  tricep:   { ids:['tridown','triover'],       colors:['#af52de','#bf5af2'],  labels:['Pushdown','Overhead'] },
+  back:     { ids:['lat','row'],               colors:['#34c759','#30d158'],  labels:['Lat Machine','Rematore'] },
+  bicep:    { ids:['curl','hammercurl'],        colors:['#ff9500','#ff6b00'],  labels:['Curl','Hammer'] },
+  legs:     { ids:['legext','legpress','legcurl','hipthrust','calf','rdl'], colors:['#ff3b30','#ff6b6b','#ff9500','#ffcc02','#34c759','#0071e3'], labels:['Leg Ext','Leg Press','Leg Curl','Hip Thrust','Calf','RDL'] },
+};
+
+let _currentSentinelGroup = 'chest';
+
+function switchSentinelGroup(group, btn) {
+  _currentSentinelGroup = group;
+  document.querySelectorAll('.sent-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  drawSentinelGroup(group);
+}
+
+function drawSentinelGroup(group) {
+  const g = SENTINEL_GROUPS[group];
+  if (!g) return;
+  // Update legend
+  const legend = document.getElementById('sentinel-legend');
+  if (legend) {
+    legend.innerHTML = g.ids.map((id, i) =>
+      `<div class="subj-leg-item"><div class="subj-leg-dot" style="background:${g.colors[i]}"></div>${g.labels[i]}</div>`
+    ).join('');
+  }
+  // Build datasets
+  const datasets = g.ids.map((id, i) => ({
+    data: getSentinelData(id, 112),
+    color: g.colors[i]
+  }));
+  drawDashChart('dc-sentinel', datasets, { height: 110 });
+}
 let dashBuilt = false;
 function buildDashboard() {
   const dash = document.getElementById('dash-view');
@@ -2516,22 +2612,27 @@ function buildDashboard() {
 
         <div class="dash-card">
           <div class="dash-card-title">Volume settimanale per tipo (kg)</div>
-          <div class="subj-legend">
+          <div class="subj-legend" style="flex-wrap:wrap">
             <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Push</div>
             <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>Pull</div>
             <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff9500"></div>Legs</div>
+            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#af52de"></div>Upper Sab</div>
+            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#8e44ad"></div>Upper Dom</div>
           </div>
           <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-wkly" style="height:120px"></canvas></div>
         </div>
 
         <div class="dash-card">
           <div class="dash-card-title">Sentinel lifts · progressione kg</div>
-          <div class="subj-legend" style="flex-wrap:wrap">
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#0071e3"></div>Bench</div>
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff9500"></div>Military</div>
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>RDL</div>
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Leg Press</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px" id="sentinel-tabs">
+            <button class="sent-tab active" onclick="switchSentinelGroup('chest',this)">Petto</button>
+            <button class="sent-tab" onclick="switchSentinelGroup('shoulder',this)">Spalle</button>
+            <button class="sent-tab" onclick="switchSentinelGroup('tricep',this)">Tricipiti</button>
+            <button class="sent-tab" onclick="switchSentinelGroup('back',this)">Dorso</button>
+            <button class="sent-tab" onclick="switchSentinelGroup('bicep',this)">Bicipiti</button>
+            <button class="sent-tab" onclick="switchSentinelGroup('legs',this)">Gambe</button>
           </div>
+          <div id="sentinel-legend" class="subj-legend" style="flex-wrap:wrap;margin-bottom:4px"></div>
           <div class="chart-wrap"><canvas class="dash-chart" id="dc-sentinel" style="height:110px"></canvas></div>
         </div>
 
@@ -2573,6 +2674,12 @@ function buildDashboard() {
               <div class="comp-title">Stack</div>
               <div class="comp-sub" id="cr-stack-sub">—</div>
             </div>
+          </div>
+        </div>
+        <div class="dash-card" style="margin-top:10px">
+          <div class="dash-card-title">Workout per tipo · compliance</div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px" id="cr-wo-breakdown">
+            <!-- populated by refreshDashCharts -->
           </div>
         </div>
       </div>
@@ -2667,6 +2774,23 @@ function refreshDashCharts() {
   drawComplianceRing('cr-wo', woPct, '#0071e3');
   drawComplianceRing('cr-stack', stackPct, '#ff9500');
 
+  // Workout breakdown bars
+  const breakdown = document.getElementById('cr-wo-breakdown');
+  if (breakdown) {
+    const typeColors2 = { Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#8e44ad' };
+    const typeLabels  = { Push:'Push', Pull:'Pull', Legs:'Legs', 'Upper Sab':'Upper Sab', 'Upper Dom':'Upper Dom' };
+    breakdown.innerHTML = Object.entries(comp.woCounts).map(([type, total]) => {
+      const done2 = comp.woDones[type] || 0;
+      const pct2 = total > 0 ? Math.round((done2/total)*100) : 0;
+      const col = typeColors2[type] || '#aeaeb2';
+      return `<div class="comp-bar-row">
+        <div class="comp-bar-label">${typeLabels[type]}</div>
+        <div class="comp-bar-track"><div class="comp-bar-fill" style="width:${pct2}%;background:${col}"></div></div>
+        <div class="comp-bar-pct">${done2}/${total}</div>
+      </div>`;
+    }).join('');
+  }
+
   // ── WORKOUT CHARTS ──────────────────────────────────────────────────────────
   const sessions30 = getWorkoutSessions(30);
 
@@ -2699,17 +2823,8 @@ function refreshDashCharts() {
   const wklyVol = getWeeklyVolume(8);
   drawStackedBarChart('dc-wo-wkly', wklyVol, { height: 120 });
 
-  // Sentinel lifts - multi-line
-  const bench  = getSentinelData('bench', 112);
-  const milpr  = getSentinelData('milpress', 112);
-  const rdl    = getSentinelData('rdl', 112);
-  const legpr  = getSentinelData('legpress', 112);
-  drawDashChart('dc-sentinel', [
-    {data: bench, color: '#0071e3'},
-    {data: milpr, color: '#ff9500'},
-    {data: rdl,   color: '#34c759'},
-    {data: legpr, color: '#ff3b30'},
-  ], { height: 110 });
+  // Sentinel lifts - grouped by muscle, draw current group
+  drawSentinelGroup(_currentSentinelGroup);
 
   // HRV vs Volume scatter
   const scatterHV = getHrvVsVolume(60);
