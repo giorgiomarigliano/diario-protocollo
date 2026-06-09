@@ -1495,6 +1495,36 @@ function collectAll(){
   return data;
 }
 
+function renderMotraFromLog(dayId, jsonStr) {
+  try {
+    const data = JSON.parse(jsonStr);
+    if (!data || !data.exercises || !data.exercises.length) return;
+    const parsed = document.getElementById('motra-parsed-' + dayId);
+    const res = document.getElementById('motra-res-' + dayId);
+    if (!parsed) return;
+    const metaHtml = `
+      <div class="motra-meta">
+        ${data.durata ? `<div class="motra-meta-item"><div class="motra-meta-val">${data.durata}</div><div class="motra-meta-lbl">Durata</div></div>` : ''}
+        ${data.volume ? `<div class="motra-meta-item"><div class="motra-meta-val">${data.volume}</div><div class="motra-meta-lbl">Volume</div></div>` : ''}
+        ${data.calorie ? `<div class="motra-meta-item"><div class="motra-meta-val">${data.calorie}</div><div class="motra-meta-lbl">Calorie</div></div>` : ''}
+        <div class="motra-meta-item"><div class="motra-meta-val">${data.exercises.length}</div><div class="motra-meta-lbl">Esercizi</div></div>
+      </div>`;
+    const exHtml = data.exercises.map(ex => {
+      const workSets = ex.sets.filter(s => s.label !== 'W');
+      const warmSets = ex.sets.filter(s => s.label === 'W');
+      const setsStr = workSets.map(s => `${s.reps}×${s.kg}kg`).join(' · ');
+      const warnStr = warmSets.length ? ` <span style="color:var(--faint);font-size:11px">(+${warmSets.length} riscald.)</span>` : '';
+      return `<div class="motra-ex-row">
+        <div class="motra-ex-name">${ex.name}</div>
+        <div class="motra-ex-sets">${setsStr}${warnStr}</div>
+      </div>`;
+    }).join('');
+    parsed.innerHTML = metaHtml + exHtml;
+    parsed.className = 'motra-parsed show';
+    if (res) { res.className = 'motra-result ok'; res.textContent = `✓ ${data.exercises.length} esercizi caricati`; }
+  } catch(e) {}
+}
+
 function applyAll(data){
   Object.entries(data).forEach(([id,fields])=>{
     Object.entries(fields).forEach(([f,v])=>{
@@ -1505,6 +1535,7 @@ function applyAll(data){
         if(f==='peso')onInput(el,id,'peso');
         if(f==='hrv')onInput(el,id,'hrv');
         if(f==='qualita_sonno')onInput(el,id,'sonno');
+        if(f==='motra_log'&&v) renderMotraFromLog(id, v);
       }
     });
   });
@@ -2276,6 +2307,7 @@ function buildMotraSection(dayId) {
       <textarea class="motra-textarea" id="motra-ta-${dayId}"
         placeholder="Incolla qui il testo del log Motra (copia tutto dal titolo fino a 'Tracciato con Motra.')..."></textarea>
       <button class="motra-import-btn" onclick="importMotra('${dayId}')">Importa log</button>
+      <input type="hidden" data-id="${dayId}" data-f="motra_log">
       <div class="motra-result" id="motra-res-${dayId}"></div>
       <div class="motra-parsed" id="motra-parsed-${dayId}"></div>
     </div>`;
@@ -2456,3 +2488,4 @@ function importMotra(dayId) {
 </script>
 </body>
 </html>
+
