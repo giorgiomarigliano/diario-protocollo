@@ -2919,12 +2919,6 @@ function importMotra(dayId) {
     };
 
     // Get session type to know which sentinels are expected
-    const woEl = document.querySelector(\`[data-id="\${dayId}"][data-f="wo_tipo"]\`);
-    const sessionType = woEl?.value || document.querySelector(\`[data-id="\${dayId}"][data-f="wo_rpe"]\`) ? null : null;
-    const expectedSentinels = SESSION_SENTINELS[
-      document.querySelector(\`[data-id="\${dayId}"][data-f="wo_tipo"]\`)?.value
-    ] || Object.keys(sentinelMap);
-
     for (const [sentinelId, keywords] of Object.entries(sentinelMap)) {
       // Find matching exercise in parsed data — try most specific keyword first
       const match = data.exercises.find(ex => {
@@ -2941,9 +2935,9 @@ function importMotra(dayId) {
       const topSets = workSets.filter(s => parseFloat(s.kg) >= maxKg * 0.97);
       const best = topSets.reduce((a, b) => parseInt(b.reps) > parseInt(a.reps) ? b : a);
 
-      const kgEl   = document.querySelector(\`[data-id="\${dayId}"][data-f="sl_\${sentinelId}_kg"]\`);
-      const repsEl = document.querySelector(\`[data-id="\${dayId}"][data-f="sl_\${sentinelId}_reps"]\`);
-      const setsEl = document.querySelector(\`[data-id="\${dayId}"][data-f="sl_\${sentinelId}_sets"]\`);
+      const kgEl   = document.querySelector(`[data-id="${dayId}"][data-f="sl_${sentinelId}_kg"]`);
+      const repsEl = document.querySelector(`[data-id="${dayId}"][data-f="sl_${sentinelId}_reps"]`);
+      const setsEl = document.querySelector(`[data-id="${dayId}"][data-f="sl_${sentinelId}_sets"]`);
       if (kgEl) kgEl.value = best.kg;
       if (repsEl) repsEl.value = best.reps;
       if (setsEl) setsEl.value = workSets.length;
