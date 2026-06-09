@@ -2041,6 +2041,286 @@ function drawComplianceRing(canvasId, pct, color) {
   ctx.strokeStyle = color; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.stroke();
 }
 
+
+// ── WORKOUT DATA HELPERS ──────────────────────────────────────────────────────
+
+function getWorkoutSessions(days) {
+  // Returns array of session objects for last N days that had a workout
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today - start) / 86400000);
+  const from = Math.max(0, elapsed - (days - 1));
+  const sessions = [];
+  for (let i = from; i <= elapsed && i < TOTAL_DAYS; i++) {
+    const id = 'day_' + i;
+    const wo = getWorkout(i);
+    if (wo.type === 'Riposo') continue;
+    const volEl = document.querySelector(`[data-id="${id}"][data-f="wo_volume"]`);
+    const kcalEl = document.querySelector(`[data-id="${id}"][data-f="wo_kcal"]`);
+    const durEl = document.querySelector(`[data-id="${id}"][data-f="wo_durata"]`);
+    const rpeEl = document.querySelector(`[data-id="${id}"][data-f="wo_rpe"]`);
+    const vol = volEl ? parseFloat(volEl.value) : NaN;
+    const kcal = kcalEl ? parseFloat(kcalEl.value) : NaN;
+    const dur = durEl ? parseFloat(durEl.value) : NaN;
+    const rpe = rpeEl ? parseFloat(rpeEl.value) : NaN;
+    const d = new Date(START); d.setDate(d.getDate() + i);
+    sessions.push({
+      dayIdx: i, date: d, type: wo.type,
+      volume: isNaN(vol) ? null : vol,
+      kcal:   isNaN(kcal) ? null : kcal,
+      durata: isNaN(dur) ? null : dur,
+      rpe:    isNaN(rpe) ? null : rpe,
+    });
+  }
+  return sessions;
+}
+
+function getSentinelData(sentinelId, days) {
+  // Returns array of {dayIdx, date, value} for a sentinel lift kg field
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today - start) / 86400000);
+  const from = Math.max(0, elapsed - (days - 1));
+  const result = [];
+  for (let i = from; i <= elapsed && i < TOTAL_DAYS; i++) {
+    const el = document.querySelector(`[data-id="day_${i}"][data-f="sl_${sentinelId}_kg"]`);
+    const v = el ? parseFloat(el.value) : NaN;
+    const d = new Date(START); d.setDate(d.getDate() + i);
+    result.push({ dayIdx: i, date: d, value: isNaN(v) ? null : v });
+  }
+  return result;
+}
+
+function getWeeklyVolume(weeks) {
+  // Returns weekly volume breakdown by type for last N weeks
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today - start) / 86400000);
+  const currentWeek = Math.floor(elapsed / 7);
+  const fromWeek = Math.max(0, currentWeek - (weeks - 1));
+  const result = [];
+  for (let w = fromWeek; w <= currentWeek; w++) {
+    const entry = { week: w + 1, push: 0, pull: 0, legs: 0, other: 0, total: 0 };
+    for (let d = w * 7; d < (w + 1) * 7 && d < TOTAL_DAYS; d++) {
+      const id = 'day_' + d;
+      const wo = getWorkout(d);
+      const volEl = document.querySelector(`[data-id="${id}"][data-f="wo_volume"]`);
+      const vol = volEl ? parseFloat(volEl.value) : NaN;
+      if (isNaN(vol) || !vol) continue;
+      entry.total += vol;
+      if (wo.type === 'Push') entry.push += vol;
+      else if (wo.type === 'Pull') entry.pull += vol;
+      else if (wo.type === 'Legs') entry.legs += vol;
+      else entry.other += vol;
+    }
+    result.push(entry);
+  }
+  return result;
+}
+
+function getHrvVsVolume(days) {
+  // Returns scatter points {hrv, volume} for last N days
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today - start) / 86400000);
+  const from = Math.max(0, elapsed - (days - 1));
+  const points = [];
+  for (let i = from; i <= elapsed && i < TOTAL_DAYS; i++) {
+    const id = 'day_' + i;
+    const hrvEl = document.querySelector(`[data-id="${id}"][data-f="hrv"]`);
+    const volEl = document.querySelector(`[data-id="${id}"][data-f="wo_volume"]`);
+    const hrv = hrvEl ? parseFloat(hrvEl.value) : NaN;
+    const vol = volEl ? parseFloat(volEl.value) : NaN;
+    if (!isNaN(hrv) && hrv > 0 && !isNaN(vol) && vol > 0)
+      points.push({ hrv, vol });
+  }
+  return points;
+}
+
+// ── CHART DRAW HELPERS ────────────────────────────────────────────────────────
+
+function drawBarChart(canvasId, bars, options = {}) {
+  // bars: [{label, value, color}]
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const H = options.height || 110;
+  canvas.width = rect.width * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width;
+
+  const vals = bars.map(b => b.value).filter(v => v != null && v > 0);
+  if (vals.length < 1) {
+    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2); return;
+  }
+  const maxV = Math.max(...vals);
+  const pad = 4, labelH = 16, barAreaH = H - labelH - 4;
+  const bw = Math.max(4, (W - pad * 2) / bars.length - 3);
+  const gap = (W - pad * 2 - bw * bars.length) / Math.max(bars.length - 1, 1);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1;
+  [0.25, 0.5, 0.75, 1].forEach(r => {
+    const y = barAreaH - r * barAreaH + 2;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  });
+
+  bars.forEach((b, i) => {
+    if (b.value == null) return;
+    const x = pad + i * (bw + gap);
+    const bh = (b.value / maxV) * (barAreaH - 4);
+    const y = barAreaH - bh + 2;
+
+    // Bar with rounded top
+    const r2 = Math.min(3, bw / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r2, y);
+    ctx.lineTo(x + bw - r2, y);
+    ctx.quadraticCurveTo(x + bw, y, x + bw, y + r2);
+    ctx.lineTo(x + bw, barAreaH + 2);
+    ctx.lineTo(x, barAreaH + 2);
+    ctx.lineTo(x, y + r2);
+    ctx.quadraticCurveTo(x, y, x + r2, y);
+    ctx.closePath();
+    ctx.fillStyle = b.color || '#0071e3';
+    ctx.globalAlpha = b.alpha || 1;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Value on top if fits
+    if (bh > 18 && options.showValues !== false) {
+      ctx.font = '500 9px -apple-system'; ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.fillText(options.valFormat ? options.valFormat(b.value) : Math.round(b.value), x + bw/2, y + 11);
+      ctx.textAlign = 'left';
+    }
+
+    // Label below
+    if (b.label) {
+      ctx.font = '9px -apple-system'; ctx.fillStyle = '#aeaeb2';
+      ctx.textAlign = 'center';
+      ctx.fillText(b.label, x + bw/2, H - 1);
+      ctx.textAlign = 'left';
+    }
+  });
+}
+
+function drawStackedBarChart(canvasId, weeks, options = {}) {
+  // weeks: [{label, push, pull, legs, other}]
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const H = options.height || 120;
+  canvas.width = rect.width * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width;
+
+  const maxV = Math.max(...weeks.map(w => w.total || 0));
+  if (maxV === 0) {
+    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2); return;
+  }
+  const labelH = 16, barAreaH = H - labelH - 4;
+  const bw = Math.max(4, (W - 8) / weeks.length - 4);
+  const gap = (W - 8 - bw * weeks.length) / Math.max(weeks.length - 1, 1);
+  const colors = { push: '#ff3b30', pull: '#34c759', legs: '#ff9500', other: '#af52de' };
+
+  weeks.forEach((wk, i) => {
+    const x = 4 + i * (bw + gap);
+    let yOffset = barAreaH + 2;
+    ['push','pull','legs','other'].forEach(type => {
+      const v = wk[type] || 0;
+      if (!v) return;
+      const bh = (v / maxV) * (barAreaH - 4);
+      yOffset -= bh;
+      ctx.fillStyle = colors[type];
+      ctx.fillRect(x, yOffset, bw, bh);
+    });
+    ctx.font = '9px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.textAlign = 'center';
+    ctx.fillText('W' + wk.week, x + bw/2, H - 1);
+    ctx.textAlign = 'left';
+  });
+}
+
+function drawScatterChart(canvasId, points, options = {}) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const H = options.height || 120;
+  canvas.width = rect.width * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width;
+
+  if (points.length < 3) {
+    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2); return;
+  }
+
+  const pad = 28;
+  const hrvVals = points.map(p => p.hrv);
+  const volVals = points.map(p => p.vol);
+  const minH = Math.min(...hrvVals), maxH = Math.max(...hrvVals);
+  const minV = Math.min(...volVals), maxV = Math.max(...volVals);
+  const rngH = maxH - minH || 1, rngV = maxV - minV || 1;
+
+  // Axis labels
+  ctx.font = '9px -apple-system'; ctx.fillStyle = '#aeaeb2';
+  ctx.textAlign = 'center';
+  ctx.fillText('HRV (ms)', W/2, H - 1);
+  ctx.save(); ctx.translate(10, H/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText('Volume (kg)', 0, 0); ctx.restore();
+  ctx.textAlign = 'left';
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1;
+  [0.25,0.5,0.75].forEach(r => {
+    const y = pad + r * (H - pad*2);
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W-4, y); ctx.stroke();
+    const x = pad + r * (W - pad - 4);
+    ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, H-pad); ctx.stroke();
+  });
+
+  // Linear regression line
+  const n = points.length;
+  const sumX = hrvVals.reduce((a,b)=>a+b,0);
+  const sumY = volVals.reduce((a,b)=>a+b,0);
+  const sumXY = points.reduce((a,p)=>a+p.hrv*p.vol,0);
+  const sumX2 = hrvVals.reduce((a,b)=>a+b*b,0);
+  const slope = (n*sumXY - sumX*sumY) / (n*sumX2 - sumX*sumX);
+  const intercept = (sumY - slope*sumX) / n;
+  const toX = hrv => pad + ((hrv - minH) / rngH) * (W - pad - 4);
+  const toY = vol => (H - pad) - ((vol - minV) / rngV) * (H - pad*2);
+  ctx.beginPath();
+  ctx.moveTo(toX(minH), toY(slope * minH + intercept));
+  ctx.lineTo(toX(maxH), toY(slope * maxH + intercept));
+  ctx.strokeStyle = '#0071e322'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  // Points
+  points.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(toX(p.hrv), toY(p.vol), 4, 0, Math.PI*2);
+    ctx.fillStyle = '#0071e3bb'; ctx.fill();
+  });
+
+  // Correlation label
+  const corrNum = (n*sumXY - sumX*sumY) / Math.sqrt((n*sumX2 - sumX*sumX) * (n*volVals.reduce((a,b)=>a+b*b,0) - sumY*sumY));
+  if (!isNaN(corrNum)) {
+    ctx.font = '10px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.fillText('r = ' + corrNum.toFixed(2), W - 44, 16);
+  }
+}
+
 let dashBuilt = false;
 function buildDashboard() {
   const dash = document.getElementById('dash-view');
@@ -2141,6 +2421,69 @@ function buildDashboard() {
           </div>
           <div class="chart-wrap"><canvas class="dash-chart" id="dc-subj" style="height:100px"></canvas></div>
         </div>
+      </div>
+
+      <!-- WORKOUT & PERFORMANCE -->
+      <div class="dash-section">
+        <div class="dash-section-title">Workout &amp; Performance</div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">Volume per sessione (kg) <span style="font-weight:400;color:var(--faint)">ultimi 30gg</span></div>
+          <div class="subj-legend">
+            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Push</div>
+            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>Pull</div>
+            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff9500"></div>Legs</div>
+            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#af52de"></div>Altro</div>
+          </div>
+          <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-vol" style="height:110px"></canvas></div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">Kcal bruciate per sessione <span style="font-weight:400;color:var(--faint)">ultimi 30gg</span></div>
+          <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-kcal" style="height:110px"></canvas></div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">RPE globale nel tempo <span style="font-weight:400;color:var(--faint)">scala 1–10</span></div>
+          <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-rpe" style="height:100px"></canvas></div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">Durata sessioni (min) <span style="font-weight:400;color:var(--faint)">ultimi 30gg</span></div>
+          <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-dur" style="height:100px"></canvas></div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">Volume settimanale per tipo (kg)</div>
+          <div class="subj-legend">
+            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Push</div>
+            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>Pull</div>
+            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff9500"></div>Legs</div>
+          </div>
+          <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-wkly" style="height:120px"></canvas></div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">Sentinel lifts · progressione kg</div>
+          <div class="subj-legend" style="flex-wrap:wrap">
+            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#0071e3"></div>Bench</div>
+            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff9500"></div>Military</div>
+            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>RDL</div>
+            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Leg Press</div>
+          </div>
+          <div class="chart-wrap"><canvas class="dash-chart" id="dc-sentinel" style="height:110px"></canvas></div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">HRV vs Volume allenamento <span style="font-weight:400;color:var(--faint)">scatter</span></div>
+          <div class="chart-wrap"><canvas class="dash-chart" id="dc-hrv-vol" style="height:130px"></canvas></div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-card-title">RPE vs HRV <span style="font-weight:400;color:var(--faint)">fatica percepita · recupero</span></div>
+          <div class="chart-wrap"><canvas class="dash-chart" id="dc-rpe-hrv" style="height:100px"></canvas></div>
+        </div>
+
       </div>
 
       <!-- COMPLIANCE -->
@@ -2262,7 +2605,68 @@ function refreshDashCharts() {
   drawComplianceRing('cr-inj', injPct, '#34c759');
   drawComplianceRing('cr-wo', woPct, '#0071e3');
   drawComplianceRing('cr-stack', stackPct, '#ff9500');
+
+  // ── WORKOUT CHARTS ──────────────────────────────────────────────────────────
+  const sessions30 = getWorkoutSessions(30);
+
+  // Volume per sessione - colored bars by type
+  const typeColors = { Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Body':'#af52de', BKK_FREE:'#0071e3' };
+  const volBars = sessions30.map(s => ({
+    label: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}).replace('/',''),
+    value: s.volume,
+    color: typeColors[s.type] || '#aeaeb2'
+  }));
+  drawBarChart('dc-wo-vol', volBars, { height: 110, valFormat: v => (v/1000).toFixed(1)+'t' });
+
+  // Kcal per sessione
+  const kcalBars = sessions30.map(s => ({
+    label: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}).replace('/',''),
+    value: s.kcal,
+    color: '#ff9500'
+  }));
+  drawBarChart('dc-wo-kcal', kcalBars, { height: 110 });
+
+  // RPE nel tempo - line chart
+  const rpeData = sessions30.map(s => ({ date: s.date, value: s.rpe }));
+  drawDashChart('dc-wo-rpe', [{data: rpeData, color: '#af52de'}], { height: 100, minScale: 0.8, maxScale: 1.2 });
+
+  // Durata sessioni - line chart
+  const durData = sessions30.map(s => ({ date: s.date, value: s.durata }));
+  drawDashChart('dc-wo-dur', [{data: durData, color: '#5ac8fa'}], { height: 100 });
+
+  // Volume settimanale stacked
+  const wklyVol = getWeeklyVolume(8);
+  drawStackedBarChart('dc-wo-wkly', wklyVol, { height: 120 });
+
+  // Sentinel lifts - multi-line
+  const bench  = getSentinelData('bench', 112);
+  const milpr  = getSentinelData('milpress', 112);
+  const rdl    = getSentinelData('rdl', 112);
+  const legpr  = getSentinelData('legpress', 112);
+  drawDashChart('dc-sentinel', [
+    {data: bench, color: '#0071e3'},
+    {data: milpr, color: '#ff9500'},
+    {data: rdl,   color: '#34c759'},
+    {data: legpr, color: '#ff3b30'},
+  ], { height: 110 });
+
+  // HRV vs Volume scatter
+  const scatterHV = getHrvVsVolume(60);
+  drawScatterChart('dc-hrv-vol', scatterHV, { height: 130 });
+
+  // RPE vs HRV line overlay
+  const rpeLineData = sessions30.filter(s => s.rpe).map(s => ({ date: s.date, value: s.rpe }));
+  const hrvLineData = sessions30.filter(s => s.rpe).map(s => {
+    const el = document.querySelector(`[data-id="day_${s.dayIdx}"][data-f="hrv"]`);
+    const v = el ? parseFloat(el.value) : NaN;
+    return { date: s.date, value: isNaN(v) ? null : v / 10 }; // scale HRV /10 for overlay
+  });
+  drawDashChart('dc-rpe-hrv', [
+    {data: rpeLineData, color: '#af52de'},
+    {data: hrvLineData, color: '#34c759'},
+  ], { height: 100, minScale: 0.7, maxScale: 1.3 });
 }
+
 
 window.addEventListener('load',async()=>{
   buildNav();
