@@ -945,7 +945,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781086960 -->
+<!-- deploy 1781103188 -->
 </head>
 <body>
 
@@ -974,7 +974,8 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="main-nav">
   <div class="main-nav-tab on" id="main-tab-diary" onclick="switchView('diary')">Diario</div>
   <div class="main-nav-tab" id="main-tab-dash" onclick="switchView('dash')">Dashboard</div>
-  <div class="main-nav-tab" id="main-tab-med" onclick="switchView('med')">🩸 Medico</div>
+  <div class="main-nav-tab" id="main-tab-med" onclick="switchView('med')">🩸 Referti</div>
+  <div class="main-nav-tab" id="main-tab-meddash" onclick="switchView('meddash')">📊 Lab</div>
 </div>
 <div class="nav-strip" id="nav-strip"></div>
 <div class="diary-view" id="diary-view">
@@ -982,6 +983,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 </div>
 <div class="dash-view" id="dash-view"></div>
 <div class="med-view" id="med-view"></div>
+<div class="med-view" id="meddash-view"></div>
 
 <div class="save-bar">
   <span class="save-hint" id="last-saved">Mai salvato</span>
@@ -2120,15 +2122,18 @@ function switchView(view) {
   const diary = document.getElementById('diary-view');
   const dash = document.getElementById('dash-view');
   const med = document.getElementById('med-view');
+  const meddash = document.getElementById('meddash-view');
   const navStrip = document.getElementById('nav-strip');
   const tabDiary = document.getElementById('main-tab-diary');
   const tabDash = document.getElementById('main-tab-dash');
   const tabMed = document.getElementById('main-tab-med');
+  const tabMedDash = document.getElementById('main-tab-meddash');
   // Reset all
   diary.classList.add('hidden'); dash.classList.remove('active');
-  med.classList.remove('visible');
+  med.classList.remove('visible'); meddash.classList.remove('visible');
   navStrip.style.display = 'none';
-  tabDiary.classList.remove('on'); tabDash.classList.remove('on'); tabMed.classList.remove('on');
+  tabDiary.classList.remove('on'); tabDash.classList.remove('on');
+  tabMed.classList.remove('on'); tabMedDash.classList.remove('on');
   if (view === 'dash') {
     dash.classList.add('active');
     tabDash.classList.add('on');
@@ -2137,6 +2142,10 @@ function switchView(view) {
     med.classList.add('visible');
     tabMed.classList.add('on');
     buildMedView();
+  } else if (view === 'meddash') {
+    meddash.classList.add('visible');
+    tabMedDash.classList.add('on');
+    buildMedDash();
   } else {
     diary.classList.remove('hidden');
     navStrip.style.display = '';
@@ -3746,6 +3755,337 @@ function importMotra(dayId) {
     res.className = 'motra-result err';
     res.textContent = 'Errore nel parsing: ' + e.message;
   }
+}
+
+
+// ═══════════════════════════════════════════════
+//  BUILD MED DASH — Dashboard Laboratorio
+// ═══════════════════════════════════════════════
+function buildMedDash() {
+  const el = document.getElementById('meddash-view');
+  if (el.dataset.built) return;
+  el.dataset.built = '1';
+
+  // ── DATI STORICI ─────────────────────────────
+  const DATA = {
+    hdl: [
+      {d:'Ott 2020',v:33,t:'2020-10'},{d:'Nov 2022',v:37,t:'2022-11'},
+      {d:'Gen 2024',v:24,t:'2024-01'},{d:'Feb 2025',v:27,t:'2025-02'},
+      {d:'Apr 2026',v:28,t:'2026-04'},{d:'Mag 2026',v:35,t:'2026-05'},
+      {d:'Giu 2026',v:32,t:'2026-06'}
+    ],
+    colTot: [
+      {d:'Ott 2020',v:109,t:'2020-10'},{d:'Nov 2022',v:120,t:'2022-11'},
+      {d:'Gen 2024',v:89,t:'2024-01'},{d:'Feb 2025',v:102,t:'2025-02'},
+      {d:'Apr 2026',v:101,t:'2026-04'},{d:'Mag 2026',v:107,t:'2026-05'},
+      {d:'Giu 2026',v:118,t:'2026-06'}
+    ],
+    ldl: [
+      {d:'Ott 2020',v:62,t:'2020-10'},{d:'Nov 2022',v:66,t:'2022-11'},
+      {d:'Gen 2024',v:52,t:'2024-01'},{d:'Feb 2025',v:62,t:'2025-02'},
+      {d:'Apr 2026',v:60,t:'2026-04'},{d:'Mag 2026',v:57,t:'2026-05'},
+      {d:'Giu 2026 (CV)',v:54,t:'2026-06a'},{d:'Giu 2026 (Lab)',v:64,t:'2026-06b'}
+    ],
+    tg: [
+      {d:'Ott 2020',v:69,t:'2020-10'},{d:'Nov 2022',v:83,t:'2022-11'},
+      {d:'Gen 2024',v:64,t:'2024-01'},{d:'Feb 2025',v:67,t:'2025-02'},
+      {d:'Apr 2026',v:65,t:'2026-04'},{d:'Mag 2026',v:77,t:'2026-05'},
+      {d:'Giu 2026',v:108,t:'2026-06'}
+    ],
+    omocist: [
+      {d:'Apr 2026',v:21.9,t:'2026-04'},{d:'Mag 2026',v:17.5,t:'2026-05'}
+    ],
+    vitd: [
+      {d:'Apr 2026',v:9.5,t:'2026-04'},{d:'Mag 2026',v:22,t:'2026-05'}
+    ],
+    zinco: [
+      {d:'Apr 2026',v:53.30,t:'2026-04'},{d:'Mag 2026',v:50.30,t:'2026-05'}
+    ],
+    emoglobina: [
+      {d:'Ott 2022',v:141,t:'2022-11'},{d:'Apr 2026',v:129,t:'2026-04'},
+      {d:'Mag 2026',v:119,t:'2026-05'}
+    ],
+    igf1: [
+      {d:'Mag 2026 T0',v:94,t:'2026-05'}
+    ],
+    testLibero: [
+      {d:'Gen 2024',v:16.53,t:'2024-01'},{d:'Apr 2026',v:15.60,t:'2026-04'}
+    ],
+    ves: [
+      {d:'Apr 2026',v:17,t:'2026-04'},{d:'Mag 2026',v:25,t:'2026-05'}
+    ],
+    psa: [
+      {d:'Feb 2025',v:0.54,t:'2025-02'},{d:'Apr 2026',v:0.48,t:'2026-04'},
+      {d:'Mag 2026',v:0.63,t:'2026-05'},{d:'Giu 2026',v:0.49,t:'2026-06'}
+    ],
+    creatinina: [
+      {d:'Apr 2026',v:1.13,t:'2026-04'},{d:'Mag 2026',v:1.29,t:'2026-05'}
+    ],
+    ferritina: [
+      {d:'Apr 2026',v:142,t:'2026-04'},{d:'Mag 2026',v:161,t:'2026-05'}
+    ],
+  };
+
+  // ── SPARKLINE SVG ─────────────────────────────
+  function sparkline(pts, w, h, color, refMin, refMax) {
+    if (pts.length < 2) {
+      // punto singolo — solo dot
+      return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+        <circle cx="${w/2}" cy="${h/2}" r="4" fill="${color}"/>
+      </svg>`;
+    }
+    const vals = pts.map(p=>p.v);
+    const minV = Math.min(...vals), maxV = Math.max(...vals);
+    const pad = 6;
+    const range = maxV - minV || 1;
+    const toX = (i) => pad + (i / (pts.length-1)) * (w - pad*2);
+    const toY = (v) => h - pad - ((v - minV) / range) * (h - pad*2);
+
+    let refBand = '';
+    if (refMin !== undefined && refMax !== undefined) {
+      const y1 = Math.min(toY(refMin), toY(refMax));
+      const y2 = Math.max(toY(refMin), toY(refMax));
+      refBand = `<rect x="0" y="${Math.max(0,y1)}" width="${w}" height="${Math.min(h,y2)-Math.max(0,y1)}" fill="rgba(52,199,89,.08)"/>`;
+    } else if (refMin !== undefined) {
+      const yRef = toY(refMin);
+      refBand = `<line x1="0" y1="${yRef}" x2="${w}" y2="${yRef}" stroke="rgba(52,199,89,.4)" stroke-width="1" stroke-dasharray="3,3"/>`;
+    }
+
+    const polyPts = pts.map((p,i) => `${toX(i)},${toY(p.v)}`).join(' ');
+    // area fill
+    const areaBottom = h - pad;
+    const areaPts = `${toX(0)},${areaBottom} ${polyPts} ${toX(pts.length-1)},${areaBottom}`;
+
+    const dots = pts.map((p,i) => {
+      const ok = (refMin === undefined || p.v >= refMin) && (refMax === undefined || p.v <= refMax);
+      const dc = ok ? color : '#ff3b30';
+      return `<circle cx="${toX(i)}" cy="${toY(p.v)}" r="3" fill="${dc}" stroke="white" stroke-width="1.5"/>`;
+    }).join('');
+
+    const lastVal = pts[pts.length-1].v;
+    const prevVal = pts[pts.length-2]?.v;
+    const lastX = toX(pts.length-1), lastY = toY(lastVal);
+
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      ${refBand}
+      <polygon points="${areaPts}" fill="${color}" opacity="0.08"/>
+      <polyline points="${polyPts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+    </svg>`;
+  }
+
+  // ── BARRA PROGRESSO ──────────────────────────
+  function progressBar(current, target, max, color, label) {
+    const pct = Math.min(100, (current/target)*100).toFixed(0);
+    const warn = current < target;
+    const barColor = warn ? '#ff9500' : color;
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+        <span style="font-weight:500">${label}</span>
+        <span style="color:${warn?'#ff9500':'#34c759'};font-weight:600">${current} <span style="color:var(--muted);font-weight:400">/ target ${target}</span></span>
+      </div>
+      <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden">
+        <div style="background:${barColor};height:6px;width:${pct}%;border-radius:4px;transition:width .5s ease"></div>
+      </div>
+    </div>`;
+  }
+
+  // ── KPI CARD ─────────────────────────────────
+  function kpiCard(label, pts, unit, refMin, refMax, targetLabel, color) {
+    const last = pts[pts.length-1];
+    const prev = pts[pts.length-2];
+    const delta = prev ? (last.v - prev.v) : null;
+    const isOk = (refMin === undefined || last.v >= refMin) && (refMax === undefined || last.v <= refMax);
+    const valColor = isOk ? '#34c759' : (Math.abs(last.v - (refMin||refMax)) < (refMin||refMax)*0.15 ? '#ff9500' : '#ff3b30');
+    const arrow = delta === null ? '' : delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
+    const arrowColor = delta === null ? '' :
+      (refMin && delta > 0) || (refMax && delta < 0) ? '#34c759' : '#ff3b30';
+    const spark = sparkline(pts, 120, 50, color, refMin, refMax);
+    return `<div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">${label}</div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between">
+        <div>
+          <span style="font-size:28px;font-weight:600;letter-spacing:-.03em;color:${valColor}">${last.v}</span>
+          <span style="font-size:12px;color:var(--muted);margin-left:3px">${unit}</span>
+          ${delta !== null ? `<span style="font-size:13px;font-weight:600;color:${arrowColor};margin-left:6px">${arrow}${Math.abs(delta).toFixed(delta%1===0?0:1)}</span>` : ''}
+        </div>
+        <div>${spark}</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">${targetLabel} · ultimo: <span style="font-weight:500">${last.d}</span></div>
+    </div>`;
+  }
+
+  // ── CHART A LINEE MULTI-SERIE ─────────────────
+  function lineChart(series, w, h) {
+    // series: [{label, pts:[{d,v}], color, refMin, refMax}]
+    const allVals = series.flatMap(s=>s.pts.map(p=>p.v));
+    const allDates = [...new Set(series.flatMap(s=>s.pts.map(p=>p.t)))].sort();
+    const minV = Math.min(...allVals)*0.9, maxV = Math.max(...allVals)*1.1;
+    const pad = {t:10,r:10,b:28,l:36};
+    const iW = w-pad.l-pad.r, iH = h-pad.t-pad.b;
+    const toX = (t) => pad.l + (allDates.indexOf(t)/Math.max(allDates.length-1,1))*iW;
+    const toY = (v) => pad.t + iH - ((v-minV)/(maxV-minV||1))*iH;
+
+    // grid lines
+    const nGrid = 4;
+    let gridLines = '', gridLabels = '';
+    for (let i=0;i<=nGrid;i++) {
+      const y = pad.t + (i/nGrid)*iH;
+      const v = (maxV - (maxV-minV)*(i/nGrid)).toFixed(0);
+      gridLines += `<line x1="${pad.l}" y1="${y}" x2="${w-pad.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
+      gridLabels += `<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--muted)">${v}</text>`;
+    }
+
+    // x labels (solo primo e ultimo e qualche intermedio)
+    let xLabels = '';
+    const showIdx = [0, Math.floor(allDates.length/2), allDates.length-1].filter((v,i,a)=>a.indexOf(v)===i);
+    // ricavo label leggibile dalle date
+    const dateLookup = {};
+    series.forEach(s=>s.pts.forEach(p=>{ dateLookup[p.t]=p.d; }));
+    showIdx.forEach(i => {
+      const t = allDates[i];
+      const x = toX(t);
+      const lbl = (dateLookup[t]||t).replace(' 2026','').replace(' 20','\'');
+      xLabels += `<text x="${x}" y="${h-4}" text-anchor="middle" font-size="9" fill="var(--muted)">${lbl}</text>`;
+    });
+
+    // ref band (prima serie)
+    let refBands = '';
+    series.forEach(s => {
+      if (s.refMin !== undefined) {
+        const yRef = toY(s.refMin);
+        refBands += `<line x1="${pad.l}" y1="${yRef}" x2="${w-pad.r}" y2="${yRef}" stroke="${s.color}" stroke-width="1" stroke-dasharray="4,3" opacity=".4"/>`;
+      }
+    });
+
+    // linee e dots
+    let lines = '', dots = '';
+    series.forEach(s => {
+      const validPts = s.pts.filter(p=>allDates.includes(p.t));
+      if (validPts.length < 1) return;
+      const polyPts = validPts.map(p=>`${toX(p.t)},${toY(p.v)}`).join(' ');
+      lines += `<polyline points="${polyPts}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+      validPts.forEach(p => {
+        const ok = (s.refMin===undefined||p.v>=s.refMin)&&(s.refMax===undefined||p.v<=s.refMax);
+        dots += `<circle cx="${toX(p.t)}" cy="${toY(p.v)}" r="3.5" fill="${ok?s.color:'#ff3b30'}" stroke="white" stroke-width="1.5"/>`;
+      });
+      // label ultimo valore
+      const lastP = validPts[validPts.length-1];
+      lines += `<text x="${toX(lastP.t)+7}" y="${toY(lastP.v)+4}" font-size="10" fill="${s.color}" font-weight="600">${lastP.v}</text>`;
+    });
+
+    return `<svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" style="overflow:visible">
+      ${gridLines}${gridLabels}${xLabels}${refBands}${lines}${dots}
+    </svg>`;
+  }
+
+  // ══════════════════════════════════════════════
+  //  RENDER
+  // ══════════════════════════════════════════════
+  let html = `<div style="padding:20px;max-width:1100px;margin:0 auto">
+
+  <div style="margin-bottom:20px">
+    <div style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin-bottom:4px">📊 Dashboard Laboratorio</div>
+    <div style="font-size:13px;color:var(--muted)">Andamento biomarker nel tempo · Storico CDI Bicocca · Obiettivi protocollo</div>
+  </div>
+
+  <!-- KPI GRID -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:28px">
+    ${kpiCard('IGF-1', DATA.igf1, 'µg/L', 115, 300, 'target 150–180+ (post Tesa)', '#af52de')}
+    ${kpiCard('HDL', DATA.hdl, 'mg/dL', 40, undefined, 'target ≥40', '#ff9500')}
+    ${kpiCard('Vitamina D', DATA.vitd, 'µg/L', 50, undefined, 'target ≥50', '#34c759')}
+    ${kpiCard('Omocisteina', DATA.omocist, 'µmol/L', undefined, 13, 'target ≤13', '#0071e3')}
+    ${kpiCard('Emoglobina', DATA.emoglobina, 'g/L', 133, undefined, 'target ≥133', '#ff3b30')}
+    ${kpiCard('Zinco', DATA.zinco, 'µg/dL', 60, 106, 'target 60–106', '#8e44ad')}
+    ${kpiCard('Testosterone lib.', DATA.testLibero, 'ng/L', 15, 40, 'target >15 (efficace)', '#0071e3')}
+    ${kpiCard('VES', DATA.ves, 'mm/h', undefined, 15, 'target ≤15', '#ff9500')}
+    ${kpiCard('PSA', DATA.psa, 'µg/L', undefined, 4, 'target ≤4', '#34c759')}
+    ${kpiCard('Creatinina', DATA.creatinina, 'mg/dL', undefined, 1.2, 'target ≤1.20', '#8e8e93')}
+    ${kpiCard('Ferritina', DATA.ferritina, 'µg/L', 22, 322, 'target 22–322', '#ff9500')}
+  </div>
+
+  <!-- OBIETTIVI PROTOCOLLO -->
+  <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
+    <div style="font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px">🎯 Obiettivi protocollo — baseline vs target</div>
+    ${progressBar(94, 165, 300, '#af52de', 'IGF-1 (µg/L) · target 150–180+')}
+    ${progressBar(32, 40, 60, '#ff9500', 'HDL (mg/dL) · target ≥40')}
+    ${progressBar(22, 50, 100, '#34c759', 'Vitamina D (µg/L) · target ≥50')}
+    ${progressBar(17.5, 13, 25, '#0071e3', 'Omocisteina (µmol/L) · target ≤13 — barra inversa: più alta = peggio')}
+    ${progressBar(119, 133, 180, '#ff3b30', 'Emoglobina (g/L) · target ≥133')}
+    ${progressBar(50.3, 70, 106, '#8e44ad', 'Zinco (µg/dL) · target 70–80')}
+  </div>
+
+  <!-- GRAFICI LIPIDI -->
+  <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
+    <div style="font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px">Profilo lipidico — storico</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">HDL ≥40 · LDL ≤115 · TG ≤150 · ColTot ≤190</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="font-size:11px;font-weight:600;margin-bottom:6px">HDL <span style="color:var(--muted);font-weight:400">target ≥40</span></div>
+        ${lineChart([{label:'HDL',pts:DATA.hdl,color:'#ff9500',refMin:40}], 400, 140)}
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;margin-bottom:6px">LDL + Trigliceridi <span style="color:var(--muted);font-weight:400">target LDL ≤115 · TG ≤150</span></div>
+        ${lineChart([
+          {label:'LDL',pts:DATA.ldl,color:'#0071e3',refMin:undefined,refMax:115},
+          {label:'TG',pts:DATA.tg,color:'#ff9500',refMin:undefined,refMax:150}
+        ], 400, 140)}
+      </div>
+    </div>
+  </div>
+
+  <!-- GRAFICI ASSE ORMONALE / METABOLICO -->
+  <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
+    <div style="font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px">Asse ormonale & metabolico</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="font-size:11px;font-weight:600;margin-bottom:6px">Emoglobina <span style="color:var(--muted);font-weight:400">target ≥133 g/L</span></div>
+        ${lineChart([{label:'Hb',pts:DATA.emoglobina,color:'#ff3b30',refMin:133}], 400, 120)}
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;margin-bottom:6px">Omocisteina <span style="color:var(--muted);font-weight:400">target ≤13 µmol/L</span></div>
+        ${lineChart([{label:'Omocist',pts:DATA.omocist,color:'#0071e3',refMax:13}], 400, 120)}
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;margin-bottom:6px">Vitamina D <span style="color:var(--muted);font-weight:400">target ≥50 µg/L</span></div>
+        ${lineChart([{label:'VitD',pts:DATA.vitd,color:'#34c759',refMin:50}], 400, 120)}
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;margin-bottom:6px">Zinco <span style="color:var(--muted);font-weight:400">target 60–106 µg/dL</span></div>
+        ${lineChart([{label:'Zinco',pts:DATA.zinco,color:'#8e44ad',refMin:60}], 400, 120)}
+      </div>
+    </div>
+  </div>
+
+  <!-- PSA + CREATININA -->
+  <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
+    <div style="font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px">Monitoraggio PSA & funzione renale</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="font-size:11px;font-weight:600;margin-bottom:6px">PSA totale <span style="color:var(--muted);font-weight:400">target ≤4 µg/L</span></div>
+        ${lineChart([{label:'PSA',pts:DATA.psa,color:'#34c759',refMax:4}], 400, 120)}
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;margin-bottom:6px">Creatinina <span style="color:var(--muted);font-weight:400">target ≤1.20 mg/dL</span></div>
+        ${lineChart([{label:'Creat',pts:DATA.creatinina,color:'#8e8e93',refMax:1.2}], 400, 120)}
+      </div>
+    </div>
+  </div>
+
+  <!-- PROSSIMI CHECK -->
+  <div style="background:rgba(0,113,227,.06);border:1px solid rgba(0,113,227,.2);border-radius:12px;padding:16px;margin-bottom:40px">
+    <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:10px">🔬 Mini-panel mid-cycle previsto — settimane 8–10 (agosto 2026)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:7px">
+      ${['IGF-1','Glucosio / Insulina / HOMA','HDL','Omocisteina','Vitamina D',
+         'Testosterone libero / SHBG','CRP','Zinco','Folato / B12',
+         'Emoglobina / MCHC','eGFR / Creatinina','VES','FSH / LH']
+        .map(m=>`<span style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px">${m}</span>`).join('')}
+    </div>
+  </div>
+
+  </div>`;
+
+  el.innerHTML = html;
 }
 
 </script>
