@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781104747 -->
+<!-- deploy 1781105510 -->
 </head>
 <body>
 
@@ -1840,6 +1840,7 @@ async function loadFromCloud(){
     if(lr){try{const p=JSON.parse(lr);applyAll(p.data||p);document.getElementById('last-saved').textContent='Locale (offline)';setSyncStatus('err');}catch(e2){}}
     else{document.getElementById('last-saved').textContent='Errore connessione';setSyncStatus('err');}
   }
+  refreshWeekSummary();
 }
 
 function jumpToday(){
@@ -2141,6 +2142,19 @@ function buildWeekSummary(container, wkIdx) {
   return card;
 }
 
+
+function refreshWeekSummary() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today - start) / 86400000);
+  const currentWk = Math.floor(elapsed / 7);
+  // Rimuovi card esistente e ricostruisci
+  const existing = document.getElementById('week-summary-' + currentWk);
+  if (!existing) return;
+  const container = document.getElementById('container');
+  const newCard = buildWeekSummary(container, currentWk);
+  if (newCard) existing.replaceWith(newCard);
+}
 
 // ── DASHBOARD ──
 function switchView(view) {
