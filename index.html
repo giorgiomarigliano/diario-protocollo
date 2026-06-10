@@ -1561,6 +1561,8 @@ function applyAll(data){
       const el=document.querySelector(`[data-id="${id}"][data-f="${f}"]`);
       if(el){
         if(el.type==='checkbox'){el.checked=(v==='1');return;}
+        // Non sovrascrivere con stringa vuota i select che hanno già un default preimpostato
+        if(v===''&&el.tagName==='SELECT'&&el.value!==''){return;}
         el.value=v;
         if(f==='peso')onInput(el,id,'peso');
         if(f==='hrv')onInput(el,id,'hrv');
