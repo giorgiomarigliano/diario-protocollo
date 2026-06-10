@@ -3483,14 +3483,24 @@ function refreshDashCharts() {
 
 
 window.addEventListener('load',async()=>{
-  buildNav();
-  buildDays();
-  document.getElementById('loading').style.display='none';
-  const container=document.getElementById('container');
-  buildCycleCard(container);
-  buildLabSection(container);
-  updateNavHighlight();
-  jumpToday();
+  const _loading = document.getElementById('loading');
+  const _hide = () => { try { _loading.style.display='none'; } catch(e){} };
+  try {
+    buildNav();
+    buildDays();
+  } catch(e) {
+    console.error('buildDays error:', e);
+  }
+  _hide();
+  try {
+    const container=document.getElementById('container');
+    buildCycleCard(container);
+    buildLabSection(container);
+    updateNavHighlight();
+    jumpToday();
+  } catch(e) {
+    console.error('init error:', e);
+  }
   // Always load from cloud first — localStorage only as offline fallback
   try{
     await loadFromCloud();
