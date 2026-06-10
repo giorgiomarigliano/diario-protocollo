@@ -147,7 +147,7 @@ body {
 .nav-tab.on { color: var(--blue); border-bottom-color: var(--blue); font-weight: 500; }
 
 /* Main container */
-.container { width:100%; margin: 0; padding: 24px 20px 120px; }
+.container { width:100%; margin: 0 auto; padding: 24px 20px 120px; }
 
 /* Cycle indicator card */
 .cycle-card {
@@ -776,8 +776,8 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 /* Dashboard */
 .dash-view{display:none;width:100%;padding:0}
 .dash-view.active{display:block}
-.dash-inner{padding:24px 20px 120px}
-.app-view-inner{width:100%;box-sizing:border-box;padding:24px 20px 120px}
+.dash-inner{padding:24px 20px 120px;margin:0 auto}
+.app-view-inner{width:100%;box-sizing:border-box;padding:24px 20px 120px;margin:0 auto}
 .dash-two-col{display:grid;grid-template-columns:1fr;gap:0}
 @media(min-width:1024px){
   .dash-two-col{grid-template-columns:1fr 1fr;gap:24px;align-items:start}
@@ -937,9 +937,9 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .container         { padding: 28px 60px 120px; }
   .app-view-inner    { padding: 28px 60px 120px; }
   .dash-inner        { padding: 28px 60px 120px; }
-  .container         { max-width: 1400px; }
-  .app-view-inner    { max-width: 1400px; }
-  .dash-inner        { max-width: 1400px; }
+  .container         { max-width: 1400px; margin: 0 auto; }
+  .app-view-inner    { max-width: 1400px; margin: 0 auto; }
+  .dash-inner        { max-width: 1400px; margin: 0 auto; }
   .save-bar          { padding: 12px 60px; }
   .header            { padding: 0 60px; }
   .main-nav          { padding: 0 60px; }
@@ -948,7 +948,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781103901 -->
+<!-- deploy 1781104038 -->
 </head>
 <body>
 
