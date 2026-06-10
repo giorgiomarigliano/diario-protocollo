@@ -1009,20 +1009,22 @@ function renderInjectionSlots(dayIdx, id) {
 
   return slots.map(s => {
     const fn = s.n;
+    const defaultPeptide = s.peptideOptions[0] || '';
+    const defaultMomento = s.momento || '';
     const peptideOpts = allPeptides.map(p =>
-      `<option${s.peptideOptions.includes(p)?' selected':''}>${p}</option>`
+      `<option value="${p}"${p===defaultPeptide?' selected':''}>${p}</option>`
     ).join('');
     const momentoOpts = momenti.map(m =>
-      `<option${m===s.momento?' selected':''}>${m}</option>`
+      `<option value="${m}"${m===defaultMomento?' selected':''}>${m}</option>`
     ).join('');
-    const sitiOpts = siti.map(x=>`<option>${x}</option>`).join('');
+    const sitiOpts = siti.map(x=>`<option value="${x}">${x}</option>`).join('');
     return `
           <div style="background:var(--surface2);border-radius:var(--radius-xs);padding:10px 12px">
             <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px">Iniezione ${fn} · ${s.label}</div>
             <div class="inj-row">
               <div class="fg"><label>Eseguita</label>
                 <select data-id="${id}" data-f="inj${fn}_eseguita">
-                  <option value="">—</option><option>Sì</option><option>No</option><option>Posticipata</option>
+                  <option value="">—</option><option value="Sì">Sì</option><option value="No">No</option><option value="Posticipata">Posticipata</option>
                 </select>
               </div>
               <div class="fg"><label>Peptide / dose</label>
