@@ -2024,13 +2024,16 @@ function buildWeekSummary(container, wkIdx) {
 
   let totalInj = 0, doneInj = 0, totalWo = 0, doneWo = 0;
   let pesoSum = 0, pesoCount = 0, hrvSum = 0, hrvCount = 0;
+  let rpeSum = 0, rpeCount = 0, sysSum = 0, sysCount = 0;
+  let energiaSum = 0, energiaCount = 0, kcalTotal = 0;
 
   for (let i = wkStart; i < wkEnd && i <= elapsed; i++) {
     const id = 'day_' + i;
-    // Injections
-    ['inj1','inj2','inj3','inj4'].forEach(k => {
-      const peptide = document.querySelector(`[data-id="${id}"][data-f="${k}_peptide"]`)?.value;
-      if (peptide) { totalInj++; }
+    // Iniezioni: usa getInjectionSlots (non il DOM) per totalInj previste
+    const slots = getInjectionSlots(i);
+    totalInj += slots.length;
+    slots.forEach(s => {
+      const k = 'inj' + s.n;
       const eseguita = document.querySelector(`[data-id="${id}"][data-f="${k}_eseguita"]`)?.value;
       if (eseguita === 'Sì') doneInj++;
     });
@@ -2038,25 +2041,41 @@ function buildWeekSummary(container, wkIdx) {
     const wo = getWorkout(i);
     if (wo.type !== 'Riposo') {
       totalWo++;
-      const rpe = document.querySelector(`[data-id="${id}"][data-f="wo_rpe"]`)?.value;
-      if (rpe) doneWo++;
+      const rpe = parseFloat(document.querySelector(`[data-id="${id}"][data-f="wo_rpe"]`)?.value);
+      if (!isNaN(rpe)) { doneWo++; rpeSum += rpe; rpeCount++; }
     }
     // Biometrics
     const peso = parseFloat(document.querySelector(`[data-id="${id}"][data-f="peso"]`)?.value);
     if (!isNaN(peso)) { pesoSum += peso; pesoCount++; }
     const hrv = parseFloat(document.querySelector(`[data-id="${id}"][data-f="hrv"]`)?.value);
     if (!isNaN(hrv)) { hrvSum += hrv; hrvCount++; }
+    const sys = parseFloat(document.querySelector(`[data-id="${id}"][data-f="bp_sys"]`)?.value);
+    if (!isNaN(sys)) { sysSum += sys; sysCount++; }
+    const en = parseFloat(document.querySelector(`[data-id="${id}"][data-f="energia"]`)?.value);
+    if (!isNaN(en)) { energiaSum += en; energiaCount++; }
+    const kcal = parseFloat(document.querySelector(`[data-id="${id}"][data-f="wo_kcal"]`)?.value);
+    if (!isNaN(kcal)) kcalTotal += kcal;
   }
 
-  const avgPeso = pesoCount ? (pesoSum/pesoCount).toFixed(1) : '—';
-  const avgHrv = hrvCount ? Math.round(hrvSum/hrvCount) : '—';
+  const avgPeso     = pesoCount    ? (pesoSum/pesoCount).toFixed(1) : '—';
+  const avgHrv      = hrvCount     ? Math.round(hrvSum/hrvCount)    : '—';
+  const avgRpe      = rpeCount     ? (rpeSum/rpeCount).toFixed(1)   : '—';
+  const avgSys      = sysCount     ? Math.round(sysSum/sysCount)    : '—';
+  const avgEnergia  = energiaCount ? (energiaSum/energiaCount).toFixed(1) : '—';
+  const injLabel    = `${doneInj}/${totalInj}`;
+  const injColor    = totalInj > 0 && doneInj === totalInj ? '#34c759' : doneInj > 0 ? '#ff9500' : 'var(--text)';
+  const woLabel     = `${doneWo}/${totalWo}`;
+  const daysLogged  = pesoCount; // giorni con biometria compilata
 
   const card = document.createElement('div');
   card.className = 'week-summary-card';
   card.id = 'week-summary-' + wkIdx;
   card.innerHTML = `
-    <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase">Riepilogo settimana ${wkIdx+1}</div>
-    <div class="week-summary-grid">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase">Riepilogo settimana ${wkIdx+1}</div>
+      <div style="font-size:11px;color:var(--muted)">${daysLogged} gg registrati · ${getWeekRange(wkIdx)}</div>
+    </div>
+    <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr)">
       <div class="ws-item">
         <div class="ws-val">${avgPeso}<span style="font-size:12px;font-weight:400"> kg</span></div>
         <div class="ws-lbl">Peso medio</div>
@@ -2066,13 +2085,30 @@ function buildWeekSummary(container, wkIdx) {
         <div class="ws-lbl">HRV medio</div>
       </div>
       <div class="ws-item">
-        <div class="ws-val">${doneWo}<span style="font-size:12px;font-weight:400">/${totalWo}</span></div>
-        <div class="ws-lbl">Workout</div>
+        <div class="ws-val" style="color:${injColor}">${injLabel}</div>
+        <div class="ws-lbl">Iniezioni</div>
       </div>
       <div class="ws-item">
-        <div class="ws-val" style="font-size:14px">${doneInj > 0 ? '✓' : '—'}</div>
-        <div class="ws-lbl">Iniezioni</div>
-        <div class="ws-sub">${doneInj} registrate</div>
+        <div class="ws-val">${woLabel}</div>
+        <div class="ws-lbl">Workout</div>
+      </div>
+    </div>
+    <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      <div class="ws-item">
+        <div class="ws-val">${avgRpe}<span style="font-size:12px;font-weight:400">/10</span></div>
+        <div class="ws-lbl">RPE medio</div>
+      </div>
+      <div class="ws-item">
+        <div class="ws-val">${avgSys}<span style="font-size:12px;font-weight:400"> mmHg</span></div>
+        <div class="ws-lbl">Sistolica media</div>
+      </div>
+      <div class="ws-item">
+        <div class="ws-val">${avgEnergia}<span style="font-size:12px;font-weight:400">/10</span></div>
+        <div class="ws-lbl">Energia media</div>
+      </div>
+      <div class="ws-item">
+        <div class="ws-val">${kcalTotal > 0 ? kcalTotal : '—'}<span style="font-size:12px;font-weight:400">${kcalTotal > 0 ? ' kcal' : ''}</span></div>
+        <div class="ws-lbl">Kcal totali</div>
       </div>
     </div>`;
   return card;
@@ -2364,7 +2400,32 @@ function buildMedView() {
     ]
   };
 
-  const p_checkup_jun2026 = {
+  const p_bionics_jun2026 = {
+    date: '9 giugno 2026', label: 'Panel Bionics CDI — Laboratorio clinico',
+    note: 'Prelievo ore 08:32 · Stesso giorno check-up cardiologico/urologico · Giorno 2 protocollo',
+    cats: [
+      { cat: 'Chimica Clinica', items: [
+        { name:'Glucosio', val:'81 mg/dL', ref:'60–100', ok:true },
+        { name:'Colesterolo tot.', val:'118 mg/dL', ref:'≤190', ok:true },
+        { name:'HDL', val:'32 mg/dL', ref:'≥40 (M)', ok:false, note:'⚠️ Basso — persistente nonostante Omega-3 · attesa risposta Tesamorelin', sev:'warn' },
+        { name:'LDL (calcolato)', val:'64 mg/dL', ref:'≤115', ok:true },
+        { name:'Trigliceridi', val:'108 mg/dL', ref:'≤150', ok:true, note:'In rialzo vs 77 (mag) — possibile pasto serale pre-prelievo' },
+        { name:'Non-HDL', val:'86 mg/dL', ref:'≤145', ok:true },
+      ]},
+      { cat: 'Immunometria (PSA)', items: [
+        { name:'PSA totale', val:'0.49 µg/L', ref:'≤4.00', ok:true },
+        { name:'PSA free', val:'0.29 µg/L', ref:'—', ok:true },
+        { name:'PSA ratio', val:'0.59', ref:'≥0.20', ok:true },
+        { name:'PAP (Fosf. acida prostatica)', val:'1.43 µg/L', ref:'≤2.10', ok:true, note:'Normalizzata vs 2.85 (feb 2025) ✅' },
+      ]},
+      { cat: 'Nota clinica', items: [
+        { name:'Quadro lipidico', val:'LDL/TG/ColTot stabili', ref:'—', ok:true, note:'HDL ancora basso (32) — unico marker lipidico fuori target' },
+        { name:'PSA', val:'Stabile ✅', ref:'—', ok:true, note:'Follow-up annuale concordato con Dr. Sciorio' },
+      ]},
+    ]
+  };
+
+  
     date: '9 giugno 2026', label: 'Check-up CDI Bicocca — Baseline CV pre-ciclo',
     note: 'Giorno 2 protocollo · Dr.ssa Bokor (cardiologia) · Dr. Sciorio (urologia)',
     cats: [
@@ -2402,7 +2463,7 @@ function buildMedView() {
   const trends = [
     { marker:'HDL (mg/dL)', target:'≥40', ok: v=>v>=40, pts:[
       {d:'Ott 2020',v:33},{d:'Nov 2022',v:37},{d:'Gen 2024',v:24},
-      {d:'Feb 2025',v:27},{d:'Apr 2026',v:28},{d:'Mag 2026 T0',v:35}
+      {d:'Feb 2025',v:27},{d:'Apr 2026',v:28},{d:'Mag 2026 T0',v:35},{d:'Giu 2026 Bionics',v:32}
     ]},
     { marker:'Omocisteina (µmol/L)', target:'≤18', ok: v=>v<=18, pts:[
       {d:'Apr 2026',v:21.9},{d:'Mag 2026 T0',v:17.5}
@@ -2466,6 +2527,7 @@ function buildMedView() {
 
   <!-- Indice panel -->
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px">
+    <a href="#panel-bionics-jun2026" style="background:rgba(0,113,227,.12);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🧪 Lab Bionics 9 giu 2026</a>
     <a href="#panel-jun2026" style="background:rgba(52,199,89,.12);color:#34c759;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">✅ Check-up 9 giu 2026</a>
     <a href="#panel-may2026" style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🎯 T0 Mag 2026</a>
     <a href="#panel-apr2026" style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">Apr 2026</a>
@@ -2477,6 +2539,7 @@ function buildMedView() {
 
   // Panel più recente prima
   const panelOrder = [
+    { id:'panel-bionics-jun2026', p: p_bionics_jun2026 },
     { id:'panel-jun2026', p: p_checkup_jun2026 },
     { id:'panel-may2026', p: p_may2026 },
     { id:'panel-apr2026', p: p_apr2026 },
@@ -3264,29 +3327,33 @@ function buildDashboard() {
     </div>`;
 
   // Build timeline phases
+  // Wk 1-4 (gg 0-27): Tesa 1mg — Wk 5-6 (gg 28-41): Tesa 2mg + GHK-Cu
+  // Wk 7-12 (gg 42-83): + MOTS-C — Wk 13-16 (gg 84-111): + BPC-157
   const phases = [
-    {len:28, color:'#0071e3'},
-    {len:14, color:'#ff9500'},
-    {len:42, color:'#34c759'},
-    {len:28, color:'#ff3b30'},
+    {len:28, color:'#0071e3', label:'Tesa 1mg'},
+    {len:14, color:'#ff9500', label:'Tesa 2mg · GHK-Cu'},
+    {len:42, color:'#34c759', label:'+ MOTS-C'},
+    {len:28, color:'#ff3b30', label:'+ BPC-157'},
   ];
   const tl = document.getElementById('timeline-phases');
   phases.forEach(p => {
     const el = document.createElement('div');
     el.className = 'timeline-phase';
+    el.title = p.label;
     el.style.cssText = `background:${p.color};flex:${p.len}`;
     tl.appendChild(el);
   });
 
-  // Build next events
+  // Build next events — giorni calcolati da START (8 giu 2026)
+  // Sett 5 = gg 28 (6 lug) · Sett 7 = gg 42 (20 lug) · Bangkok gg 60-74 (7-21 ago)
+  // Sett 13 = gg 84 (31 ago) · Fine = gg 112 (28 set)
   const events = [
-    {day:28, label:'Tesamorelin → 2mg', color:'#ff9500'},
-    {day:42, label:'Aggiungi MOTS-C + GHK-Cu', color:'#34c759'},
-    {day:61, label:'Partenza Bangkok ✈️', color:'#0071e3'},
-    {day:74, label:'Rientro da Bangkok', color:'#0071e3'},
-    {day:84, label:'Aggiungi BPC-157', color:'#ff3b30'},
-    {day:84, label:'Mini-panel sangue', color:'#af52de'},
-    {day:112, label:'DEXA T1 · Fine ciclo', color:'#1a1a2e'},
+    {day:28,  label:'Tesamorelin → 2mg · GHK-Cu inizia', color:'#ff9500'},
+    {day:42,  label:'MOTS-C inizia (lun/gio mattina)', color:'#34c759'},
+    {day:60,  label:'Partenza Bangkok ✈️', color:'#0071e3'},
+    {day:74,  label:'Rientro da Bangkok', color:'#0071e3'},
+    {day:84,  label:'BPC-157 inizia · Mini-panel sangue', color:'#ff3b30'},
+    {day:112, label:'Fine ciclo · DEXA T1', color:'#af52de'},
   ];
   const ne = document.getElementById('next-events');
   const upcoming = events.filter(e => e.day > elapsed).slice(0, 5);
