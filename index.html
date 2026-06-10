@@ -753,6 +753,8 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .med-item-ref{font-size:10px;color:var(--muted);font-weight:400}
 .diary-view{display:block;max-width:720px;margin:0 auto;padding:0 0 120px}
 .diary-view.hidden{display:none}
+.med-view{display:none;overflow-y:auto;padding-bottom:80px}
+.med-view.visible{display:block}
 .dash-view{padding-top:20px}
 
 .dash-section{margin-bottom:28px}
@@ -859,7 +861,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   <div class="container" id="container" style="padding:24px 20px 0"></div>
 </div>
 <div class="dash-view" id="dash-view"></div>
-<div class="med-view hidden" id="med-view"></div>
+<div class="med-view" id="med-view"></div>
 
 <div class="save-bar">
   <span class="save-hint" id="last-saved">Mai salvato</span>
@@ -1925,7 +1927,8 @@ function switchView(view) {
   const tabDash = document.getElementById('main-tab-dash');
   const tabMed = document.getElementById('main-tab-med');
   // Reset all
-  diary.classList.add('hidden'); dash.classList.remove('active'); med.classList.add('hidden');
+  diary.classList.add('hidden'); dash.classList.remove('active');
+  med.classList.remove('visible');
   navStrip.style.display = 'none';
   tabDiary.classList.remove('on'); tabDash.classList.remove('on'); tabMed.classList.remove('on');
   if (view === 'dash') {
@@ -1933,7 +1936,7 @@ function switchView(view) {
     tabDash.classList.add('on');
     buildDashboard();
   } else if (view === 'med') {
-    med.classList.remove('hidden');
+    med.classList.add('visible');
     tabMed.classList.add('on');
     buildMedView();
   } else {
@@ -1946,7 +1949,7 @@ function switchView(view) {
 function buildMedView() {
   const med = document.getElementById('med-view');
   if (med.dataset.built) return;
-  med.dataset.built = '1';
+  try {
 
   // ── HELPER ──────────────────────────────────────────────────────────────
   function flag(ok, severity) {
@@ -2380,6 +2383,11 @@ function buildMedView() {
 
   html += `</div>`;
   med.innerHTML = html;
+  med.dataset.built = '1';
+  } catch(e) {
+    console.error('buildMedView error:', e);
+    med.innerHTML = `<div style="padding:20px;color:red">Errore caricamento tab Medico: ${e.message}</div>`;
+  }
 }
 
 
