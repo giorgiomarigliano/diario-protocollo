@@ -3278,8 +3278,9 @@ window.addEventListener('load',async()=>{
         setSyncStatus('err');
       }catch(e2){}
     }
+    setTimeout(refreshCharts,200);
   }
-  setTimeout(()=>buildCharts(container),400);
+  // buildCharts viene chiamato da refreshCharts() dentro loadFromCloud — non duplicare qui
 });
 
 window.addEventListener('beforeunload',()=>{
