@@ -278,6 +278,8 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 
 .day-body { display: none; padding: 0 18px 18px; border-top: 1px solid var(--border); }
 .day-card.open .day-body { display: block; }
+/* col-full su mobile: blocco normale */
+.col-left, .col-right, .col-full { display: block; }
 
 /* Section label */
 .section-label {
@@ -881,15 +883,36 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .save-bar          { padding: 12px 40px; }
   #med-view > div    { max-width: 1200px; padding-left: 40px; padding-right: 40px; }
 
-  /* ── Day card aperto: 2 colonne bilanciate ── */
+  /* ── Day card aperto: layout 3 zone ── */
   .day-card.open .day-body.day-body-desktop {
     display: grid;
-    grid-template-columns: 420px 1fr;
+    grid-template-columns: 400px 1fr;
+    grid-template-rows: auto auto auto;
     gap: 0;
     padding: 0;
   }
-  .day-body-desktop .col-left  { padding: 16px 20px 20px; }
-  .day-body-desktop .col-right { padding: 16px 20px 20px; border-left: 1px solid var(--border); }
+  .day-body-desktop .col-left  {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 16px 20px 20px;
+    border-right: 1px solid var(--border);
+  }
+  .day-body-desktop .col-right {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 16px 20px 20px;
+  }
+  /* Iniezioni e note: full width su entrambe le colonne */
+  .day-body-desktop .col-full {
+    grid-column: 1 / -1;
+    padding: 16px 20px 20px;
+    border-top: 1px solid var(--border);
+  }
+  /* Iniezioni su desktop: 4 campi in una riga spaziosa */
+  .inj-fields {
+    grid-template-columns: 100px 1fr 1fr 1fr;
+    gap: 12px;
+  }
 
   /* ── Bio grid su desktop: 3+3 ── */
   .bio-grid          { grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -918,7 +941,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .header            { padding: 0 60px; }
   .main-nav          { padding: 0 60px; }
   .nav-strip         { padding: 0 60px; }
-  .day-card.open .day-body.day-body-desktop { grid-template-columns: 460px 1fr; }
+  .day-card.open .day-body.day-body-desktop { grid-template-columns: 440px 1fr; }
 }
 
 </style>
@@ -1420,6 +1443,8 @@ function buildDays(){
         <span class="day-chev">▾</span>
       </div>
       <div class="day-body day-body-desktop">
+
+        <!-- ZONA 1: biometria sx + workout dx -->
         <div class="col-left">
         <div class="section-label">Biometria mattutina</div>
         <div class="bio-grid">
@@ -1432,21 +1457,15 @@ function buildDays(){
           <div class="bio-box"><input type="number" min="1" max="10" step="0.5" placeholder="—" data-id="${id}" data-f="qualita_sonno" oninput="onInput(this,'${id}','sonno')"><div class="bio-lbl">Sonno /10</div></div>
           <div class="bio-box"><input type="number" min="1" max="10" step="0.5" placeholder="—" data-id="${id}" data-f="energia"><div class="bio-lbl">Energia /10</div></div>
           <div class="bio-box"><input type="number" min="1" max="10" step="0.5" placeholder="—" data-id="${id}" data-f="recupero"><div class="bio-lbl">Recupero /10</div></div>
-
         </div>
         ${isVitaDay(i)?`
         <div class="vita-field">
           <div class="fg" style="margin-top:8px"><label>Circonferenza vita (cm) — misurazione settimanale</label>
           <input type="number" step="0.5" placeholder="—" data-id="${id}" data-f="vita"></div>
         </div>`:''}
-
-        <div class="section-label">Protocollo iniezione</div>
-        <div class="inj-slots">
-          ${renderInjectionSlots(i, id)}
-        </div>
         </div><!-- /col-left -->
-        <div class="col-right">
 
+        <div class="col-right">
         ${isRest?`
         <div class="section-label">Workout</div>
         <div class="rest-banner">Giorno di riposo — recupero attivo, stretching, LISS opzionale</div>`:isBkk?`
@@ -1535,8 +1554,18 @@ function buildDays(){
           ${buildSentinelSection(id,wo.type)}
           ${buildMotraSection(id)}
         </div>`}
+        </div><!-- /col-right -->
 
+        <!-- ZONA 2: iniezioni full-width -->
+        <div class="col-full">
+        <div class="section-label">Protocollo iniezione</div>
+        <div class="inj-slots">
+          ${renderInjectionSlots(i, id)}
+        </div>
+        </div><!-- /col-full -->
 
+        <!-- ZONA 3: note + soggettivo + stack full-width -->
+        <div class="col-full">
         <div class="note-box">
           <label>Note del giorno</label>
           <textarea placeholder="Sensazioni peptide, qualità del sonno, umore, effetti inattesi, osservazioni fisiche..." data-id="${id}" data-f="note"></textarea>
@@ -1609,9 +1638,9 @@ function buildDays(){
           <span style="font-size:18px;flex-shrink:0">📸</span>
           <input type="text" placeholder="Link iCloud / Google Photos o note scatto..." data-id="${id}" data-f="photo_note">
         </div>` : ''}
+        </div><!-- /col-full -->
 
-        </div><!-- /col-right -->
-      </div>`;<!-- /day-body-desktop -->
+      </div>`;
     container.appendChild(card);
   }
 }
