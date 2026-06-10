@@ -945,7 +945,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781102057 -->
+<!-- deploy 1781086960 -->
 </head>
 <body>
 
@@ -3170,14 +3170,21 @@ function buildDashboard() {
         <div class="dash-card">
           <div class="timeline-phases" id="timeline-phases"></div>
           <div class="timeline-track"><div class="timeline-fill" style="width:${Math.min(100,(elapsed/TOTAL_DAYS)*100).toFixed(1)}%"></div></div>
-          <div class="timeline-markers">
-            <span>8 giu</span><span>Sett.5</span><span>Sett.7</span><span>BKK</span><span>Sett.13</span><span>25 set</span>
+          <!-- Markers posizionati esattamente sui breakpoint delle fasi:
+               gg0=0% · gg28=25% · gg42=37.5% · gg60=53.6% · gg84=75% · gg112=100% -->
+          <div style="position:relative;height:20px;margin-top:4px;font-size:10px;color:var(--muted)">
+            <span style="position:absolute;left:0%;transform:translateX(0)">8 giu</span>
+            <span style="position:absolute;left:25%;transform:translateX(-50%)">6 lug<br><span style="color:#ff9500;font-weight:600">Sett.5</span></span>
+            <span style="position:absolute;left:37.5%;transform:translateX(-50%)">20 lug<br><span style="color:#34c759;font-weight:600">Sett.7</span></span>
+            <span style="position:absolute;left:53.6%;transform:translateX(-50%)">7 ago<br><span style="color:#0071e3;font-weight:600">BKK</span></span>
+            <span style="position:absolute;left:75%;transform:translateX(-50%)">31 ago<br><span style="color:#ff3b30;font-weight:600">Sett.13</span></span>
+            <span style="position:absolute;right:0%;transform:translateX(0)">25 set</span>
           </div>
-          <div class="phase-legend">
-            <div class="phase-dot"><div class="phase-dot-circle" style="background:#0071e3"></div>Tesa 1mg (sett.1-4)</div>
-            <div class="phase-dot"><div class="phase-dot-circle" style="background:#ff9500"></div>Tesa 2mg (sett.5-6)</div>
-            <div class="phase-dot"><div class="phase-dot-circle" style="background:#34c759"></div>Stack completo (sett.7-12)</div>
-            <div class="phase-dot"><div class="phase-dot-circle" style="background:#ff3b30"></div>+ BPC-157 (sett.13-16)</div>
+          <div class="phase-legend" style="margin-top:28px">
+            <div class="phase-dot"><div class="phase-dot-circle" style="background:#0071e3"></div>Tesa 1mg · sett.1–4 · 8 giu–5 lug</div>
+            <div class="phase-dot"><div class="phase-dot-circle" style="background:#ff9500"></div>Tesa 2mg + GHK-Cu · sett.5–6 · 6–19 lug</div>
+            <div class="phase-dot"><div class="phase-dot-circle" style="background:#34c759"></div>+ MOTS-C · sett.7–12 · 20 lug–30 ago</div>
+            <div class="phase-dot"><div class="phase-dot-circle" style="background:#ff3b30"></div>+ BPC-157 · sett.13–16 · 31 ago–25 set</div>
           </div>
         </div>
       </div>
@@ -3483,24 +3490,14 @@ function refreshDashCharts() {
 
 
 window.addEventListener('load',async()=>{
-  const _loading = document.getElementById('loading');
-  const _hide = () => { try { _loading.style.display='none'; } catch(e){} };
-  try {
-    buildNav();
-    buildDays();
-  } catch(e) {
-    console.error('buildDays error:', e);
-  }
-  _hide();
-  try {
-    const container=document.getElementById('container');
-    buildCycleCard(container);
-    buildLabSection(container);
-    updateNavHighlight();
-    jumpToday();
-  } catch(e) {
-    console.error('init error:', e);
-  }
+  buildNav();
+  buildDays();
+  document.getElementById('loading').style.display='none';
+  const container=document.getElementById('container');
+  buildCycleCard(container);
+  buildLabSection(container);
+  updateNavHighlight();
+  jumpToday();
   // Always load from cloud first — localStorage only as offline fallback
   try{
     await loadFromCloud();
