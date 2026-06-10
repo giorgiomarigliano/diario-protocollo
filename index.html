@@ -148,6 +148,7 @@ body {
 
 /* Main container */
 .container { width:100%; margin: 0 auto; padding: 24px 20px 120px; }
+.view-wrap { width:100%; margin: 0 auto; padding: 24px 20px 120px; box-sizing:border-box; }
 
 /* Cycle indicator card */
 .cycle-card {
@@ -875,6 +876,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 
   /* ── Wrapper globale centrato ── */
   .container         { padding: 28px 40px 120px; }
+  .view-wrap         { padding: 28px 40px 120px; }
   .app-view-inner    { padding: 28px 40px 120px; }
   .dash-inner        { padding: 28px 40px 120px; }
 
@@ -934,12 +936,10 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 @media (min-width: 1280px) {
-  .container         { padding: 28px 60px 120px; }
-  .app-view-inner    { padding: 28px 60px 120px; }
-  .dash-inner        { padding: 28px 60px 120px; }
-  .container         { max-width: 1400px; margin: 0 auto; }
-  .app-view-inner    { max-width: 1400px; margin: 0 auto; }
-  .dash-inner        { max-width: 1400px; margin: 0 auto; }
+  .container         { max-width: 1400px; margin: 0 auto; padding: 28px 60px 120px; }
+  .view-wrap         { max-width: 1400px; margin: 0 auto; padding: 28px 60px 120px; }
+  .app-view-inner    { max-width: 1400px; margin: 0 auto; padding: 28px 60px 120px; }
+  .dash-inner        { max-width: 1400px; margin: 0 auto; padding: 28px 60px 120px; }
   .save-bar          { padding: 12px 60px; }
   .header            { padding: 0 60px; }
   .main-nav          { padding: 0 60px; }
@@ -948,7 +948,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781104038 -->
+<!-- deploy 1781104144 -->
 </head>
 <body>
 
@@ -982,7 +982,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 </div>
 <div class="nav-strip" id="nav-strip"></div>
 <div class="diary-view" id="diary-view">
-  <div class="container" id="container" style="padding:24px 20px 0"></div>
+  <div class="container" id="container"></div>
 </div>
 <div class="dash-view" id="dash-view"></div>
 <div class="med-view" id="med-view"></div>
@@ -2524,7 +2524,7 @@ function buildMedView() {
   const miniPanel = ['IGF-1','Glucosio / Insulina / HOMA','HDL','Omocisteina','Vitamina D','Testosterone libero / SHBG','CRP','Zinco','Folato / B12','Emoglobina / MCHC','eGFR / Creatinina'];
 
   // ── RENDER ────────────────────────────────────────────────────────────────
-  let html = `<div class="app-view-inner">
+  let html = `<div class="app-view-inner view-wrap">
 
   <div style="margin-bottom:20px">
     <div style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin-bottom:4px">🩸 Dati Medici & Analisi</div>
@@ -3150,7 +3150,7 @@ function buildDashboard() {
   const hrvDelta = hrvVals.length >= 2 ? Math.round(hrvVals[hrvVals.length-1] - hrvVals[0]) : null;
 
   dash.innerHTML = `
-    <div class="dash-inner">
+    <div class="dash-inner view-wrap">
 
       <!-- KPI -->
       <div class="kpi-grid">
@@ -3985,7 +3985,7 @@ function buildMedDash() {
   // ══════════════════════════════════════════════
   //  RENDER
   // ══════════════════════════════════════════════
-  let html = `<div class="app-view-inner">
+  let html = `<div class="app-view-inner view-wrap">
 
   <div style="margin-bottom:20px">
     <div style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin-bottom:4px">📊 Dashboard Laboratorio</div>
