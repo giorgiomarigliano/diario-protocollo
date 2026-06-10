@@ -951,10 +951,10 @@ const SESSION_EXERCISES = {
 
 function getPhase(dayIdx) {
   const wk = Math.floor(dayIdx/7)+1;
-  if (wk<=4)  return {label:'Tesamorelin 1mg',                badge:'p1b', wk};
-  if (wk<=6)  return {label:'Tesamorelin 2mg',                badge:'p2b', wk};
-  if (wk<=12) return {label:'Tesa 2mg · MOTS-C · GHK-Cu',    badge:'p3b', wk};
-  return             {label:'Tesa · MOTS-C · GHK-Cu · BPC-157', badge:'p4b', wk};
+  if (wk<=4)  return {label:'Tesamorelin 1mg',                  badge:'p1b', wk};
+  if (wk<=6)  return {label:'Tesa 2mg · GHK-Cu 1mg',           badge:'p2b', wk};
+  if (wk<=12) return {label:'Tesa 2mg · GHK-Cu · MOTS-C',     badge:'p3b', wk};
+  return             {label:'Tesa · GHK-Cu · MOTS-C · BPC-157', badge:'p4b', wk};
 }
 
 function getWeekRange(wkIdx) {
@@ -977,8 +977,9 @@ function getInjectionSlots(dayIdx) {
     // Sett 1-4: solo Tesamorelin 1mg sera
     slots.push({n:1, label:'Tesamorelin 1mg · 200µl', momento:'Sera · post-cena', peptideOptions:['Tesa 1mg · 200µl']});
   } else if (wk<=6) {
-    // Sett 5-6: solo Tesamorelin 2mg sera
-    slots.push({n:1, label:'Tesamorelin 2mg · 400µl', momento:'Sera · post-cena', peptideOptions:['Tesa 2mg · 400µl']});
+    // Sett 5-6: Tesamorelin 2mg + GHK-Cu 1mg sera (GHK anticipato a sett 5 — 1mg/giorno)
+    slots.push({n:1, label:'Tesamorelin 2mg · sera', momento:'Sera · post-cena', peptideOptions:['Tesa 2mg · 400µl']});
+    slots.push({n:2, label:'GHK-Cu 1mg · sera', momento:'Sera · post-cena', peptideOptions:['GHK-Cu 1mg']});
   } else if (wk<=12) {
     // Sett 7-12: Tesamorelin sera sempre + MOTS-C mattina lun/gio + GHK-Cu sera sempre
     slots.push({n:1, label:'Tesamorelin 2mg · sera', momento:'Sera · post-cena', peptideOptions:['Tesa 2mg · 400µl']});
@@ -1068,7 +1069,7 @@ function getWorkout(i){
 
 function getNextEvent(elapsed){
   const wk=Math.floor(elapsed/7)+1;
-  if(wk<5){ const d=(4-wk)*7; return `Dose 2mg tra ${d} giorni (settimana 5)`; }
+  if(wk<5){ const d=(4-wk)*7; return `Tesa 2mg + GHK-Cu tra ${d} giorni (settimana 5)`; }
   if(wk<7){ const d=(6-wk)*7; return `MOTS-C + GHK-Cu tra ${d} giorni (settimana 7)`; }
   if(wk<9){ const d=(61-elapsed); return d>0?`Bangkok tra ${d} giorni (8 ago)`:'Bangkok · oggi!'; }
   if(wk<13){ const d=(12-wk)*7; return `BPC-157 tra ${d} giorni (settimana 13)`; }
