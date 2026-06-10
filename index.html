@@ -12,6 +12,16 @@
 <style>
 /* Apple-style design system */
 :root {
+  --fs-xs:   11px;
+  --fs-sm:   12px;
+  --fs-body: 13px;
+  --fs-md:   15px;
+  --fs-lg:   17px;
+  --fs-xl:   22px;
+  --fs-2xl:  28px;
+  --fw-reg:  400;
+  --fw-med:  500;
+  --fw-semi: 600;
   --bg: #f5f5f7;
   --surface: #ffffff;
   --surface2: #f5f5f7;
@@ -150,6 +160,18 @@ body {
 .container { width:100%; margin: 0 auto; padding: 24px 20px 120px; }
 .view-wrap { width:100%; margin: 0 auto; padding: 24px 20px 120px; box-sizing:border-box; }
 
+/* ── Typography system ───────────────────────────────── */
+.t-page-title   { font-size: var(--fs-xl);   font-weight: var(--fw-semi); letter-spacing: -.3px; line-height: 1.2; }
+.t-page-sub     { font-size: var(--fs-body); color: var(--muted); margin-top: 3px; }
+.t-section-title{ font-size: var(--fs-xs);   font-weight: var(--fw-semi); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 10px; }
+.t-card-title   { font-size: var(--fs-body); font-weight: var(--fw-semi); letter-spacing: -.1px; }
+.t-card-sub     { font-size: var(--fs-sm);   color: var(--muted); margin-top: 2px; }
+.t-label        { font-size: var(--fs-xs);   color: var(--muted); margin-top: 4px; }
+.t-value-lg     { font-size: var(--fs-2xl);  font-weight: var(--fw-semi); letter-spacing: -.03em; line-height: 1; }
+.t-value-md     { font-size: var(--fs-lg);   font-weight: var(--fw-semi); letter-spacing: -.02em; line-height: 1; }
+.t-value-sm     { font-size: var(--fs-md);   font-weight: var(--fw-semi); }
+.t-week-title   { font-size: 19px; font-weight: var(--fw-semi); letter-spacing: -.3px; }
+
 /* Cycle indicator card */
 .cycle-card {
   background: var(--surface);
@@ -171,7 +193,7 @@ body {
 .cycle-ring-pct { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.03em; line-height: 1; }
 .cycle-ring-sub { font-size: 9px; color: var(--muted); margin-top: 2px; letter-spacing: 0.02em; text-transform: uppercase; }
 .cycle-info { flex: 1; min-width: 0; }
-.cycle-info h3 { font-size: 17px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; margin-bottom: 3px; }
+.cycle-info h3 { font-size: var(--fs-lg); font-weight: 600; color: var(--text); letter-spacing: -0.02em; margin-bottom: 3px; }
 .cycle-info p { font-size: 13px; color: var(--muted); }
 .cycle-next {
   margin-top: 8px;
@@ -216,7 +238,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
   border-bottom: 1px solid var(--border);
 }
 .week-hdr:first-of-type { margin-top: 0; }
-.week-hdr h2 { font-size: 21px; font-weight: 600; letter-spacing: -0.03em; color: var(--text); }
+.week-hdr h2 { font-size: 19px; font-weight: 600; letter-spacing: -0.03em; color: var(--text); }
 .week-phase {
   font-size: 11px;
   font-weight: 500;
@@ -719,7 +741,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .week-summary-card{background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
 .week-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
 .ws-item{text-align:center}
-.ws-val{font-size:20px;font-weight:600;color:var(--text);letter-spacing:-0.03em;line-height:1}
+.ws-val{font-size:var(--fs-lg);font-weight:var(--fw-semi);color:var(--text);letter-spacing:-0.03em;line-height:1}
 .ws-lbl{font-size:10px;color:var(--muted);margin-top:3px}
 .ws-sub{font-size:11px;color:var(--muted);margin-top:2px}
 
@@ -762,7 +784,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .photo-note input::placeholder{color:var(--faint)}
 .week-summary-card{background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
 .week-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:10px}
-.ws-val{font-size:20px;font-weight:600;color:var(--text);letter-spacing:-0.03em;line-height:1}
+.ws-val{font-size:var(--fs-lg);font-weight:var(--fw-semi);color:var(--text);letter-spacing:-0.03em;line-height:1}
 .ws-lbl{font-size:10px;color:var(--muted);margin-top:3px}
 .bkk-banner{background:#e8f1fb;border-radius:var(--radius-xs);padding:10px 14px;margin-bottom:10px;font-size:12px;color:#0071e3;font-weight:500}
 .tag-pill{display:inline-block;font-size:10px;font-weight:500;padding:2px 8px;border-radius:980px;margin-right:4px;margin-top:2px}
@@ -948,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781104144 -->
+<!-- deploy 1781104516 -->
 </head>
 <body>
 
@@ -2077,7 +2099,7 @@ function buildWeekSummary(container, wkIdx) {
   card.id = 'week-summary-' + wkIdx;
   card.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
-      <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase">Riepilogo settimana ${wkIdx+1}</div>
+      <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Riepilogo settimana ${wkIdx+1}</div>
       <div style="font-size:11px;color:var(--muted)">${daysLogged} gg registrati · ${getWeekRange(wkIdx)}</div>
     </div>
     <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr)">
@@ -2527,8 +2549,8 @@ function buildMedView() {
   let html = `<div class="app-view-inner view-wrap">
 
   <div style="margin-bottom:20px">
-    <div style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin-bottom:4px">🩸 Dati Medici & Analisi</div>
-    <div style="font-size:13px;color:var(--muted)">Tutti i panel CDI Bicocca · Check-up · Trend storici · Azioni correttive</div>
+    <div style="font-size:var(--fs-xl);font-weight:var(--fw-semi);letter-spacing:-.3px;margin-bottom:4px">🩸 Dati Medici & Analisi</div>
+    <div style="font-size:var(--fs-body);color:var(--muted)">Tutti i panel CDI Bicocca · Check-up · Trend storici · Azioni correttive</div>
   </div>
 
   <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;font-size:12px">
@@ -3905,16 +3927,16 @@ function buildMedDash() {
       (refMin && delta > 0) || (refMax && delta < 0) ? '#34c759' : '#ff3b30';
     const spark = sparkline(pts, 120, 50, color, refMin, refMax);
     return `<div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px">
-      <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">${label}</div>
+      <div class="t-section-title" style="margin-bottom:6px">${label}</div>
       <div style="display:flex;align-items:flex-end;justify-content:space-between">
         <div>
-          <span style="font-size:28px;font-weight:600;letter-spacing:-.03em;color:${valColor}">${last.v}</span>
+          <span style="font-size:var(--fs-2xl);font-weight:var(--fw-semi);letter-spacing:-.03em;color:${valColor}">${last.v}</span>
           <span style="font-size:12px;color:var(--muted);margin-left:3px">${unit}</span>
           ${delta !== null ? `<span style="font-size:13px;font-weight:600;color:${arrowColor};margin-left:6px">${arrow}${Math.abs(delta).toFixed(delta%1===0?0:1)}</span>` : ''}
         </div>
         <div>${spark}</div>
       </div>
-      <div style="font-size:11px;color:var(--muted)">${targetLabel} · ultimo: <span style="font-weight:500">${last.d}</span></div>
+      <div style="font-size:var(--fs-xs);color:var(--muted)">${targetLabel} · ultimo: <span style="font-weight:500">${last.d}</span></div>
     </div>`;
   }
 
@@ -3988,8 +4010,8 @@ function buildMedDash() {
   let html = `<div class="app-view-inner view-wrap">
 
   <div style="margin-bottom:20px">
-    <div style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin-bottom:4px">📊 Dashboard Laboratorio</div>
-    <div style="font-size:13px;color:var(--muted)">Andamento biomarker nel tempo · Storico CDI Bicocca · Obiettivi protocollo</div>
+    <div style="font-size:var(--fs-xl);font-weight:var(--fw-semi);letter-spacing:-.3px;margin-bottom:4px">📊 Dashboard Laboratorio</div>
+    <div style="font-size:var(--fs-body);color:var(--muted)">Andamento biomarker nel tempo · Storico CDI Bicocca · Obiettivi protocollo</div>
   </div>
 
   <!-- KPI GRID -->
@@ -4009,7 +4031,7 @@ function buildMedDash() {
 
   <!-- OBIETTIVI PROTOCOLLO -->
   <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
-    <div style="font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px">🎯 Obiettivi protocollo — baseline vs target</div>
+    <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px">🎯 Obiettivi protocollo — baseline vs target</div>
     ${progressBar(94, 165, 300, '#af52de', 'IGF-1 (µg/L) · target 150–180+')}
     ${progressBar(32, 40, 60, '#ff9500', 'HDL (mg/dL) · target ≥40')}
     ${progressBar(22, 50, 100, '#34c759', 'Vitamina D (µg/L) · target ≥50')}
@@ -4020,15 +4042,15 @@ function buildMedDash() {
 
   <!-- GRAFICI LIPIDI -->
   <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
-    <div style="font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px">Profilo lipidico — storico</div>
+    <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Profilo lipidico — storico</div>
     <div style="font-size:11px;color:var(--muted);margin-bottom:14px">HDL ≥40 · LDL ≤115 · TG ≤150 · ColTot ≤190</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
-        <div style="font-size:11px;font-weight:600;margin-bottom:6px">HDL <span style="color:var(--muted);font-weight:400">target ≥40</span></div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">HDL <span style="color:var(--muted);font-weight:400">target ≥40</span></div>
         ${lineChart([{label:'HDL',pts:DATA.hdl,color:'#ff9500',refMin:40}], 400, 140)}
       </div>
       <div>
-        <div style="font-size:11px;font-weight:600;margin-bottom:6px">LDL + Trigliceridi <span style="color:var(--muted);font-weight:400">target LDL ≤115 · TG ≤150</span></div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">LDL + Trigliceridi <span style="color:var(--muted);font-weight:400">target LDL ≤115 · TG ≤150</span></div>
         ${lineChart([
           {label:'LDL',pts:DATA.ldl,color:'#0071e3',refMin:undefined,refMax:115},
           {label:'TG',pts:DATA.tg,color:'#ff9500',refMin:undefined,refMax:150}
@@ -4039,22 +4061,22 @@ function buildMedDash() {
 
   <!-- GRAFICI ASSE ORMONALE / METABOLICO -->
   <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
-    <div style="font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px">Asse ormonale & metabolico</div>
+    <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px">Asse ormonale & metabolico</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
-        <div style="font-size:11px;font-weight:600;margin-bottom:6px">Emoglobina <span style="color:var(--muted);font-weight:400">target ≥133 g/L</span></div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Emoglobina <span style="color:var(--muted);font-weight:400">target ≥133 g/L</span></div>
         ${lineChart([{label:'Hb',pts:DATA.emoglobina,color:'#ff3b30',refMin:133}], 400, 120)}
       </div>
       <div>
-        <div style="font-size:11px;font-weight:600;margin-bottom:6px">Omocisteina <span style="color:var(--muted);font-weight:400">target ≤13 µmol/L</span></div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Omocisteina <span style="color:var(--muted);font-weight:400">target ≤13 µmol/L</span></div>
         ${lineChart([{label:'Omocist',pts:DATA.omocist,color:'#0071e3',refMax:13}], 400, 120)}
       </div>
       <div>
-        <div style="font-size:11px;font-weight:600;margin-bottom:6px">Vitamina D <span style="color:var(--muted);font-weight:400">target ≥50 µg/L</span></div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Vitamina D <span style="color:var(--muted);font-weight:400">target ≥50 µg/L</span></div>
         ${lineChart([{label:'VitD',pts:DATA.vitd,color:'#34c759',refMin:50}], 400, 120)}
       </div>
       <div>
-        <div style="font-size:11px;font-weight:600;margin-bottom:6px">Zinco <span style="color:var(--muted);font-weight:400">target 60–106 µg/dL</span></div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Zinco <span style="color:var(--muted);font-weight:400">target 60–106 µg/dL</span></div>
         ${lineChart([{label:'Zinco',pts:DATA.zinco,color:'#8e44ad',refMin:60}], 400, 120)}
       </div>
     </div>
@@ -4062,14 +4084,14 @@ function buildMedDash() {
 
   <!-- PSA + CREATININA -->
   <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
-    <div style="font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:14px">Monitoraggio PSA & funzione renale</div>
+    <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px">Monitoraggio PSA & funzione renale</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
-        <div style="font-size:11px;font-weight:600;margin-bottom:6px">PSA totale <span style="color:var(--muted);font-weight:400">target ≤4 µg/L</span></div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">PSA totale <span style="color:var(--muted);font-weight:400">target ≤4 µg/L</span></div>
         ${lineChart([{label:'PSA',pts:DATA.psa,color:'#34c759',refMax:4}], 400, 120)}
       </div>
       <div>
-        <div style="font-size:11px;font-weight:600;margin-bottom:6px">Creatinina <span style="color:var(--muted);font-weight:400">target ≤1.20 mg/dL</span></div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Creatinina <span style="color:var(--muted);font-weight:400">target ≤1.20 mg/dL</span></div>
         ${lineChart([{label:'Creat',pts:DATA.creatinina,color:'#8e8e93',refMax:1.2}], 400, 120)}
       </div>
     </div>
@@ -4077,7 +4099,7 @@ function buildMedDash() {
 
   <!-- PROSSIMI CHECK -->
   <div style="background:rgba(0,113,227,.06);border:1px solid rgba(0,113,227,.2);border-radius:12px;padding:16px;margin-bottom:40px">
-    <div style="font-size:13px;font-weight:600;color:var(--blue);margin-bottom:10px">🔬 Mini-panel mid-cycle previsto — settimane 8–10 (agosto 2026)</div>
+    <div style="font-size:var(--fs-body);font-weight:var(--fw-semi);color:var(--blue);margin-bottom:10px">🔬 Mini-panel mid-cycle previsto — settimane 8–10 (agosto 2026)</div>
     <div style="display:flex;flex-wrap:wrap;gap:7px">
       ${['IGF-1','Glucosio / Insulina / HOMA','HDL','Omocisteina','Vitamina D',
          'Testosterone libero / SHBG','CRP','Zinco','Folato / B12',
