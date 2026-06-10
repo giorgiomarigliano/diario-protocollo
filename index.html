@@ -738,7 +738,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .dash-view{display:none;max-width:720px;margin:0 auto;padding:24px 20px 120px}
 .dash-view.active{display:block}
 .med-view{display:none;overflow-y:auto;padding-bottom:80px}
-.med-view:not(.hidden){display:block}
+.med-view.visible{display:block}
 .med-panel{background:var(--surface1,#f5f5f7);border-radius:14px;padding:18px;margin-bottom:18px}
 .med-panel-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:6px}
 .med-panel-title{font-size:15px;font-weight:600}
@@ -753,8 +753,6 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .med-item-ref{font-size:10px;color:var(--muted);font-weight:400}
 .diary-view{display:block;max-width:720px;margin:0 auto;padding:0 0 120px}
 .diary-view.hidden{display:none}
-.med-view{display:none;overflow-y:auto;padding-bottom:80px}
-.med-view.visible{display:block}
 .dash-view{padding-top:20px}
 
 .dash-section{margin-bottom:28px}
