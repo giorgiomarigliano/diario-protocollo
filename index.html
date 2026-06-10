@@ -278,6 +278,12 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 
 .day-body { display: none; padding: 0 18px 18px; border-top: 1px solid var(--border); }
 .day-card.open .day-body { display: block; }
+/* Desktop: day-body-desktop è sempre grid quando aperto */
+@media (min-width: 1024px) {
+  .day-card.open .day-body.day-body-desktop { display: grid; grid-template-columns: 320px 1fr; gap: 20px; padding: 0; }
+  .day-body-desktop .col-left { padding: 16px 18px 18px; }
+  .day-body-desktop .col-right { padding: 16px 18px 18px; border-left: 1px solid var(--border); }
+}
 
 /* Section label */
 .section-label {
@@ -735,8 +741,13 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 
 
 /* Dashboard */
-.dash-view{display:none;max-width:720px;margin:0 auto;padding:24px 20px 120px}
+.dash-view{display:none;max-width:1160px;margin:0 auto;padding:0}
 .dash-view.active{display:block}
+.dash-inner{padding:24px 32px 120px}
+.dash-two-col{display:grid;grid-template-columns:1fr;gap:0}
+@media(min-width:1024px){
+  .dash-two-col{grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+}
 .med-view{display:none;overflow-y:auto;padding-bottom:80px}
 .med-view.visible{display:block}
 .med-panel{background:var(--surface1,#f5f5f7);border-radius:14px;padding:18px;margin-bottom:18px}
@@ -821,6 +832,71 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .h-btn.primary{padding:6px 12px;font-size:13px}
   .sync-indicator span{display:none}
   .h-right{gap:6px}
+}
+
+/* ═══════════════════════════════════════════════
+   DESKTOP LAYOUT — @media min-width: 1024px
+   ═══════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+
+  /* ── Wrapper globale centrato con max-width ampio ── */
+  .container         { max-width: 1160px; padding: 28px 32px 120px; }
+  .diary-view        { max-width: 1160px; margin: 0 auto; }
+  .dash-view         { max-width: 1160px; margin: 0 auto; padding: 28px 32px 120px; }
+
+  /* ── Header più compatto ── */
+  .header            { padding: 0 32px; }
+  .main-nav          { padding: 0 32px; }
+  .nav-strip         { padding: 0 32px; }
+  .save-bar          { max-width: 1160px; left: 50%; transform: translateX(-50%); border-radius: 14px; margin-bottom: 16px; bottom: 12px; }
+
+  /* ── Ciclo card + grafici: affiancati ── */
+  .cycle-charts-row  { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 20px; }
+  .cycle-charts-row .cycle-card    { flex: 0 0 340px; margin-bottom: 0; }
+  .cycle-charts-row .charts-card   { flex: 1; margin-bottom: 0; }
+
+  /* ── Week header: in linea con più respiro ── */
+  .week-hdr          { padding: 10px 0 6px; }
+  .week-hdr h2       { font-size: 18px; }
+
+  /* ── Day card aperto: layout a 2 colonne ── */
+  .day-body-desktop  {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+    padding: 0 20px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .day-body-desktop .col-left  { padding-top: 16px; }
+  .day-body-desktop .col-right { padding-top: 16px; border-left: 1px solid var(--border); padding-left: 20px; }
+
+  /* ── Dashboard: griglia 2 colonne per KPI ── */
+  .kpi-grid          { grid-template-columns: repeat(4, 1fr); }
+  .compliance-grid   { grid-template-columns: repeat(5, 1fr); }
+  .dash-two-col      { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .dash-two-col > .dash-section { margin-bottom: 0; }
+
+  /* ── Medico: container più largo ── */
+  #med-view > div    { max-width: 1160px; }
+  .med-items         { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+
+  /* ── Bio grid: 3 colonne → più colonne su desktop ── */
+  .bio-grid          { grid-template-columns: repeat(5, 1fr); }
+
+  /* ── Iniezioni: 4 colonne rimangono, ma più spaziose ── */
+  .inj-row           { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+  /* ── Charts card affiancato al cycle card ── */
+  .charts-card       { margin-bottom: 0; }
+}
+
+@media (min-width: 1280px) {
+  .container         { max-width: 1320px; padding: 28px 48px 120px; }
+  .diary-view        { max-width: 1320px; }
+  .dash-view         { max-width: 1320px; padding: 28px 48px 120px; }
+  .save-bar          { max-width: 1320px; }
+  #med-view > div    { max-width: 1320px; }
+  .cycle-charts-row .cycle-card { flex: 0 0 380px; }
 }
 
 </style>
@@ -1161,10 +1237,19 @@ function buildCharts(container){
       <div><div class="chart-label">Peso kg</div><canvas class="mini-chart" id="chart-peso" height="64"></canvas></div>
       <div><div class="chart-label">HRV ms</div><canvas class="mini-chart" id="chart-hrv" height="64"></canvas></div>
     </div>`;
-  // Insert after cycle card
+  // Su desktop: wrappa cycle-card + charts-card in cycle-charts-row
   const cycleCard=container.querySelector('.cycle-card');
-  if(cycleCard) cycleCard.after(card);
-  else container.insertBefore(card, container.firstChild);
+  const existingRow=container.querySelector('.cycle-charts-row');
+  if(existingRow){ existingRow.appendChild(card); }
+  else if(cycleCard){
+    const row=document.createElement('div');
+    row.className='cycle-charts-row';
+    cycleCard.parentNode.insertBefore(row, cycleCard);
+    row.appendChild(cycleCard);
+    row.appendChild(card);
+  } else {
+    container.insertBefore(card, container.firstChild);
+  }
   setTimeout(()=>{
     drawChart('chart-peso',pesoData,'#0071e3');
     drawChart('chart-hrv',hrvData,'#34c759');
@@ -1202,7 +1287,17 @@ function drawChart(id,data,color){
 
 function refreshCharts(){
   const old=document.getElementById('charts-card');
-  if(old) old.remove();
+  if(old){
+    // Se è dentro cycle-charts-row, rimuovi solo il charts-card e sciogli il row
+    const row=old.closest('.cycle-charts-row');
+    if(row){
+      const cycleCard=row.querySelector('.cycle-card');
+      if(cycleCard) row.parentNode.insertBefore(cycleCard, row);
+      row.remove();
+    } else {
+      old.remove();
+    }
+  }
   buildCharts(document.getElementById('container'));
 }
 
@@ -1290,8 +1385,8 @@ function buildDays(){
         <span class="day-badge ${wo.badge}">${wo.label}</span>
         <span class="day-chev">▾</span>
       </div>
-      <div class="day-body">
-
+      <div class="day-body day-body-desktop">
+        <div class="col-left">
         <div class="section-label">Biometria mattutina</div>
         <div class="bio-grid">
           <div class="bio-box"><input type="number" step="0.1" placeholder="70.1" data-id="${id}" data-f="peso" oninput="onInput(this,'${id}','peso')"><div class="bio-lbl">Peso kg</div></div>
@@ -1315,6 +1410,8 @@ function buildDays(){
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:0">
           ${renderInjectionSlots(i, id)}
         </div>
+        </div><!-- /col-left -->
+        <div class="col-right">
 
         ${isRest?`
         <div class="section-label">Workout</div>
@@ -1479,7 +1576,8 @@ function buildDays(){
           <input type="text" placeholder="Link iCloud / Google Photos o note scatto..." data-id="${id}" data-f="photo_note">
         </div>` : ''}
 
-      </div>`;
+        </div><!-- /col-right -->
+      </div>`;<!-- /day-body-desktop -->
     container.appendChild(card);
   }
 }
@@ -2914,7 +3012,7 @@ function buildDashboard() {
   const hrvDelta = hrvVals.length >= 2 ? Math.round(hrvVals[hrvVals.length-1] - hrvVals[0]) : null;
 
   dash.innerHTML = `
-    <div style="max-width:720px;margin:0 auto;padding:24px 20px 120px">
+    <div class="dash-inner">
 
       <!-- KPI -->
       <div class="kpi-grid">
@@ -2940,7 +3038,7 @@ function buildDashboard() {
         </div>
       </div>
 
-      <!-- TIMELINE CICLO -->
+      <!-- TIMELINE CICLO — full width -->
       <div class="dash-section">
         <div class="dash-section-title">Timeline ciclo</div>
         <div class="dash-card">
@@ -2958,148 +3056,147 @@ function buildDashboard() {
         </div>
       </div>
 
-      <!-- BIOMETRIA CHARTS -->
-      <div class="dash-section">
-        <div class="dash-section-title">Biometria · ultimi 30 giorni</div>
-        <div class="dash-card">
-          <div class="dash-card-title">Peso kg <span style="font-weight:400;color:var(--faint)">target 66–68kg</span></div>
-          <div class="chart-wrap"><canvas class="dash-chart" id="dc-peso" style="height:100px"></canvas></div>
-        </div>
-        <div class="dash-card">
-          <div class="dash-card-title">HRV ms <span style="font-weight:400;color:var(--faint)">baseline T0: 37ms</span></div>
-          <div class="chart-wrap"><canvas class="dash-chart" id="dc-hrv" style="height:100px"></canvas></div>
-        </div>
-        <div class="dash-card">
-          <div class="dash-card-title">Pressione mmHg</div>
-          <div class="subj-legend">
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Sistolica</div>
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#0071e3"></div>Diastolica</div>
-          </div>
-          <div class="chart-wrap"><canvas class="dash-chart" id="dc-bp" style="height:100px"></canvas></div>
-        </div>
-      </div>
+      <!-- 2-COL: biometria+soggettivo sx · workout dx -->
+      <div class="dash-two-col">
 
-      <!-- SOGGETTIVO CHARTS -->
-      <div class="dash-section">
-        <div class="dash-section-title">Soggettivo · ultimi 30 giorni</div>
-        <div class="dash-card">
-          <div class="subj-legend">
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#0071e3"></div>Energia</div>
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>Recupero</div>
-          </div>
-          <div class="chart-wrap"><canvas class="dash-chart" id="dc-subj" style="height:100px"></canvas></div>
-        </div>
-      </div>
-
-      <!-- WORKOUT & PERFORMANCE -->
-      <div class="dash-section">
-        <div class="dash-section-title">Workout &amp; Performance</div>
-
-        <div class="dash-card">
-          <div class="dash-card-title">Volume per sessione (kg) <span style="font-weight:400;color:var(--faint)">ultimi 30gg</span></div>
-          <div class="subj-legend">
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Push</div>
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>Pull</div>
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff9500"></div>Legs</div>
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#af52de"></div>Altro</div>
-          </div>
-          <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-vol" style="height:110px"></canvas></div>
-        </div>
-
-        <div class="dash-card">
-          <div class="dash-card-title">Kcal bruciate per sessione <span style="font-weight:400;color:var(--faint)">ultimi 30gg</span></div>
-          <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-kcal" style="height:110px"></canvas></div>
-        </div>
-
-        <div class="dash-card">
-          <div class="dash-card-title">RPE globale nel tempo <span style="font-weight:400;color:var(--faint)">scala 1–10</span></div>
-          <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-rpe" style="height:100px"></canvas></div>
-        </div>
-
-        <div class="dash-card">
-          <div class="dash-card-title">Durata sessioni (min) <span style="font-weight:400;color:var(--faint)">ultimi 30gg</span></div>
-          <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-dur" style="height:100px"></canvas></div>
-        </div>
-
-        <div class="dash-card">
-          <div class="dash-card-title">Volume settimanale per tipo (kg)</div>
-          <div class="subj-legend" style="flex-wrap:wrap">
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Push</div>
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>Pull</div>
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff9500"></div>Legs</div>
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#af52de"></div>Upper Sab</div>
-            <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#8e44ad"></div>Upper Dom</div>
-          </div>
-          <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-wkly" style="height:120px"></canvas></div>
-        </div>
-
-        <div class="dash-card">
-          <div class="dash-card-title">Sentinel lifts · progressione kg</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px" id="sentinel-tabs">
-            <button class="sent-tab active" onclick="switchSentinelGroup('chest',this)">Petto</button>
-            <button class="sent-tab" onclick="switchSentinelGroup('shoulder',this)">Spalle</button>
-            <button class="sent-tab" onclick="switchSentinelGroup('tricep',this)">Tricipiti</button>
-            <button class="sent-tab" onclick="switchSentinelGroup('back',this)">Dorso</button>
-            <button class="sent-tab" onclick="switchSentinelGroup('bicep',this)">Bicipiti</button>
-            <button class="sent-tab" onclick="switchSentinelGroup('legs',this)">Gambe</button>
-          </div>
-          <div id="sentinel-legend" class="subj-legend" style="flex-wrap:wrap;margin-bottom:4px"></div>
-          <div class="chart-wrap"><canvas class="dash-chart" id="dc-sentinel" style="height:110px"></canvas></div>
-        </div>
-
-        <div class="dash-card">
-          <div class="dash-card-title">HRV vs Volume allenamento <span style="font-weight:400;color:var(--faint)">scatter</span></div>
-          <div class="chart-wrap"><canvas class="dash-chart" id="dc-hrv-vol" style="height:130px"></canvas></div>
-        </div>
-
-        <div class="dash-card">
-          <div class="dash-card-title">RPE vs HRV <span style="font-weight:400;color:var(--faint)">fatica percepita · recupero</span></div>
-          <div class="chart-wrap"><canvas class="dash-chart" id="dc-rpe-hrv" style="height:100px"></canvas></div>
-        </div>
-
-      </div>
-
-      <!-- COMPLIANCE -->
-      <div class="dash-section">
-        <div class="dash-section-title">Compliance protocollo</div>
-        <div class="dash-card">
-          <div class="compliance-grid">
-            <div class="comp-item">
-              <div class="comp-ring"><canvas id="cr-inj"></canvas>
-                <div class="comp-ring-label"><span class="comp-ring-pct" id="cr-inj-pct">—</span><span class="comp-ring-lbl">%</span></div>
-              </div>
-              <div class="comp-title">Iniezioni</div>
-              <div class="comp-sub" id="cr-inj-sub">—</div>
+        <!-- COLONNA SX -->
+        <div>
+          <!-- BIOMETRIA CHARTS -->
+          <div class="dash-section">
+            <div class="dash-section-title">Biometria · ultimi 30 giorni</div>
+            <div class="dash-card">
+              <div class="dash-card-title">Peso kg <span style="font-weight:400;color:var(--faint)">target 66–68kg</span></div>
+              <div class="chart-wrap"><canvas class="dash-chart" id="dc-peso" style="height:100px"></canvas></div>
             </div>
-            <div class="comp-item">
-              <div class="comp-ring"><canvas id="cr-wo"></canvas>
-                <div class="comp-ring-label"><span class="comp-ring-pct" id="cr-wo-pct">—</span><span class="comp-ring-lbl">%</span></div>
-              </div>
-              <div class="comp-title">Workout</div>
-              <div class="comp-sub" id="cr-wo-sub">—</div>
+            <div class="dash-card">
+              <div class="dash-card-title">HRV ms <span style="font-weight:400;color:var(--faint)">baseline T0: 37ms</span></div>
+              <div class="chart-wrap"><canvas class="dash-chart" id="dc-hrv" style="height:100px"></canvas></div>
             </div>
-            <div class="comp-item">
-              <div class="comp-ring"><canvas id="cr-stack"></canvas>
-                <div class="comp-ring-label"><span class="comp-ring-pct" id="cr-stack-pct">—</span><span class="comp-ring-lbl">%</span></div>
+            <div class="dash-card">
+              <div class="dash-card-title">Pressione mmHg</div>
+              <div class="subj-legend">
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Sistolica</div>
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#0071e3"></div>Diastolica</div>
               </div>
-              <div class="comp-title">Stack</div>
-              <div class="comp-sub" id="cr-stack-sub">—</div>
+              <div class="chart-wrap"><canvas class="dash-chart" id="dc-bp" style="height:100px"></canvas></div>
             </div>
           </div>
-        </div>
-        <div class="dash-card" style="margin-top:10px">
-          <div class="dash-card-title">Workout per tipo · compliance</div>
-          <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px" id="cr-wo-breakdown">
-            <!-- populated by refreshDashCharts -->
+
+          <!-- SOGGETTIVO -->
+          <div class="dash-section">
+            <div class="dash-section-title">Soggettivo · ultimi 30 giorni</div>
+            <div class="dash-card">
+              <div class="subj-legend">
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#0071e3"></div>Energia</div>
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>Recupero</div>
+              </div>
+              <div class="chart-wrap"><canvas class="dash-chart" id="dc-subj" style="height:100px"></canvas></div>
+            </div>
+          </div>
+
+          <!-- COMPLIANCE -->
+          <div class="dash-section">
+            <div class="dash-section-title">Compliance protocollo</div>
+            <div class="dash-card">
+              <div class="compliance-grid">
+                <div class="comp-item">
+                  <div class="comp-ring"><canvas id="cr-inj"></canvas>
+                    <div class="comp-ring-label"><span class="comp-ring-pct" id="cr-inj-pct">—</span><span class="comp-ring-lbl">%</span></div>
+                  </div>
+                  <div class="comp-title">Iniezioni</div>
+                  <div class="comp-sub" id="cr-inj-sub">—</div>
+                </div>
+                <div class="comp-item">
+                  <div class="comp-ring"><canvas id="cr-wo"></canvas>
+                    <div class="comp-ring-label"><span class="comp-ring-pct" id="cr-wo-pct">—</span><span class="comp-ring-lbl">%</span></div>
+                  </div>
+                  <div class="comp-title">Workout</div>
+                  <div class="comp-sub" id="cr-wo-sub">—</div>
+                </div>
+                <div class="comp-item">
+                  <div class="comp-ring"><canvas id="cr-stack"></canvas>
+                    <div class="comp-ring-label"><span class="comp-ring-pct" id="cr-stack-pct">—</span><span class="comp-ring-lbl">%</span></div>
+                  </div>
+                  <div class="comp-title">Stack</div>
+                  <div class="comp-sub" id="cr-stack-sub">—</div>
+                </div>
+              </div>
+            </div>
+            <div class="dash-card" style="margin-top:10px">
+              <div class="dash-card-title">Workout per tipo · compliance</div>
+              <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px" id="cr-wo-breakdown"></div>
+            </div>
+          </div>
+
+          <!-- PROSSIMI EVENTI -->
+          <div class="dash-section">
+            <div class="dash-section-title">Prossimi eventi</div>
+            <div class="dash-card" id="next-events"></div>
           </div>
         </div>
-      </div>
 
-      <!-- PROSSIMI EVENTI -->
-      <div class="dash-section">
-        <div class="dash-section-title">Prossimi eventi</div>
-        <div class="dash-card" id="next-events"></div>
-      </div>
+        <!-- COLONNA DX: WORKOUT & PERFORMANCE -->
+        <div>
+          <div class="dash-section">
+            <div class="dash-section-title">Workout &amp; Performance</div>
+            <div class="dash-card">
+              <div class="dash-card-title">Volume per sessione (kg) <span style="font-weight:400;color:var(--faint)">ultimi 30gg</span></div>
+              <div class="subj-legend">
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Push</div>
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>Pull</div>
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff9500"></div>Legs</div>
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#af52de"></div>Altro</div>
+              </div>
+              <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-vol" style="height:110px"></canvas></div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-card-title">Kcal bruciate per sessione <span style="font-weight:400;color:var(--faint)">ultimi 30gg</span></div>
+              <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-kcal" style="height:110px"></canvas></div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-card-title">RPE globale nel tempo <span style="font-weight:400;color:var(--faint)">scala 1–10</span></div>
+              <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-rpe" style="height:100px"></canvas></div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-card-title">Durata sessioni (min) <span style="font-weight:400;color:var(--faint)">ultimi 30gg</span></div>
+              <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-dur" style="height:100px"></canvas></div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-card-title">Volume settimanale per tipo (kg)</div>
+              <div class="subj-legend" style="flex-wrap:wrap">
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Push</div>
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>Pull</div>
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff9500"></div>Legs</div>
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#af52de"></div>Upper Sab</div>
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#8e44ad"></div>Upper Dom</div>
+              </div>
+              <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-wkly" style="height:120px"></canvas></div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-card-title">Sentinel lifts · progressione kg</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px" id="sentinel-tabs">
+                <button class="sent-tab active" onclick="switchSentinelGroup('chest',this)">Petto</button>
+                <button class="sent-tab" onclick="switchSentinelGroup('shoulder',this)">Spalle</button>
+                <button class="sent-tab" onclick="switchSentinelGroup('tricep',this)">Tricipiti</button>
+                <button class="sent-tab" onclick="switchSentinelGroup('back',this)">Dorso</button>
+                <button class="sent-tab" onclick="switchSentinelGroup('bicep',this)">Bicipiti</button>
+                <button class="sent-tab" onclick="switchSentinelGroup('legs',this)">Gambe</button>
+              </div>
+              <div id="sentinel-legend" class="subj-legend" style="flex-wrap:wrap;margin-bottom:4px"></div>
+              <div class="chart-wrap"><canvas class="dash-chart" id="dc-sentinel" style="height:110px"></canvas></div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-card-title">HRV vs Volume allenamento <span style="font-weight:400;color:var(--faint)">scatter</span></div>
+              <div class="chart-wrap"><canvas class="dash-chart" id="dc-hrv-vol" style="height:130px"></canvas></div>
+            </div>
+            <div class="dash-card">
+              <div class="dash-card-title">RPE vs HRV <span style="font-weight:400;color:var(--faint)">fatica percepita · recupero</span></div>
+              <div class="chart-wrap"><canvas class="dash-chart" id="dc-rpe-hrv" style="height:100px"></canvas></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /dash-two-col -->
 
     </div>`;
 
