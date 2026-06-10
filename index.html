@@ -147,7 +147,7 @@ body {
 .nav-tab.on { color: var(--blue); border-bottom-color: var(--blue); font-weight: 500; }
 
 /* Main container */
-.container { max-width: 100%; margin: 0; padding: 24px 20px 120px; }
+.container { width:100%; margin: 0; padding: 24px 20px 120px; }
 
 /* Cycle indicator card */
 .cycle-card {
@@ -774,15 +774,15 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 
 
 /* Dashboard */
-.dash-view{display:none;max-width:1160px;margin:0 auto;padding:0}
+.dash-view{display:none;width:100%;padding:0}
 .dash-view.active{display:block}
-.dash-inner{padding:24px 0 120px}
+.dash-inner{padding:24px 20px 120px}
 .app-view-inner{width:100%;box-sizing:border-box;padding:24px 20px 120px}
 .dash-two-col{display:grid;grid-template-columns:1fr;gap:0}
 @media(min-width:1024px){
   .dash-two-col{grid-template-columns:1fr 1fr;gap:24px;align-items:start}
 }
-.med-view{display:none;overflow-y:auto;max-width:1160px;margin:0 auto;padding:0}
+.med-view{display:none;overflow-y:auto;width:100%;padding:0}
 .med-view.visible{display:block}
 .med-panel{background:var(--surface1,#f5f5f7);border-radius:14px;padding:18px;margin-bottom:18px}
 .med-panel-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:6px}
@@ -796,9 +796,9 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .med-item-note{font-size:11px;color:var(--muted)}
 .med-item-val{font-size:13px;font-weight:600;text-align:right;flex-shrink:0;line-height:1.4}
 .med-item-ref{font-size:10px;color:var(--muted);font-weight:400}
-.diary-view{display:block;max-width:1160px;margin:0 auto;padding:0}
+.diary-view{display:block;width:100%;padding:0}
 .diary-view.hidden{display:none}
-.dash-view{padding-top:20px}
+.dash-view{padding-top:0}
 
 .dash-section{margin-bottom:28px}
 .dash-section-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
@@ -937,9 +937,9 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .container         { padding: 28px 60px 120px; }
   .app-view-inner    { padding: 28px 60px 120px; }
   .dash-inner        { padding: 28px 60px 120px; }
-  .diary-view        { max-width: 1400px; }
-  .dash-view         { max-width: 1400px; }
-  .med-view          { max-width: 1400px; }
+  .container         { max-width: 1400px; }
+  .app-view-inner    { max-width: 1400px; }
+  .dash-inner        { max-width: 1400px; }
   .save-bar          { padding: 12px 60px; }
   .header            { padding: 0 60px; }
   .main-nav          { padding: 0 60px; }
@@ -948,7 +948,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781103674 -->
+<!-- deploy 1781103901 -->
 </head>
 <body>
 
