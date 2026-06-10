@@ -737,6 +737,8 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 /* Dashboard */
 .dash-view{display:none;max-width:720px;margin:0 auto;padding:24px 20px 120px}
 .dash-view.active{display:block}
+.med-view{display:none;overflow-y:auto;padding-bottom:80px}
+.med-view:not(.hidden){display:block}
 .diary-view{display:block;max-width:720px;margin:0 auto;padding:0 0 120px}
 .diary-view.hidden{display:none}
 .dash-view{padding-top:20px}
@@ -838,12 +840,14 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="main-nav">
   <div class="main-nav-tab on" id="main-tab-diary" onclick="switchView('diary')">Diario</div>
   <div class="main-nav-tab" id="main-tab-dash" onclick="switchView('dash')">Dashboard</div>
+  <div class="main-nav-tab" id="main-tab-med" onclick="switchView('med')">🩸 Medico</div>
 </div>
 <div class="nav-strip" id="nav-strip"></div>
 <div class="diary-view" id="diary-view">
   <div class="container" id="container" style="padding:24px 20px 0"></div>
 </div>
 <div class="dash-view" id="dash-view"></div>
+<div class="med-view hidden" id="med-view"></div>
 
 <div class="save-bar">
   <span class="save-hint" id="last-saved">Mai salvato</span>
@@ -1903,23 +1907,224 @@ function buildWeekSummary(container, wkIdx) {
 function switchView(view) {
   const diary = document.getElementById('diary-view');
   const dash = document.getElementById('dash-view');
+  const med = document.getElementById('med-view');
   const navStrip = document.getElementById('nav-strip');
   const tabDiary = document.getElementById('main-tab-diary');
   const tabDash = document.getElementById('main-tab-dash');
+  const tabMed = document.getElementById('main-tab-med');
+  // Reset all
+  diary.classList.add('hidden'); dash.classList.remove('active'); med.classList.add('hidden');
+  navStrip.style.display = 'none';
+  tabDiary.classList.remove('on'); tabDash.classList.remove('on'); tabMed.classList.remove('on');
   if (view === 'dash') {
-    diary.classList.add('hidden');
     dash.classList.add('active');
-    navStrip.style.display = 'none';
-    tabDiary.classList.remove('on');
     tabDash.classList.add('on');
     buildDashboard();
+  } else if (view === 'med') {
+    med.classList.remove('hidden');
+    tabMed.classList.add('on');
+    buildMedView();
   } else {
     diary.classList.remove('hidden');
-    dash.classList.remove('active');
     navStrip.style.display = '';
     tabDiary.classList.add('on');
-    tabDash.classList.remove('on');
   }
+}
+
+function buildMedView() {
+  const med = document.getElementById('med-view');
+  if (med.dataset.built) return;
+  med.dataset.built = '1';
+
+  const panels = [
+    {
+      date: '10 aprile 2026', label: 'Panel CDI Bicocca — T0 ciclo', note: 'Prelievo ore 08:22 · 33 giorni prima dell\'inizio protocollo',
+      flags: [
+        { cat: 'Metabolismo glucidico', items: [
+          { name: 'Glucosio', val: '88 mg/dL', ref: '60–100', ok: true },
+          { name: 'Insulina', val: '3.6 mU/L', ref: '3.0–25.0', ok: true },
+          { name: 'HOMA Index', val: '0.8', ref: '≤2.5', ok: true },
+          { name: 'HbA1c', val: '30 mmol/mol', ref: '20–42', ok: true },
+        ]},
+        { cat: 'Funzionalità renale', items: [
+          { name: 'Creatinina', val: '1.13 mg/dL', ref: '0.73–1.20', ok: true },
+          { name: 'eGFR', val: '75 mL/min/1.73mq', ref: '≥90', ok: false, note: 'Lievemente diminuita' },
+          { name: 'Urea', val: '50.0 mg/dL', ref: '20.0–50.0', ok: true },
+        ]},
+        { cat: 'Funzionalità epatica', items: [
+          { name: 'AST/GOT', val: '24 U/L', ref: '8–34', ok: true },
+          { name: 'ALT/GPT', val: '25 U/L', ref: '9–59', ok: true },
+          { name: 'GGT', val: '12 U/L', ref: '12–67', ok: true },
+          { name: 'Bilirubina tot.', val: '0.62 mg/dL', ref: '0.30–1.20', ok: true },
+        ]},
+        { cat: 'Lipidi', items: [
+          { name: 'Colesterolo tot.', val: '101 mg/dL', ref: '≤190', ok: true },
+          { name: 'HDL', val: '28 mg/dL', ref: '≥40 (M)', ok: false, note: '⚠️ Basso — persistente' },
+          { name: 'LDL', val: '60 mg/dL', ref: '≤115', ok: true },
+          { name: 'Trigliceridi', val: '65 mg/dL', ref: '≤150', ok: true },
+          { name: 'Non-HDL', val: '73 mg/dL', ref: '≤145', ok: true },
+        ]},
+        { cat: 'Infiammazione & metaboliti', items: [
+          { name: 'PCR', val: '2.7 mg/L', ref: '≤3.3', ok: true },
+          { name: 'Omocisteina', val: '21.9 µmol/L', ref: '3.0–18.0', ok: false, note: '⚠️ Elevata — stabile vs maggio 2025' },
+          { name: 'Acido urico', val: '4.50 mg/dL', ref: '≤7.00', ok: true },
+          { name: 'Fibrinogeno', val: '3.2 g/L', ref: '2.0–4.0', ok: true },
+        ]},
+        { cat: 'Ferro & vitamine', items: [
+          { name: 'Ferro', val: '62 µg/dL', ref: '65–175', ok: false, note: 'Borderline basso' },
+          { name: 'Transferrina', val: '2.36 g/L', ref: '2.15–3.65', ok: true },
+          { name: 'Ferritina', val: '142 µg/L', ref: '22–322', ok: true },
+          { name: 'Vitamina D (25OH)', val: '9.5 µg/L', ref: '31–100 ottimale', ok: false, note: '🔴 Insufficienza — D3 4000UI già in corso' },
+          { name: 'Folato', val: '3.00 µg/L', ref: '≥5.38', ok: false, note: '⚠️ Basso — B12+folato in supplementazione' },
+          { name: 'Vitamina B12', val: '278 ng/L', ref: '211–911', ok: true },
+          { name: 'Magnesio', val: '2.01 mg/dL', ref: '1.58–2.60', ok: true },
+          { name: 'Zinco', val: '53.30 µg/dL', ref: '60–106', ok: false, note: '⚠️ Basso — zinco bisglicin. 15mg in corso' },
+        ]},
+        { cat: 'Asse ormonale', items: [
+          { name: 'TSH', val: '2.13 mU/L', ref: '0.55–4.80', ok: true },
+          { name: 'Cortisolo mattino', val: '12.80 µg/dL', ref: '5.27–22.40', ok: true },
+          { name: 'SHBG', val: '75.10 nmol/L', ref: '16–80.50', ok: false, note: 'Alta-normale — conferma quadro T0' },
+          { name: 'Testosterone libero', val: '15.60 ng/L', ref: '9.57–40.60', ok: true, note: 'Basso range — compatibile con SHBG alto' },
+          { name: 'PSA', val: '0.48 µg/L', ref: '≤4.00', ok: true },
+        ]},
+        { cat: 'Emocromo', items: [
+          { name: 'Emoglobina', val: '129 g/L', ref: '133–179', ok: false, note: '⚠️ Bassa — stabile vs T0' },
+          { name: 'MCHC', val: '318 g/L', ref: '319–369', ok: false, note: 'Borderline bassa' },
+          { name: 'Globuli bianchi', val: '7.20 ×10⁹/L', ref: '4.10–12.10', ok: true },
+          { name: 'Globuli rossi', val: '4.54 ×10¹²/L', ref: '4.18–6.25', ok: true },
+          { name: 'Ematocrito', val: '40.6%', ref: '35.4–52.1', ok: true },
+          { name: 'Piastrine', val: '223 ×10⁹/L', ref: '150–450', ok: true },
+          { name: 'VES', val: '17 mm/h', ref: '1–15', ok: false, note: 'Lievemente elevata — compatibile varicocele/infiammazione cronica' },
+          { name: 'HbA1c', val: '30 mmol/mol', ref: '20–42', ok: true },
+        ]},
+      ]
+    }
+  ];
+
+  // Historical trend data (key markers across dates)
+  const historical = [
+    { marker: 'HDL (mg/dL)', target: '≥40', dates: [
+      { d: 'Ott 2020', v: 33 }, { d: 'Nov 2022', v: 37 },
+      { d: 'Gen 2024', v: 24 }, { d: 'Feb 2025', v: 27 }, { d: 'Apr 2026', v: 28 }
+    ], ok: v => v >= 40 },
+    { marker: 'Omocisteina (µmol/L)', target: '≤18', dates: [
+      { d: 'Apr 2026', v: 21.9 }
+    ], ok: v => v <= 18 },
+    { marker: 'Vitamina D (µg/L)', target: '31–100', dates: [
+      { d: 'Mag 2026 (T0)', v: 22 }, { d: 'Apr 2026', v: 9.5 }
+    ], ok: v => v >= 31 },
+    { marker: 'Zinco (µg/dL)', target: '60–106', dates: [
+      { d: 'Mag 2026 (T0)', v: 50.30 }, { d: 'Apr 2026', v: 53.30 }
+    ], ok: v => v >= 60 },
+    { marker: 'Testosterone libero (ng/L)', target: '9.57–40.60', dates: [
+      { d: 'Gen 2024', v: 16.53 }, { d: 'Apr 2026', v: 15.60 }
+    ], ok: v => v >= 9.57 && v <= 40.60 },
+    { marker: 'Emoglobina (g/L)', target: '133–179', dates: [
+      { d: 'Ott 2022', v: 141 }, { d: 'Apr 2026', v: 129 }
+    ], ok: v => v >= 133 },
+    { marker: 'VES (mm/h)', target: '1–15', dates: [
+      { d: 'Apr 2026', v: 17 }
+    ], ok: v => v <= 15 },
+    { marker: 'Colesterolo tot. (mg/dL)', target: '≤190', dates: [
+      { d: 'Ott 2020', v: 109 }, { d: 'Nov 2022', v: 120 }, { d: 'Gen 2024', v: 89 }, { d: 'Feb 2025', v: 102 }, { d: 'Apr 2026', v: 101 }
+    ], ok: v => v <= 190 },
+  ];
+
+  let html = `<div style="padding:20px;max-width:900px;margin:0 auto">
+  <div style="margin-bottom:24px">
+    <div style="font-size:22px;font-weight:600;letter-spacing:-.3px;margin-bottom:4px">🩸 Dati Medici & Analisi</div>
+    <div style="font-size:13px;color:var(--muted)">Protocollo 16 settimane · Baseline pre-ciclo e monitoraggio</div>
+  </div>
+
+  <!-- Legenda alert -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;font-size:12px">
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#34c759;display:inline-block"></span>Nella norma</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#ff9500;display:inline-block"></span>Borderline / attenzione</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#ff3b30;display:inline-block"></span>Fuori range</span>
+  </div>`;
+
+  panels.forEach(p => {
+    html += `<div style="background:var(--surface1,#f5f5f7);border-radius:14px;padding:18px;margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:6px">
+        <div>
+          <div style="font-size:15px;font-weight:600">${p.label}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${p.date} · ${p.note}</div>
+        </div>
+      </div>`;
+
+    p.flags.forEach(cat => {
+      html += `<div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px">${cat.cat}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:5px">`;
+      cat.items.forEach(item => {
+        const color = item.ok ? '#34c759' : (item.note && item.note.includes('🔴') ? '#ff3b30' : '#ff9500');
+        const bg = item.ok ? 'rgba(52,199,89,.08)' : (item.note && item.note.includes('🔴') ? 'rgba(255,59,48,.08)' : 'rgba(255,149,0,.08)');
+        html += `<div style="background:${bg};border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div>
+            <div style="font-size:12px;font-weight:500">${item.name}</div>
+            ${item.note ? `<div style="font-size:11px;color:var(--muted);margin-top:1px">${item.note}</div>` : ''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:13px;font-weight:600;color:${color}">${item.val}</div>
+            <div style="font-size:10px;color:var(--muted)">${item.ref}</div>
+          </div>
+        </div>`;
+      });
+      html += `</div></div>`;
+    });
+    html += `</div>`;
+  });
+
+  // Trend storico
+  html += `<div style="background:var(--surface1,#f5f5f7);border-radius:14px;padding:18px;margin-bottom:20px">
+    <div style="font-size:15px;font-weight:600;margin-bottom:4px">📊 Trend Storici CDI</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Confronto markers chiave nel tempo</div>`;
+
+  historical.forEach(h => {
+    html += `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span style="font-weight:500">${h.marker}</span>
+        <span style="color:var(--muted)">target: ${h.target}</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">`;
+    h.dates.forEach(d => {
+      const color = h.ok(d.v) ? '#34c759' : '#ff9500';
+      html += `<div style="background:rgba(0,0,0,.05);border-radius:6px;padding:4px 8px;font-size:11px">
+        <span style="color:var(--muted)">${d.d}: </span>
+        <span style="font-weight:600;color:${color}">${d.v}</span>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  html += `</div>`;
+
+  // Note supplementazione
+  html += `<div style="background:var(--surface1,#f5f5f7);border-radius:14px;padding:18px;margin-bottom:20px">
+    <div style="font-size:15px;font-weight:600;margin-bottom:12px">💊 Azioni in corso sui valori alterati</div>
+    <div style="display:grid;gap:8px;font-size:13px">
+      <div style="padding:8px 10px;background:rgba(255,149,0,.08);border-radius:8px"><span style="font-weight:600">HDL basso (28)</span> — Omega-3 rTG 3g/die · Tesamorelin atteso migliorare profilo lipidico · da monitorare a settimane 8–10</div>
+      <div style="padding:8px 10px;background:rgba(255,149,0,.08);border-radius:8px"><span style="font-weight:600">Omocisteina alta (21.9)</span> — B12 1000µg + methylfolato + B6 ogni mattina · Normocis 400 a pranzo · attesa riduzione a &lt;15 entro ciclo</div>
+      <div style="padding:8px 10px;background:rgba(255,59,48,.08);border-radius:8px"><span style="font-weight:600">Vitamina D insufficiente (9.5)</span> — D3+K2 4000UI+200mcg ogni mattina · verifica panel settimane 8–10 · target &gt;50</div>
+      <div style="padding:8px 10px;background:rgba(255,149,0,.08);border-radius:8px"><span style="font-weight:600">Zinco basso (53.30)</span> — Zinco bisglicin. 15mg ore 9:00 · target 70–80 µg/dL</div>
+      <div style="padding:8px 10px;background:rgba(255,149,0,.08);border-radius:8px"><span style="font-weight:600">Folato basso (3.00)</span> — Jarrow B12+methylfolato ogni mattina · da ricontrollare</div>
+      <div style="padding:8px 10px;background:rgba(255,149,0,.08);border-radius:8px"><span style="font-weight:600">Emoglobina bassa (129)</span> — Nessuna supplementazione di ferro in corso · Ferritina ok (142) · da monitorare</div>
+      <div style="padding:8px 10px;background:rgba(52,199,89,.08);border-radius:8px"><span style="font-weight:600">Check-up cardiologico 9/6/2026</span> — FE 63%, no ischemia, LDL 54, Col 89 — baseline CV eccellente ✅</div>
+    </div>
+  </div>`;
+
+  // Mini-panel atteso settimane 8-10
+  html += `<div style="background:var(--surface1,#f5f5f7);border-radius:14px;padding:18px;margin-bottom:40px">
+    <div style="font-size:15px;font-weight:600;margin-bottom:8px">🔬 Mini-panel Mid-cycle (settimane 8–10)</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Previsto circa luglio–agosto 2026</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:12px">
+      ${['IGF-1','Glucosio/Insulina/HOMA','HDL','Omocisteina','Vitamina D','Testosterone libero / SHBG','CRP','Zinco','Folato / B12','Emoglobina'].map(m =>
+        `<span style="background:rgba(0,113,227,.1);color:var(--blue);padding:4px 10px;border-radius:20px">${m}</span>`
+      ).join('')}
+    </div>
+  </div>`;
+
+  html += `</div>`;
+  med.innerHTML = html;
 }
 
 function getDayData(field, days) {
@@ -3046,4 +3251,5 @@ function importMotra(dayId) {
 </script>
 </body>
 </html>
+
 
