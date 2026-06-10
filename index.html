@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781105510 -->
+<!-- deploy 1781105700 -->
 </head>
 <body>
 
@@ -1760,9 +1760,13 @@ function applyAll(data){
     });
   });
   updateProgress();
+  _lastData = data;
+  setTimeout(refreshWeekSummary, 0);
 }
 
 let _saving=false;
+let _lastData={};  // cache ultima applyAll per riepilogo
+
 async function saveData(){
   if(_saving) return; // prevent concurrent saves
   _saving=true;
@@ -2050,6 +2054,9 @@ function buildWeekSummary(container, wkIdx) {
   const wkStart = wkIdx * 7;
   const wkEnd = Math.min(wkStart + 7, TOTAL_DAYS);
 
+  // Legge da _lastData (cache applyAll) — più affidabile del DOM query
+  const get = (id, f) => (_lastData[id] && _lastData[id][f]) || '';
+
   let totalInj = 0, doneInj = 0, totalWo = 0, doneWo = 0;
   let pesoSum = 0, pesoCount = 0, hrvSum = 0, hrvCount = 0;
   let rpeSum = 0, rpeCount = 0, sysSum = 0, sysCount = 0;
@@ -2057,31 +2064,29 @@ function buildWeekSummary(container, wkIdx) {
 
   for (let i = wkStart; i < wkEnd && i <= elapsed; i++) {
     const id = 'day_' + i;
-    // Iniezioni: usa getInjectionSlots (non il DOM) per totalInj previste
+    // Iniezioni: usa getInjectionSlots per il totale previsto
     const slots = getInjectionSlots(i);
     totalInj += slots.length;
     slots.forEach(s => {
-      const k = 'inj' + s.n;
-      const eseguita = document.querySelector(`[data-id="${id}"][data-f="${k}_eseguita"]`)?.value;
-      if (eseguita === 'Sì') doneInj++;
+      if (get(id, 'inj' + s.n + '_eseguita') === 'Sì') doneInj++;
     });
     // Workout
     const wo = getWorkout(i);
     if (wo.type !== 'Riposo') {
       totalWo++;
-      const rpe = parseFloat(document.querySelector(`[data-id="${id}"][data-f="wo_rpe"]`)?.value);
+      const rpe = parseFloat(get(id, 'wo_rpe'));
       if (!isNaN(rpe)) { doneWo++; rpeSum += rpe; rpeCount++; }
     }
     // Biometrics
-    const peso = parseFloat(document.querySelector(`[data-id="${id}"][data-f="peso"]`)?.value);
+    const peso = parseFloat(get(id, 'peso'));
     if (!isNaN(peso)) { pesoSum += peso; pesoCount++; }
-    const hrv = parseFloat(document.querySelector(`[data-id="${id}"][data-f="hrv"]`)?.value);
+    const hrv = parseFloat(get(id, 'hrv'));
     if (!isNaN(hrv)) { hrvSum += hrv; hrvCount++; }
-    const sys = parseFloat(document.querySelector(`[data-id="${id}"][data-f="bp_sys"]`)?.value);
+    const sys = parseFloat(get(id, 'bp_sys'));
     if (!isNaN(sys)) { sysSum += sys; sysCount++; }
-    const en = parseFloat(document.querySelector(`[data-id="${id}"][data-f="energia"]`)?.value);
+    const en = parseFloat(get(id, 'energia'));
     if (!isNaN(en)) { energiaSum += en; energiaCount++; }
-    const kcal = parseFloat(document.querySelector(`[data-id="${id}"][data-f="wo_kcal"]`)?.value);
+    const kcal = parseFloat(get(id, 'wo_kcal'));
     if (!isNaN(kcal)) kcalTotal += kcal;
   }
 
