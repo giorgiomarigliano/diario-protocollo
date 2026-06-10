@@ -966,6 +966,83 @@ function getWeekRange(wkIdx) {
 
 function isBKK(i){ return i>=61&&i<=74; }
 function isVitaDay(i){ return i%7===0; }
+// MOTS-C days: Mon (dayIdx%7===0) and Thu (dayIdx%7===3) — from week 7 onward
+function isMOTSday(i){ return i%7===0||i%7===3; }
+
+function getInjectionSlots(dayIdx) {
+  const wk = Math.floor(dayIdx/7)+1;
+  const slots = [];
+
+  if (wk<=4) {
+    // Sett 1-4: solo Tesamorelin 1mg sera
+    slots.push({n:1, label:'Tesamorelin 1mg · 200µl', momento:'Sera · post-cena', peptideOptions:['Tesa 1mg · 200µl']});
+  } else if (wk<=6) {
+    // Sett 5-6: solo Tesamorelin 2mg sera
+    slots.push({n:1, label:'Tesamorelin 2mg · 400µl', momento:'Sera · post-cena', peptideOptions:['Tesa 2mg · 400µl']});
+  } else if (wk<=12) {
+    // Sett 7-12: Tesamorelin sera sempre + MOTS-C mattina lun/gio + GHK-Cu sera sempre
+    slots.push({n:1, label:'Tesamorelin 2mg · sera', momento:'Sera · post-cena', peptideOptions:['Tesa 2mg · 400µl']});
+    slots.push({n:2, label:'GHK-Cu 1mg · sera', momento:'Sera · post-cena', peptideOptions:['GHK-Cu 1mg']});
+    if (isMOTSday(dayIdx)) {
+      slots.push({n:3, label:'MOTS-C 2.5mg · mattina', momento:'Mattina · digiuno', peptideOptions:['MOTS-C 2.5mg']});
+    }
+  } else {
+    // Sett 13-16: tutto + BPC-157 mattina (lun-ven)
+    slots.push({n:1, label:'Tesamorelin 2mg · sera', momento:'Sera · post-cena', peptideOptions:['Tesa 2mg · 400µl']});
+    slots.push({n:2, label:'GHK-Cu 1mg · sera', momento:'Sera · post-cena', peptideOptions:['GHK-Cu 1mg']});
+    if (isMOTSday(dayIdx)) {
+      slots.push({n:3, label:'MOTS-C 2.5mg · mattina', momento:'Mattina · digiuno', peptideOptions:['MOTS-C 2.5mg']});
+    }
+    if (dayIdx%7<=4) { // lun-ven
+      slots.push({n:4, label:'BPC-157 250mcg · mattina', momento:'Mattina · pre-workout', peptideOptions:['BPC-157 250mcg']});
+    }
+  }
+  return slots;
+}
+
+function renderInjectionSlots(dayIdx, id) {
+  const slots = getInjectionSlots(dayIdx);
+  const allPeptides = ['Tesa 1mg · 200µl','Tesa 2mg · 400µl','GHK-Cu 1mg','MOTS-C 2.5mg','BPC-157 250mcg'];
+  const momenti = ['Mattina · digiuno','Mattina · pre-workout','Sera · post-cena'];
+  const siti = ['Add. sin. sup.','Add. sin. inf.','Add. dx sup.','Add. dx inf.'];
+
+  return slots.map(s => {
+    const fn = s.n;
+    const peptideOpts = allPeptides.map(p =>
+      `<option${s.peptideOptions.includes(p)?' selected':''}>${p}</option>`
+    ).join('');
+    const momentoOpts = momenti.map(m =>
+      `<option${m===s.momento?' selected':''}>${m}</option>`
+    ).join('');
+    const sitiOpts = siti.map(x=>`<option>${x}</option>`).join('');
+    return `
+          <div style="background:var(--surface2);border-radius:var(--radius-xs);padding:10px 12px">
+            <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px">Iniezione ${fn} · ${s.label}</div>
+            <div class="inj-row">
+              <div class="fg"><label>Eseguita</label>
+                <select data-id="${id}" data-f="inj${fn}_eseguita">
+                  <option value="">—</option><option>Sì</option><option>No</option><option>Posticipata</option>
+                </select>
+              </div>
+              <div class="fg"><label>Peptide / dose</label>
+                <select data-id="${id}" data-f="inj${fn}_peptide">
+                  <option value="">—</option>${peptideOpts}
+                </select>
+              </div>
+              <div class="fg"><label>Momento</label>
+                <select data-id="${id}" data-f="inj${fn}_momento">
+                  <option value="">—</option>${momentoOpts}
+                </select>
+              </div>
+              <div class="fg"><label>Sito</label>
+                <select data-id="${id}" data-f="inj${fn}_sito">
+                  <option value="">—</option>${sitiOpts}
+                </select>
+              </div>
+            </div>
+          </div>`;
+  }).join('\n');
+}
 function formatDate(d){ return d.toLocaleDateString('it-IT',{weekday:'long',day:'2-digit',month:'long'}); }
 function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 
@@ -1216,146 +1293,7 @@ function buildDays(){
 
         <div class="section-label">Protocollo iniezione</div>
         <div style="display:flex;flex-direction:column;gap:8px;margin-top:0">
-          <div style="background:var(--surface2);border-radius:var(--radius-xs);padding:10px 12px">
-            <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px">Iniezione 1</div>
-            <div class="inj-row">
-              <div class="fg"><label>Eseguita</label>
-                <select data-id="${id}" data-f="inj1_eseguita">
-                  <option value="">—</option><option>Sì</option><option>No</option><option>Posticipata</option>
-                </select>
-              </div>
-              <div class="fg"><label>Peptide / dose</label>
-                <select data-id="${id}" data-f="inj1_peptide">
-                  <option value="">—</option>
-                  <option>Tesa 1mg · 20u</option>
-                  <option>Tesa 2mg · 40u</option>
-                  <option>GHK-Cu 1mg</option>
-                  <option>MOTS-C 2.5mg</option>
-                  <option>BPC-157 250mcg</option>
-                </select>
-              </div>
-              <div class="fg"><label>Momento</label>
-                <select data-id="${id}" data-f="inj1_momento">
-                  <option value="">—</option>
-                  <option>Mattina · digiuno</option>
-                  <option>Mattina · pre-workout</option>
-                  <option>Sera · post-cena</option>
-                </select>
-              </div>
-              <div class="fg"><label>Sito</label>
-                <select data-id="${id}" data-f="inj1_sito">
-                  <option value="">—</option>
-                  <option>Add. sin. sup.</option><option>Add. sin. inf.</option>
-                  <option>Add. dx sup.</option><option>Add. dx inf.</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div style="background:var(--surface2);border-radius:var(--radius-xs);padding:10px 12px">
-            <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px">Iniezione 2</div>
-            <div class="inj-row">
-              <div class="fg"><label>Eseguita</label>
-                <select data-id="${id}" data-f="inj2_eseguita">
-                  <option value="">—</option><option>Sì</option><option>No</option><option>Posticipata</option>
-                </select>
-              </div>
-              <div class="fg"><label>Peptide / dose</label>
-                <select data-id="${id}" data-f="inj2_peptide">
-                  <option value="">—</option>
-                  <option>Tesa 1mg · 20u</option>
-                  <option>Tesa 2mg · 40u</option>
-                  <option>GHK-Cu 1mg</option>
-                  <option>MOTS-C 2.5mg</option>
-                  <option>BPC-157 250mcg</option>
-                </select>
-              </div>
-              <div class="fg"><label>Momento</label>
-                <select data-id="${id}" data-f="inj2_momento">
-                  <option value="">—</option>
-                  <option>Mattina · digiuno</option>
-                  <option>Mattina · pre-workout</option>
-                  <option>Sera · post-cena</option>
-                </select>
-              </div>
-              <div class="fg"><label>Sito</label>
-                <select data-id="${id}" data-f="inj2_sito">
-                  <option value="">—</option>
-                  <option>Add. sin. sup.</option><option>Add. sin. inf.</option>
-                  <option>Add. dx sup.</option><option>Add. dx inf.</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div style="background:var(--surface2);border-radius:var(--radius-xs);padding:10px 12px">
-            <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px">Iniezione 3</div>
-            <div class="inj-row">
-              <div class="fg"><label>Eseguita</label>
-                <select data-id="${id}" data-f="inj3_eseguita">
-                  <option value="">—</option><option>Sì</option><option>No</option><option>Posticipata</option>
-                </select>
-              </div>
-              <div class="fg"><label>Peptide / dose</label>
-                <select data-id="${id}" data-f="inj3_peptide">
-                  <option value="">—</option>
-                  <option>Tesa 1mg · 20u</option>
-                  <option>Tesa 2mg · 40u</option>
-                  <option>GHK-Cu 1mg</option>
-                  <option>MOTS-C 2.5mg</option>
-                  <option>BPC-157 250mcg</option>
-                </select>
-              </div>
-              <div class="fg"><label>Momento</label>
-                <select data-id="${id}" data-f="inj3_momento">
-                  <option value="">—</option>
-                  <option>Mattina · digiuno</option>
-                  <option>Mattina · pre-workout</option>
-                  <option>Sera · post-cena</option>
-                </select>
-              </div>
-              <div class="fg"><label>Sito</label>
-                <select data-id="${id}" data-f="inj3_sito">
-                  <option value="">—</option>
-                  <option>Add. sin. sup.</option><option>Add. sin. inf.</option>
-                  <option>Add. dx sup.</option><option>Add. dx inf.</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div style="background:var(--surface2);border-radius:var(--radius-xs);padding:10px 12px">
-            <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px">Iniezione 4</div>
-            <div class="inj-row">
-              <div class="fg"><label>Eseguita</label>
-                <select data-id="${id}" data-f="inj4_eseguita">
-                  <option value="">—</option><option>Sì</option><option>No</option><option>Posticipata</option>
-                </select>
-              </div>
-              <div class="fg"><label>Peptide / dose</label>
-                <select data-id="${id}" data-f="inj4_peptide">
-                  <option value="">—</option>
-                  <option>Tesa 1mg · 20u</option>
-                  <option>Tesa 2mg · 40u</option>
-                  <option>GHK-Cu 1mg</option>
-                  <option>MOTS-C 2.5mg</option>
-                  <option>BPC-157 250mcg</option>
-                </select>
-              </div>
-              <div class="fg"><label>Momento</label>
-                <select data-id="${id}" data-f="inj4_momento">
-                  <option value="">—</option>
-                  <option>Mattina · digiuno</option>
-                  <option>Mattina · pre-workout</option>
-                  <option>Sera · post-cena</option>
-                </select>
-              </div>
-              <div class="fg"><label>Sito</label>
-                <select data-id="${id}" data-f="inj4_sito">
-                  <option value="">—</option>
-                  <option>Add. sin. sup.</option><option>Add. sin. inf.</option>
-                  <option>Add. dx sup.</option><option>Add. dx inf.</option>
-                </select>
-              </div>
-            </div>
-          </div>
+          ${renderInjectionSlots(i, id)}
         </div>
 
         ${isRest?`
