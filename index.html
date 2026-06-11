@@ -1660,6 +1660,18 @@ function buildDays(){
           </div>
         </div>
 
+        <div class="section-label" style="margin-top:14px">Stack serale</div>
+        <div class="check-grid">
+          <div class="check-item">
+            <input type="checkbox" id="ck-mag-${id}" data-id="${id}" data-f="ck_mag">
+            <label for="ck-mag-${id}">Magnesio</label>
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck-gly-${id}" data-id="${id}" data-f="ck_gly">
+            <label for="ck-gly-${id}">Glicina</label>
+          </div>
+        </div>
+
         ${isVitaDay(i) ? `
         <div class="section-label" style="margin-top:14px">Foto progressione</div>
         <div class="photo-note">
@@ -2726,7 +2738,7 @@ function getComplianceData() {
     }
     // Stack
     stackDays++;
-    const checks = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm'];
+    const checks = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm','ck_mag','ck_gly'];
     const allChecked = checks.every(c => document.querySelector(`[data-id="${id}"][data-f="${c}"]`)?.checked);
     if (allChecked) stackDone++;
   }
