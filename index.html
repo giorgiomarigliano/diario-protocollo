@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781175570 -->
+<!-- deploy 1781180256 -->
 </head>
 <body>
 
@@ -3921,14 +3921,9 @@ function buildStockView() {
     return { bg: '#f5f5f7', color: '#666', label: s };
   }
 
-  let html = `<div style="max-width:860px;margin:0 auto;padding:20px 20px 60px">`;
+  let html = `<div class="app-view-inner view-wrap">`;
 
-  // ── HEADER ──
-  html += `
-    <div style="margin-bottom:20px">
-      <div style="font-size:22px;font-weight:600;color:var(--text)">📦 Inventario Peptidi</div>
-      <div style="font-size:13px;color:var(--muted);margin-top:3px">Aggiornato 11 giu 2026 · Protocollo 16 settimane · Giorno ${dayElapsed}</div>
-    </div>`;
+  // ── ALERT INIZIA SUBITO (no titolo — coerenza con altri tab) ──
 
   // ── ALERT TESA SCORTE ──
   html += `
