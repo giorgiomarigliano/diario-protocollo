@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781191799 -->
+<!-- deploy 1781175570 -->
 </head>
 <body>
 
@@ -1539,6 +1539,7 @@ function buildDays(){
               <input type="text" placeholder="es. Smith machine, manubri 18kg, cavi singoli..." data-id="${id}" data-f="wo_attrezzatura">
             </div>
           </div>
+          ${buildMotraSection(id)}
         </div>
         <div class="section-label" style="margin-top:14px">Protocollo BKK</div>
         <div class="wo-box" style="background:#e8f1fb">
@@ -3242,189 +3243,79 @@ function buildDashboard() {
       <div class="dash-section">
         <div class="dash-section-title">Timeline ciclo</div>
         <div class="dash-card">
+
+          <!-- Barra progress -->
           <div class="timeline-phases" id="timeline-phases"></div>
           <div class="timeline-track"><div class="timeline-fill" style="width:${Math.min(100,(elapsed/TOTAL_DAYS)*100).toFixed(1)}%"></div></div>
-          <!-- Markers posizionati esattamente sui breakpoint delle fasi:
-               gg0=0% · gg28=25% · gg42=37.5% · gg60=53.6% · gg84=75% · gg112=100% -->
-          <div style="position:relative;height:20px;margin-top:4px;font-size:10px;color:var(--muted)">
-            <span style="position:absolute;left:0%;transform:translateX(0)">8 giu</span>
-            <span style="position:absolute;left:25%;transform:translateX(-50%)">6 lug<br><span style="color:#ff9500;font-weight:600">Sett.5</span></span>
-            <span style="position:absolute;left:37.5%;transform:translateX(-50%)">20 lug<br><span style="color:#34c759;font-weight:600">Sett.7</span></span>
-            <span style="position:absolute;left:53.6%;transform:translateX(-50%)">7 ago<br><span style="color:#0071e3;font-weight:600">BKK</span></span>
-            <span style="position:absolute;left:75%;transform:translateX(-50%)">31 ago<br><span style="color:#ff3b30;font-weight:600">Sett.13</span></span>
-            <span style="position:absolute;right:0%;transform:translateX(0)">25 set</span>
-          </div>
-          <div class="phase-legend" style="margin-top:28px">
-            <div class="phase-dot"><div class="phase-dot-circle" style="background:#0071e3"></div>Tesa 1mg · sett.1–4 · 8 giu–5 lug</div>
-            <div class="phase-dot"><div class="phase-dot-circle" style="background:#ff9500"></div>Tesa 2mg + GHK-Cu · sett.5–6 · 6–19 lug</div>
-            <div class="phase-dot"><div class="phase-dot-circle" style="background:#34c759"></div>+ MOTS-C · sett.7–12 · 20 lug–30 ago</div>
-            <div class="phase-dot"><div class="phase-dot-circle" style="background:#ff3b30"></div>+ BPC-157 · sett.13–16 · 31 ago–25 set</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- PROTOCOLLO DETTAGLIO -->
-      <div class="dash-section">
-        <div class="dash-section-title">Protocollo completo · 16 settimane · 112 giorni</div>
-        <div class="dash-card" style="padding:0;overflow:hidden">
-
-          <!-- TABELLA FASI -->
-          <div style="overflow-x:auto">
-            <table style="width:100%;border-collapse:collapse;font-size:var(--fs-sm)">
-              <thead>
-                <tr style="background:var(--bg);border-bottom:1px solid var(--border)">
-                  <th style="padding:10px 16px;text-align:left;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap">Fase</th>
-                  <th style="padding:10px 16px;text-align:left;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap">Periodo</th>
-                  <th style="padding:10px 16px;text-align:left;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap">Peptide</th>
-                  <th style="padding:10px 16px;text-align:left;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap">Dose</th>
-                  <th style="padding:10px 16px;text-align:left;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap">Timing</th>
-                  <th style="padding:10px 16px;text-align:left;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap">Giorni</th>
-                  <th style="padding:10px 16px;text-align:left;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap">Totale</th>
-                </tr>
-              </thead>
-              <tbody>
-                <!-- FASE 1 -->
-                <tr style="border-bottom:1px solid var(--border)">
-                  <td style="padding:12px 16px" rowspan="1">
-                    <div style="display:flex;align-items:center;gap:8px">
-                      <div style="width:10px;height:10px;border-radius:50%;background:#0071e3;flex-shrink:0"></div>
-                      <div>
-                        <div style="font-weight:var(--fw-semi);color:var(--text)">Fase 1</div>
-                        <div style="font-size:var(--fs-xs);color:var(--muted)">Sett. 1–4</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style="padding:12px 16px;color:var(--muted);white-space:nowrap">8 giu – 5 lug<br><span style="font-size:var(--fs-xs)">gg 0–27 · 28 giorni</span></td>
-                  <td style="padding:12px 16px"><span style="background:rgba(0,113,227,.1);color:#0071e3;padding:3px 8px;border-radius:6px;font-weight:var(--fw-semi);font-size:var(--fs-xs)">Tesamorelin</span></td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">1 mg / die<br><span style="font-size:var(--fs-xs);color:var(--muted);font-weight:400">200 µl · siringa 30G</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">SC addome<br><span style="font-size:var(--fs-xs)">90–120 min post-cena<br>digiuno post-inj 2h</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">7 gg/7</td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">28 mg</td>
-                </tr>
-                <!-- FASE 2 -->
-                <tr style="border-bottom:1px solid var(--border);background:rgba(255,149,0,.03)">
-                  <td style="padding:12px 16px" rowspan="2">
-                    <div style="display:flex;align-items:center;gap:8px">
-                      <div style="width:10px;height:10px;border-radius:50%;background:#ff9500;flex-shrink:0"></div>
-                      <div>
-                        <div style="font-weight:var(--fw-semi);color:var(--text)">Fase 2</div>
-                        <div style="font-size:var(--fs-xs);color:var(--muted)">Sett. 5–6</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style="padding:12px 16px;color:var(--muted);white-space:nowrap" rowspan="2">6 lug – 19 lug<br><span style="font-size:var(--fs-xs)">gg 28–41 · 14 giorni</span></td>
-                  <td style="padding:12px 16px"><span style="background:rgba(255,149,0,.1);color:#ff9500;padding:3px 8px;border-radius:6px;font-weight:var(--fw-semi);font-size:var(--fs-xs)">Tesamorelin</span></td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">2 mg / die<br><span style="font-size:var(--fs-xs);color:var(--muted);font-weight:400">400 µl · siringa 30G</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">SC addome<br><span style="font-size:var(--fs-xs)">90–120 min post-cena<br>digiuno post-inj 2h</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">7 gg/7</td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">28 mg</td>
-                </tr>
-                <tr style="border-bottom:1px solid var(--border);background:rgba(255,149,0,.03)">
-                  <td style="padding:12px 16px"><span style="background:rgba(175,82,222,.1);color:#af52de;padding:3px 8px;border-radius:6px;font-weight:var(--fw-semi);font-size:var(--fs-xs)">GHK-Cu</span></td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">1 mg / die<br><span style="font-size:var(--fs-xs);color:var(--muted);font-weight:400">200 µl · siringa 30G</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">SC addome<br><span style="font-size:var(--fs-xs)">sera · lontano dai pasti</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">7 gg/7</td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">14 mg</td>
-                </tr>
-                <!-- FASE 3 -->
-                <tr style="border-bottom:1px solid var(--border);background:rgba(52,199,89,.03)">
-                  <td style="padding:12px 16px" rowspan="3">
-                    <div style="display:flex;align-items:center;gap:8px">
-                      <div style="width:10px;height:10px;border-radius:50%;background:#34c759;flex-shrink:0"></div>
-                      <div>
-                        <div style="font-weight:var(--fw-semi);color:var(--text)">Fase 3</div>
-                        <div style="font-size:var(--fs-xs);color:var(--muted)">Sett. 7–12</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style="padding:12px 16px;color:var(--muted);white-space:nowrap" rowspan="3">20 lug – 30 ago<br><span style="font-size:var(--fs-xs)">gg 42–83 · 42 giorni<br>⚠️ Bangkok gg 60–74</span></td>
-                  <td style="padding:12px 16px"><span style="background:rgba(255,149,0,.1);color:#ff9500;padding:3px 8px;border-radius:6px;font-weight:var(--fw-semi);font-size:var(--fs-xs)">Tesamorelin</span></td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">2 mg / die<br><span style="font-size:var(--fs-xs);color:var(--muted);font-weight:400">400 µl · siringa 30G</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">SC addome<br><span style="font-size:var(--fs-xs)">90–120 min post-cena</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">7 gg/7</td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">84 mg</td>
-                </tr>
-                <tr style="border-bottom:1px solid var(--border);background:rgba(52,199,89,.03)">
-                  <td style="padding:12px 16px"><span style="background:rgba(52,199,89,.1);color:#34c759;padding:3px 8px;border-radius:6px;font-weight:var(--fw-semi);font-size:var(--fs-xs)">MOTS-C</span></td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">10 mg × 2/sett<br><span style="font-size:var(--fs-xs);color:var(--muted);font-weight:400">lun + gio</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">SC addome<br><span style="font-size:var(--fs-xs)">mattino a digiuno<br>nei giorni di riposo</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">2 gg/7<br><span style="font-size:var(--fs-xs)">(lun + gio · rest days)</span></td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">120 mg<br><span style="font-size:var(--fs-xs);color:var(--muted);font-weight:400">12 dosi</span></td>
-                </tr>
-                <tr style="border-bottom:1px solid var(--border);background:rgba(52,199,89,.03)">
-                  <td style="padding:12px 16px"><span style="background:rgba(175,82,222,.1);color:#af52de;padding:3px 8px;border-radius:6px;font-weight:var(--fw-semi);font-size:var(--fs-xs)">GHK-Cu</span></td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">1 mg / die<br><span style="font-size:var(--fs-xs);color:var(--muted);font-weight:400">200 µl · siringa 30G</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">SC addome<br><span style="font-size:var(--fs-xs)">sera · lontano dai pasti</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">7 gg/7</td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">42 mg</td>
-                </tr>
-                <!-- FASE 4 -->
-                <tr style="border-bottom:1px solid var(--border);background:rgba(255,59,48,.03)">
-                  <td style="padding:12px 16px" rowspan="4">
-                    <div style="display:flex;align-items:center;gap:8px">
-                      <div style="width:10px;height:10px;border-radius:50%;background:#ff3b30;flex-shrink:0"></div>
-                      <div>
-                        <div style="font-weight:var(--fw-semi);color:var(--text)">Fase 4</div>
-                        <div style="font-size:var(--fs-xs);color:var(--muted)">Sett. 13–16</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td style="padding:12px 16px;color:var(--muted);white-space:nowrap" rowspan="4">31 ago – 25 set<br><span style="font-size:var(--fs-xs)">gg 84–111 · 28 giorni</span></td>
-                  <td style="padding:12px 16px"><span style="background:rgba(255,149,0,.1);color:#ff9500;padding:3px 8px;border-radius:6px;font-weight:var(--fw-semi);font-size:var(--fs-xs)">Tesamorelin</span></td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">2 mg / die<br><span style="font-size:var(--fs-xs);color:var(--muted);font-weight:400">400 µl · siringa 30G</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">SC addome<br><span style="font-size:var(--fs-xs)">90–120 min post-cena</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">7 gg/7</td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">56 mg</td>
-                </tr>
-                <tr style="border-bottom:1px solid var(--border);background:rgba(255,59,48,.03)">
-                  <td style="padding:12px 16px"><span style="background:rgba(52,199,89,.1);color:#34c759;padding:3px 8px;border-radius:6px;font-weight:var(--fw-semi);font-size:var(--fs-xs)">MOTS-C</span></td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">10 mg × 2/sett<br><span style="font-size:var(--fs-xs);color:var(--muted);font-weight:400">lun + gio</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">SC addome<br><span style="font-size:var(--fs-xs)">mattino a digiuno<br>nei giorni di riposo</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">2 gg/7<br><span style="font-size:var(--fs-xs)">(lun + gio · rest days)</span></td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">80 mg<br><span style="font-size:var(--fs-xs);color:var(--muted);font-weight:400">8 dosi</span></td>
-                </tr>
-                <tr style="border-bottom:1px solid var(--border);background:rgba(255,59,48,.03)">
-                  <td style="padding:12px 16px"><span style="background:rgba(175,82,222,.1);color:#af52de;padding:3px 8px;border-radius:6px;font-weight:var(--fw-semi);font-size:var(--fs-xs)">GHK-Cu</span></td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">1 mg / die<br><span style="font-size:var(--fs-xs);color:var(--muted);font-weight:400">200 µl · siringa 30G</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">SC addome<br><span style="font-size:var(--fs-xs)">sera · lontano dai pasti</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">7 gg/7</td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">28 mg</td>
-                </tr>
-                <tr style="background:rgba(255,59,48,.03)">
-                  <td style="padding:12px 16px"><span style="background:rgba(255,59,48,.1);color:#ff3b30;padding:3px 8px;border-radius:6px;font-weight:var(--fw-semi);font-size:var(--fs-xs)">BPC-157</span></td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">250 µg / die<br><span style="font-size:var(--fs-xs);color:var(--muted);font-weight:400">siringa 30G</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">SC addome<br><span style="font-size:var(--fs-xs)">mattino a digiuno<br>solo giorni allenamento</span></td>
-                  <td style="padding:12px 16px;color:var(--muted)">5 gg/7<br><span style="font-size:var(--fs-xs)">(mar·mer·ven·sab·dom)</span></td>
-                  <td style="padding:12px 16px;font-weight:var(--fw-semi)">~10 mg<br><span style="font-size:var(--fs-xs);color:var(--muted);font-weight:400">~40 dosi</span></td>
-                </tr>
-              </tbody>
-            </table>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px">
+            <span>8 giu</span><span>25 set</span>
           </div>
 
-          <!-- TOTALI -->
-          <div style="display:flex;flex-wrap:wrap;gap:0;border-top:2px solid var(--border)">
-            <div style="flex:1;min-width:140px;padding:14px 16px;border-right:1px solid var(--border)">
-              <div style="font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Tesamorelin totale</div>
-              <div style="font-size:var(--fs-lg);font-weight:var(--fw-semi)">196 mg</div>
-              <div style="font-size:var(--fs-xs);color:var(--muted)">≈ 20 vial × 10mg · 1mg×28gg + 2mg×84gg</div>
-            </div>
-            <div style="flex:1;min-width:140px;padding:14px 16px;border-right:1px solid var(--border)">
-              <div style="font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">MOTS-C totale</div>
-              <div style="font-size:var(--fs-lg);font-weight:var(--fw-semi)">200 mg</div>
-              <div style="font-size:var(--fs-xs);color:var(--muted)">20 dosi × 10mg · 2×/sett × 10 sett</div>
-            </div>
-            <div style="flex:1;min-width:140px;padding:14px 16px;border-right:1px solid var(--border)">
-              <div style="font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">GHK-Cu totale</div>
-              <div style="font-size:var(--fs-lg);font-weight:var(--fw-semi)">84 mg</div>
-              <div style="font-size:var(--fs-xs);color:var(--muted)">1mg/die × 84 gg · sett 5–16</div>
-            </div>
-            <div style="flex:1;min-width:140px;padding:14px 16px">
-              <div style="font-size:var(--fs-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">BPC-157 totale</div>
-              <div style="font-size:var(--fs-lg);font-weight:var(--fw-semi)">~10 mg</div>
-              <div style="font-size:var(--fs-xs);color:var(--muted)">250µg/die × ~40 gg allenamento · sett 13–16</div>
-            </div>
-          </div>
+          <!-- Fasi: card verticali mobile-friendly -->
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:14px">
 
+            ${(()=>{
+              const phaseDefs = [
+                { color:'#0071e3', bg:'rgba(0,113,227,.07)', sett:'1–4', date:'8 giu – 5 lug', days:28,
+                  peptides:[
+                    {dot:'#0071e3', name:'Tesamorelin', dose:'1mg · 200µl · sera'},
+                  ]
+                },
+                { color:'#ff9500', bg:'rgba(255,149,0,.07)', sett:'5–6', date:'6 lug – 19 lug', days:14,
+                  peptides:[
+                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl · sera'},
+                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg · sera'},
+                  ]
+                },
+                { color:'#34c759', bg:'rgba(52,199,89,.07)', sett:'7–12', date:'20 lug – 30 ago', days:42,
+                  bkk: true,
+                  peptides:[
+                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl · sera'},
+                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg · sera'},
+                    {dot:'#34c759', name:'MOTS-C',      dose:'2.5mg · mattina (lun/gio)'},
+                  ]
+                },
+                { color:'#ff3b30', bg:'rgba(255,59,48,.07)', sett:'13–16', date:'31 ago – 25 set', days:28,
+                  peptides:[
+                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl · sera'},
+                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg · sera'},
+                    {dot:'#34c759', name:'MOTS-C',      dose:'2.5mg · mattina (lun/gio)'},
+                    {dot:'#ff3b30', name:'BPC-157',     dose:'250mcg · mattina'},
+                  ]
+                },
+              ];
+              const phaseStart = [0,28,42,84];
+              return phaseDefs.map((p, i) => {
+                const dayStart = phaseStart[i];
+                const isActive = elapsed >= dayStart && elapsed < dayStart + p.days;
+                const isPast   = elapsed >= dayStart + p.days;
+                const daysLeft = isActive ? (dayStart + p.days - elapsed) : null;
+                const pills = p.peptides.map(px =>
+                  `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.04)">
+                    <div style="width:6px;height:6px;border-radius:50%;background:${px.dot};flex-shrink:0"></div>
+                    <span style="font-size:12px;font-weight:600;color:var(--text);min-width:80px">${px.name}</span>
+                    <span style="font-size:11px;color:var(--muted)">${px.dose}</span>
+                  </div>`
+                ).join('');
+                return `
+                <div style="border-radius:11px;background:${isActive ? p.bg : 'var(--surface2,#f5f5f7)'};border:1.5px solid ${isActive ? p.color : 'transparent'};padding:10px 12px;opacity:${isPast?'.55':'1'}">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+                    <div style="display:flex;align-items:center;gap:7px">
+                      <div style="width:10px;height:10px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
+                      <span style="font-size:13px;font-weight:600;color:${p.color}">Sett. ${p.sett}</span>
+                      ${p.bkk ? '<span style="font-size:10px;background:rgba(0,113,227,.12);color:#0071e3;padding:1px 6px;border-radius:20px">🇹🇭 BKK</span>' : ''}
+                      ${isActive ? '<span style="font-size:10px;background:'+p.color+';color:#fff;padding:1px 6px;border-radius:20px;font-weight:600">● ATTIVA</span>' : ''}
+                      ${isPast   ? '<span style="font-size:10px;color:var(--muted)">✓ completata</span>' : ''}
+                    </div>
+                    <span style="font-size:11px;color:var(--muted)">${p.date}</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:0">${pills}</div>
+                  ${isActive ? '<div style="margin-top:6px;font-size:11px;color:'+p.color+';font-weight:500">'+daysLeft+' giorni rimanenti</div>' : ''}
+                </div>`;
+              }).join('');
+            })()}
+
+          </div>
         </div>
       </div>
 
@@ -3839,12 +3730,6 @@ function importMotra(dayId) {
   const text = ta.value.trim();
   if (!text) { res.className = 'motra-result err'; res.textContent = 'Incolla prima il testo del log Motra.'; return; }
 
-  // Assicurati che la card sia aperta (i campi sentinel esistono nel DOM solo se aperta)
-  const card = document.getElementById('card-' + dayId);
-  if (card && !card.classList.contains('open')) {
-    card.classList.add('open');
-  }
-
   try {
     const data = parseMotraText(text);
 
@@ -3887,43 +3772,29 @@ function importMotra(dayId) {
     // More specific keywords first to avoid false matches
     const sentinelMap = {
       // PETTO — compound (bench/incline/chest press, NOT pec dec/fly)
-      'bench':      ['incline bench press','bench press','chest press','panca inclinata','panca piana','db bench','db incline','incline press',
-                     'machine incline bench','machine bench press','barbell bench press','smith bench'],
+      'bench':      ['incline bench press','bench press','chest press','panca inclinata','panca piana','db bench','db incline','incline press'],
       // PETTO — isolamento (pec dec, fly, crossover — NOT bench)
-      'pecdec':     ['pec dec','pec-dec','machine fly','cable fly','crossover','croci','chest fly','pectoral',
-                     'machine fly (pec dec)','machine fly/pec dec','fly (pec dec)'],
+      'pecdec':     ['pec dec','pec-dec','machine fly','cable fly','crossover','croci','chest fly','pectoral'],
       // SPALLE — press (military, shoulder press, overhead)
-      'milpress':   ['military press','shoulder press','overhead press','lento avanti','ohp','db shoulder press','machine shoulder press','smith shoulder',
-                     'barbell overhead press','overhead press / military press','machine shoulder'],
+      'milpress':   ['military press','shoulder press','overhead press','lento avanti','ohp','db shoulder press','machine shoulder press','smith shoulder'],
       // SPALLE — laterale
-      'lateraise':  ['lateral raise','alzate laterali','lat raise','side raise','laterali','machine lateral','machine lateral raise',
-                     'dumbbell lateral raise','db lateral raise','cable lateral raise'],
+      'lateraise':  ['lateral raise','alzate laterali','lat raise','side raise','laterali'],
       // SPALLE — rear/face pull
-      'facepull':   ['face pull','rear delt','alzate posteriori','tirate al viso','tirate alla corda','rear fly','reverse fly',
-                     'cable face pull','face pull / rear delt'],
+      'facepull':   ['face pull','rear delt','alzate posteriori','tirate al viso','tirate alla corda','rear fly','reverse fly'],
       // SPALLE — frontale/upright
-      'frontraise': ['front raise','alzate frontali','frontal raise',
-                     'cable upright row','upright row','tirate al mento'],
       'frontrise':  ['front raise','alzate frontali','upright row','tirate al mento','frontal raise'],
       // TRICIPITI — pushdown/estensione bassa
-      'tridown':    ['tricep pushdown','tricep extension','pushdown','tricep push','corda tricipite','rope pushdown','bar pushdown','tricep rope',
-                     'cable rope tricep pushdown','cable tricep pushdown','cable rope pushdown'],
+      'tridown':    ['tricep pushdown','tricep extension','pushdown','tricep push','corda tricipite','rope pushdown','bar pushdown','tricep rope'],
       // TRICIPITI — overhead/estensione alta
-      'triover':    ['overhead tricep','tricep overhead','estensione sopra','french press','overhead ext','high cable tri','dip machine','dip alla macchina',
-                     'cable rope overhead tricep','overhead tricep extension','cable rope overhead'],
+      'triover':    ['overhead tricep','tricep overhead','estensione sopra','french press','overhead ext','high cable tri','dip machine','dip alla macchina'],
       // DORSO — lat machine (pulldown)
-      'lat':        ['lat pulldown','lat machine','pulley alto','gran dorsale','pulldown','pull down','lat pull down','cable lat pull',
-                     'wide-grip pulldown','wide grip pulldown','cable lat pull down','lat pull down wide','lat pull down wide-grip','lat pull down wide hammer'],
+      'lat':        ['lat pulldown','lat machine','pulley alto','gran dorsale','pulldown','pull down'],
       // DORSO — rematore/row
-      'row':        ['barbell row','seated row','cable row','t-bar row','machine row','db row','pulley row','rematore','vogatore','pulley basso',
-                     'bent row','bent over row','barbell bent over row','machine t-bar row','machine t-bar',
-                     'cable v-handle seated row','cable v-handle row','v-handle row','seated cable row'],
+      'row':        ['barbell row','seated row','cable row','t-bar row','machine row','db row','pulley row','rematore','vogatore','pulley basso','bent row'],
       // BICIPITI — curl standard
-      'curl':       ['incline curl','ez bar curl','ez curl','bb curl','barbell curl','cable curl','preacher curl','curl bilanciere','curl manubri','db curl',
-                     'dumbbell bicep curl','cable bar bicep curl','bicep curl','dumbbell curl','cable bicep curl','cable bar bicep'],
+      'curl':       ['incline curl','ez bar curl','ez curl','bb curl','barbell curl','cable curl','preacher curl','curl bilanciere','curl manubri','db curl'],
       // BICIPITI — martello
-      'hammercurl': ['hammer curl','curl martello','neutral curl','dumbbell hammer curl','neutral grip curl',
-                     'hammer curls','hammer curl manubri','hammer'],
+      'hammercurl': ['hammer curl','curl martello','neutral curl','hammer'],
       // GAMBE — leg extension
       'legext':     ['leg extension','estensione gambe','quadricipiti macchina'],
       // GAMBE — leg press
@@ -4105,9 +3976,14 @@ function buildStockView() {
     return { bg: '#f5f5f7', color: '#666', label: s };
   }
 
-  let html = `<div class="app-view-inner view-wrap">`;
+  let html = `<div style="max-width:860px;margin:0 auto;padding:20px 20px 60px">`;
 
-  // ── ALERT INIZIA SUBITO (no titolo — coerenza con altri tab) ──
+  // ── HEADER ──
+  html += `
+    <div style="margin-bottom:20px">
+      <div style="font-size:22px;font-weight:600;color:var(--text)">📦 Inventario Peptidi</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:3px">Aggiornato 11 giu 2026 · Protocollo 16 settimane · Giorno ${dayElapsed}</div>
+    </div>`;
 
   // ── ALERT TESA SCORTE ──
   html += `
