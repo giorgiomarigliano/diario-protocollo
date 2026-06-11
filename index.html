@@ -3258,29 +3258,29 @@ function buildDashboard() {
               const phaseDefs = [
                 { color:'#0071e3', bg:'rgba(0,113,227,.07)', sett:'1–4', date:'8 giu – 5 lug', days:28,
                   peptides:[
-                    {dot:'#0071e3', name:'Tesamorelin', dose:'1mg · 200µl · sera'},
+                    {dot:'#0071e3', name:'Tesamorelin', dose:'1mg · 200µl', giorni:'ogni sera · 7gg/sett'},
                   ]
                 },
                 { color:'#ff9500', bg:'rgba(255,149,0,.07)', sett:'5–6', date:'6 lug – 19 lug', days:14,
                   peptides:[
-                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl · sera'},
-                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg · sera'},
+                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl', giorni:'ogni sera · 7gg/sett'},
+                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg',         giorni:'ogni sera · 7gg/sett'},
                   ]
                 },
                 { color:'#34c759', bg:'rgba(52,199,89,.07)', sett:'7–12', date:'20 lug – 30 ago', days:42,
                   bkk: true,
                   peptides:[
-                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl · sera'},
-                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg · sera'},
-                    {dot:'#34c759', name:'MOTS-C',      dose:'2.5mg · mattina (lun/gio)'},
+                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl', giorni:'ogni sera · 7gg/sett'},
+                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg',         giorni:'ogni sera · 7gg/sett'},
+                    {dot:'#34c759', name:'MOTS-C',      dose:'2.5mg',       giorni:'lun + gio · mattina a digiuno'},
                   ]
                 },
                 { color:'#ff3b30', bg:'rgba(255,59,48,.07)', sett:'13–16', date:'31 ago – 25 set', days:28,
                   peptides:[
-                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl · sera'},
-                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg · sera'},
-                    {dot:'#34c759', name:'MOTS-C',      dose:'2.5mg · mattina (lun/gio)'},
-                    {dot:'#ff3b30', name:'BPC-157',     dose:'250mcg · mattina'},
+                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl', giorni:'ogni sera · 7gg/sett'},
+                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg',         giorni:'ogni sera · 7gg/sett'},
+                    {dot:'#34c759', name:'MOTS-C',      dose:'2.5mg',       giorni:'lun + gio · mattina a digiuno'},
+                    {dot:'#ff3b30', name:'BPC-157',     dose:'250mcg',      giorni:'mar/mer/ven/sab/dom · pre-workout'},
                   ]
                 },
               ];
@@ -3291,10 +3291,13 @@ function buildDashboard() {
                 const isPast   = elapsed >= dayStart + p.days;
                 const daysLeft = isActive ? (dayStart + p.days - elapsed) : null;
                 const pills = p.peptides.map(px =>
-                  `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.04)">
-                    <div style="width:6px;height:6px;border-radius:50%;background:${px.dot};flex-shrink:0"></div>
-                    <span style="font-size:12px;font-weight:600;color:var(--text);min-width:80px">${px.name}</span>
-                    <span style="font-size:11px;color:var(--muted)">${px.dose}</span>
+                  `<div style="padding:5px 0;border-bottom:1px solid rgba(0,0,0,.04)">
+                    <div style="display:flex;align-items:center;gap:6px">
+                      <div style="width:6px;height:6px;border-radius:50%;background:${px.dot};flex-shrink:0"></div>
+                      <span style="font-size:12px;font-weight:600;color:var(--text)">${px.name}</span>
+                      <span style="font-size:11px;color:var(--muted)">${px.dose}</span>
+                    </div>
+                    <div style="margin-left:12px;margin-top:2px;font-size:11px;color:var(--faint,#aaa);">📅 ${px.giorni}</div>
                   </div>`
                 ).join('');
                 return `
