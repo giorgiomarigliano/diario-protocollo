@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781175507 -->
+<!-- deploy 1781175570 -->
 </head>
 <body>
 
@@ -1761,6 +1761,7 @@ function applyAll(data){
   updateProgress();
   _lastData = data;
   setTimeout(refreshWeekSummary, 0);
+  setTimeout(() => { if (typeof refreshCharts === 'function') refreshCharts(); }, 50);
 }
 
 let _saving=false;
