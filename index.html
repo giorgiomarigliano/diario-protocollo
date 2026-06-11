@@ -3828,7 +3828,6 @@ function buildStockView() {
   const dayElapsed = Math.floor((today - protocolStart) / 86400000) + 1; // day 4
 
   // Stima dose consumata Tesa vial-in-uso: 3 iniezioni × 1mg = 3mg = 600µl → rimasto ~1400µl su 2000µl
-  const tesaVialInUso = { used: 3, totalDoses: 10, volumeUsed: 600, volumeTot: 2000 };
 
   const peptides = [
     {
@@ -3840,12 +3839,12 @@ function buildStockView() {
       vials: [
         { n: 1, stato: 'perso', qty: null, note: 'Ricostituzione errata (temp. amb. + acqua calda) — solidificato' },
         { n: 2, stato: 'perso', qty: null, note: 'Vial perso' },
-        { n: 3, stato: 'in_uso', qty: '~7mg rimasti', note: 'Ricostituito 2ml BAC water → 5mcg/µl · 3 dosi da 1mg consumate · ~1.4ml rimasti' },
+        { n: 3, stato: 'intatto', qty: '10mg', note: 'In frigo, intatto — non ancora ricostituito' },
         { n: 4, stato: 'intatto', qty: '10mg', note: 'In frigo, intatto' },
         { n: 5, stato: 'intatto', qty: '10mg', note: 'In frigo, intatto' },
         { n: 6, stato: 'intatto', qty: '10mg', note: 'In frigo, intatto' },
       ],
-      totale: '~37mg utilizzabili (4 vial × 10mg, di cui 1 parziale)',
+      totale: '40mg disponibili (4 vial × 10mg, tutti intatti)',
       protocolNote: 'Sett 1–4: 1mg/notte · Sett 5–6: 2mg/notte · Sett 7–16: 1mg/notte (con MOTS-C/GHK-Cu/BPC)',
     },
     {
@@ -3900,7 +3899,7 @@ function buildStockView() {
   // Fase 1-4: 28gg × 1mg = 28mg · Fase 5-6: 14gg × 2mg = 28mg · Fase 7-16: 70gg × 1mg = 70mg
   // Totale fabbisogno: 126mg · Disponibile: ~37mg → ⚠️ insufficiente, serve riordino
   const fabbisognoTesa = 126;
-  const disponibileTesa = 37;
+  const disponibileTesa = 40;
   const gapTesa = fabbisognoTesa - disponibileTesa;
 
   function statoColor(s) {
