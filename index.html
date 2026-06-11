@@ -1001,6 +1001,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   <div class="main-nav-tab" id="main-tab-dash" onclick="switchView('dash')">Dashboard</div>
   <div class="main-nav-tab" id="main-tab-med" onclick="switchView('med')">🩸 Referti</div>
   <div class="main-nav-tab" id="main-tab-meddash" onclick="switchView('meddash')">📊 Lab</div>
+  <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')">📦 Stock</div>
 </div>
 <div class="nav-strip" id="nav-strip"></div>
 <div class="diary-view" id="diary-view">
@@ -1009,6 +1010,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="dash-view" id="dash-view"></div>
 <div class="med-view" id="med-view"></div>
 <div class="med-view" id="meddash-view"></div>
+<div class="med-view" id="stock-view"></div>
 
 <div class="save-bar">
   <span class="save-hint" id="last-saved">Mai salvato</span>
@@ -2174,17 +2176,21 @@ function switchView(view) {
   const dash = document.getElementById('dash-view');
   const med = document.getElementById('med-view');
   const meddash = document.getElementById('meddash-view');
+  const stockView = document.getElementById('stock-view');
   const navStrip = document.getElementById('nav-strip');
   const tabDiary = document.getElementById('main-tab-diary');
   const tabDash = document.getElementById('main-tab-dash');
   const tabMed = document.getElementById('main-tab-med');
   const tabMedDash = document.getElementById('main-tab-meddash');
+  const tabStock = document.getElementById('main-tab-stock');
   // Reset all
   diary.classList.add('hidden'); dash.classList.remove('active');
   med.classList.remove('visible'); meddash.classList.remove('visible');
+  stockView.classList.remove('visible');
   navStrip.style.display = 'none';
   tabDiary.classList.remove('on'); tabDash.classList.remove('on');
   tabMed.classList.remove('on'); tabMedDash.classList.remove('on');
+  tabStock.classList.remove('on');
   if (view === 'dash') {
     dash.classList.add('active');
     tabDash.classList.add('on');
@@ -2197,6 +2203,10 @@ function switchView(view) {
     meddash.classList.add('visible');
     tabMedDash.classList.add('on');
     buildMedDash();
+  } else if (view === 'stock') {
+    stockView.classList.add('visible');
+    tabStock.classList.add('on');
+    buildStockView();
   } else {
     diary.classList.remove('hidden');
     navStrip.style.display = '';
@@ -3804,6 +3814,213 @@ function importMotra(dayId) {
 // ═══════════════════════════════════════════════
 //  BUILD MED DASH — Dashboard Laboratorio
 // ═══════════════════════════════════════════════
+
+function buildStockView() {
+  const el = document.getElementById('stock-view');
+  if (el.dataset.built) return;
+  el.dataset.built = '1';
+
+  // ── DATI INVENTARIO (aggiornato 11/06/2026) ──────────────────────────
+  // Tesamorelin: 6 originali, 2 vial persi (vial 1 ricostituita male, vial 2 persa),
+  // vial 3 in uso (ricostituita 2ml BAC → 5mcg/µl → 1mg = 200µl), vial 4-6 intatte in frigo
+  const today = new Date('2026-06-11');
+  const protocolStart = new Date('2026-06-08');
+  const dayElapsed = Math.floor((today - protocolStart) / 86400000) + 1; // day 4
+
+  // Stima dose consumata Tesa vial-in-uso: 3 iniezioni × 1mg = 3mg = 600µl → rimasto ~1400µl su 2000µl
+  const tesaVialInUso = { used: 3, totalDoses: 10, volumeUsed: 600, volumeTot: 2000 };
+
+  const peptides = [
+    {
+      name: 'Tesamorelin',
+      emoji: '🧬',
+      color: '#0071e3',
+      bg: '#e8f1fb',
+      unit: 'mg',
+      vials: [
+        { n: 1, stato: 'perso', qty: null, note: 'Ricostituzione errata (temp. amb. + acqua calda) — solidificato' },
+        { n: 2, stato: 'perso', qty: null, note: 'Vial perso' },
+        { n: 3, stato: 'in_uso', qty: '~7mg rimasti', note: 'Ricostituito 2ml BAC water → 5mcg/µl · 3 dosi da 1mg consumate · ~1.4ml rimasti' },
+        { n: 4, stato: 'intatto', qty: '10mg', note: 'In frigo, intatto' },
+        { n: 5, stato: 'intatto', qty: '10mg', note: 'In frigo, intatto' },
+        { n: 6, stato: 'intatto', qty: '10mg', note: 'In frigo, intatto' },
+      ],
+      totale: '~37mg utilizzabili (4 vial × 10mg, di cui 1 parziale)',
+      protocolNote: 'Sett 1–4: 1mg/notte · Sett 5–6: 2mg/notte · Sett 7–16: 1mg/notte (con MOTS-C/GHK-Cu/BPC)',
+    },
+    {
+      name: 'MOTS-C',
+      emoji: '⚡',
+      color: '#34c759',
+      bg: 'rgba(52,199,89,.08)',
+      unit: 'vial',
+      vials: [
+        { n: 1, stato: 'intatto', qty: '1 vial', note: 'Intatto, in frigo' },
+        { n: 2, stato: 'intatto', qty: '1 vial', note: 'Intatto, in frigo' },
+        { n: 3, stato: 'intatto', qty: '1 vial', note: 'Intatto, in frigo' },
+        { n: 4, stato: 'intatto', qty: '1 vial', note: 'Intatto, in frigo' },
+        { n: 5, stato: 'intatto', qty: '1 vial', note: 'Intatto, in frigo' },
+      ],
+      totale: '5 vial intatti',
+      protocolNote: 'Fase attiva: Sett 7–16 · iniezione mattutina a digiuno',
+    },
+    {
+      name: 'BPC-157',
+      emoji: '🔧',
+      color: '#ff9500',
+      bg: 'rgba(255,149,0,.08)',
+      unit: 'vial',
+      vials: [
+        { n: 1, stato: 'intatto', qty: '1 vial', note: 'Intatto, in frigo' },
+        { n: 2, stato: 'intatto', qty: '1 vial', note: 'Intatto, in frigo' },
+      ],
+      totale: '2 vial intatti',
+      protocolNote: 'Fase attiva: Sett 13–16',
+    },
+    {
+      name: 'GHK-Cu',
+      emoji: '🩵',
+      color: '#af52de',
+      bg: 'rgba(175,82,222,.08)',
+      unit: 'vial',
+      vials: [
+        { n: 1, stato: 'intatto', qty: '1 vial', note: 'Intatto, in frigo' },
+      ],
+      totale: '1 vial intatto',
+      protocolNote: 'Fase attiva: Sett 7–12',
+    },
+  ];
+
+  const consumabili = [
+    { name: 'BAC Water (Bacteriostatic Water)', emoji: '💧', qty: '4 flaconi', stato: 'intatto', note: 'In frigo · usare acqua fredda, iniezione lungo parete vial' },
+    { name: 'Siringhe insulina', emoji: '💉', qty: '240 pz', note: 'PIC 30G × 8mm · 1ml · stock completo' },
+  ];
+
+  // ── CALCOLO SCORTE TESA ──────────────────────────────────────────────
+  // Fase 1-4: 28gg × 1mg = 28mg · Fase 5-6: 14gg × 2mg = 28mg · Fase 7-16: 70gg × 1mg = 70mg
+  // Totale fabbisogno: 126mg · Disponibile: ~37mg → ⚠️ insufficiente, serve riordino
+  const fabbisognoTesa = 126;
+  const disponibileTesa = 37;
+  const gapTesa = fabbisognoTesa - disponibileTesa;
+
+  function statoColor(s) {
+    if (s === 'intatto') return { bg: 'rgba(52,199,89,.10)', color: '#1d7a3a', label: 'Intatto' };
+    if (s === 'in_uso') return { bg: 'rgba(0,113,227,.10)', color: '#0071e3', label: 'In uso' };
+    if (s === 'perso') return { bg: 'rgba(255,59,48,.10)', color: '#ff3b30', label: 'Perso' };
+    return { bg: '#f5f5f7', color: '#666', label: s };
+  }
+
+  let html = `<div style="max-width:860px;margin:0 auto;padding:20px 20px 60px">`;
+
+  // ── HEADER ──
+  html += `
+    <div style="margin-bottom:20px">
+      <div style="font-size:22px;font-weight:600;color:var(--text)">📦 Inventario Peptidi</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:3px">Aggiornato 11 giu 2026 · Protocollo 16 settimane · Giorno ${dayElapsed}</div>
+    </div>`;
+
+  // ── ALERT TESA SCORTE ──
+  html += `
+    <div style="background:rgba(255,149,0,.10);border:1px solid rgba(255,149,0,.3);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start">
+      <div style="font-size:20px;line-height:1">⚠️</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#b36200">Riordino Tesamorelin necessario</div>
+        <div style="font-size:12px;color:#7a4400;margin-top:3px">Fabbisogno totale protocollo: <b>${fabbisognoTesa}mg</b> · Disponibile: <b>~${disponibileTesa}mg</b> · Gap: <b>${gapTesa}mg</b> (≈ ${Math.ceil(gapTesa/10)} vial da 10mg)</div>
+      </div>
+    </div>`;
+
+  // ── PEPTIDI ──
+  peptides.forEach(p => {
+    const intatti = p.vials.filter(v => v.stato === 'intatto').length;
+    const inUso = p.vials.filter(v => v.stato === 'in_uso').length;
+    const persi = p.vials.filter(v => v.stato === 'perso').length;
+
+    html += `
+      <div style="background:var(--surface2,#f5f5f7);border-radius:14px;padding:16px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:10px;background:${p.bg};display:flex;align-items:center;justify-content:center;font-size:18px">${p.emoji}</div>
+            <div>
+              <div style="font-size:15px;font-weight:600;color:${p.color}">${p.name}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:1px">${p.totale}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+            ${intatti > 0 ? `<span style="font-size:11px;background:rgba(52,199,89,.12);color:#1d7a3a;padding:2px 8px;border-radius:20px">${intatti} intatti</span>` : ''}
+            ${inUso > 0 ? `<span style="font-size:11px;background:rgba(0,113,227,.12);color:#0071e3;padding:2px 8px;border-radius:20px">${inUso} in uso</span>` : ''}
+            ${persi > 0 ? `<span style="font-size:11px;background:rgba(255,59,48,.12);color:#ff3b30;padding:2px 8px;border-radius:20px">${persi} persi</span>` : ''}
+          </div>
+        </div>`;
+
+    // Vials table
+    html += `<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px">`;
+    p.vials.forEach(v => {
+      const sc = statoColor(v.stato);
+      html += `
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;background:var(--card-bg,#fff);border-radius:9px">
+          <div style="min-width:22px;font-size:12px;font-weight:600;color:var(--muted);padding-top:1px">V${v.n}</div>
+          <div style="flex:1;font-size:12px;color:var(--text)">${v.note}</div>
+          <div style="min-width:60px;text-align:right">
+            <span style="font-size:11px;font-weight:500;background:${sc.bg};color:${sc.color};padding:2px 7px;border-radius:20px;white-space:nowrap">${sc.label}</span>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+
+    // Protocol note
+    html += `<div style="font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px">🗓 ${p.protocolNote}</div>`;
+    html += `</div>`;
+  });
+
+  // ── CONSUMABILI ──
+  html += `
+    <div style="margin-top:4px;margin-bottom:14px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">Consumabili</div>
+      <div style="display:flex;flex-direction:column;gap:6px">`;
+  consumabili.forEach(c => {
+    html += `
+        <div style="background:var(--surface2,#f5f5f7);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px">
+          <div style="font-size:20px">${c.emoji}</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500;color:var(--text)">${c.name}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${c.note}</div>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:#34c759;white-space:nowrap">${c.qty}</div>
+        </div>`;
+  });
+  html += `</div></div>`;
+
+  // ── RIEPILOGO FABBISOGNO ──
+  html += `
+    <div style="background:var(--surface2,#f5f5f7);border-radius:14px;padding:16px;margin-top:6px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">📊 Fabbisogno protocollo completo</div>
+      <div style="display:grid;gap:8px">`;
+
+  const rows = [
+    { fase: 'Sett 1–4', detail: '28 gg × 1mg Tesa', qty: '28mg Tesa', ok: disponibileTesa >= 28 },
+    { fase: 'Sett 5–6', detail: '14 gg × 2mg Tesa', qty: '28mg Tesa', ok: disponibileTesa >= 56 },
+    { fase: 'Sett 7–12', detail: '42 gg · Tesa 1mg + MOTS-C + GHK-Cu', qty: '42mg Tesa · 3–4 vial MOTS-C · 1 vial GHK-Cu', ok: true },
+    { fase: 'Sett 13–16', detail: '28 gg · Tesa 1mg + MOTS-C + BPC-157', qty: '28mg Tesa · 1–2 vial MOTS-C · 2 vial BPC-157', ok: true },
+  ];
+  rows.forEach(r => {
+    html += `
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 10px;background:var(--card-bg,#fff);border-radius:9px">
+          <div style="font-size:11px;font-weight:600;color:var(--muted);min-width:60px;padding-top:1px">${r.fase}</div>
+          <div style="flex:1;font-size:12px;color:var(--text)">${r.detail}<div style="font-size:11px;color:var(--muted);margin-top:1px">${r.qty}</div></div>
+          <div style="font-size:14px">${r.ok ? '✅' : '⚠️'}</div>
+        </div>`;
+  });
+
+  html += `</div>
+      <div style="margin-top:12px;padding:10px 12px;background:rgba(255,149,0,.08);border-radius:9px;font-size:12px;color:#7a4400">
+        <b>Totale Tesamorelin:</b> fabbisogno ${fabbisognoTesa}mg · disponibile ~${disponibileTesa}mg · da riordinare ~<b>${gapTesa}mg</b> (${Math.ceil(gapTesa/10)} vial × 10mg)
+      </div>
+    </div>`;
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
 function buildMedDash() {
   const el = document.getElementById('meddash-view');
   if (el.dataset.built) return;
