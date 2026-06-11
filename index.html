@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781163791 -->
+<!-- deploy 1781175507 -->
 </head>
 <body>
 
@@ -1307,10 +1307,9 @@ function buildCharts(container){
   const from=Math.max(0,elapsed-13);
   const pesoData=[],hrvData=[];
   for(let i=from;i<=elapsed&&i<TOTAL_DAYS;i++){
-    const ep=document.querySelector(`[data-id="day_${i}"][data-f="peso"]`);
-    const eh=document.querySelector(`[data-id="day_${i}"][data-f="hrv"]`);
-    pesoData.push(ep?.value?parseFloat(ep.value):null);
-    hrvData.push(eh?.value?parseFloat(eh.value):null);
+    const _dc = _lastData['day_' + i] || {};
+    pesoData.push(_dc['peso'] ? parseFloat(_dc['peso']) : null);
+    hrvData.push(_dc['hrv']  ? parseFloat(_dc['hrv'])  : null);
   }
   if(!pesoData.some(v=>v!==null)&&!hrvData.some(v=>v!==null)) return;
   const card=document.createElement('div');
@@ -2710,7 +2709,9 @@ function getComplianceData() {
     const wo = getWorkout(i);
     if (wo.type !== 'Riposo') {
       woPrev++;
-      if (document.querySelector(`[data-id="${id}"][data-f="wo_rpe"]`)?.value) woDone++;
+      const _ld = _lastData[id] || {};
+      const _woExec = (_ld['wo_rpe']) || (_ld['wo_kcal'] && parseFloat(_ld['wo_kcal']) > 0) || (_ld['wo_volume'] && parseFloat(_ld['wo_volume']) > 0);
+      if (_woExec) woDone++;
     }
     // Stack
     stackDays++;
@@ -2725,8 +2726,9 @@ function getComplianceData() {
     const wo2 = getWorkout(i);
     if (wo2.type in woCounts) {
       woCounts[wo2.type]++;
-      const rpe2 = document.querySelector(`[data-id="day_${i}"][data-f="wo_rpe"]`)?.value;
-      if (rpe2) woDones[wo2.type]++;
+      const _ld2 = _lastData['day_' + i] || {};
+      const _exec2 = (_ld2['wo_rpe']) || (_ld2['wo_kcal'] && parseFloat(_ld2['wo_kcal']) > 0) || (_ld2['wo_volume'] && parseFloat(_ld2['wo_volume']) > 0);
+      if (_exec2) woDones[wo2.type]++;
     }
   }
   return { injPrev, injDone, woPrev, woDone, stackDays, stackDone, woCounts, woDones };
@@ -2828,14 +2830,11 @@ function getWorkoutSessions(days) {
     const id = 'day_' + i;
     const wo = getWorkout(i);
     if (wo.type === 'Riposo') continue;
-    const volEl = document.querySelector(`[data-id="${id}"][data-f="wo_volume"]`);
-    const kcalEl = document.querySelector(`[data-id="${id}"][data-f="wo_kcal"]`);
-    const durEl = document.querySelector(`[data-id="${id}"][data-f="wo_durata"]`);
-    const rpeEl = document.querySelector(`[data-id="${id}"][data-f="wo_rpe"]`);
-    const vol = volEl ? parseFloat(volEl.value) : NaN;
-    const kcal = kcalEl ? parseFloat(kcalEl.value) : NaN;
-    const dur = durEl ? parseFloat(durEl.value) : NaN;
-    const rpe = rpeEl ? parseFloat(rpeEl.value) : NaN;
+    const _s = _lastData[id] || {};
+    const vol  = parseFloat(_s['wo_volume']) || NaN;
+    const kcal = parseFloat(_s['wo_kcal'])   || NaN;
+    const dur  = parseFloat(_s['wo_durata']) || NaN;
+    const rpe  = parseFloat(_s['wo_rpe'])    || NaN;
     const d = new Date(START); d.setDate(d.getDate() + i);
     sessions.push({
       dayIdx: i, date: d, type: wo.type,
@@ -2877,8 +2876,7 @@ function getWeeklyVolume(weeks) {
     for (let d = w * 7; d < (w + 1) * 7 && d < TOTAL_DAYS; d++) {
       const id = 'day_' + d;
       const wo = getWorkout(d);
-      const volEl = document.querySelector(`[data-id="${id}"][data-f="wo_volume"]`);
-      const vol = volEl ? parseFloat(volEl.value) : NaN;
+      const vol = parseFloat((_lastData[id] || {})['wo_volume']) || NaN;
       if (isNaN(vol) || !vol) continue;
       entry.total += vol;
       if (wo.type === 'Push') entry.push += vol;
@@ -2905,7 +2903,7 @@ function getWorkoutBreakdown() {
     const t = wo.type;
     if (!(t in counts)) continue;
     counts[t]++;
-    const rpe = document.querySelector(`[data-id="day_${i}"][data-f="wo_rpe"]`)?.value;
+    const rpe = (_lastData['day_' + i] || {})['wo_rpe'];
     if (rpe) done[t]++;
   }
   return { counts, done };
@@ -2920,10 +2918,9 @@ function getHrvVsVolume(days) {
   const points = [];
   for (let i = from; i <= elapsed && i < TOTAL_DAYS; i++) {
     const id = 'day_' + i;
-    const hrvEl = document.querySelector(`[data-id="${id}"][data-f="hrv"]`);
-    const volEl = document.querySelector(`[data-id="${id}"][data-f="wo_volume"]`);
-    const hrv = hrvEl ? parseFloat(hrvEl.value) : NaN;
-    const vol = volEl ? parseFloat(volEl.value) : NaN;
+    const _dd = _lastData[id] || {};
+    const hrv = parseFloat(_dd['hrv']) || NaN;
+    const vol = parseFloat(_dd['wo_volume']) || NaN;
     if (!isNaN(hrv) && hrv > 0 && !isNaN(vol) && vol > 0)
       points.push({ hrv, vol });
   }
@@ -3533,8 +3530,7 @@ function refreshDashCharts() {
   // RPE vs HRV line overlay
   const rpeLineData = sessions30.filter(s => s.rpe).map(s => ({ date: s.date, value: s.rpe }));
   const hrvLineData = sessions30.filter(s => s.rpe).map(s => {
-    const el = document.querySelector(`[data-id="day_${s.dayIdx}"][data-f="hrv"]`);
-    const v = el ? parseFloat(el.value) : NaN;
+    const v = parseFloat((_lastData['day_' + s.dayIdx] || {})['hrv']) || NaN;
     return { date: s.date, value: isNaN(v) ? null : v / 10 }; // scale HRV /10 for overlay
   });
   drawDashChart('dc-rpe-hrv', [
