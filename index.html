@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781190848 -->
+<!-- deploy 1781190990 -->
 </head>
 <body>
 
@@ -3839,6 +3839,12 @@ function importMotra(dayId) {
 
   const text = ta.value.trim();
   if (!text) { res.className = 'motra-result err'; res.textContent = 'Incolla prima il testo del log Motra.'; return; }
+
+  // Assicurati che la card sia aperta (i campi sentinel esistono nel DOM solo se aperta)
+  const card = document.getElementById('card-' + dayId);
+  if (card && !card.classList.contains('open')) {
+    card.classList.add('open');
+  }
 
   try {
     const data = parseMotraText(text);
