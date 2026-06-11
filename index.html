@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781190723 -->
+<!-- deploy 1781190848 -->
 </head>
 <body>
 
@@ -3882,29 +3882,43 @@ function importMotra(dayId) {
     // More specific keywords first to avoid false matches
     const sentinelMap = {
       // PETTO — compound (bench/incline/chest press, NOT pec dec/fly)
-      'bench':      ['incline bench press','bench press','chest press','panca inclinata','panca piana','db bench','db incline','incline press'],
+      'bench':      ['incline bench press','bench press','chest press','panca inclinata','panca piana','db bench','db incline','incline press',
+                     'machine incline bench','machine bench press','barbell bench press','smith bench'],
       // PETTO — isolamento (pec dec, fly, crossover — NOT bench)
-      'pecdec':     ['pec dec','pec-dec','machine fly','cable fly','crossover','croci','chest fly','pectoral'],
+      'pecdec':     ['pec dec','pec-dec','machine fly','cable fly','crossover','croci','chest fly','pectoral',
+                     'machine fly (pec dec)','machine fly/pec dec','fly (pec dec)'],
       // SPALLE — press (military, shoulder press, overhead)
-      'milpress':   ['military press','shoulder press','overhead press','lento avanti','ohp','db shoulder press','machine shoulder press','smith shoulder'],
+      'milpress':   ['military press','shoulder press','overhead press','lento avanti','ohp','db shoulder press','machine shoulder press','smith shoulder',
+                     'barbell overhead press','overhead press / military press','machine shoulder'],
       // SPALLE — laterale
-      'lateraise':  ['lateral raise','alzate laterali','lat raise','side raise','laterali','machine lateral','machine lateral raise'],
+      'lateraise':  ['lateral raise','alzate laterali','lat raise','side raise','laterali','machine lateral','machine lateral raise',
+                     'dumbbell lateral raise','db lateral raise','cable lateral raise'],
       // SPALLE — rear/face pull
-      'facepull':   ['face pull','rear delt','alzate posteriori','tirate al viso','tirate alla corda','rear fly','reverse fly'],
+      'facepull':   ['face pull','rear delt','alzate posteriori','tirate al viso','tirate alla corda','rear fly','reverse fly',
+                     'cable face pull','face pull / rear delt'],
       // SPALLE — frontale/upright
+      'frontraise': ['front raise','alzate frontali','frontal raise',
+                     'cable upright row','upright row','tirate al mento'],
       'frontrise':  ['front raise','alzate frontali','upright row','tirate al mento','frontal raise'],
       // TRICIPITI — pushdown/estensione bassa
-      'tridown':    ['tricep pushdown','tricep extension','pushdown','tricep push','corda tricipite','rope pushdown','bar pushdown','tricep rope'],
+      'tridown':    ['tricep pushdown','tricep extension','pushdown','tricep push','corda tricipite','rope pushdown','bar pushdown','tricep rope',
+                     'cable rope tricep pushdown','cable tricep pushdown','cable rope pushdown'],
       // TRICIPITI — overhead/estensione alta
-      'triover':    ['overhead tricep','tricep overhead','estensione sopra','french press','overhead ext','high cable tri','dip machine','dip alla macchina'],
+      'triover':    ['overhead tricep','tricep overhead','estensione sopra','french press','overhead ext','high cable tri','dip machine','dip alla macchina',
+                     'cable rope overhead tricep','overhead tricep extension','cable rope overhead'],
       // DORSO — lat machine (pulldown)
-      'lat':        ['lat pulldown','lat machine','pulley alto','gran dorsale','pulldown','pull down','lat pull down','cable lat pull','wide-grip pulldown','wide grip pulldown'],
+      'lat':        ['lat pulldown','lat machine','pulley alto','gran dorsale','pulldown','pull down','lat pull down','cable lat pull',
+                     'wide-grip pulldown','wide grip pulldown','cable lat pull down','lat pull down wide','lat pull down wide-grip','lat pull down wide hammer'],
       // DORSO — rematore/row
-      'row':        ['barbell row','seated row','cable row','t-bar row','machine row','db row','pulley row','rematore','vogatore','pulley basso','bent row','bent over row','barbell bent over','machine t-bar','t-bar'],
+      'row':        ['barbell row','seated row','cable row','t-bar row','machine row','db row','pulley row','rematore','vogatore','pulley basso',
+                     'bent row','bent over row','barbell bent over row','machine t-bar row','machine t-bar',
+                     'cable v-handle seated row','cable v-handle row','v-handle row','seated cable row'],
       // BICIPITI — curl standard
-      'curl':       ['incline curl','ez bar curl','ez curl','bb curl','barbell curl','cable curl','preacher curl','curl bilanciere','curl manubri','db curl','dumbbell bicep curl','cable bar bicep curl','bicep curl','dumbbell curl','cable bicep','curl'],
+      'curl':       ['incline curl','ez bar curl','ez curl','bb curl','barbell curl','cable curl','preacher curl','curl bilanciere','curl manubri','db curl',
+                     'dumbbell bicep curl','cable bar bicep curl','bicep curl','dumbbell curl','cable bicep curl','cable bar bicep'],
       // BICIPITI — martello
-      'hammercurl': ['hammer curl','curl martello','neutral curl','hammer curl manubri','hammer curls','dumbbell hammer','neutral grip curl','hammer'],
+      'hammercurl': ['hammer curl','curl martello','neutral curl','dumbbell hammer curl','neutral grip curl',
+                     'hammer curls','hammer curl manubri','hammer'],
       // GAMBE — leg extension
       'legext':     ['leg extension','estensione gambe','quadricipiti macchina'],
       // GAMBE — leg press
