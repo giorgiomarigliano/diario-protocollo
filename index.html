@@ -3925,8 +3925,8 @@ function getNextEvent2(elapsed) {
 function getWorkout2(dayIdx) {
   const d = new Date(START2); d.setDate(d.getDate()+dayIdx);
   const dow = d.getDay(); // 0=dom
-  const map = {0:'Riposo',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
-  const badges = {Riposo:'badge-rest',Push:'badge-push',Pull:'badge-pull',Legs:'badge-legs','Upper Sab':'badge-upper'};
+  const map = {0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
+  const badges = {Riposo:'badge-rest',Push:'badge-push',Pull:'badge-pull',Legs:'badge-legs','Upper Sab':'badge-upper','Upper Dom':'badge-upper'};
   const type = map[dow]||'Riposo';
   return {type, badge:badges[type]||'badge-rest', label:type.toUpperCase()};
 }
