@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781275050 -->
+<!-- deploy 1781275560 -->
 </head>
 <body>
 
@@ -4917,6 +4917,409 @@ function buildStock2() {
 
   el.innerHTML = html;
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  DIARIO V2 — Protocollo Seregni · Inizio 29 giugno 2026
+// ═══════════════════════════════════════════════════════════════
+
+const START2       = '2026-06-29';
+const TOTAL_DAYS2  = 112;
+const USER_ID2     = 'giorgio_proto2_2026';
+const KEY2         = 'diario_proto2_v1';
+let   _lastData2   = {};
+let   _saving2     = false;
+
+// ── Slot iniezione v2 — 4 finestre Seregni ─────────────────────
+function getInjectionSlotsV2(dayIdx) {
+  const wo = getWorkoutV2(dayIdx);
+  const isWo = wo.type !== 'Riposo' && wo.type !== 'BKK_FREE';
+  const dow = new Date(new Date(START2).getTime() + dayIdx*86400000).getDay(); // 0=Dom
+  const slots = [];
+
+  // 1. MATTINO — Fragment + BPC sempre
+  slots.push({n:1, label:'Mattino · Digiuno totale', momento:'Appena sveglio',
+    peptideOptions:['Fragment 176-191 · 250mcg SC','BPC-157 · 250mcg SC'],
+    multi: true,
+    note:'→ 30-40 min LISS dopo · No cibo per 45 min post-cardio'
+  });
+
+  // 2. POMERIGGIO — Fragment sempre
+  slots.push({n:2, label:'Pomeriggio · Lontano dai pasti', momento:'Metà giornata',
+    peptideOptions:['Fragment 176-191 · 250mcg SC'],
+    note:'Mantiene stimolo lipolitico nella finestra di digiuno'
+  });
+
+  // 3. POST-WORKOUT — IGF-1 DES solo giorni allenamento
+  if (isWo) {
+    slots.push({n:3, label:'Post-Workout · Solo giorni pesi', momento:'Subito post-allenamento',
+      peptideOptions:['IGF-1 DES · 25mcg IM dx','IGF-1 DES · 25mcg IM sx'],
+      multi: true,
+      note:'→ Pasto post-WO con carbo+proteine 20-30 min dopo'
+    });
+  }
+
+  // 4. SERA — Tesa + Ipam + BPC + TB500 sempre
+  slots.push({n: isWo ? 4 : 3, label:'Sera · Ricostruzione notturna', momento:'Almeno 2.5/3h dopo ultimo pasto',
+    peptideOptions:['Tesamorelin · 2mg SC','Ipamorelin · 100mcg SC','BPC-157 · 250mcg SC','TB-500 · 500mcg SC'],
+    multi: true,
+    note:'Stack notturno per asse somatotropo · Forte innalzamento IGF-1 sistemico'
+  });
+
+  return slots;
+}
+
+// ── Workout v2 — stesso split del v1 con START2 ─────────────────
+function getWorkoutV2(i) {
+  const d = new Date(START2); d.setDate(d.getDate() + i);
+  const dow = d.getDay();
+  const BKK_S = new Date('2026-08-07'), BKK_E = new Date('2026-08-21');
+  d.setHours(0,0,0,0); BKK_S.setHours(0,0,0,0); BKK_E.setHours(0,0,0,0);
+  if (d >= BKK_S && d <= BKK_E) return {type:'BKK_FREE', badge:'badge-bkk', label:'BKK'};
+  if (dow === 4) return {type:'Riposo', badge:'badge-rest', label:'RIPOSO'};
+  if (dow === 0) return {type:'Upper Dom', badge:'badge-upper', label:'UPPER DOM'};
+  return SPLIT[dow];
+}
+
+// ── Build card giornaliera v2 ────────────────────────────────────
+function buildDays2() {
+  const container = document.getElementById('container2');
+  if (!container) return;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START2); start.setHours(0,0,0,0);
+
+  // Nav settimane v2
+  const navStrip2 = document.getElementById('nav-strip2');
+  if (navStrip2) {
+    navStrip2.innerHTML = '';
+    for (let w=0;w<TOTAL_DAYS2/7;w++) {
+      const btn = document.createElement('button');
+      btn.className='wk-btn'; btn.textContent=`WK ${w+1}`;
+      btn.dataset.wk = w;
+      btn.onclick = () => scrollToWeek2(w);
+      navStrip2.appendChild(btn);
+    }
+  }
+
+  for (let i=0; i<TOTAL_DAYS2; i++) {
+    const d = new Date(START2); d.setDate(d.getDate()+i);
+    d.setHours(0,0,0,0);
+    const id = 'p2_day_' + i;
+    const wo = getWorkoutV2(i);
+    const elapsed = Math.floor((today - start)/86400000);
+    const isToday = i === elapsed;
+    const isPast = i < elapsed;
+    const wk = Math.floor(i/7);
+
+    const dotColor = isPast ? '#34c759' : isToday ? '#0071e3' : 'var(--faint)';
+    const dayNames = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+    const dayName = dayNames[d.getDay()];
+    const dateStr = d.toLocaleDateString('it-IT',{day:'numeric',month:'long'});
+
+    // Biometria preview
+    const bioPrev = `
+      <div class="day-bio-preview">
+        <span class="bp-item"><span class="bp-val" data-id="${id}" data-f="peso" data-preview="true">—</span><span class="bp-lbl">kg</span></span>
+        <span class="bp-item"><span class="bp-val" data-id="${id}" data-f="hrv" data-preview="true">—</span><span class="bp-lbl">HRV</span></span>
+        <span class="bp-item"><span class="bp-val" data-id="${id}" data-f="sonno_ore" data-preview="true">—</span><span class="bp-lbl">sonno</span></span>
+      </div>`;
+
+    const slots2 = getInjectionSlotsV2(i);
+    const injPrev = slots2.length > 0 ? `<span class="day-inj-badge">${slots2.length} inj</span>` : '';
+
+    // Slot iniezione HTML
+    let injHtml = '';
+    slots2.forEach(slot => {
+      const multiHtml = slot.multi
+        ? slot.peptideOptions.map((opt, pi) => `
+          <div style="margin-bottom:8px;padding:8px 10px;background:var(--bg);border-radius:8px">
+            <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px">${opt}</div>
+            <div class="field-row bi">
+              <div class="fg"><label>Eseguita</label>
+                <select data-id="${id}" data-f="inj${slot.n}_${pi}_eseguita">
+                  <option>—</option><option>Sì</option><option>No</option>
+                </select>
+              </div>
+              <div class="fg"><label>Ora</label>
+                <input type="time" data-id="${id}" data-f="inj${slot.n}_${pi}_ora">
+              </div>
+            </div>
+          </div>`)
+          .join('')
+        : `<div class="field-row bi">
+            <div class="fg"><label>Eseguita</label>
+              <select data-id="${id}" data-f="inj${slot.n}_eseguita">
+                <option>—</option><option>Sì</option><option>No</option>
+              </select>
+            </div>
+            <div class="fg"><label>Ora</label>
+              <input type="time" data-id="${id}" data-f="inj${slot.n}_ora">
+            </div>
+          </div>`;
+
+      injHtml += `
+        <div class="inj-card">
+          <div class="inj-card-header">
+            <div>
+              <div class="inj-label">${slot.label}</div>
+              <div class="inj-momento">${slot.momento}${slot.note ? ' · ' + slot.note : ''}</div>
+            </div>
+          </div>
+          ${multiHtml}
+        </div>`;
+    });
+
+    // Sentinel lifts
+    const sentinelHtml = buildSentinelSection(id, wo.type);
+
+    // Card completa
+    const card = document.createElement('div');
+    card.className = 'day-card' + (isToday ? ' today' : '');
+    card.id = 'card2-' + i;
+    card.dataset.wk = wk;
+
+    card.innerHTML = `
+      <div class="day-head" onclick="toggleDay2(${i})">
+        <span class="day-dot" style="background:${dotColor}"></span>
+        <div class="day-info">
+          <div class="day-name">${dayName} ${dateStr}${isToday ? ' <span class="today-badge">Oggi</span>' : ''}</div>
+          <div class="day-meta">Giorno ${i+1} · Settimana ${wk+1}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${bioPrev}
+          ${injPrev}
+          <span class="day-badge badge-${wo.type==='Riposo'?'rest':wo.type==='BKK_FREE'?'bkk':wo.type.toLowerCase().replace(/ /g,'')}">${wo.label}</span>
+        </div>
+      </div>
+      <div class="day-body">
+        <div class="day-body-inner">
+
+          <!-- BIOMETRIA -->
+          <div class="section-label">Biometria mattutina</div>
+          <div class="bio-grid">
+            <div class="bio-item"><label>Peso kg</label><input type="number" step="0.1" placeholder="—" data-id="${id}" data-f="peso"></div>
+            <div class="bio-item"><label>HRV ms</label><input type="number" placeholder="—" data-id="${id}" data-f="hrv"></div>
+            <div class="bio-item"><label>RHR bpm</label><input type="number" placeholder="—" data-id="${id}" data-f="rhr"></div>
+            <div class="bio-item"><label>Sistolica</label><input type="number" placeholder="—" data-id="${id}" data-f="bp_sys"></div>
+            <div class="bio-item"><label>Diastolica</label><input type="number" placeholder="—" data-id="${id}" data-f="bp_dia"></div>
+            <div class="bio-item"><label>Ore sonno</label><input type="number" step="0.1" placeholder="—" data-id="${id}" data-f="sonno_ore"></div>
+            <div class="bio-item"><label>Sonno /10</label><input type="number" min="1" max="10" placeholder="—" data-id="${id}" data-f="sonno_q"></div>
+            <div class="bio-item"><label>Energia /10</label><input type="number" min="1" max="10" placeholder="—" data-id="${id}" data-f="energia"></div>
+            <div class="bio-item"><label>Recupero /10</label><input type="number" min="1" max="10" placeholder="—" data-id="${id}" data-f="recupero"></div>
+          </div>
+
+          <!-- WORKOUT -->
+          ${wo.type !== 'Riposo' && wo.type !== 'BKK_FREE' ? `
+          <div class="section-label" style="margin-top:14px">Workout · ${wo.label}</div>
+          <div class="wo-box">
+            <div class="field-row tri">
+              <div class="fg"><label>RPE globale (1–10)</label><input type="number" min="1" max="10" placeholder="—" data-id="${id}" data-f="wo_rpe"></div>
+              <div class="fg"><label>Durata (min)</label><input type="number" placeholder="—" data-id="${id}" data-f="wo_durata"></div>
+              <div class="fg"><label>Kcal (Motra / Apple Watch)</label><input type="number" placeholder="—" data-id="${id}" data-f="wo_kcal"></div>
+            </div>
+            <div class="field-row bi">
+              <div class="fg"><label>Volume totale (kg)</label><input type="number" placeholder="—" data-id="${id}" data-f="wo_volume"></div>
+              <div class="fg"><label>Note sessione</label><input type="text" placeholder="energia, tecnica, PR..." data-id="${id}" data-f="wo_note"></div>
+            </div>
+            ${sentinelHtml}
+            ${buildMotraSection(id)}
+          </div>` : ''}
+
+          <!-- NOTE GIORNATA -->
+          <div class="section-label" style="margin-top:14px">Note giornata</div>
+          <textarea rows="2" placeholder="Note libere..." data-id="${id}" data-f="note_giorno" style="width:100%;border-radius:8px;border:1px solid var(--border);padding:8px;font-size:13px;resize:vertical"></textarea>
+
+          <!-- INIEZIONI -->
+          <div class="section-label" style="margin-top:14px">Protocollo iniezione v2</div>
+          <div class="inj-slots">${injHtml}</div>
+
+        </div>
+      </div>`;
+
+    container.appendChild(card);
+
+    // Riepilogo settimanale v2
+    if (i % 7 === 6 || i === TOTAL_DAYS2-1) {
+      const ws = buildWeekSummaryV2(container, wk);
+      if (ws) {
+        const firstDayOfWk = container.querySelector(`[id="card2-${wk*7}"]`);
+        if (firstDayOfWk) container.insertBefore(ws, firstDayOfWk);
+      }
+    }
+  }
+}
+
+function toggleDay2(i) {
+  document.getElementById('card2-' + i)?.classList.toggle('open');
+}
+
+function scrollToWeek2(wk) {
+  const card = document.getElementById('card2-' + (wk*7));
+  if (card) card.scrollIntoView({behavior:'smooth', block:'start'});
+  document.querySelectorAll('#nav-strip2 .wk-btn').forEach(b => b.classList.remove('on'));
+  document.querySelector(`#nav-strip2 [data-wk="${wk}"]`)?.classList.add('on');
+}
+
+function buildWeekSummaryV2(container, wkIdx) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START2); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today - start)/86400000);
+  const currentWk = Math.floor(elapsed/7);
+  if (wkIdx !== currentWk) return null;
+
+  const get = (id, f) => (_lastData2[id] && _lastData2[id][f]) || '';
+  const wkStart = wkIdx*7, wkEnd = Math.min(wkStart+7, TOTAL_DAYS2);
+
+  let totalInj=0, doneInj=0, totalWo=0, doneWo=0;
+  let pesoSum=0, pesoCount=0, hrvSum=0, hrvCount=0;
+
+  for (let i=wkStart; i<wkEnd && i<=elapsed; i++) {
+    const id = 'p2_day_'+i;
+    const slots = getInjectionSlotsV2(i);
+    totalInj += slots.length;
+    slots.forEach(s => { if (get(id,'inj'+s.n+'_eseguita')==='Sì') doneInj++; });
+    const wo = getWorkoutV2(i);
+    if (wo.type !== 'Riposo') {
+      totalWo++;
+      const vol = parseFloat(get(id,'wo_volume'));
+      const kcal = parseFloat(get(id,'wo_kcal'));
+      if (!isNaN(vol) && vol>0 || !isNaN(kcal) && kcal>0) doneWo++;
+    }
+    const peso = parseFloat(get(id,'peso'));
+    if (!isNaN(peso)) { pesoSum+=peso; pesoCount++; }
+    const hrv = parseFloat(get(id,'hrv'));
+    if (!isNaN(hrv)) { hrvSum+=hrv; hrvCount++; }
+  }
+
+  const avgPeso = pesoCount ? (pesoSum/pesoCount).toFixed(1) : '—';
+  const avgHrv  = hrvCount  ? Math.round(hrvSum/hrvCount)    : '—';
+  const injColor = totalInj>0 && doneInj===totalInj ? '#34c759' : doneInj>0 ? '#ff9500' : 'var(--text)';
+
+  const card = document.createElement('div');
+  card.className = 'week-summary-card';
+  card.id = 'week2-summary-'+wkIdx;
+  card.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+      <div class="t-section-title">Riepilogo settimana ${wkIdx+1} · Proto v2</div>
+      <div style="font-size:11px;color:var(--muted)">${pesoCount} gg registrati</div>
+    </div>
+    <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ws-item"><div class="ws-val">${avgPeso}<span style="font-size:12px;font-weight:400"> kg</span></div><div class="ws-lbl">Peso medio</div></div>
+      <div class="ws-item"><div class="ws-val">${avgHrv}<span style="font-size:12px;font-weight:400"> ms</span></div><div class="ws-lbl">HRV medio</div></div>
+      <div class="ws-item"><div class="ws-val" style="color:${injColor}">${doneInj}/${totalInj}</div><div class="ws-lbl">Iniezioni</div></div>
+      <div class="ws-item"><div class="ws-val">${doneWo}/${totalWo}</div><div class="ws-lbl">Workout</div></div>
+    </div>`;
+  return card;
+}
+
+// ── Cloud sync v2 ────────────────────────────────────────────────
+function collectAllV2() {
+  const data = {};
+  document.querySelectorAll('[data-id^="p2_day_"][data-f]').forEach(el => {
+    const id = el.dataset.id, f = el.dataset.f;
+    if (!data[id]) data[id] = {};
+    const v = el.type==='checkbox' ? (el.checked?'1':'0') : el.value;
+    if (v !== '' && v !== '—') data[id][f] = v;
+  });
+  return data;
+}
+
+function applyAllV2(data) {
+  Object.entries(data).forEach(([id,fields]) => {
+    Object.entries(fields).forEach(([f,v]) => {
+      const el = document.querySelector(`[data-id="${id}"][data-f="${f}"]`);
+      if (!el) return;
+      if (el.type==='checkbox') { el.checked=(v==='1'); return; }
+      el.value = v;
+      // aggiorna preview
+      const prev = document.querySelector(`[data-id="${id}"][data-f="${f}"][data-preview]`);
+      if (prev) prev.textContent = v || '—';
+    });
+  });
+  _lastData2 = data;
+}
+
+async function saveDataV2() {
+  if (_saving2) return;
+  _saving2 = true;
+  const btn = document.getElementById('save-btn2');
+  if (btn) btn.textContent = 'Salvataggio...';
+  try {
+    const data = collectAllV2();
+    const payload = {user_id: USER_ID2, data: JSON.stringify(data), updated_at: new Date().toISOString()};
+    const res = await fetch(SB_URL+'/rest/v1/diary', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'resolution=merge-duplicates'},
+      body: JSON.stringify(payload)
+    });
+    if (res.ok || res.status===201) {
+      try { localStorage.setItem(KEY2, JSON.stringify({data,ts:Date.now()})); } catch(e){}
+      document.getElementById('last-saved2').textContent = 'Salvato · '+new Date().toLocaleTimeString('it-IT');
+      setSyncStatus('ok');
+    }
+  } catch(e) {
+    document.getElementById('last-saved2').textContent = 'Errore salvataggio';
+  } finally {
+    _saving2 = false;
+    if (btn) btn.textContent = 'Salva';
+  }
+}
+
+async function loadFromCloudV2() {
+  try {
+    const res = await fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID2+'&select=data,updated_at&limit=1', {
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    });
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows.length > 0 && rows[0].data) {
+        const data = typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : rows[0].data;
+        applyAllV2(data);
+        document.getElementById('last-saved2').textContent = 'Cloud · '+new Date(rows[0].updated_at).toLocaleString('it-IT');
+      }
+    }
+  } catch(e) {
+    const lr = localStorage.getItem(KEY2);
+    if (lr) { try { applyAllV2(JSON.parse(lr).data); } catch(e2){} }
+  }
+}
+
+// ── buildProto2 — diario v2 ──────────────────────────────────────
+function buildProto2() {
+  const el = document.getElementById('proto2-view');
+  if (el.dataset.built) return;
+  el.dataset.built = '1';
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start2 = new Date(START2); start2.setHours(0,0,0,0);
+  const elapsed2 = Math.floor((today - start2)/86400000);
+  const dayLabel = elapsed2 < 0
+    ? `Inizia tra ${Math.abs(elapsed2)} giorni`
+    : elapsed2 < TOTAL_DAYS2 ? `Giorno ${elapsed2+1} di ${TOTAL_DAYS2}`
+    : 'Completato';
+
+  el.innerHTML = `
+    <div style="position:sticky;top:52px;z-index:90;background:var(--surface);border-bottom:1px solid var(--border)">
+      <div class="nav-strip" id="nav-strip2" style="overflow-x:auto;white-space:nowrap;padding:8px 20px;gap:4px;display:flex"></div>
+    </div>
+    <div class="container view-wrap" id="container2" style="padding-top:12px"></div>
+    <div class="save-bar" style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--border);background:var(--surface)">
+      <span style="font-size:12px;color:var(--muted)" id="last-saved2">Mai salvato</span>
+      <button class="save-btn-main" id="save-btn2" onclick="saveDataV2()">Salva</button>
+    </div>`;
+
+  // Costruisce i giorni
+  buildDays2();
+
+  // Carica dal cloud
+  loadFromCloudV2();
+
+  // Auto-save on input
+  el.addEventListener('input', () => {
+    clearTimeout(el._autoSave);
+    el._autoSave = setTimeout(saveDataV2, 3000);
+  });
+}
+
 </script>
 </body>
 </html>
