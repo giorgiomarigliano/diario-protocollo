@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781277286 -->
+<!-- deploy 1781278991 -->
 </head>
 <body>
 
@@ -5116,7 +5116,7 @@ function buildDays2(){
       wh.innerHTML=`
         <h2>Settimana ${wk}</h2>
         <span class="week-phase ${ph.badge}">${ph.label}</span>
-        <span class="week-range">${getWeekRange(wk-1)}</span>`;
+        <span class="week-range">${getWeekRange2(wk-1)}</span>`;
       container.appendChild(wh);
       const ws = buildWeekSummaryV2(container, wk-1);
       if(ws) container.appendChild(ws);
@@ -5584,7 +5584,7 @@ function buildProto2() {
 
   // Struttura identica al diario v1
   el.innerHTML = summaryHtml + `
-    <div class="nav-strip" id="nav-strip2" style="position:sticky;top:52px;z-index:90;background:var(--surface);border-bottom:1px solid var(--border);margin:0 -20px;padding:0 20px;overflow-x:auto;white-space:nowrap"></div>
+    <div class="nav-strip" id="nav-strip2" style="position:sticky;top:52px;z-index:90;background:var(--surface);border-bottom:1px solid var(--border);margin:0 -20px;padding:8px 20px;overflow-x:auto;white-space:nowrap;display:flex;gap:4px"></div>
     <div class="container" id="container2"></div>
     <div style="height:80px"></div>`;
 
