@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781278991 -->
+<!-- deploy 1781279228 -->
 </head>
 <body>
 
@@ -5537,7 +5537,7 @@ function buildCycleCardV2(container){
   wrap.style.cssText='gap:14px;margin-bottom:20px';
   wrap.appendChild(card);
   wrap.appendChild(labCard);
-  container.insertBefore(wrap, container.firstChild);
+  container.appendChild(wrap);
 }
 
 // ── buildProto2 — tab principale v2 ─────────────────────────────
@@ -5610,13 +5610,13 @@ function buildProto2() {
     navStrip2.appendChild(btn);
   }
 
-  // Costruisce i giorni
-  buildDays2();
-
-  // Aggiunge cycle card e lab section come nel v1
+  // Aggiunge cycle card e lab section PRIMA dei giorni (come nel v1)
   const cont2 = document.getElementById('container2');
   buildCycleCardV2(cont2);
   buildLabSection(cont2);
+
+  // Costruisce i giorni (vengono appesi dopo cycle card e lab)
+  buildDays2();
 
   // Carica dal cloud
   loadFromCloudV2();
