@@ -4079,6 +4079,86 @@ function buildProtoHeader2(container) {
   container.appendChild(div);
 }
 
+
+function buildWeekSummary2(container, wkIdx) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START2); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today - start) / 86400000);
+  const currentWk = Math.floor(elapsed / 7);
+  if (wkIdx !== currentWk) return null;
+
+  const wkStart = wkIdx * 7;
+  const wkEnd   = Math.min(wkStart + 7, TOTAL_DAYS2);
+  const get = (id, f) => (_lastData2[id] && _lastData2[id][f]) || '';
+
+  let totalInj=0,doneInj=0,totalWo=0,doneWo=0;
+  let pesoSum=0,pesoCount=0,hrvSum=0,hrvCount=0;
+  let rpeSum=0,rpeCount=0,sysSum=0,sysCount=0;
+  let energiaSum=0,energiaCount=0,kcalTotal=0;
+
+  for (let i=wkStart; i<wkEnd && i<=elapsed; i++) {
+    const id = 'p2_day_'+i;
+    const slots = getInjectionSlots2(i);
+    totalInj += slots.length;
+    slots.forEach(s => {
+      s.fields.forEach(f => {
+        if (get(id, 'inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_')) === 'fatto') doneInj++;
+      });
+    });
+    const wo = getWorkout2(i);
+    if (wo.type !== 'Riposo') {
+      totalWo++;
+      const kcal = parseFloat(get(id,'wo_kcal'));
+      const vol  = parseFloat(get(id,'wo_volume'));
+      const rpe  = parseFloat(get(id,'rpe'));
+      if (!isNaN(kcal)&&kcal>0 || !isNaN(vol)&&vol>0 || !isNaN(rpe)) {
+        doneWo++;
+        if (!isNaN(rpe)) { rpeSum+=rpe; rpeCount++; }
+      }
+    }
+    const peso = parseFloat(get(id,'peso'));
+    if (!isNaN(peso)) { pesoSum+=peso; pesoCount++; }
+    const hrv = parseFloat(get(id,'hrv'));
+    if (!isNaN(hrv)) { hrvSum+=hrv; hrvCount++; }
+    const sys = parseFloat(get(id,'bp_sys'));
+    if (!isNaN(sys)) { sysSum+=sys; sysCount++; }
+    const en = parseFloat(get(id,'energia'));
+    if (!isNaN(en)) { energiaSum+=en; energiaCount++; }
+    const kcal2 = parseFloat(get(id,'wo_kcal'));
+    if (!isNaN(kcal2)) kcalTotal+=kcal2;
+  }
+
+  const avgPeso    = pesoCount    ? (pesoSum/pesoCount).toFixed(1) : '—';
+  const avgHrv     = hrvCount     ? Math.round(hrvSum/hrvCount)    : '—';
+  const avgRpe     = rpeCount     ? (rpeSum/rpeCount).toFixed(1)   : '—';
+  const avgSys     = sysCount     ? Math.round(sysSum/sysCount)    : '—';
+  const avgEnergia = energiaCount ? (energiaSum/energiaCount).toFixed(1) : '—';
+  const injColor   = totalInj>0 && doneInj===totalInj ? '#34c759' : doneInj>0 ? '#ff9500' : 'var(--text)';
+  const daysLogged = pesoCount;
+
+  const card = document.createElement('div');
+  card.className = 'week-summary-card';
+  card.id = 'week-summary2-'+wkIdx;
+  card.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+      <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Riepilogo settimana ${wkIdx+1}</div>
+      <div style="font-size:11px;color:var(--muted)">${daysLogged} gg registrati · ${getWeekRange2(wkIdx)}</div>
+    </div>
+    <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ws-item"><div class="ws-val">${avgPeso}<span style="font-size:12px;font-weight:400"> kg</span></div><div class="ws-lbl">Peso medio</div></div>
+      <div class="ws-item"><div class="ws-val">${avgHrv}<span style="font-size:12px;font-weight:400"> ms</span></div><div class="ws-lbl">HRV medio</div></div>
+      <div class="ws-item"><div class="ws-val" style="color:${injColor}">${doneInj}/${totalInj}</div><div class="ws-lbl">Iniezioni</div></div>
+      <div class="ws-item"><div class="ws-val">${doneWo}/${totalWo}</div><div class="ws-lbl">Workout</div></div>
+    </div>
+    <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      <div class="ws-item"><div class="ws-val">${avgRpe}<span style="font-size:12px;font-weight:400">/10</span></div><div class="ws-lbl">RPE medio</div></div>
+      <div class="ws-item"><div class="ws-val">${avgSys}<span style="font-size:12px;font-weight:400"> mmHg</span></div><div class="ws-lbl">Sistolica media</div></div>
+      <div class="ws-item"><div class="ws-val">${avgEnergia}<span style="font-size:12px;font-weight:400">/10</span></div><div class="ws-lbl">Energia media</div></div>
+      <div class="ws-item"><div class="ws-val">${kcalTotal>0?kcalTotal:'—'}<span style="font-size:12px;font-weight:400">${kcalTotal>0?' kcal':''}</span></div><div class="ws-lbl">Kcal totali</div></div>
+    </div>`;
+  return card;
+}
+
 // ── MAIN BUILD ────────────────────────────────────────────────────────────
 let _proto2Built = false;
 
@@ -4089,18 +4169,29 @@ function buildProtoV2() {
   const container = document.getElementById('container2');
   const today = new Date(); today.setHours(0,0,0,0);
 
-  // 1. Riquadro protocollo Seregni
-  buildProtoHeader2(container);
-
-  // 2. Cycle card (identica v1, dati v2)
-  buildCycleCard2(container);
-
-  // 3. Charts ultimi 14gg (dati v2 da localStorage)
+  // Carica dati salvati prima di costruire
   const raw2 = localStorage.getItem(KEY2);
   if (raw2) { try { _lastData2 = JSON.parse(raw2); } catch(e){} }
+
+  // 1. Progress bar
+  const progWrap = document.createElement('div');
+  progWrap.className = 'prog-wrap';
+  const start2h = new Date(START2); start2h.setHours(0,0,0,0);
+  const elapsed2h = Math.floor((today - start2h)/86400000);
+  const pct2 = Math.max(0, Math.min(100, Math.round((elapsed2h/TOTAL_DAYS2)*100)));
+  progWrap.innerHTML = `<div class="prog-bar" style="width:${pct2}%"></div>`;
+  container.appendChild(progWrap);
+
+  // 2. Cycle card (identica struttura v1)
+  buildCycleCard2(container);
+
+  // 3. Charts ultimi 14gg
   buildCharts2(container);
 
-  // 4. Nav settimane
+  // 4. Riquadro protocollo Seregni
+  buildProtoHeader2(container);
+
+  // 5. Nav settimane
   const navStrip2 = document.createElement('div');
   navStrip2.className = 'nav-strip';
   navStrip2.style.cssText = 'position:sticky;top:44px;z-index:90';
@@ -4131,6 +4222,9 @@ function buildProtoV2() {
       wh.id = 'proto2-week-'+wk; wh.className = 'week-hdr';
       wh.innerHTML = `<h2>Settimana ${wk}</h2><span class="week-phase ${ph.badge}">${ph.label}</span><span class="week-range">${getWeekRange2(wk-1)}</span>`;
       container.appendChild(wh);
+      // Week summary (solo settimana corrente)
+      const ws2 = buildWeekSummary2(container, wk-1);
+      if (ws2) container.appendChild(ws2);
     }
 
     const slots = getInjectionSlots2(i);
