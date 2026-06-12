@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781275560 -->
+<!-- deploy 1781276952 -->
 </head>
 <body>
 
@@ -4918,245 +4918,131 @@ function buildStock2() {
   el.innerHTML = html;
 }
 
+
 // ═══════════════════════════════════════════════════════════════
 //  DIARIO V2 — Protocollo Seregni · Inizio 29 giugno 2026
 // ═══════════════════════════════════════════════════════════════
 
-const START2       = '2026-06-29';
-const TOTAL_DAYS2  = 112;
-const USER_ID2     = 'giorgio_proto2_2026';
-const KEY2         = 'diario_proto2_v1';
-let   _lastData2   = {};
-let   _saving2     = false;
+const START2      = '2026-06-29';
+const TOTAL_DAYS2 = 112;
+const USER_ID2    = 'giorgio_proto2_2026';
+const KEY2        = 'diario_proto2_v1';
+let   _lastData2  = {};
+let   _saving2    = false;
 
-// ── Slot iniezione v2 — 4 finestre Seregni ─────────────────────
-function getInjectionSlotsV2(dayIdx) {
-  const wo = getWorkoutV2(dayIdx);
-  const isWo = wo.type !== 'Riposo' && wo.type !== 'BKK_FREE';
-  const dow = new Date(new Date(START2).getTime() + dayIdx*86400000).getDay(); // 0=Dom
-  const slots = [];
-
-  // 1. MATTINO — Fragment + BPC sempre
-  slots.push({n:1, label:'Mattino · Digiuno totale', momento:'Appena sveglio',
-    peptideOptions:['Fragment 176-191 · 250mcg SC','BPC-157 · 250mcg SC'],
-    multi: true,
-    note:'→ 30-40 min LISS dopo · No cibo per 45 min post-cardio'
-  });
-
-  // 2. POMERIGGIO — Fragment sempre
-  slots.push({n:2, label:'Pomeriggio · Lontano dai pasti', momento:'Metà giornata',
-    peptideOptions:['Fragment 176-191 · 250mcg SC'],
-    note:'Mantiene stimolo lipolitico nella finestra di digiuno'
-  });
-
-  // 3. POST-WORKOUT — IGF-1 DES solo giorni allenamento
-  if (isWo) {
-    slots.push({n:3, label:'Post-Workout · Solo giorni pesi', momento:'Subito post-allenamento',
-      peptideOptions:['IGF-1 DES · 25mcg IM dx','IGF-1 DES · 25mcg IM sx'],
-      multi: true,
-      note:'→ Pasto post-WO con carbo+proteine 20-30 min dopo'
-    });
-  }
-
-  // 4. SERA — Tesa + Ipam + BPC + TB500 sempre
-  slots.push({n: isWo ? 4 : 3, label:'Sera · Ricostruzione notturna', momento:'Almeno 2.5/3h dopo ultimo pasto',
-    peptideOptions:['Tesamorelin · 2mg SC','Ipamorelin · 100mcg SC','BPC-157 · 250mcg SC','TB-500 · 500mcg SC'],
-    multi: true,
-    note:'Stack notturno per asse somatotropo · Forte innalzamento IGF-1 sistemico'
-  });
-
-  return slots;
-}
-
-// ── Workout v2 — stesso split del v1 con START2 ─────────────────
+// ── Helpers v2 ──────────────────────────────────────────────────
 function getWorkoutV2(i) {
-  const d = new Date(START2); d.setDate(d.getDate() + i);
+  const d = new Date(START2); d.setDate(d.getDate()+i); d.setHours(0,0,0,0);
   const dow = d.getDay();
-  const BKK_S = new Date('2026-08-07'), BKK_E = new Date('2026-08-21');
-  d.setHours(0,0,0,0); BKK_S.setHours(0,0,0,0); BKK_E.setHours(0,0,0,0);
+  const BKK_S = new Date('2026-08-07'); BKK_S.setHours(0,0,0,0);
+  const BKK_E = new Date('2026-08-21'); BKK_E.setHours(0,0,0,0);
   if (d >= BKK_S && d <= BKK_E) return {type:'BKK_FREE', badge:'badge-bkk', label:'BKK'};
   if (dow === 4) return {type:'Riposo', badge:'badge-rest', label:'RIPOSO'};
   if (dow === 0) return {type:'Upper Dom', badge:'badge-upper', label:'UPPER DOM'};
   return SPLIT[dow];
 }
 
-// ── Build card giornaliera v2 ────────────────────────────────────
-function buildDays2() {
-  const container = document.getElementById('container2');
-  if (!container) return;
-  const today = new Date(); today.setHours(0,0,0,0);
-  const start = new Date(START2); start.setHours(0,0,0,0);
-
-  // Nav settimane v2
-  const navStrip2 = document.getElementById('nav-strip2');
-  if (navStrip2) {
-    navStrip2.innerHTML = '';
-    for (let w=0;w<TOTAL_DAYS2/7;w++) {
-      const btn = document.createElement('button');
-      btn.className='wk-btn'; btn.textContent=`WK ${w+1}`;
-      btn.dataset.wk = w;
-      btn.onclick = () => scrollToWeek2(w);
-      navStrip2.appendChild(btn);
-    }
-  }
-
-  for (let i=0; i<TOTAL_DAYS2; i++) {
-    const d = new Date(START2); d.setDate(d.getDate()+i);
-    d.setHours(0,0,0,0);
-    const id = 'p2_day_' + i;
-    const wo = getWorkoutV2(i);
-    const elapsed = Math.floor((today - start)/86400000);
-    const isToday = i === elapsed;
-    const isPast = i < elapsed;
-    const wk = Math.floor(i/7);
-
-    const dotColor = isPast ? '#34c759' : isToday ? '#0071e3' : 'var(--faint)';
-    const dayNames = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
-    const dayName = dayNames[d.getDay()];
-    const dateStr = d.toLocaleDateString('it-IT',{day:'numeric',month:'long'});
-
-    // Biometria preview
-    const bioPrev = `
-      <div class="day-bio-preview">
-        <span class="bp-item"><span class="bp-val" data-id="${id}" data-f="peso" data-preview="true">—</span><span class="bp-lbl">kg</span></span>
-        <span class="bp-item"><span class="bp-val" data-id="${id}" data-f="hrv" data-preview="true">—</span><span class="bp-lbl">HRV</span></span>
-        <span class="bp-item"><span class="bp-val" data-id="${id}" data-f="sonno_ore" data-preview="true">—</span><span class="bp-lbl">sonno</span></span>
-      </div>`;
-
-    const slots2 = getInjectionSlotsV2(i);
-    const injPrev = slots2.length > 0 ? `<span class="day-inj-badge">${slots2.length} inj</span>` : '';
-
-    // Slot iniezione HTML
-    let injHtml = '';
-    slots2.forEach(slot => {
-      const multiHtml = slot.multi
-        ? slot.peptideOptions.map((opt, pi) => `
-          <div style="margin-bottom:8px;padding:8px 10px;background:var(--bg);border-radius:8px">
-            <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:4px">${opt}</div>
-            <div class="field-row bi">
-              <div class="fg"><label>Eseguita</label>
-                <select data-id="${id}" data-f="inj${slot.n}_${pi}_eseguita">
-                  <option>—</option><option>Sì</option><option>No</option>
-                </select>
-              </div>
-              <div class="fg"><label>Ora</label>
-                <input type="time" data-id="${id}" data-f="inj${slot.n}_${pi}_ora">
-              </div>
-            </div>
-          </div>`)
-          .join('')
-        : `<div class="field-row bi">
-            <div class="fg"><label>Eseguita</label>
-              <select data-id="${id}" data-f="inj${slot.n}_eseguita">
-                <option>—</option><option>Sì</option><option>No</option>
-              </select>
-            </div>
-            <div class="fg"><label>Ora</label>
-              <input type="time" data-id="${id}" data-f="inj${slot.n}_ora">
-            </div>
-          </div>`;
-
-      injHtml += `
-        <div class="inj-card">
-          <div class="inj-card-header">
-            <div>
-              <div class="inj-label">${slot.label}</div>
-              <div class="inj-momento">${slot.momento}${slot.note ? ' · ' + slot.note : ''}</div>
-            </div>
-          </div>
-          ${multiHtml}
-        </div>`;
-    });
-
-    // Sentinel lifts
-    const sentinelHtml = buildSentinelSection(id, wo.type);
-
-    // Card completa
-    const card = document.createElement('div');
-    card.className = 'day-card' + (isToday ? ' today' : '');
-    card.id = 'card2-' + i;
-    card.dataset.wk = wk;
-
-    card.innerHTML = `
-      <div class="day-head" onclick="toggleDay2(${i})">
-        <span class="day-dot" style="background:${dotColor}"></span>
-        <div class="day-info">
-          <div class="day-name">${dayName} ${dateStr}${isToday ? ' <span class="today-badge">Oggi</span>' : ''}</div>
-          <div class="day-meta">Giorno ${i+1} · Settimana ${wk+1}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          ${bioPrev}
-          ${injPrev}
-          <span class="day-badge badge-${wo.type==='Riposo'?'rest':wo.type==='BKK_FREE'?'bkk':wo.type.toLowerCase().replace(/ /g,'')}">${wo.label}</span>
-        </div>
-      </div>
-      <div class="day-body">
-        <div class="day-body-inner">
-
-          <!-- BIOMETRIA -->
-          <div class="section-label">Biometria mattutina</div>
-          <div class="bio-grid">
-            <div class="bio-item"><label>Peso kg</label><input type="number" step="0.1" placeholder="—" data-id="${id}" data-f="peso"></div>
-            <div class="bio-item"><label>HRV ms</label><input type="number" placeholder="—" data-id="${id}" data-f="hrv"></div>
-            <div class="bio-item"><label>RHR bpm</label><input type="number" placeholder="—" data-id="${id}" data-f="rhr"></div>
-            <div class="bio-item"><label>Sistolica</label><input type="number" placeholder="—" data-id="${id}" data-f="bp_sys"></div>
-            <div class="bio-item"><label>Diastolica</label><input type="number" placeholder="—" data-id="${id}" data-f="bp_dia"></div>
-            <div class="bio-item"><label>Ore sonno</label><input type="number" step="0.1" placeholder="—" data-id="${id}" data-f="sonno_ore"></div>
-            <div class="bio-item"><label>Sonno /10</label><input type="number" min="1" max="10" placeholder="—" data-id="${id}" data-f="sonno_q"></div>
-            <div class="bio-item"><label>Energia /10</label><input type="number" min="1" max="10" placeholder="—" data-id="${id}" data-f="energia"></div>
-            <div class="bio-item"><label>Recupero /10</label><input type="number" min="1" max="10" placeholder="—" data-id="${id}" data-f="recupero"></div>
-          </div>
-
-          <!-- WORKOUT -->
-          ${wo.type !== 'Riposo' && wo.type !== 'BKK_FREE' ? `
-          <div class="section-label" style="margin-top:14px">Workout · ${wo.label}</div>
-          <div class="wo-box">
-            <div class="field-row tri">
-              <div class="fg"><label>RPE globale (1–10)</label><input type="number" min="1" max="10" placeholder="—" data-id="${id}" data-f="wo_rpe"></div>
-              <div class="fg"><label>Durata (min)</label><input type="number" placeholder="—" data-id="${id}" data-f="wo_durata"></div>
-              <div class="fg"><label>Kcal (Motra / Apple Watch)</label><input type="number" placeholder="—" data-id="${id}" data-f="wo_kcal"></div>
-            </div>
-            <div class="field-row bi">
-              <div class="fg"><label>Volume totale (kg)</label><input type="number" placeholder="—" data-id="${id}" data-f="wo_volume"></div>
-              <div class="fg"><label>Note sessione</label><input type="text" placeholder="energia, tecnica, PR..." data-id="${id}" data-f="wo_note"></div>
-            </div>
-            ${sentinelHtml}
-            ${buildMotraSection(id)}
-          </div>` : ''}
-
-          <!-- NOTE GIORNATA -->
-          <div class="section-label" style="margin-top:14px">Note giornata</div>
-          <textarea rows="2" placeholder="Note libere..." data-id="${id}" data-f="note_giorno" style="width:100%;border-radius:8px;border:1px solid var(--border);padding:8px;font-size:13px;resize:vertical"></textarea>
-
-          <!-- INIEZIONI -->
-          <div class="section-label" style="margin-top:14px">Protocollo iniezione v2</div>
-          <div class="inj-slots">${injHtml}</div>
-
-        </div>
-      </div>`;
-
-    container.appendChild(card);
-
-    // Riepilogo settimanale v2
-    if (i % 7 === 6 || i === TOTAL_DAYS2-1) {
-      const ws = buildWeekSummaryV2(container, wk);
-      if (ws) {
-        const firstDayOfWk = container.querySelector(`[id="card2-${wk*7}"]`);
-        if (firstDayOfWk) container.insertBefore(ws, firstDayOfWk);
-      }
-    }
-  }
+function isBKKV2(i) {
+  const d = new Date(START2); d.setDate(d.getDate()+i); d.setHours(0,0,0,0);
+  const BKK_S = new Date('2026-08-07'); BKK_S.setHours(0,0,0,0);
+  const BKK_E = new Date('2026-08-21'); BKK_E.setHours(0,0,0,0);
+  return d >= BKK_S && d <= BKK_E;
 }
 
-function toggleDay2(i) {
-  document.getElementById('card2-' + i)?.classList.toggle('open');
+function getPhaseV2(dayIdx) {
+  const wk = Math.floor(dayIdx/7)+1;
+  if (wk<=16) return {label:'Tesa 2mg + Ipam · Frag · BPC · TB500' + (wk>=1?'':''), badge:'p1b', wk};
+  return {label:'Protocollo v2', badge:'p1b', wk};
 }
 
-function scrollToWeek2(wk) {
-  const card = document.getElementById('card2-' + (wk*7));
-  if (card) card.scrollIntoView({behavior:'smooth', block:'start'});
-  document.querySelectorAll('#nav-strip2 .wk-btn').forEach(b => b.classList.remove('on'));
-  document.querySelector(`#nav-strip2 [data-wk="${wk}"]`)?.classList.add('on');
+function getInjectionSlotsV2(dayIdx) {
+  const wo = getWorkoutV2(dayIdx);
+  const isWo = wo.type !== 'Riposo' && wo.type !== 'BKK_FREE';
+  const slots = [];
+  slots.push({n:1, label:'Mattino · Fragment + BPC', momento:'Mattina · digiuno totale',
+    peptideOptions:['Fragment 176-191 · 250mcg']});
+  slots.push({n:2, label:'Pomeriggio · Fragment', momento:'Pomeriggio · lontano dai pasti',
+    peptideOptions:['Fragment 176-191 · 250mcg']});
+  if (isWo) {
+    slots.push({n:3, label:'Post-Workout · IGF-1 DES', momento:'Post-allenamento · IM locale',
+      peptideOptions:['IGF-1 DES · 25mcg IM dx + 25mcg IM sx']});
+  }
+  const seraSlot = isWo ? 4 : 3;
+  slots.push({n:seraSlot, label:'Sera · Stack notturno', momento:'Sera · 2.5/3h dopo pasto',
+    peptideOptions:['Tesamorelin · 2mg SC']});
+  return slots;
+}
+
+function renderInjectionSlotsV2(dayIdx, id) {
+  const slots = getInjectionSlotsV2(dayIdx);
+  const allPeptides = [
+    'Fragment 176-191 · 250mcg SC',
+    'BPC-157 · 250mcg SC',
+    'IGF-1 DES · 25mcg IM dx',
+    'IGF-1 DES · 25mcg IM sx',
+    'Tesamorelin · 2mg SC',
+    'Ipamorelin · 100mcg SC',
+    'TB-500 · 500mcg SC',
+  ];
+  const momenti = ['Mattina · digiuno totale','Pomeriggio · lontano dai pasti','Post-allenamento · IM locale','Sera · 2.5/3h dopo pasto'];
+  const siti = ['SC add. sin. sup.','SC add. sin. inf.','SC add. dx sup.','SC add. dx inf.','IM quad. dx','IM quad. sx','IM delt. dx','IM delt. sx'];
+
+  // Peptidi multipli per slot sera e mattino
+  const slotMulti = {
+    1: ['Fragment 176-191 · 250mcg SC','BPC-157 · 250mcg SC'],
+    3: ['IGF-1 DES · 25mcg IM dx','IGF-1 DES · 25mcg IM sx'],
+    4: ['Tesamorelin · 2mg SC','Ipamorelin · 100mcg SC','BPC-157 · 250mcg SC','TB-500 · 500mcg SC'],
+  };
+  // slot 3 sera (giorni riposo) = slot 3
+  const wo = getWorkoutV2(dayIdx);
+  const isWo = wo.type !== 'Riposo' && wo.type !== 'BKK_FREE';
+  if (!isWo) slotMulti[3] = ['Tesamorelin · 2mg SC','Ipamorelin · 100mcg SC','BPC-157 · 250mcg SC','TB-500 · 500mcg SC'];
+
+  return slots.map(s => {
+    const fn = s.n;
+    const injColor = s.momento.includes('Mattina') ? '#ff9500' : s.momento.includes('Pomeriggio') ? '#5856d6' : s.momento.includes('Post') ? '#34c759' : '#0071e3';
+    const multiPeptides = slotMulti[fn] || [s.peptideOptions[0]];
+    const peptideOpts = allPeptides.map(p=>`<option value="${p}"${p===s.peptideOptions[0]?' selected':''}>${p}</option>`).join('');
+    const momentoOpts = momenti.map(m=>`<option value="${m}"${m===s.momento?' selected':''}>${m}</option>`).join('');
+    const sitiOpts = siti.map(x=>`<option value="${x}">${x}</option>`).join('');
+
+    const multiRows = multiPeptides.map((pep, pi) => `
+      <div style="border-top:${pi>0?'1px solid var(--border)':'none'};padding-top:${pi>0?'8px':'0'}">
+        <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px">${pep}</div>
+        <div class="inj-fields">
+          <div class="fg inj-f-eseguita">
+            <label>Eseguita</label>
+            <select data-id="${id}" data-f="inj${fn}_${pi}_eseguita">
+              <option value="">—</option><option value="Sì">Sì</option><option value="No">No</option><option value="Posticipata">Posticipata</option>
+            </select>
+          </div>
+          <div class="fg inj-f-sito">
+            <label>Sito</label>
+            <select data-id="${id}" data-f="inj${fn}_${pi}_sito">
+              <option value="">—</option>${sitiOpts}
+            </select>
+          </div>
+          <div class="fg inj-f-momento">
+            <label>Ora</label>
+            <input type="time" data-id="${id}" data-f="inj${fn}_${pi}_ora">
+          </div>
+        </div>
+      </div>`).join('');
+
+    return `
+      <div class="inj-card">
+        <div class="inj-header">
+          <span class="inj-num" style="background:${injColor}20;color:${injColor}">${fn}</span>
+          <span class="inj-title">${s.label}</span>
+          <span class="inj-timing">${s.momento}</span>
+        </div>
+        ${multiRows}
+      </div>`;
+  }).join('\n');
+}
+
+function toggleDay2(id) {
+  document.getElementById('card2-'+id)?.classList.toggle('open');
 }
 
 function buildWeekSummaryV2(container, wkIdx) {
@@ -5165,42 +5051,29 @@ function buildWeekSummaryV2(container, wkIdx) {
   const elapsed = Math.floor((today - start)/86400000);
   const currentWk = Math.floor(elapsed/7);
   if (wkIdx !== currentWk) return null;
-
-  const get = (id, f) => (_lastData2[id] && _lastData2[id][f]) || '';
-  const wkStart = wkIdx*7, wkEnd = Math.min(wkStart+7, TOTAL_DAYS2);
-
-  let totalInj=0, doneInj=0, totalWo=0, doneWo=0;
-  let pesoSum=0, pesoCount=0, hrvSum=0, hrvCount=0;
-
-  for (let i=wkStart; i<wkEnd && i<=elapsed; i++) {
-    const id = 'p2_day_'+i;
-    const slots = getInjectionSlotsV2(i);
-    totalInj += slots.length;
-    slots.forEach(s => { if (get(id,'inj'+s.n+'_eseguita')==='Sì') doneInj++; });
-    const wo = getWorkoutV2(i);
-    if (wo.type !== 'Riposo') {
-      totalWo++;
-      const vol = parseFloat(get(id,'wo_volume'));
-      const kcal = parseFloat(get(id,'wo_kcal'));
-      if (!isNaN(vol) && vol>0 || !isNaN(kcal) && kcal>0) doneWo++;
-    }
-    const peso = parseFloat(get(id,'peso'));
-    if (!isNaN(peso)) { pesoSum+=peso; pesoCount++; }
-    const hrv = parseFloat(get(id,'hrv'));
-    if (!isNaN(hrv)) { hrvSum+=hrv; hrvCount++; }
+  const get = (id,f) => (_lastData2[id] && _lastData2[id][f]) || '';
+  const wkStart=wkIdx*7, wkEnd=Math.min(wkStart+7,TOTAL_DAYS2);
+  let totalInj=0,doneInj=0,totalWo=0,doneWo=0,pesoSum=0,pesoCount=0,hrvSum=0,hrvCount=0;
+  for (let i=wkStart;i<wkEnd&&i<=elapsed;i++) {
+    const id='p2_day_'+i;
+    const slots=getInjectionSlotsV2(i);
+    totalInj+=slots.length;
+    slots.forEach(s=>{if(get(id,'inj'+s.n+'_0_eseguita')==='Sì'||get(id,'inj'+s.n+'_eseguita')==='Sì')doneInj++;});
+    const wo=getWorkoutV2(i);
+    if(wo.type!=='Riposo'){totalWo++;const v=parseFloat(get(id,'wo_volume'));const k=parseFloat(get(id,'wo_kcal'));if((!isNaN(v)&&v>0)||(!isNaN(k)&&k>0))doneWo++;}
+    const p=parseFloat(get(id,'peso'));if(!isNaN(p)){pesoSum+=p;pesoCount++;}
+    const h=parseFloat(get(id,'hrv'));if(!isNaN(h)){hrvSum+=h;hrvCount++;}
   }
-
-  const avgPeso = pesoCount ? (pesoSum/pesoCount).toFixed(1) : '—';
-  const avgHrv  = hrvCount  ? Math.round(hrvSum/hrvCount)    : '—';
-  const injColor = totalInj>0 && doneInj===totalInj ? '#34c759' : doneInj>0 ? '#ff9500' : 'var(--text)';
-
-  const card = document.createElement('div');
-  card.className = 'week-summary-card';
-  card.id = 'week2-summary-'+wkIdx;
-  card.innerHTML = `
+  const avgPeso=pesoCount?(pesoSum/pesoCount).toFixed(1):'—';
+  const avgHrv=hrvCount?Math.round(hrvSum/hrvCount):'—';
+  const injColor=totalInj>0&&doneInj===totalInj?'#34c759':doneInj>0?'#ff9500':'var(--text)';
+  const card=document.createElement('div');
+  card.className='week-summary-card';
+  card.id='week2-summary-'+wkIdx;
+  card.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
       <div class="t-section-title">Riepilogo settimana ${wkIdx+1} · Proto v2</div>
-      <div style="font-size:11px;color:var(--muted)">${pesoCount} gg registrati</div>
+      <div style="font-size:11px;color:var(--muted)">${pesoCount} gg · ${getWeekRange2(wkIdx)}</div>
     </div>
     <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr)">
       <div class="ws-item"><div class="ws-val">${avgPeso}<span style="font-size:12px;font-weight:400"> kg</span></div><div class="ws-lbl">Peso medio</div></div>
@@ -5211,101 +5084,431 @@ function buildWeekSummaryV2(container, wkIdx) {
   return card;
 }
 
+function getWeekRange2(wkIdx) {
+  const s = new Date(START2); s.setDate(s.getDate()+wkIdx*7);
+  const e = new Date(s); e.setDate(e.getDate()+6);
+  const fmt = d => d.toLocaleDateString('it-IT',{day:'2-digit',month:'short'});
+  return fmt(s)+' – '+fmt(e);
+}
+
+// ── buildDays2 — replica esatta di buildDays con parametri v2 ────
+function buildDays2(){
+  const container=document.getElementById('container2');
+  const today=new Date(); today.setHours(0,0,0,0);
+  let curWk=-1;
+
+  for(let i=0;i<TOTAL_DAYS2;i++){
+    const d=new Date(START2); d.setDate(d.getDate()+i); d.setHours(0,0,0,0);
+    const wk=Math.floor(i/7)+1;
+    const ph=getPhaseV2(i);
+    const wo=getWorkoutV2(i);
+    const id='p2_day_'+i;
+    const isToday=d.getTime()===today.getTime();
+    const bkk=isBKKV2(i);
+    const isRest=wo.type==='Riposo';
+    const isBkk=wo.type==='BKK_FREE';
+    const dotColor=getDotColor(wo.type);
+
+    if(wk!==curWk){
+      curWk=wk;
+      const wh=document.createElement('div');
+      wh.id='week2-'+wk; wh.className='week-hdr';
+      wh.innerHTML=`
+        <h2>Settimana ${wk}</h2>
+        <span class="week-phase ${ph.badge}">${ph.label}</span>
+        <span class="week-range">${getWeekRange(wk-1)}</span>`;
+      container.appendChild(wh);
+      const ws = buildWeekSummaryV2(container, wk-1);
+      if(ws) container.appendChild(ws);
+    }
+
+    const card=document.createElement('div');
+    card.className='day-card'+(isToday?' today open':'');
+    card.id='card2-'+id;
+
+    card.innerHTML=`
+      <div class="day-head" onclick="toggleDay2('${id}')">
+        <span class="day-dot" style="background:${dotColor}"></span>
+        <div class="day-info">
+          <div class="day-name">${cap(formatDate(d))}${isToday?'<span class="today-badge">Oggi</span>':''}</div>
+          <div class="day-sub">Giorno ${i+1} · Settimana ${wk}${bkk?' · Bangkok':''}</div>
+        </div>
+        <div class="day-quick">
+          <div class="dq"><div class="dq-v empty" id="q-${id}-peso">—</div><div class="dq-l">kg</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-hrv">—</div><div class="dq-l">HRV</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-sonno">—</div><div class="dq-l">sonno</div></div>
+        </div>
+        <span class="day-badge ${wo.badge}">${wo.label}</span>
+        <span class="day-chev">▾</span>
+      </div>
+      <div class="day-body day-body-desktop">
+
+        <!-- ZONA 1: biometria sx + workout dx -->
+        <div class="col-left">
+        <div class="section-label">Biometria mattutina</div>
+        <div class="bio-grid">
+          <div class="bio-box"><input type="number" step="0.1" placeholder="70.1" data-id="${id}" data-f="peso" oninput="onInput(this,'${id}','peso')"><div class="bio-lbl">Peso kg</div></div>
+          <div class="bio-box"><input type="number" placeholder="48" data-id="${id}" data-f="hrv" oninput="onInput(this,'${id}','hrv')"><div class="bio-lbl">HRV ms</div></div>
+          <div class="bio-box"><input type="number" placeholder="55" data-id="${id}" data-f="rhr"><div class="bio-lbl">RHR bpm</div></div>
+          <div class="bio-box"><input type="number" placeholder="120" data-id="${id}" data-f="bp_sys"><div class="bio-lbl">Sistolica</div></div>
+          <div class="bio-box"><input type="number" placeholder="75" data-id="${id}" data-f="bp_dia"><div class="bio-lbl">Diastolica</div></div>
+          <div class="bio-box"><input type="number" step="0.5" placeholder="7" data-id="${id}" data-f="ore_sonno"><div class="bio-lbl">Ore sonno</div></div>
+          <div class="bio-box"><input type="number" min="1" max="10" step="0.5" placeholder="—" data-id="${id}" data-f="qualita_sonno" oninput="onInput(this,'${id}','sonno')"><div class="bio-lbl">Sonno /10</div></div>
+          <div class="bio-box"><input type="number" min="1" max="10" step="0.5" placeholder="—" data-id="${id}" data-f="energia"><div class="bio-lbl">Energia /10</div></div>
+          <div class="bio-box"><input type="number" min="1" max="10" step="0.5" placeholder="—" data-id="${id}" data-f="recupero"><div class="bio-lbl">Recupero /10</div></div>
+        </div>
+        ${isVitaDay(i)?`
+        <div class="vita-field">
+          <div class="fg" style="margin-top:8px"><label>Circonferenza vita (cm) — misurazione settimanale</label>
+          <input type="number" step="0.5" placeholder="—" data-id="${id}" data-f="vita"></div>
+        </div>`:''}
+        </div><!-- /col-left -->
+
+        <div class="col-right">
+        ${isRest?`
+        <div class="section-label">Workout</div>
+        <div class="rest-banner">Giorno di riposo — recupero attivo, stretching, LISS opzionale</div>`:isBkk?`
+        <div class="section-label">Workout · Bangkok</div>
+        <div class="bkk-banner">🇹🇭 8–21 ago 2026 · Maison Hotel Sukhumvit · Tesa 2mg + MOTS-C + GHK-Cu</div>
+        <div class="wo-box">
+          <div class="wo-header" style="color:#0071e3">Hotel Gym · Smith + Manubri 2–22kg + Cavi</div>
+          <div class="wo-row">
+            <div class="fg"><label>Tipo sessione</label>
+              <select data-id="${id}" data-f="wo_tipo">
+                <option value="">—</option>
+                <option>Push</option><option>Pull</option><option>Upper Body</option>
+                <option>Full Body</option><option>Push + Pull</option>
+                <option>Push + Core</option><option>Pull + Core</option>
+                <option>Cardio / LISS</option><option>Attiva leggera</option>
+              </select>
+            </div>
+            <div class="fg"><label>Ora sessione</label>
+              <select data-id="${id}" data-f="wo_ora_bkk">
+                <option value="">—</option>
+                <option>Mattina (7–10)</option>
+                <option>Pomeriggio (14–17)</option>
+                <option>Sera (18–21)</option>
+              </select>
+            </div>
+            <div class="fg"><label>RPE (1–10)</label>
+              <input type="number" min="1" max="10" step="0.5" placeholder="—" data-id="${id}" data-f="wo_rpe">
+            </div>
+          </div>
+          <div class="wo-row" style="margin-top:8px">
+            <div class="fg"><label>Durata (min)</label>
+              <input type="number" placeholder="—" data-id="${id}" data-f="wo_durata">
+            </div>
+            <div class="fg"><label>Volume (kg)</label>
+              <input type="number" placeholder="—" data-id="${id}" data-f="wo_volume">
+            </div>
+            <div class="fg"><label>Kcal</label>
+              <input type="number" placeholder="—" data-id="${id}" data-f="wo_kcal">
+            </div>
+          </div>
+          <div class="field-row solo" style="margin-top:8px">
+            <div class="fg"><label>Attrezzatura usata</label>
+              <input type="text" placeholder="es. Smith machine, manubri 18kg, cavi singoli..." data-id="${id}" data-f="wo_attrezzatura">
+            </div>
+          </div>
+          ${buildMotraSection(id)}
+        </div>
+        <div class="section-label" style="margin-top:14px">Protocollo BKK</div>
+        <div class="wo-box" style="background:#e8f1fb">
+          <div style="font-size:11px;font-weight:600;color:#0071e3;margin-bottom:8px">Tesamorelin · finestra sera</div>
+          <div class="field-row tri">
+            <div class="fg"><label>Ultima cena (ora)</label>
+              <input type="time" data-id="${id}" data-f="bkk_cena_ora">
+            </div>
+            <div class="fg"><label>Iniezione Tesa (ora)</label>
+              <input type="time" data-id="${id}" data-f="bkk_inj_ora">
+            </div>
+            <div class="fg"><label>Rientro locale (ora)</label>
+              <input type="time" data-id="${id}" data-f="bkk_rientro_ora">
+            </div>
+          </div>
+          <div class="field-row solo" style="margin-top:6px">
+            <div class="fg"><label>Gestione serata (bevande, cibo, logistica iniezione)</label>
+              <input type="text" placeholder="es. solo soda water, iniezione alle 2:00 al rientro..." data-id="${id}" data-f="bkk_serata_note">
+            </div>
+          </div>
+        </div>`:`
+        <div class="section-label">Workout · ${wo.type}</div>
+        <div class="wo-box">
+          <div class="wo-header" style="color:${dotColor}">${wo.type}</div>
+          <div class="wo-row">
+            <div class="fg"><label>RPE globale (1–10)</label>
+              <input type="number" min="1" max="10" step="0.5" placeholder="—" data-id="${id}" data-f="wo_rpe">
+            </div>
+            <div class="fg"><label>Durata (min)</label>
+              <input type="number" placeholder="—" data-id="${id}" data-f="wo_durata">
+            </div>
+            <div class="fg"><label>Kcal (Motra / Apple Watch)</label>
+              <input type="number" placeholder="—" data-id="${id}" data-f="wo_kcal">
+            </div>
+          </div>
+          <div class="field-row two" style="margin-top:8px">
+            <div class="fg"><label>Volume totale (kg)</label><input type="number" placeholder="—" data-id="${id}" data-f="wo_volume"></div>
+            <div class="fg"><label>Note sessione</label><input type="text" placeholder="energia, tecnica, PR..." data-id="${id}" data-f="wo_note"></div>
+          </div>
+          ${buildSentinelSection(id,wo.type)}
+          ${buildMotraSection(id)}
+        </div>`}
+        </div><!-- /col-right -->
+
+        <!-- ZONA 2: iniezioni full-width -->
+        <div class="col-full">
+        <div class="section-label">Protocollo iniezione</div>
+        <div class="inj-slots">
+          ${renderInjectionSlotsV2(i, id)}
+        </div>
+        </div><!-- /col-full -->
+
+        <!-- ZONA 3: note + soggettivo + stack full-width -->
+        <div class="col-full">
+        <div class="note-box">
+          <label>Note del giorno</label>
+          <textarea placeholder="Sensazioni peptide, qualità del sonno, umore, effetti inattesi, osservazioni fisiche..." data-id="${id}" data-f="note"></textarea>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Soggettivo</div>
+        <div class="field-row two">
+          <div class="fg"><label>Appetito</label>
+            <select data-id="${id}" data-f="appetito">
+              <option value="">—</option>
+              <option>Normale</option><option>Aumentato</option><option>Ridotto</option>
+            </select>
+          </div>
+          <div class="fg"><label>Umore (1–10)</label>
+            <input type="number" min="1" max="10" step="0.5" placeholder="—" data-id="${id}" data-f="umore">
+          </div>
+        </div>
+        <div class="field-row two" style="margin-top:8px">
+          <div class="fg"><label>Sonno post-iniezione</label>
+            <select data-id="${id}" data-f="sleep_inj">
+              <option value="">—</option>
+              <option>Normale</option>
+              <option>Frammentato lieve</option>
+              <option>Frammentato severo</option>
+              <option>Migliorato</option>
+            </select>
+          </div>
+          <div class="fg"><label>Pienezza addominale</label>
+            <select data-id="${id}" data-f="abdom_full">
+              <option value="">—</option>
+              <option>Nessuna</option>
+              <option>Lieve</option>
+              <option>Moderata</option>
+              <option>Significativa</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Stack mattutino</div>
+        <div class="check-grid">
+          <div class="check-item">
+            <input type="checkbox" id="ck-d3-${id}" data-id="${id}" data-f="ck_d3">
+            <label for="ck-d3-${id}">D3 + K2</label>
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck-omega-${id}" data-id="${id}" data-f="ck_omega">
+            <label for="ck-omega-${id}">Omega-3</label>
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck-creat-${id}" data-id="${id}" data-f="ck_creat">
+            <label for="ck-creat-${id}">Creatina</label>
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck-zinc-${id}" data-id="${id}" data-f="ck_zinc">
+            <label for="ck-zinc-${id}">Zinco</label>
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck-b12-${id}" data-id="${id}" data-f="ck_b12">
+            <label for="ck-b12-${id}">B12 + Folato</label>
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck-norm-${id}" data-id="${id}" data-f="ck_norm">
+            <label for="ck-norm-${id}">Normocis</label>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Stack serale</div>
+        <div class="check-grid">
+          <div class="check-item">
+            <input type="checkbox" id="ck-mag-${id}" data-id="${id}" data-f="ck_mag">
+            <label for="ck-mag-${id}">Magnesio</label>
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck-gly-${id}" data-id="${id}" data-f="ck_gly">
+            <label for="ck-gly-${id}">Glicina</label>
+          </div>
+        </div>
+
+        ${isVitaDay(i) ? `
+        <div class="section-label" style="margin-top:14px">Foto progressione</div>
+        <div class="photo-note">
+          <span style="font-size:18px;flex-shrink:0">📸</span>
+          <input type="text" placeholder="Link iCloud / Google Photos o note scatto..." data-id="${id}" data-f="photo_note">
+        </div>` : ''}
+        </div><!-- /col-full -->
+
+      </div>`;
+    container.appendChild(card);
+  }
+}
+
+
 // ── Cloud sync v2 ────────────────────────────────────────────────
 function collectAllV2() {
-  const data = {};
-  document.querySelectorAll('[data-id^="p2_day_"][data-f]').forEach(el => {
-    const id = el.dataset.id, f = el.dataset.f;
-    if (!data[id]) data[id] = {};
-    const v = el.type==='checkbox' ? (el.checked?'1':'0') : el.value;
-    if (v !== '' && v !== '—') data[id][f] = v;
+  const data={};
+  document.querySelectorAll('[data-id^="p2_day_"][data-f]').forEach(el=>{
+    const id=el.dataset.id,f=el.dataset.f;
+    if(!data[id])data[id]={};
+    const v=el.type==='checkbox'?(el.checked?'1':'0'):el.value;
+    if(v!==''&&v!=='—')data[id][f]=v;
   });
   return data;
 }
 
 function applyAllV2(data) {
-  Object.entries(data).forEach(([id,fields]) => {
-    Object.entries(fields).forEach(([f,v]) => {
-      const el = document.querySelector(`[data-id="${id}"][data-f="${f}"]`);
-      if (!el) return;
-      if (el.type==='checkbox') { el.checked=(v==='1'); return; }
-      el.value = v;
-      // aggiorna preview
-      const prev = document.querySelector(`[data-id="${id}"][data-f="${f}"][data-preview]`);
-      if (prev) prev.textContent = v || '—';
+  Object.entries(data).forEach(([id,fields])=>{
+    Object.entries(fields).forEach(([f,v])=>{
+      const el=document.querySelector(`[data-id="${id}"][data-f="${f}"]`);
+      if(!el)return;
+      if(el.type==='checkbox'){el.checked=(v==='1');return;}
+      el.value=v;
+      const qmap={'peso':'q-'+id+'-peso','hrv':'q-'+id+'-hrv','sonno_ore':'q-'+id+'-sonno'};
+      if(qmap[f]){const q=document.getElementById(qmap[f]);if(q){q.textContent=v;q.classList.remove('empty');}}
     });
   });
-  _lastData2 = data;
+  _lastData2=data;
+  setTimeout(refreshWeekSummaryV2,0);
+}
+
+function refreshWeekSummaryV2() {
+  const today=new Date();today.setHours(0,0,0,0);
+  const start=new Date(START2);start.setHours(0,0,0,0);
+  const elapsed=Math.floor((today-start)/86400000);
+  const currentWk=Math.floor(elapsed/7);
+  const existing=document.getElementById('week2-summary-'+currentWk);
+  if(!existing)return;
+  const container=document.getElementById('container2');
+  const newCard=buildWeekSummaryV2(container,currentWk);
+  if(newCard)existing.replaceWith(newCard);
 }
 
 async function saveDataV2() {
-  if (_saving2) return;
-  _saving2 = true;
-  const btn = document.getElementById('save-btn2');
-  if (btn) btn.textContent = 'Salvataggio...';
+  if(_saving2)return;
+  _saving2=true;
+  const btn=document.getElementById('save-btn2');
+  if(btn){btn.disabled=true;btn.textContent='Salvataggio...';}
   try {
-    const data = collectAllV2();
-    const payload = {user_id: USER_ID2, data: JSON.stringify(data), updated_at: new Date().toISOString()};
-    const res = await fetch(SB_URL+'/rest/v1/diary', {
+    const data=collectAllV2();
+    try{localStorage.setItem(KEY2,JSON.stringify({data,ts:Date.now()}));}catch(e){}
+    const payload={user_id:USER_ID2,data:JSON.stringify(data),updated_at:new Date().toISOString()};
+    const res=await fetch(SB_URL+'/rest/v1/diary',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'resolution=merge-duplicates'},
-      body: JSON.stringify(payload)
+      body:JSON.stringify(payload)
     });
-    if (res.ok || res.status===201) {
-      try { localStorage.setItem(KEY2, JSON.stringify({data,ts:Date.now()})); } catch(e){}
-      document.getElementById('last-saved2').textContent = 'Salvato · '+new Date().toLocaleTimeString('it-IT');
-      setSyncStatus('ok');
+    if(res.ok||res.status===201||res.status===200){
+      document.getElementById('last-saved2').textContent='Salvato · '+new Date().toLocaleTimeString('it-IT');
     }
   } catch(e) {
-    document.getElementById('last-saved2').textContent = 'Errore salvataggio';
+    document.getElementById('last-saved2').textContent='Errore salvataggio';
   } finally {
-    _saving2 = false;
-    if (btn) btn.textContent = 'Salva';
+    _saving2=false;
+    if(btn){btn.disabled=false;btn.textContent='Salva';}
   }
 }
 
 async function loadFromCloudV2() {
   try {
-    const res = await fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID2+'&select=data,updated_at&limit=1', {
+    const res=await fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID2+'&select=data,updated_at&limit=1',{
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
     });
-    if (res.ok) {
-      const rows = await res.json();
-      if (rows.length > 0 && rows[0].data) {
-        const data = typeof rows[0].data === 'string' ? JSON.parse(rows[0].data) : rows[0].data;
+    if(res.ok){
+      const rows=await res.json();
+      if(rows.length>0&&rows[0].data){
+        const data=typeof rows[0].data==='string'?JSON.parse(rows[0].data):rows[0].data;
         applyAllV2(data);
-        document.getElementById('last-saved2').textContent = 'Cloud · '+new Date(rows[0].updated_at).toLocaleString('it-IT');
+        document.getElementById('last-saved2').textContent='Cloud · '+new Date(rows[0].updated_at).toLocaleString('it-IT');
+        return;
       }
     }
-  } catch(e) {
-    const lr = localStorage.getItem(KEY2);
-    if (lr) { try { applyAllV2(JSON.parse(lr).data); } catch(e2){} }
-  }
+  } catch(e) {}
+  const lr=localStorage.getItem(KEY2);
+  if(lr){try{applyAllV2(JSON.parse(lr).data||JSON.parse(lr));}catch(e){}}
 }
 
-// ── buildProto2 — diario v2 ──────────────────────────────────────
+// ── buildProto2 — tab principale v2 ─────────────────────────────
 function buildProto2() {
-  const el = document.getElementById('proto2-view');
-  if (el.dataset.built) return;
-  el.dataset.built = '1';
+  const el=document.getElementById('proto2-view');
+  if(el.dataset.built)return;
+  el.dataset.built='1';
 
-  const today = new Date(); today.setHours(0,0,0,0);
-  const start2 = new Date(START2); start2.setHours(0,0,0,0);
-  const elapsed2 = Math.floor((today - start2)/86400000);
-  const dayLabel = elapsed2 < 0
-    ? `Inizia tra ${Math.abs(elapsed2)} giorni`
-    : elapsed2 < TOTAL_DAYS2 ? `Giorno ${elapsed2+1} di ${TOTAL_DAYS2}`
-    : 'Completato';
+  const today=new Date();today.setHours(0,0,0,0);
+  const start2=new Date(START2);start2.setHours(0,0,0,0);
+  const elapsed2=Math.floor((today-start2)/86400000);
+  const dayLabel=elapsed2<0?`Inizia tra ${Math.abs(elapsed2)} giorni`:elapsed2<TOTAL_DAYS2?`Giorno ${elapsed2+1} di ${TOTAL_DAYS2}`:'Completato';
+  const pct=Math.min(100,Math.max(0,((elapsed2+1)/TOTAL_DAYS2)*100)).toFixed(1);
 
-  el.innerHTML = `
-    <div style="position:sticky;top:52px;z-index:90;background:var(--surface);border-bottom:1px solid var(--border)">
-      <div class="nav-strip" id="nav-strip2" style="overflow-x:auto;white-space:nowrap;padding:8px 20px;gap:4px;display:flex"></div>
-    </div>
-    <div class="container view-wrap" id="container2" style="padding-top:12px"></div>
-    <div class="save-bar" style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--border);background:var(--surface)">
-      <span style="font-size:12px;color:var(--muted)" id="last-saved2">Mai salvato</span>
-      <button class="save-btn-main" id="save-btn2" onclick="saveDataV2()">Salva</button>
+  // Riepilogo protocollo in cima
+  const summaryHtml = `
+    <div style="background:var(--surface);border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Protocollo v2 · Ottimizzazione Asse Somatotropo</div>
+          <div style="font-size:var(--fs-lg);font-weight:var(--fw-semi)">${dayLabel}</div>
+          <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:2px">29 giu → 18 set 2026 · Dr. Seregni</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:var(--fs-2xl);font-weight:var(--fw-semi);color:#0071e3">${pct}%</div>
+          <div style="font-size:var(--fs-xs);color:var(--muted)">completato</div>
+        </div>
+      </div>
+      <div style="background:var(--border);border-radius:4px;height:5px;overflow:hidden;margin-bottom:14px">
+        <div style="background:linear-gradient(90deg,#0071e3,#34c759);height:5px;width:${pct}%;border-radius:4px"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
+        ${[
+          {t:'🌅 Mattino',d:'Fragment 250mcg + BPC 250mcg',c:'#ff9500'},
+          {t:'☀️ Pomeriggio',d:'Fragment 250mcg',c:'#5856d6'},
+          {t:'💪 Post-WO',d:'IGF-1 DES 50mcg IM (solo allenamento)',c:'#34c759'},
+          {t:'🌙 Sera',d:'Tesa 2mg + Ipam 100mcg + BPC 250mcg + TB500 500mcg',c:'#0071e3'},
+        ].map(s=>`<div style="background:${s.c}12;border-radius:10px;padding:10px 12px">
+          <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:${s.c};margin-bottom:3px">${s.t}</div>
+          <div style="font-size:var(--fs-xs);color:var(--muted)">${s.d}</div>
+        </div>`).join('')}
+      </div>
     </div>`;
+
+  // Struttura identica al diario v1
+  el.innerHTML = summaryHtml + `
+    <div class="nav-strip" id="nav-strip2" style="position:sticky;top:52px;z-index:90;background:var(--surface);border-bottom:1px solid var(--border);margin:0 -20px;padding:0 20px;overflow-x:auto;white-space:nowrap"></div>
+    <div class="container" id="container2"></div>
+    <div style="height:80px"></div>`;
+
+  // Save bar
+  const saveBar=document.createElement('div');
+  saveBar.className='save-bar';
+  saveBar.innerHTML=`<span class="save-hint" id="last-saved2">Mai salvato</span><button class="save-btn-main" id="save-btn2" onclick="saveDataV2()">Salva dati</button>`;
+  el.appendChild(saveBar);
+
+  // Nav settimane
+  const navStrip2=document.getElementById('nav-strip2');
+  for(let w=0;w<TOTAL_DAYS2/7;w++){
+    const btn=document.createElement('div');
+    btn.className='nav-wk-tab';
+    btn.textContent=`WK ${w+1}`;
+    btn.dataset.wk=w;
+    btn.onclick=()=>{
+      document.querySelectorAll('#nav-strip2 .nav-wk-tab').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      document.getElementById('week2-'+(w+1))?.scrollIntoView({behavior:'smooth',block:'start'});
+    };
+    if(w===Math.floor(Math.max(0,elapsed2)/7))btn.classList.add('on');
+    navStrip2.appendChild(btn);
+  }
 
   // Costruisce i giorni
   buildDays2();
@@ -5313,10 +5516,10 @@ function buildProto2() {
   // Carica dal cloud
   loadFromCloudV2();
 
-  // Auto-save on input
-  el.addEventListener('input', () => {
+  // Auto-save
+  el.addEventListener('input',()=>{
     clearTimeout(el._autoSave);
-    el._autoSave = setTimeout(saveDataV2, 3000);
+    el._autoSave=setTimeout(saveDataV2,3000);
   });
 }
 
