@@ -1003,6 +1003,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   <div class="main-nav-tab" id="main-tab-meddash" onclick="switchView('meddash')">📊 Lab</div>
   <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')">📦 Stock</div>
   <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')">🧬 Proto v2</div>
+  <div class="main-nav-tab" id="main-tab-stock2" onclick="switchView('stock2')">📦 Stock v2</div>
 </div>
 <div class="nav-strip" id="nav-strip"></div>
 <div class="diary-view" id="diary-view">
@@ -1012,6 +1013,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="med-view" id="med-view"></div>
 <div class="med-view" id="meddash-view"></div>
 <div class="med-view" id="stock-view"></div>
+<div class="med-view" id="stock2-view"></div>
 <div class="diary-view hidden" id="proto2-view">
   <div class="container" id="container2"></div>
 </div>
@@ -2201,15 +2203,18 @@ function switchView(view) {
   const tabMedDash = document.getElementById('main-tab-meddash');
   const tabStock = document.getElementById('main-tab-stock');
   const tabProto2 = document.getElementById('main-tab-proto2');
+  const stock2View = document.getElementById('stock2-view');
+  const tabStock2 = document.getElementById('main-tab-stock2');
   // Reset all
   diary.classList.add('hidden'); dash.classList.remove('active');
   med.classList.remove('visible'); meddash.classList.remove('visible');
-  stockView.classList.remove('visible');
+  stockView.classList.remove('visible'); stock2View.classList.remove('visible');
   proto2View.classList.add('hidden');
   navStrip.style.display = 'none';
   tabDiary.classList.remove('on'); tabDash.classList.remove('on');
   tabMed.classList.remove('on'); tabMedDash.classList.remove('on');
   tabStock.classList.remove('on'); tabProto2.classList.remove('on');
+  tabStock2.classList.remove('on');
   if (view === 'dash') {
     dash.classList.add('active');
     tabDash.classList.add('on');
@@ -2226,6 +2231,10 @@ function switchView(view) {
     stockView.classList.add('visible');
     tabStock.classList.add('on');
     buildStockView();
+  } else if (view === 'stock2') {
+    stock2View.classList.add('visible');
+    tabStock2.classList.add('on');
+    buildStockView2();
   } else if (view === 'proto2') {
     proto2View.classList.remove('hidden');
     tabProto2.classList.add('on');
@@ -4359,6 +4368,187 @@ function applyProto2Data() {
       else if (v!==''&&v!=null) el.value = v;
     });
   });
+}
+
+
+function buildStockView2() {
+  const el = document.getElementById('stock2-view');
+  if (el.dataset.built) return;
+  el.dataset.built = '1';
+
+  // ── DATI INVENTARIO PROTO V2 ─────────────────────────────────────────
+  // Fabbisogno calcolato su 112gg · 80gg allenamento (mar/mer/ven/sab/dom)
+  const compounds = [
+    {
+      name: 'Tesamorelin',
+      emoji: '🧬', color: '#0071e3', bg: 'rgba(0,113,227,.07)',
+      dose: '2mg/sera · 7gg/sett',
+      fabbisogno: '224mg (112gg × 2mg)',
+      mgNeeded: 224,
+      vials: [
+        { n:3, stato:'intatto', note:'10mg · In frigo, non ancora ricostituito' },
+        { n:4, stato:'intatto', note:'10mg · In frigo' },
+        { n:5, stato:'intatto', note:'10mg · In frigo' },
+        { n:6, stato:'intatto', note:'10mg · In frigo' },
+      ],
+      disponibile: 40,
+      alert: true,
+      alertMsg: 'Fabbisogno 224mg · disponibile 40mg · da riordinare ~184mg (~19 vial × 10mg)',
+    },
+    {
+      name: 'Fragment 176-191',
+      emoji: '🔥', color: '#ff3b30', bg: 'rgba(255,59,48,.07)',
+      dose: '250mcg mattino + 250mcg pomeriggio · 7gg/sett',
+      fabbisogno: '56mg (112gg × 500mcg/die)',
+      mgNeeded: 56,
+      vials: [],
+      disponibile: 0,
+      alert: true,
+      alertMsg: 'Da ordinare: 56mg totali (~6 vial × 10mg)',
+    },
+    {
+      name: 'Ipamorelin',
+      emoji: '⚡', color: '#34c759', bg: 'rgba(52,199,89,.07)',
+      dose: '100mcg/sera · 7gg/sett',
+      fabbisogno: '11.2mg (112gg × 100mcg)',
+      mgNeeded: 11.2,
+      vials: [],
+      disponibile: 0,
+      alert: true,
+      alertMsg: 'Da ordinare: 11.2mg (~2 vial × 10mg)',
+    },
+    {
+      name: 'IGF-1 DES',
+      emoji: '💪', color: '#af52de', bg: 'rgba(175,82,222,.07)',
+      dose: '25mcg dx + 25mcg sx post-WO · 5gg/sett',
+      fabbisogno: '4mg (80gg × 50mcg)',
+      mgNeeded: 4,
+      vials: [],
+      disponibile: 0,
+      alert: true,
+      alertMsg: 'Da ordinare: 4mg (~1 vial × 5mg o 10mg)',
+    },
+    {
+      name: 'BPC-157',
+      emoji: '🔧', color: '#ff9500', bg: 'rgba(255,149,0,.07)',
+      dose: '250mcg mattino + 250mcg sera · 7gg/sett',
+      fabbisogno: '56mg (112gg × 500mcg/die)',
+      mgNeeded: 56,
+      vials: [
+        { n:1, stato:'intatto', note:'10mg · In frigo' },
+        { n:2, stato:'intatto', note:'10mg · In frigo' },
+      ],
+      disponibile: 20,
+      alert: true,
+      alertMsg: 'Fabbisogno 56mg · disponibile 20mg · da riordinare ~36mg (~4 vial × 10mg)',
+    },
+    {
+      name: 'TB-500',
+      emoji: '🩹', color: '#5856d6', bg: 'rgba(88,86,214,.07)',
+      dose: '500mcg/sera · 7gg/sett',
+      fabbisogno: '56mg (112gg × 500mcg)',
+      mgNeeded: 56,
+      vials: [],
+      disponibile: 0,
+      alert: true,
+      alertMsg: 'Da ordinare: 56mg (~6 vial × 10mg)',
+    },
+  ];
+
+  function statoColor(s) {
+    if (s === 'intatto') return { bg:'rgba(52,199,89,.10)', color:'#1d7a3a', label:'Intatto' };
+    if (s === 'in_uso')  return { bg:'rgba(0,113,227,.10)', color:'#0071e3', label:'In uso' };
+    if (s === 'perso')   return { bg:'rgba(255,59,48,.10)', color:'#ff3b30', label:'Perso' };
+    return { bg:'#f5f5f7', color:'#666', label:s };
+  }
+
+  let html = `<div style="max-width:860px;margin:0 auto;padding:20px 20px 60px">`;
+
+  // Header
+  html += `
+    <div style="margin-bottom:16px">
+      <div style="font-size:22px;font-weight:600;color:var(--text)">📦 Stock · Protocollo v2</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:3px">29 giu – 18 set 2026 · 112 giorni · Dr. Seregni</div>
+    </div>`;
+
+  // Alert riordino globale
+  html += `
+    <div style="background:rgba(255,59,48,.08);border:1px solid rgba(255,59,48,.25);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;gap:12px;align-items:flex-start">
+      <div style="font-size:20px;line-height:1">⚠️</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#c0392b">Riordino necessario prima del 29 giu 2026</div>
+        <div style="font-size:12px;color:#7a2020;margin-top:3px">Fragment, Ipamorelin, IGF-1 DES, TB-500 non ancora in stock · Tesamorelin e BPC-157 parzialmente coperti</div>
+      </div>
+    </div>`;
+
+  // Riepilogo tabella fabbisogno
+  html += `
+    <div style="background:var(--surface2,#f5f5f7);border-radius:14px;padding:14px;margin-bottom:18px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">📊 Riepilogo fabbisogno 16 settimane</div>
+      <div style="display:flex;flex-direction:column;gap:5px">`;
+
+  compounds.forEach(c => {
+    const gap = c.mgNeeded - c.disponibile;
+    const covered = gap <= 0;
+    html += `
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--card-bg,#fff);border-radius:9px">
+          <span style="font-size:14px">${c.emoji}</span>
+          <span style="font-size:12px;font-weight:600;color:${c.color};min-width:120px">${c.name}</span>
+          <span style="flex:1;font-size:11px;color:var(--muted)">${c.fabbisogno}</span>
+          <span style="font-size:11px;font-weight:500;background:${covered?'rgba(52,199,89,.12)':'rgba(255,59,48,.10)'};color:${covered?'#1d7a3a':'#c0392b'};padding:2px 8px;border-radius:20px;white-space:nowrap">${covered?'✅ Coperto':'⚠️ '+gap.toFixed(1)+'mg gap'}</span>
+        </div>`;
+  });
+  html += `</div></div>`;
+
+  // Schede per composto
+  compounds.forEach(c => {
+    const intatti = c.vials.filter(v => v.stato === 'intatto').length;
+    html += `
+      <div style="background:var(--surface2,#f5f5f7);border-radius:14px;padding:14px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:34px;height:34px;border-radius:9px;background:${c.bg};display:flex;align-items:center;justify-content:center;font-size:17px">${c.emoji}</div>
+            <div>
+              <div style="font-size:14px;font-weight:600;color:${c.color}">${c.name}</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:1px">${c.dose}</div>
+            </div>
+          </div>
+          ${intatti > 0 ? `<span style="font-size:11px;background:rgba(52,199,89,.12);color:#1d7a3a;padding:2px 8px;border-radius:20px">${intatti} intatti</span>` : '<span style="font-size:11px;background:rgba(255,59,48,.10);color:#c0392b;padding:2px 8px;border-radius:20px">Da ordinare</span>'}
+        </div>
+        ${c.vials.length > 0 ? `<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px">${c.vials.map(v => {
+          const sc = statoColor(v.stato);
+          return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--card-bg,#fff);border-radius:8px">
+            <div style="min-width:22px;font-size:11px;font-weight:600;color:var(--muted)">V${v.n}</div>
+            <div style="flex:1;font-size:12px;color:var(--text)">${v.note}</div>
+            <span style="font-size:11px;font-weight:500;background:${sc.bg};color:${sc.color};padding:2px 7px;border-radius:20px">${sc.label}</span>
+          </div>`;
+        }).join('')}</div>` : ''}
+        <div style="font-size:11px;padding:8px 10px;background:rgba(255,149,0,.08);border-radius:8px;color:#7a4400">
+          ⚠️ ${c.alertMsg}
+        </div>
+      </div>`;
+  });
+
+  // Consumabili (condivisi con v1)
+  html += `
+    <div style="background:var(--surface2,#f5f5f7);border-radius:14px;padding:14px;margin-top:4px">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">Consumabili (condivisi v1/v2)</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px">
+          <span style="font-size:18px">💧</span>
+          <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">BAC Water</div><div style="font-size:11px;color:var(--muted)">4 flaconi disponibili · usare acqua fredda</div></div>
+          <span style="font-size:13px;font-weight:600;color:#34c759">4 flaconi</span>
+        </div>
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px">
+          <span style="font-size:18px">💉</span>
+          <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">Siringhe insulina</div><div style="font-size:11px;color:var(--muted)">PIC 30G × 8mm · 1ml · attenzione: IGF-1 DES è IM non SC</div></div>
+          <span style="font-size:13px;font-weight:600;color:#34c759">240 pz</span>
+        </div>
+      </div>
+    </div>`;
+
+  html += `</div>`;
+  el.innerHTML = html;
 }
 
 function buildStockView() {
