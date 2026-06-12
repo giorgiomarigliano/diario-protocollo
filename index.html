@@ -3901,36 +3901,34 @@ function importMotra(dayId) {
 
 // ── PROTO V2 ─────────────────────────────────────────────────────────────────
 const START2      = new Date('2026-06-29');
-const TOTAL_DAYS2 = 112; // 29 giu → 18 set 2026
+const TOTAL_DAYS2 = 112;
 const KEY2        = 'diary_proto2_v1';
 const USER_ID2    = 'giorgio_proto2_2026';
+let   _lastData2  = {};
 
-// Split identico al v1
-const SPLIT2 = {
-  0:{type:'Riposo',    badge:'badge-rest',  label:'RIPOSO'},
-  1:{type:'Riposo',    badge:'badge-rest',  label:'RIPOSO'},
-  2:{type:'Push',      badge:'badge-push',  label:'PUSH'},
-  3:{type:'Pull',      badge:'badge-pull',  label:'PULL'},
-  4:{type:'Riposo',    badge:'badge-rest',  label:'RIPOSO'},
-  5:{type:'Legs',      badge:'badge-legs',  label:'LEGS'},
-  6:{type:'Upper Sab', badge:'badge-upper', label:'UPPER SAB'},
-};
-
-// Fasi protocollo v2 (da concordare con Seregni; placeholder struttura)
 function getPhase2(dayIdx) {
   const wk = Math.floor(dayIdx/7)+1;
-  if (wk<=4)  return {label:'Tesa + Fragment + Ipa', badge:'p1'};
-  if (wk<=6)  return {label:'+ GHK-Cu', badge:'p2'};
-  if (wk<=12) return {label:'+ MOTS-C + IGF-1 DES', badge:'p3'};
-  return             {label:'+ BPC-157 + TB-500', badge:'p4b'};
+  if (wk<=4)  return {label:'Tesa + Fragment + Ipa',        badge:'p1'};
+  if (wk<=6)  return {label:'+ GHK-Cu',                     badge:'p2'};
+  if (wk<=12) return {label:'+ MOTS-C + IGF-1 DES',         badge:'p3'};
+  return             {label:'+ BPC-157 + TB-500',            badge:'p4b'};
+}
+
+function getNextEvent2(elapsed) {
+  const wk = Math.floor(elapsed/7)+1;
+  if (wk<5)  { return `+ GHK-Cu tra ${(4-wk)*7} giorni (sett. 5)`; }
+  if (wk<7)  { return `+ MOTS-C + IGF-1 DES tra ${(6-wk)*7} giorni (sett. 7)`; }
+  if (wk<13) { return `+ BPC-157 + TB-500 tra ${(12-wk)*7} giorni (sett. 13)`; }
+  return 'Fine ciclo · DEXA T1 + panel sangue';
 }
 
 function getWorkout2(dayIdx) {
-  const dow = (new Date(START2.getTime() + dayIdx*86400000)).getDay(); // 0=dom
+  const d = new Date(START2); d.setDate(d.getDate()+dayIdx);
+  const dow = d.getDay(); // 0=dom
   const map = {0:'Riposo',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
-  const type = map[dow] || 'Riposo';
   const badges = {Riposo:'badge-rest',Push:'badge-push',Pull:'badge-pull',Legs:'badge-legs','Upper Sab':'badge-upper'};
-  return {type, badge: badges[type]||'badge-rest', label: type.toUpperCase()};
+  const type = map[dow]||'Riposo';
+  return {type, badge:badges[type]||'badge-rest', label:type.toUpperCase()};
 }
 
 function getDotColor2(type) {
@@ -3938,22 +3936,150 @@ function getDotColor2(type) {
   return m[type]||'#c7c7cc';
 }
 
-// Slot iniezione Proto v2 — Seregni
+function getWeekRange2(wkIdx) {
+  const s = new Date(START2); s.setDate(s.getDate()+wkIdx*7);
+  const e = new Date(START2); e.setDate(e.getDate()+wkIdx*7+6);
+  const fmt = d => d.toLocaleDateString('it-IT',{day:'numeric',month:'short'});
+  return fmt(s)+' – '+fmt(e);
+}
+
 function getInjectionSlots2(dayIdx) {
   const wo = getWorkout2(dayIdx);
   const isTraining = wo.type !== 'Riposo';
   const slots = [
-    { n:1, label:'🌅 Mattino', momento:'Mattino · digiuno', peptideOptions:['Fragment 176-191 250mcg','BPC-157 250mcg'], fields:['Fragment 176-191 250mcg','BPC-157 250mcg'] },
-    { n:2, label:'☀️ Pomeriggio', momento:'Pomeriggio', peptideOptions:['Fragment 176-191 250mcg'], fields:['Fragment 176-191 250mcg'] },
-    { n:3, label:'🌙 Sera', momento:'Sera · 90-120min post-cena', peptideOptions:['Tesamorelin 2mg','Ipamorelin 100mcg','BPC-157 250mcg','TB-500 500mcg'], fields:['Tesamorelin 2mg','Ipamorelin 100mcg','BPC-157 250mcg','TB-500 500mcg'] },
+    { n:1, label:'🌅 Mattino', momento:'Mattino · digiuno',
+      fields:['Fragment 176-191 250mcg','BPC-157 250mcg'] },
+    { n:2, label:'☀️ Pomeriggio', momento:'Pomeriggio',
+      fields:['Fragment 176-191 250mcg'] },
+    { n:3, label:'🌙 Sera', momento:'Sera · 90–120min post-cena',
+      fields:['Tesamorelin 2mg','Ipamorelin 100mcg','BPC-157 250mcg','TB-500 500mcg'] },
   ];
   if (isTraining) {
-    slots.splice(2, 0, { n:3, label:'💪 Post-WO', momento:'Post-workout', peptideOptions:['IGF-1 DES 25mcg dx','IGF-1 DES 25mcg sx'], fields:['IGF-1 DES 25mcg dx','IGF-1 DES 25mcg sx'] });
+    slots.splice(2, 0, { n:3, label:'💪 Post-WO', momento:'Post-workout · bilaterlale',
+      fields:['IGF-1 DES 25mcg dx','IGF-1 DES 25mcg sx'] });
     slots[3].n = 4;
   }
   return slots;
 }
 
+// ── CYCLE CARD v2 ─────────────────────────────────────────────────────────
+function buildCycleCard2(container) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START2); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today-start)/86400000);
+  const C = 2*Math.PI*30;
+
+  let pct, wk, ph, nextEv, ringHtml, infoHtml;
+
+  if (elapsed < 0) {
+    const daysTo = Math.abs(elapsed);
+    pct = 0;
+    ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
+      <circle cx="36" cy="36" r="30" fill="none" stroke="#e8e8ed" stroke-width="5"/>
+    </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">—</span><span class="cycle-ring-sub">ciclo</span></div>`;
+    infoHtml = `<h3>Protocollo v2</h3><p>Inizio tra <b>${daysTo}</b> giorni · 29 giu 2026</p><div class="cycle-next">⟶ Preparazione in corso</div>`;
+  } else if (elapsed >= TOTAL_DAYS2) {
+    ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
+      <circle cx="36" cy="36" r="30" fill="none" stroke="#34c759" stroke-width="5"/>
+    </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">✓</span><span class="cycle-ring-sub">fine</span></div>`;
+    infoHtml = `<h3>Protocollo v2 completato</h3><p>112 giorni · 29 giu – 18 set 2026</p>`;
+  } else {
+    pct = Math.min(100, Math.round((elapsed/TOTAL_DAYS2)*100));
+    wk  = Math.floor(elapsed/7)+1;
+    ph  = getPhase2(elapsed);
+    nextEv = getNextEvent2(elapsed);
+    const offset = C*(1-pct/100);
+    ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
+      <circle cx="36" cy="36" r="30" fill="none" stroke="#e8e8ed" stroke-width="5"/>
+      <circle cx="36" cy="36" r="30" fill="none" stroke="#0071e3" stroke-width="5"
+        stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" stroke-linecap="round"/>
+    </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">${pct}%</span><span class="cycle-ring-sub">ciclo</span></div>`;
+    infoHtml = `<h3>Settimana ${wk} · ${ph.label}</h3><p>Giorno ${elapsed+1} di ${TOTAL_DAYS2} · ${TOTAL_DAYS2-elapsed-1} giorni al termine</p><div class="cycle-next">⟶ ${nextEv}</div>`;
+  }
+
+  const card = document.createElement('div');
+  card.className = 'cycle-card';
+  card.innerHTML = `<div class="cycle-ring">${ringHtml}</div><div class="cycle-info">${infoHtml}</div>`;
+  container.insertBefore(card, container.firstChild);
+}
+
+// ── CHARTS v2 ─────────────────────────────────────────────────────────────
+function buildCharts2(container) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START2); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today-start)/86400000);
+  if (elapsed < 2) return;
+  const from = Math.max(0, elapsed-13);
+  const pesoData = [], hrvData = [];
+  for (let i=from; i<=elapsed && i<TOTAL_DAYS2; i++) {
+    const dc = _lastData2['p2_day_'+i] || {};
+    pesoData.push(dc['peso'] ? parseFloat(dc['peso']) : null);
+    hrvData.push(dc['hrv']  ? parseFloat(dc['hrv'])  : null);
+  }
+  if (!pesoData.some(v=>v!==null) && !hrvData.some(v=>v!==null)) return;
+
+  const card = document.createElement('div');
+  card.className = 'charts-card'; card.id = 'charts-card2';
+  card.innerHTML = `
+    <div class="charts-card-title">Andamento · ultimi 14 giorni</div>
+    <div class="charts-grid">
+      <div><div class="chart-label">Peso kg</div><canvas class="mini-chart" id="chart2-peso" height="64"></canvas></div>
+      <div><div class="chart-label">HRV ms</div><canvas class="mini-chart" id="chart2-hrv" height="64"></canvas></div>
+    </div>`;
+
+  const cycleCard = container.querySelector('.cycle-card');
+  const existingRow = container.querySelector('.cycle-charts-row');
+  if (existingRow) { existingRow.appendChild(card); }
+  else if (cycleCard) {
+    const row = document.createElement('div');
+    row.className = 'cycle-charts-row';
+    cycleCard.parentNode.insertBefore(row, cycleCard);
+    row.appendChild(cycleCard);
+    row.appendChild(card);
+  } else {
+    container.insertBefore(card, container.firstChild);
+  }
+  setTimeout(() => {
+    drawChart('chart2-peso', pesoData, '#0071e3');
+    drawChart('chart2-hrv',  hrvData,  '#34c759');
+  }, 100);
+}
+
+// ── RIQUADRO PROTOCOLLO SEREGNI ───────────────────────────────────────────
+function buildProtoHeader2(container) {
+  const div = document.createElement('div');
+  div.style.cssText = 'padding:0 0 4px';
+  div.innerHTML = `
+    <div style="background:var(--surface2,#f5f5f7);border-radius:16px;padding:16px;margin-bottom:4px">
+      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">🧬 Protocollo v2 · Dr. Seregni</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">29 giu – 18 set 2026 · 16 settimane</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
+          <span style="font-size:15px">🌅</span>
+          <div><div style="font-size:12px;font-weight:600;color:#0071e3">Mattino · digiuno</div>
+          <div style="font-size:12px;color:var(--text)">Fragment 176-191 <b>250mcg</b> · BPC-157 <b>250mcg</b></div></div>
+        </div>
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
+          <span style="font-size:15px">☀️</span>
+          <div><div style="font-size:12px;font-weight:600;color:#ff9500">Pomeriggio</div>
+          <div style="font-size:12px;color:var(--text)">Fragment 176-191 <b>250mcg</b></div></div>
+        </div>
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
+          <span style="font-size:15px">💪</span>
+          <div><div style="font-size:12px;font-weight:600;color:#af52de">Post-WO <span style="font-weight:400;color:var(--muted)">(solo giorni allenamento)</span></div>
+          <div style="font-size:12px;color:var(--text)">IGF-1 DES <b>25mcg dx</b> · IGF-1 DES <b>25mcg sx</b></div></div>
+        </div>
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
+          <span style="font-size:15px">🌙</span>
+          <div><div style="font-size:12px;font-weight:600;color:#34c759">Sera · 90–120 min post-cena</div>
+          <div style="font-size:12px;color:var(--text)">Tesamorelin <b>2mg</b> · Ipamorelin <b>100mcg</b> · BPC-157 <b>250mcg</b> · TB-500 <b>500mcg</b></div></div>
+        </div>
+      </div>
+    </div>`;
+  container.appendChild(div);
+}
+
+// ── MAIN BUILD ────────────────────────────────────────────────────────────
 let _proto2Built = false;
 
 function buildProtoV2() {
@@ -3963,83 +4089,32 @@ function buildProtoV2() {
   const container = document.getElementById('container2');
   const today = new Date(); today.setHours(0,0,0,0);
 
-  // ── RIQUADRO PROTOCOLLO SEREGNI ──────────────────────────────────────
-  const header = document.createElement('div');
-  header.style.cssText = 'padding:16px;margin-bottom:4px';
-  header.innerHTML = `
-    <div style="background:var(--surface2,#f5f5f7);border-radius:16px;padding:16px">
-      <div style="font-size:17px;font-weight:600;color:var(--text);margin-bottom:12px">🧬 Protocollo v2 · Dr. Seregni</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">29 giu – 18 set 2026 · 16 settimane</div>
+  // 1. Riquadro protocollo Seregni
+  buildProtoHeader2(container);
 
-      <div style="display:flex;flex-direction:column;gap:7px">
-        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:10px 12px">
-          <div style="font-size:12px;font-weight:600;color:#0071e3;margin-bottom:4px">🌅 Mattino · digiuno</div>
-          <div style="font-size:12px;color:var(--text)">Fragment 176-191 <b>250mcg</b> · BPC-157 <b>250mcg</b></div>
-        </div>
-        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:10px 12px">
-          <div style="font-size:12px;font-weight:600;color:#ff9500;margin-bottom:4px">☀️ Pomeriggio</div>
-          <div style="font-size:12px;color:var(--text)">Fragment 176-191 <b>250mcg</b></div>
-        </div>
-        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:10px 12px">
-          <div style="font-size:12px;font-weight:600;color:#af52de;margin-bottom:4px">💪 Post-WO <span style="font-size:10px;font-weight:400;color:var(--muted)">(soli giorni allenamento)</span></div>
-          <div style="font-size:12px;color:var(--text)">IGF-1 DES <b>25mcg dx</b> · IGF-1 DES <b>25mcg sx</b></div>
-        </div>
-        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:10px 12px">
-          <div style="font-size:12px;font-weight:600;color:#34c759;margin-bottom:4px">🌙 Sera · 90–120 min post-cena</div>
-          <div style="font-size:12px;color:var(--text)">Tesamorelin <b>2mg</b> · Ipamorelin <b>100mcg</b> · BPC-157 <b>250mcg</b> · TB-500 <b>500mcg</b></div>
-        </div>
-      </div>
-    </div>`;
-  container.appendChild(header);
+  // 2. Cycle card (identica v1, dati v2)
+  buildCycleCard2(container);
 
-  // ── CARD CICLO (identica v1) ─────────────────────────────────────────
-  const start2 = new Date(START2); start2.setHours(0,0,0,0);
-  const elapsed2 = Math.floor((today - start2) / 86400000);
-  if (elapsed2 >= 0 && elapsed2 < TOTAL_DAYS2) {
-    const pct = Math.min(100, Math.round((elapsed2/TOTAL_DAYS2)*100));
-    const wk2 = Math.floor(elapsed2/7)+1;
-    const C = 2*Math.PI*30;
-    const offset = C*(1-pct/100);
-    const cycleCard = document.createElement('div');
-    cycleCard.className = 'cycle-card';
-    cycleCard.style.margin = '0 16px 8px';
-    cycleCard.innerHTML = `
-      <div class="cycle-ring">
-        <svg width="72" height="72" viewBox="0 0 72 72">
-          <circle cx="36" cy="36" r="30" fill="none" stroke="#e8e8ed" stroke-width="5"/>
-          <circle cx="36" cy="36" r="30" fill="none" stroke="#0071e3" stroke-width="5"
-            stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" stroke-linecap="round"/>
-        </svg>
-        <div class="cycle-pct">${pct}%</div>
-      </div>
-      <div class="cycle-info">
-        <div class="cycle-day">Giorno ${elapsed2+1} · Sett. ${wk2}</div>
-        <div class="cycle-label">Protocollo v2 in corso</div>
-      </div>`;
-    container.appendChild(cycleCard);
-  } else {
-    const pre = document.createElement('div');
-    pre.style.cssText = 'margin:0 16px 8px;padding:12px 14px;background:var(--surface2,#f5f5f7);border-radius:12px;font-size:13px;color:var(--muted)';
-    const daysTo = Math.floor((start2 - today) / 86400000);
-    pre.textContent = daysTo > 0 ? `Inizio protocollo v2 tra ${daysTo} giorni (29 giu 2026)` : 'Protocollo v2 completato';
-    container.appendChild(pre);
-  }
+  // 3. Charts ultimi 14gg (dati v2 da localStorage)
+  const raw2 = localStorage.getItem(KEY2);
+  if (raw2) { try { _lastData2 = JSON.parse(raw2); } catch(e){} }
+  buildCharts2(container);
 
-  // ── NAV SETTIMANE ────────────────────────────────────────────────────
+  // 4. Nav settimane
   const navStrip2 = document.createElement('div');
   navStrip2.className = 'nav-strip';
   navStrip2.style.cssText = 'position:sticky;top:44px;z-index:90';
   for (let w=0; w<16; w++) {
     const tab = document.createElement('div');
-    tab.className = 'nav-tab'; tab.id = 'nav2-w'+(w+1);
+    tab.className = 'nav-tab';
     tab.textContent = 'WK '+(w+1);
     tab.onclick = () => document.getElementById('proto2-week-'+(w+1))?.scrollIntoView({behavior:'smooth',block:'start'});
     navStrip2.appendChild(tab);
   }
   container.appendChild(navStrip2);
 
-  // ── CARD GIORNALIERE ─────────────────────────────────────────────────
-  let curWk2 = -1;
+  // 5. Card giornaliere
+  let curWk = -1;
   for (let i=0; i<TOTAL_DAYS2; i++) {
     const d = new Date(START2); d.setDate(d.getDate()+i); d.setHours(0,0,0,0);
     const wk = Math.floor(i/7)+1;
@@ -4049,21 +4124,14 @@ function buildProtoV2() {
     const dotColor = getDotColor2(wo.type);
     const dateStr = d.toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'});
 
-    if (wk !== curWk2) {
-      curWk2 = wk;
+    if (wk !== curWk) {
+      curWk = wk;
+      const ph = getPhase2((wk-1)*7);
       const wh = document.createElement('div');
       wh.id = 'proto2-week-'+wk; wh.className = 'week-hdr';
-      const ph = getPhase2((wk-1)*7);
-      const wd = new Date(START2); wd.setDate(wd.getDate()+(wk-1)*7);
-      const we = new Date(START2); we.setDate(we.getDate()+wk*7-1);
-      const fmtW = (dt) => dt.toLocaleDateString('it-IT',{day:'numeric',month:'short'});
-      wh.innerHTML = `<h2>Settimana ${wk}</h2><span class="week-phase ${ph.badge}">${ph.label}</span><span class="week-range">${fmtW(wd)} – ${fmtW(we)}</span>`;
+      wh.innerHTML = `<h2>Settimana ${wk}</h2><span class="week-phase ${ph.badge}">${ph.label}</span><span class="week-range">${getWeekRange2(wk-1)}</span>`;
       container.appendChild(wh);
     }
-
-    const card = document.createElement('div');
-    card.className = 'day-card'+(isToday?' today open':'');
-    card.id = 'card-'+id;
 
     const slots = getInjectionSlots2(i);
     const slotHTML = slots.map(s => `
@@ -4073,7 +4141,7 @@ function buildProtoV2() {
           <div class="inj-title">${s.label}</div>
           <div class="inj-timing">${s.momento}</div>
           <div class="inj-fields" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
-            ${s.fields.map(f => `<select data-id="${id}" data-f="inj_${s.n}_${f.replace(/\s/g,'_')}">
+            ${s.fields.map(f => `<select data-id="${id}" data-f="inj_${s.n}_${f.replace(/[\s\-]/g,'_')}">
               <option value="">— ${f}</option>
               <option value="fatto">✅ Fatto</option>
               <option value="skip">⏭ Skip</option>
@@ -4082,6 +4150,9 @@ function buildProtoV2() {
         </div>
       </div>`).join('');
 
+    const card = document.createElement('div');
+    card.className = 'day-card'+(isToday?' today open':'');
+    card.id = 'card-'+id;
     card.innerHTML = `
       <div class="day-head" onclick="toggleDay('${id}')">
         <span class="day-dot" style="background:${dotColor}"></span>
@@ -4095,21 +4166,21 @@ function buildProtoV2() {
         <div class="section-label">Biometria</div>
         <div class="bio-grid">
           <div class="bio-box"><input type="number" placeholder="70.0" data-id="${id}" data-f="peso"><div class="bio-lbl">Peso kg</div></div>
-          <div class="bio-box"><input type="number" placeholder="48" data-id="${id}" data-f="hrv"><div class="bio-lbl">HRV ms</div></div>
-          <div class="bio-box"><input type="number" placeholder="55" data-id="${id}" data-f="rhr"><div class="bio-lbl">RHR bpm</div></div>
-          <div class="bio-box"><input type="number" placeholder="120" data-id="${id}" data-f="bp_sys"><div class="bio-lbl">Sistolica</div></div>
-          <div class="bio-box"><input type="number" placeholder="75" data-id="${id}" data-f="bp_dia"><div class="bio-lbl">Diastolica</div></div>
-          <div class="bio-box"><input type="number" placeholder="6.5" data-id="${id}" data-f="ore_sonno"><div class="bio-lbl">Ore sonno</div></div>
+          <div class="bio-box"><input type="number" placeholder="48"   data-id="${id}" data-f="hrv"><div class="bio-lbl">HRV ms</div></div>
+          <div class="bio-box"><input type="number" placeholder="55"   data-id="${id}" data-f="rhr"><div class="bio-lbl">RHR bpm</div></div>
+          <div class="bio-box"><input type="number" placeholder="120"  data-id="${id}" data-f="bp_sys"><div class="bio-lbl">Sistolica</div></div>
+          <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="bp_dia"><div class="bio-lbl">Diastolica</div></div>
+          <div class="bio-box"><input type="number" placeholder="6.5"  data-id="${id}" data-f="ore_sonno"><div class="bio-lbl">Ore sonno</div></div>
         </div>
 
         <div class="section-label" style="margin-top:14px">Stack mattutino</div>
         <div class="check-grid">
-          <div class="check-item"><input type="checkbox" id="ck2-d3-${id}" data-id="${id}" data-f="ck_d3"><label for="ck2-d3-${id}">D3 + K2</label></div>
+          <div class="check-item"><input type="checkbox" id="ck2-d3-${id}"    data-id="${id}" data-f="ck_d3">   <label for="ck2-d3-${id}">D3 + K2</label></div>
           <div class="check-item"><input type="checkbox" id="ck2-omega-${id}" data-id="${id}" data-f="ck_omega"><label for="ck2-omega-${id}">Omega-3</label></div>
           <div class="check-item"><input type="checkbox" id="ck2-creat-${id}" data-id="${id}" data-f="ck_creat"><label for="ck2-creat-${id}">Creatina</label></div>
-          <div class="check-item"><input type="checkbox" id="ck2-zinc-${id}" data-id="${id}" data-f="ck_zinc"><label for="ck2-zinc-${id}">Zinco</label></div>
-          <div class="check-item"><input type="checkbox" id="ck2-b12-${id}" data-id="${id}" data-f="ck_b12"><label for="ck2-b12-${id}">B12 + Folato</label></div>
-          <div class="check-item"><input type="checkbox" id="ck2-norm-${id}" data-id="${id}" data-f="ck_norm"><label for="ck2-norm-${id}">Normocis</label></div>
+          <div class="check-item"><input type="checkbox" id="ck2-zinc-${id}"  data-id="${id}" data-f="ck_zinc"> <label for="ck2-zinc-${id}">Zinco</label></div>
+          <div class="check-item"><input type="checkbox" id="ck2-b12-${id}"   data-id="${id}" data-f="ck_b12">  <label for="ck2-b12-${id}">B12 + Folato</label></div>
+          <div class="check-item"><input type="checkbox" id="ck2-norm-${id}"  data-id="${id}" data-f="ck_norm"> <label for="ck2-norm-${id}">Normocis</label></div>
         </div>
 
         <div class="section-label" style="margin-top:14px">Stack serale</div>
@@ -4118,89 +4189,80 @@ function buildProtoV2() {
           <div class="check-item"><input type="checkbox" id="ck2-gly-${id}" data-id="${id}" data-f="ck_gly"><label for="ck2-gly-${id}">Glicina</label></div>
         </div>
 
-        <div class="section-label" style="margin-top:14px">Iniezioni protocollo v2</div>
+        <div class="section-label" style="margin-top:14px">Iniezioni v2</div>
         <div class="inj-grid">${slotHTML}</div>
+
+        ${wo.type !== 'Riposo' ? `
+        <div class="section-label" style="margin-top:14px">Sentinel lifts</div>
+        ${buildSentinelSection(id, wo.type)}
+        <div class="section-label" style="margin-top:14px">Import Motra</div>
+        ${buildMotraSection(id)}
+        ` : ''}
 
         <div class="section-label" style="margin-top:14px">Soggettivo</div>
         <div class="bio-grid">
           <div class="bio-box">
             <select data-id="${id}" data-f="energia">
               <option value="">Energia</option>
-              <option value="1">1 – Esausto</option><option value="2">2</option><option value="3">3</option>
-              <option value="4">4</option><option value="5">5 – Normale</option><option value="6">6</option>
-              <option value="7">7</option><option value="8">8</option><option value="9">9</option>
-              <option value="10">10 – Ottimo</option>
-            </select>
-            <div class="bio-lbl">Energia /10</div>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}${n===1?' – Esausto':n===5?' – Normale':n===10?' – Ottimo':''}</option>`).join('')}
+            </select><div class="bio-lbl">Energia /10</div>
           </div>
           <div class="bio-box">
             <select data-id="${id}" data-f="recupero">
               <option value="">Recupero</option>
-              <option value="1">1 – Pessimo</option><option value="2">2</option><option value="3">3</option>
-              <option value="4">4</option><option value="5">5 – Normale</option><option value="6">6</option>
-              <option value="7">7</option><option value="8">8</option><option value="9">9</option>
-              <option value="10">10 – Ottimo</option>
-            </select>
-            <div class="bio-lbl">Recupero /10</div>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select><div class="bio-lbl">Recupero /10</div>
           </div>
           <div class="bio-box">
             <select data-id="${id}" data-f="umore">
               <option value="">Umore</option>
-              <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-              <option value="4">4</option><option value="5">5</option><option value="6">6</option>
-              <option value="7">7</option><option value="8">8</option><option value="9">9</option>
-              <option value="10">10</option>
-            </select>
-            <div class="bio-lbl">Umore /10</div>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select><div class="bio-lbl">Umore /10</div>
+          </div>
+          <div class="bio-box">
+            <select data-id="${id}" data-f="rpe">
+              <option value="">RPE</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">RPE ${n}</option>`).join('')}
+            </select><div class="bio-lbl">RPE</div>
           </div>
         </div>
 
-        <div class="section-label" style="margin-top:14px">Note</div>
         <textarea class="note-ta" data-id="${id}" data-f="note" placeholder="Note libere…" rows="2"></textarea>
 
+        <button class="save-btn" onclick="saveProto2Data()" style="margin-top:10px">Salva</button>
       </div>`;
 
     container.appendChild(card);
   }
 
-  // Auto-save on change
+  // Applica dati salvati
+  applyProto2Data();
+
+  // Auto-save
   container.querySelectorAll('input,select,textarea').forEach(el => {
     el.addEventListener('change', () => saveProto2Data());
-    if (el.tagName==='TEXTAREA') el.addEventListener('input', () => saveProto2Data());
+    if (el.tagName==='TEXTAREA'||el.type==='number') el.addEventListener('input', () => saveProto2Data());
   });
 }
 
-function toggleDay(id) {
-  // shared — works for both v1 and v2 since card structure is identical
-  const card = document.getElementById('card-'+id);
-  if (!card) return;
-  card.classList.toggle('open');
-}
-
 function saveProto2Data() {
-  const data = {};
+  const data = _lastData2;
   document.querySelectorAll('#container2 [data-id]').forEach(el => {
-    const id = el.dataset.id;
-    const f  = el.dataset.f;
+    const id=el.dataset.id, f=el.dataset.f;
     if (!id||!f) return;
-    if (!data[id]) data[id] = {};
-    if (el.type==='checkbox') data[id][f] = el.checked;
-    else data[id][f] = el.value;
+    if (!data[id]) data[id]={};
+    data[id][f] = el.type==='checkbox' ? el.checked : el.value;
   });
   localStorage.setItem(KEY2, JSON.stringify(data));
 }
 
-function loadProto2Data() {
-  const raw = localStorage.getItem(KEY2);
-  if (!raw) return;
-  let data;
-  try { data = JSON.parse(raw); } catch(e) { return; }
-  Object.entries(data).forEach(([id,fields]) => {
+function applyProto2Data() {
+  Object.entries(_lastData2).forEach(([id,fields]) => {
     Object.entries(fields).forEach(([f,v]) => {
       const el = document.querySelector(`#container2 [data-id="${id}"][data-f="${f}"]`);
       if (!el) return;
       if (el.type==='checkbox') el.checked = !!v;
-      else if (v!=='' && v!==null && v!==undefined) el.value = v;
+      else if (v!==''&&v!=null) el.value = v;
     });
   });
 }
