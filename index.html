@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781175570 -->
+<!-- deploy 1781272541 -->
 </head>
 <body>
 
@@ -1002,6 +1002,8 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   <div class="main-nav-tab" id="main-tab-med" onclick="switchView('med')">🩸 Referti</div>
   <div class="main-nav-tab" id="main-tab-meddash" onclick="switchView('meddash')">📊 Lab</div>
   <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')">📦 Stock</div>
+  <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')">🧬 Proto v2</div>
+  <div class="main-nav-tab" id="main-tab-stock2" onclick="switchView('stock2')">📦 Stock v2</div>
 </div>
 <div class="nav-strip" id="nav-strip"></div>
 <div class="diary-view" id="diary-view">
@@ -1010,6 +1012,8 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="dash-view" id="dash-view"></div>
 <div class="med-view" id="med-view"></div>
 <div class="med-view" id="meddash-view"></div>
+<div class="med-view" id="proto2-view"></div>
+<div class="med-view" id="stock2-view"></div>
 <div class="med-view" id="stock-view"></div>
 
 <div class="save-bar">
@@ -2189,20 +2193,28 @@ function switchView(view) {
   const med = document.getElementById('med-view');
   const meddash = document.getElementById('meddash-view');
   const stockView = document.getElementById('stock-view');
+  const proto2 = document.getElementById('proto2-view');
+  const stock2 = document.getElementById('stock2-view');
   const navStrip = document.getElementById('nav-strip');
   const tabDiary = document.getElementById('main-tab-diary');
   const tabDash = document.getElementById('main-tab-dash');
   const tabMed = document.getElementById('main-tab-med');
   const tabMedDash = document.getElementById('main-tab-meddash');
   const tabStock = document.getElementById('main-tab-stock');
+  const tabProto2 = document.getElementById('main-tab-proto2');
+  const tabStock2 = document.getElementById('main-tab-stock2');
   // Reset all
   diary.classList.add('hidden'); dash.classList.remove('active');
   med.classList.remove('visible'); meddash.classList.remove('visible');
   stockView.classList.remove('visible');
+  if (proto2) proto2.classList.remove('visible');
+  if (stock2) stock2.classList.remove('visible');
   navStrip.style.display = 'none';
   tabDiary.classList.remove('on'); tabDash.classList.remove('on');
   tabMed.classList.remove('on'); tabMedDash.classList.remove('on');
   tabStock.classList.remove('on');
+  if (tabProto2) tabProto2.classList.remove('on');
+  if (tabStock2) tabStock2.classList.remove('on');
   if (view === 'dash') {
     dash.classList.add('active');
     tabDash.classList.add('on');
@@ -2219,6 +2231,10 @@ function switchView(view) {
     stockView.classList.add('visible');
     tabStock.classList.add('on');
     buildStockView();
+  } else if (view === 'proto2') {
+    if (proto2) { proto2.classList.add('visible'); tabProto2.classList.add('on'); buildProto2(); }
+  } else if (view === 'stock2') {
+    if (stock2) { stock2.classList.add('visible'); tabStock2.classList.add('on'); buildStock2(); }
   } else {
     diary.classList.remove('hidden');
     navStrip.style.display = '';
@@ -4412,6 +4428,425 @@ function buildMedDash() {
   el.innerHTML = html;
 }
 
+
+// ═══════════════════════════════════════════════
+//  PROTOCOLLO v2 — Ottimizzazione Asse Somatotropo
+//  Inizio: 29 giugno 2026 · Durata: 16 settimane
+// ═══════════════════════════════════════════════
+function buildProto2() {
+  const el = document.getElementById('proto2-view');
+  if (el.dataset.built) return;
+  el.dataset.built = '1';
+
+  const START2 = '2026-06-29';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start2 = new Date(START2); start2.setHours(0,0,0,0);
+  const elapsed2 = Math.floor((today - start2) / 86400000);
+  const dayLabel = elapsed2 < 0
+    ? `Inizia tra ${Math.abs(elapsed2)} giorni`
+    : elapsed2 < 112 ? `Giorno ${elapsed2 + 1} di 112`
+    : 'Completato';
+  const pct = Math.min(100, Math.max(0, ((elapsed2 + 1) / 112) * 100)).toFixed(1);
+
+  const peptides = [
+    {
+      id: 'tesa', name: 'Tesamorelin', color: '#0071e3', bg: 'rgba(0,113,227,.08)',
+      dose: '2 mg', via: 'SC addome', timing: 'SERA · 2.5–3 ore dopo ultimo pasto',
+      freq: '7 gg/7', note: 'GHRH selettivo · abbatte grasso viscerale · stimola produzione IGF-1 epatico',
+      combo: 'Con Ipamorelin nella stessa finestra',
+      fase: 'Dal giorno 1 · tutta la durata'
+    },
+    {
+      id: 'ipam', name: 'Ipamorelin', color: '#5856d6', bg: 'rgba(88,86,214,.08)',
+      dose: '100 mcg', via: 'SC addome', timing: 'SERA · stesso momento di Tesamorelin',
+      freq: '7 gg/7', note: 'GHRP selettivo · amplifica ampiezza picco GH · no prolattina · no cortisolo · no grelina',
+      combo: 'Sinergia diretta con Tesamorelin',
+      fase: 'Dal giorno 1 · tutta la durata'
+    },
+    {
+      id: 'igf1des', name: 'IGF-1 DES', color: '#34c759', bg: 'rgba(52,199,89,.08)',
+      dose: '50 mcg (25 mcg dx + 25 mcg sx)', via: 'IM locale nel muscolo target appena allenato', timing: 'POST-WORKOUT · solo giorni pesi',
+      freq: '5 gg/7 (giorni allenamento)', note: 'Bypass blocco epatico · agisce direttamente sui recettori muscolari · iperplasia + shift nutrienti verso muscolo',
+      combo: 'Consuma pasto post-workout con carbo+proteine 20-30 min dopo',
+      fase: 'Dal giorno 1 · solo giorni allenamento'
+    },
+    {
+      id: 'frag', name: 'Fragment 176-191', color: '#ff9500', bg: 'rgba(255,149,0,.08)',
+      dose: '250 mcg mattino + 250 mcg pomeriggio', via: 'SC addome', timing: 'MATTINO a digiuno totale + POMERIGGIO lontano dai pasti',
+      freq: '7 gg/7 · 2×/die', note: 'Isola la frazione lipolitica del GH · distrugge adipociti · non intacca sensibilità insulinica · preferenza per grasso viscerale',
+      combo: 'Mattino: segui con 30-40 min LISS · No cibo nei 45 min post-cardio',
+      fase: 'Dal giorno 1 · tutta la durata'
+    },
+    {
+      id: 'bpc', name: 'BPC-157', color: '#ff3b30', bg: 'rgba(255,59,48,.08)',
+      dose: '250 mcg mattino + 250 mcg sera', via: 'SC addome', timing: 'MATTINO a digiuno + SERA con Tesamorelin',
+      freq: '7 gg/7 · 2×/die', note: 'Abbassa VES · protegge endotelio vascolare · modula ossido nitrico · recupero sistemico · essenziale per varicocele',
+      combo: 'Sera: stessa finestra di Tesa+Ipam+TB500',
+      fase: 'Dal giorno 1 · tutta la durata'
+    },
+    {
+      id: 'tb500', name: 'TB-500', color: '#af52de', bg: 'rgba(175,82,222,.08)',
+      dose: '500 mcg', via: 'SC addome', timing: 'SERA · con BPC-157 e Tesamorelin',
+      freq: '7 gg/7', note: 'Sinergia con BPC-157 per angiogenesi · riduzione tessuti fibrotici · rigenerazione cellulare · creazione microvasi sani',
+      combo: 'Stack notturno: Tesa 2mg + Ipam 100mcg + BPC 250mcg + TB500 500mcg',
+      fase: 'Dal giorno 1 · tutta la durata'
+    },
+  ];
+
+  // SCHEMA GIORNALIERO
+  const schedule = [
+    {
+      time: 'MATTINO · Appena sveglio · Digiuno totale',
+      color: '#ff9500',
+      icon: '🌅',
+      items: [
+        { name: 'Fragment 176-191', dose: '250 mcg SC' },
+        { name: 'BPC-157', dose: '250 mcg SC' },
+      ],
+      note: '→ Poi 30-40 min LISS (camminata in pendenza o cyclette)\n→ No cibo nei 45 min successivi al cardio'
+    },
+    {
+      time: 'POMERIGGIO · Lontano dai pasti',
+      color: '#5856d6',
+      icon: '☀️',
+      items: [
+        { name: 'Fragment 176-191', dose: '250 mcg SC' },
+      ],
+      note: '→ Mantiene stimolo lipolitico nella finestra di digiuno pomeridiano'
+    },
+    {
+      time: 'POST-WORKOUT · Solo giorni allenamento con i pesi',
+      color: '#34c759',
+      icon: '💪',
+      items: [
+        { name: 'IGF-1 DES', dose: '25 mcg IM dx + 25 mcg IM sx · muscolo target appena allenato' },
+      ],
+      note: '→ Pasto post-workout con carbo + proteine 20-30 min dopo\n→ Sfrutta upregulation recettoriale post-esercizio'
+    },
+    {
+      time: 'SERA · Almeno 2.5/3 ore dopo ultimo pasto',
+      color: '#0071e3',
+      icon: '🌙',
+      items: [
+        { name: 'Tesamorelin', dose: '2 mg SC' },
+        { name: 'Ipamorelin', dose: '100 mcg SC' },
+        { name: 'BPC-157', dose: '250 mcg SC' },
+        { name: 'TB-500', dose: '500 mcg SC' },
+      ],
+      note: '→ Stack notturno per ricostruzione asse somatotropo\n→ Forte innalzamento IGF-1 sistemico\n→ Riparazione tessuti infiammati durante sonno profondo'
+    },
+  ];
+
+  let html = `<div class="app-view-inner view-wrap">
+
+  <!-- HEADER STATUS -->
+  <div style="display:flex;align-items:center;gap:16px;background:var(--surface);border-radius:14px;padding:18px 20px;margin-bottom:20px;box-shadow:var(--shadow)">
+    <div style="flex:1">
+      <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Protocollo v2 · Ottimizzazione Asse Somatotropo</div>
+      <div style="font-size:var(--fs-lg);font-weight:var(--fw-semi)">${dayLabel}</div>
+      <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:2px">Inizio 29 giu 2026 · Fine 18 set 2026 · 6 peptidi attivi</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:var(--fs-2xl);font-weight:var(--fw-semi);color:#0071e3">${pct}%</div>
+      <div style="font-size:var(--fs-xs);color:var(--muted)">completato</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS BAR -->
+  <div style="background:var(--border);border-radius:4px;height:6px;margin-bottom:24px;overflow:hidden">
+    <div style="background:linear-gradient(90deg,#0071e3,#34c759);height:6px;width:${pct}%;border-radius:4px;transition:width .5s ease"></div>
+  </div>
+
+  <!-- SCHEMA GIORNALIERO -->
+  <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">Schema somministrazione giornaliera</div>
+  <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px">`;
+
+  schedule.forEach(slot => {
+    html += `
+    <div style="background:var(--surface);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)">
+      <div style="background:${slot.color};padding:10px 16px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">${slot.icon}</span>
+        <div style="font-size:var(--fs-sm);font-weight:var(--fw-semi);color:white;letter-spacing:.02em">${slot.time}</div>
+      </div>
+      <div style="padding:14px 16px">
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+          ${slot.items.map(item => `
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:8px;height:8px;border-radius:50%;background:${slot.color};flex-shrink:0"></div>
+            <div style="flex:1;font-size:var(--fs-body);font-weight:var(--fw-semi)">${item.name}</div>
+            <div style="font-size:var(--fs-sm);color:var(--muted);text-align:right">${item.dose}</div>
+          </div>`).join('')}
+        </div>
+        <div style="font-size:var(--fs-xs);color:var(--muted);border-top:1px solid var(--border);padding-top:8px;white-space:pre-line">${slot.note}</div>
+      </div>
+    </div>`;
+  });
+
+  html += `</div>
+
+  <!-- PEPTIDI DETTAGLIO -->
+  <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">Dettaglio peptidi</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:28px">`;
+
+  peptides.forEach(p => {
+    html += `
+    <div style="background:var(--surface);border-radius:14px;padding:16px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
+        <div style="font-size:var(--fs-body);font-weight:var(--fw-semi);color:${p.color}">${p.name}</div>
+        <div style="margin-left:auto;font-size:var(--fs-xs);background:${p.bg};color:${p.color};padding:2px 8px;border-radius:20px;font-weight:var(--fw-semi)">${p.dose}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;font-size:var(--fs-xs)">
+        <div style="display:flex;gap:8px"><span style="color:var(--muted);min-width:50px">Via</span><span>${p.via}</span></div>
+        <div style="display:flex;gap:8px"><span style="color:var(--muted);min-width:50px">Timing</span><span>${p.timing}</span></div>
+        <div style="display:flex;gap:8px"><span style="color:var(--muted);min-width:50px">Freq.</span><span>${p.freq}</span></div>
+        <div style="display:flex;gap:8px"><span style="color:var(--muted);min-width:50px">Fase</span><span style="color:${p.color};font-weight:var(--fw-med)">${p.fase}</span></div>
+      </div>
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:var(--fs-xs);color:var(--muted)">${p.note}</div>
+      <div style="margin-top:6px;font-size:var(--fs-xs);color:${p.color};font-weight:var(--fw-med)">→ ${p.combo}</div>
+    </div>`;
+  });
+
+  html += `</div>
+
+  <!-- ZINCO NOTE -->
+  <div style="background:rgba(255,149,0,.08);border:1px solid rgba(255,149,0,.25);border-radius:12px;padding:14px 16px;margin-bottom:28px">
+    <div style="font-size:var(--fs-body);font-weight:var(--fw-semi);color:#b36200;margin-bottom:6px">⚗️ Zinco Bisglicinato · Cofattore biochimico obbligatorio</div>
+    <div style="font-size:var(--fs-xs);color:#7a4400">SHBG molto alta (75.10 nmol/L) blocca il testosterone prodotto. Lo Zinco agisce come modulatore enzimatico — è il co-fattore biochimico obbligatorio affinché questo protocollo funzioni. Attualmente: 15mg/die · valutare aumento a 25-30mg con l'intensificazione del protocollo.</div>
+  </div>
+
+  <!-- OBIETTIVI -->
+  <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">Obiettivi del ciclo</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:40px">
+    ${[
+      {label:'IGF-1', from:'94 µg/L', target:'150–180+ µg/L', color:'#af52de'},
+      {label:'Grasso viscerale', from:'72 cm²', target:'58–62 cm²', color:'#ff9500'},
+      {label:'HDL', from:'32 mg/dL', target:'≥40 mg/dL', color:'#0071e3'},
+      {label:'VES', from:'25 mm/h', target:'≤15 mm/h', color:'#ff3b30'},
+      {label:'Peso', from:'70.1 kg', target:'66–68 kg', color:'#34c759'},
+      {label:'Lean mass', from:'55.4 kg', target:'≥55 kg', color:'#34c759'},
+    ].map(o => `
+    <div style="background:var(--surface);border-radius:12px;padding:14px;box-shadow:var(--shadow)">
+      <div style="font-size:var(--fs-xs);color:var(--muted);margin-bottom:6px">${o.label}</div>
+      <div style="font-size:var(--fs-sm);color:var(--muted)">${o.from}</div>
+      <div style="font-size:14px;margin:2px 0">→</div>
+      <div style="font-size:var(--fs-md);font-weight:var(--fw-semi);color:${o.color}">${o.target}</div>
+    </div>`).join('')}
+  </div>
+
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+//  STOCK v2 — Fabbisogno protocollo v2
+//  16 settimane · 112 giorni · inizio 29 giu 2026
+// ═══════════════════════════════════════════════
+function buildStock2() {
+  const el = document.getElementById('stock2-view');
+  if (el.dataset.built) return;
+  el.dataset.built = '1';
+
+  // Calcoli fabbisogno
+  const giorni = 112;
+  const giorniWo = 80; // ~5/7 × 112
+
+  const items = [
+    {
+      name: 'Tesamorelin',
+      color: '#0071e3', bg: 'rgba(0,113,227,.08)',
+      dose_die: 2,       // mg/die
+      freq_die: 1,
+      giorni_uso: giorni,
+      vial_mg: 10,
+      disponibile: 40,   // 4 vial × 10mg già in frigo + 6 in arrivo (60mg) = ma 6 in arrivo = replacement order
+      in_arrivo: 60,     // replacement Limitless
+      calc: () => 2 * giorni,  // 224mg
+      note: '4 vial in frigo + 6 in arrivo da Limitless (replacement order #12874)'
+    },
+    {
+      name: 'Ipamorelin',
+      color: '#5856d6', bg: 'rgba(88,86,214,.08)',
+      dose_die: 0.1,     // mg/die (100mcg)
+      giorni_uso: giorni,
+      vial_mg: 5,
+      disponibile: 0,
+      in_arrivo: 0,
+      calc: () => 0.1 * giorni,  // 11.2mg
+      note: 'Nuovo — non ancora ordinato'
+    },
+    {
+      name: 'IGF-1 DES',
+      color: '#34c759', bg: 'rgba(52,199,89,.08)',
+      dose_die: 0.05,    // mg/die (50mcg)
+      giorni_uso: giorniWo,
+      vial_mg: 1,
+      disponibile: 0,
+      in_arrivo: 0,
+      calc: () => 0.05 * giorniWo,  // 4mg
+      note: 'Nuovo — solo giorni allenamento (~80 gg). Vial da 1mg.'
+    },
+    {
+      name: 'Fragment 176-191',
+      color: '#ff9500', bg: 'rgba(255,149,0,.08)',
+      dose_die: 0.5,     // mg/die (250mcg × 2)
+      giorni_uso: giorni,
+      vial_mg: 5,
+      disponibile: 0,
+      in_arrivo: 0,
+      calc: () => 0.5 * giorni,  // 56mg
+      note: 'Nuovo — 2 iniezioni/die da 250mcg ciascuna'
+    },
+    {
+      name: 'BPC-157',
+      color: '#ff3b30', bg: 'rgba(255,59,48,.08)',
+      dose_die: 0.5,     // mg/die (250mcg × 2)
+      giorni_uso: giorni,
+      vial_mg: 10,
+      disponibile: 20,   // 2 vial × 10mg
+      in_arrivo: 0,
+      calc: () => 0.5 * giorni,  // 56mg
+      note: '2 vial da 10mg già in frigo · 2 iniezioni/die da 250mcg'
+    },
+    {
+      name: 'TB-500',
+      color: '#af52de', bg: 'rgba(175,82,222,.08)',
+      dose_die: 0.5,     // mg/die (500mcg)
+      giorni_uso: giorni,
+      vial_mg: 5,
+      disponibile: 0,
+      in_arrivo: 0,
+      calc: () => 0.5 * giorni,  // 56mg
+      note: 'Nuovo — 500mcg/sera ogni giorno'
+    },
+  ];
+
+  let html = `<div class="app-view-inner view-wrap">
+
+  <!-- HEADER -->
+  <div style="background:var(--surface);border-radius:14px;padding:18px 20px;margin-bottom:20px;box-shadow:var(--shadow)">
+    <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Stock necessario · Protocollo v2</div>
+    <div style="font-size:var(--fs-lg);font-weight:var(--fw-semi)">16 settimane · 112 giorni · dal 29 giu 2026</div>
+    <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:2px">~80 giorni allenamento · ~32 giorni riposo</div>
+  </div>
+
+  <!-- TABELLA FABBISOGNO -->
+  <div style="background:var(--surface);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px">
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:var(--fs-sm)">
+        <thead>
+          <tr style="background:var(--bg);border-bottom:2px solid var(--border)">
+            <th style="padding:10px 16px;text-align:left;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase">Peptide</th>
+            <th style="padding:10px 16px;text-align:center;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase">Dose/die</th>
+            <th style="padding:10px 16px;text-align:center;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase">Gg uso</th>
+            <th style="padding:10px 16px;text-align:center;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase">Fabbisogno</th>
+            <th style="padding:10px 16px;text-align:center;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase">Vial necessari</th>
+            <th style="padding:10px 16px;text-align:center;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase">Disponibile</th>
+            <th style="padding:10px 16px;text-align:center;font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase">Da ordinare</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+  let orderItems = [];
+
+  items.forEach((item, i) => {
+    const fab = item.calc();
+    const vialN = Math.ceil(fab / item.vial_mg);
+    const fabMg = fab.toFixed(1);
+    const dispMg = item.disponibile + item.in_arrivo;
+    const gapMg = Math.max(0, fab - dispMg);
+    const gapVial = Math.ceil(gapMg / item.vial_mg);
+    const ok = gapVial === 0;
+
+    if (gapVial > 0) {
+      orderItems.push({ name: item.name, vial: gapVial, mg: item.vial_mg, color: item.color, gapMg: gapMg.toFixed(1) });
+    }
+
+    html += `
+          <tr style="border-bottom:1px solid var(--border);${i%2===1?'background:rgba(0,0,0,.02)':''}">
+            <td style="padding:12px 16px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:8px;height:8px;border-radius:50%;background:${item.color};flex-shrink:0"></div>
+                <div>
+                  <div style="font-weight:var(--fw-semi)">${item.name}</div>
+                  <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:1px">${item.note}</div>
+                </div>
+              </div>
+            </td>
+            <td style="padding:12px 16px;text-align:center;font-weight:var(--fw-semi)">${(item.dose_die * 1000).toFixed(0)} mcg</td>
+            <td style="padding:12px 16px;text-align:center;color:var(--muted)">${item.giorni_uso}</td>
+            <td style="padding:12px 16px;text-align:center;font-weight:var(--fw-semi)">${fabMg} mg</td>
+            <td style="padding:12px 16px;text-align:center">
+              <span style="background:${item.bg};color:${item.color};padding:3px 10px;border-radius:20px;font-weight:var(--fw-semi)">${vialN} × ${item.vial_mg}mg</span>
+            </td>
+            <td style="padding:12px 16px;text-align:center;color:${dispMg >= fab ? '#34c759' : '#ff9500'};font-weight:var(--fw-semi)">${dispMg} mg</td>
+            <td style="padding:12px 16px;text-align:center">
+              ${ok
+                ? `<span style="color:#34c759;font-weight:var(--fw-semi)">✓ Coperto</span>`
+                : `<span style="background:rgba(255,59,48,.1);color:#ff3b30;padding:3px 10px;border-radius:20px;font-weight:var(--fw-semi)">${gapVial} vial · ${gapMg}mg</span>`
+              }
+            </td>
+          </tr>`;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ORDINE DA FARE -->
+  <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">📋 Ordine da effettuare — Limitless BioChem</div>
+  <div style="background:var(--surface);border-radius:14px;padding:16px;box-shadow:var(--shadow);margin-bottom:20px">
+    <div style="display:flex;flex-direction:column;gap:10px">`;
+
+  orderItems.forEach(o => {
+    html += `
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg);border-radius:10px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${o.color};flex-shrink:0"></div>
+        <div style="flex:1;font-weight:var(--fw-semi)">${o.name}</div>
+        <div style="font-size:var(--fs-sm);color:var(--muted)">${o.gapMg}mg totali</div>
+        <div style="background:rgba(255,59,48,.1);color:#ff3b30;padding:4px 12px;border-radius:20px;font-size:var(--fs-xs);font-weight:var(--fw-semi)">${o.vial} vial × ${o.mg}mg</div>
+      </div>`;
+  });
+
+  // Nota Tesamorelin speciale
+  html += `
+    </div>
+    <div style="margin-top:14px;padding:12px;background:rgba(0,113,227,.06);border-radius:10px;font-size:var(--fs-xs);color:var(--muted)">
+      <b style="color:#0071e3">⚠️ Tesamorelin:</b> hai 4 vial in frigo (40mg) + 6 in arrivo da Limitless replacement (60mg) = 100mg disponibili su 224mg necessari. Gap: 124mg → altri 13 vial da 10mg. Attendi conferma arrivo replacement prima di ordinare.
+    </div>
+    <div style="margin-top:10px;padding:12px;background:rgba(52,199,89,.06);border-radius:10px;font-size:var(--fs-xs);color:var(--muted)">
+      <b style="color:#34c759">💡 Codice sconto:</b> <code style="background:var(--border);padding:2px 6px;border-radius:4px">krizo10</code> · Verifica disponibilità IGF-1 DES (formato 1mg) e Fragment 176-191 su Limitless prima di ordinare tutto insieme.
+    </div>
+  </div>
+
+  <!-- CONSUMABILI -->
+  <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px">Consumabili necessari</div>
+  <div style="background:var(--surface);border-radius:14px;padding:16px;box-shadow:var(--shadow);margin-bottom:40px">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      ${[
+        {name:'Siringhe insulina 30G × 8mm · 1ml', qty:'~200-240 pz', note:'Stima: 4-5 iniezioni/die × 112 gg · hai già 240 pz in stock', ok:true},
+        {name:'BAC Water (Bacteriostatic Water)', qty:'6-8 flaconi', note:'Hai 4 in frigo · ordinarne altri 4 con il prossimo ordine', ok:false},
+        {name:'Alcool etilico 70%', qty:'Scorte abbondanti', note:'Per disinfettare cute e tappi', ok:true},
+        {name:'Garze sterili', qty:'1 confezione', note:'Per tamponare post-iniezione', ok:true},
+      ].map(c => `
+      <div style="display:flex;align-items:flex-start;gap:12px;padding:10px 12px;background:var(--bg);border-radius:10px">
+        <div style="font-size:14px;margin-top:1px">${c.ok ? '✅' : '⚠️'}</div>
+        <div style="flex:1">
+          <div style="font-size:var(--fs-sm);font-weight:var(--fw-semi)">${c.name}</div>
+          <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:2px">${c.note}</div>
+        </div>
+        <div style="font-size:var(--fs-sm);font-weight:var(--fw-semi);color:${c.ok?'#34c759':'#ff9500'};white-space:nowrap">${c.qty}</div>
+      </div>`).join('')}
+    </div>
+  </div>
+
+  </div>`;
+
+  el.innerHTML = html;
+}
 </script>
 </body>
 </html>
