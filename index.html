@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781276952 -->
+<!-- deploy 1781277286 -->
 </head>
 <body>
 
@@ -5440,6 +5440,106 @@ async function loadFromCloudV2() {
   if(lr){try{applyAllV2(JSON.parse(lr).data||JSON.parse(lr));}catch(e){}}
 }
 
+
+// ── CycleCard e Lab per v2 ──────────────────────────────────────
+function getNextEventV2(elapsed){
+  const wk=Math.floor(elapsed/7)+1;
+  if(wk<3){ const d=(2-wk)*7+(7-elapsed%7); return `Tesa 2mg + Ipam · GHK-Cu · da inizio ciclo`; }
+  const bkkDay=39; // 7 ago = gg 39 del proto v2
+  if(elapsed<bkkDay){ const d=bkkDay-elapsed; return d>0?`Bangkok tra ${d} giorni (7 ago)`:'Bangkok · oggi!'; }
+  if(elapsed<bkkDay+15){ return 'Bangkok · in corso'; }
+  const miniPanel=84;
+  if(elapsed<miniPanel){ const d=miniPanel-elapsed; return `Mini-panel sangue tra ${d} giorni (sett.13)`; }
+  return 'DEXA T1 · fine ciclo (18 set 2026)';
+}
+
+function buildCycleCardV2(container){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const start=new Date(START2); start.setHours(0,0,0,0);
+  const elapsed=Math.floor((today-start)/86400000);
+  if(elapsed<0||elapsed>=TOTAL_DAYS2) return;
+  const pct=Math.min(100,Math.round((elapsed/TOTAL_DAYS2)*100));
+  const wk=Math.floor(elapsed/7)+1;
+  const ph=getPhaseV2(elapsed);
+  const C=2*Math.PI*30;
+  const offset=C*(1-pct/100);
+  const nextEv=getNextEventV2(elapsed);
+
+  // Andamento ultimi 14 giorni — legge da _lastData2
+  const last14peso=[], last14hrv=[], last14dates=[];
+  for(let i=Math.max(0,elapsed-13);i<=elapsed;i++){
+    const id='p2_day_'+i;
+    const d=new Date(START2); d.setDate(d.getDate()+i);
+    const p=parseFloat((_lastData2[id]||{})['peso']);
+    const h=parseFloat((_lastData2[id]||{})['hrv']);
+    last14peso.push(isNaN(p)?null:p);
+    last14hrv.push(isNaN(h)?null:h);
+    last14dates.push(d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}));
+  }
+
+  // SVG mini sparkline
+  function miniSparkline(vals, color) {
+    const valid=vals.filter(v=>v!==null);
+    if(!valid.length) return `<svg width="130" height="48"><text x="65" y="28" text-anchor="middle" fill="var(--faint)" font-size="11">nessun dato</text></svg>`;
+    const min=Math.min(...valid), max=Math.max(...valid), range=max-min||1;
+    const w=130,h=48,pad=6;
+    const points=vals.map((v,i)=>{
+      const x=pad+(i/(vals.length-1||1))*(w-pad*2);
+      const y=v===null?null:h-pad-((v-min)/range)*(h-pad*2);
+      return {x,y,v};
+    }).filter(p=>p.y!==null);
+    const poly=points.map(p=>`${p.x},${p.y}`).join(' ');
+    const lastP=points[points.length-1];
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      <polyline points="${poly}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
+      ${points.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="2.5" fill="${color}"/>`).join('')}
+      ${lastP?`<text x="${lastP.x+3}" y="${lastP.y-4}" font-size="10" fill="${color}" font-weight="600">${lastP.v}</text>`:''}
+    </svg>`;
+  }
+
+  const card=document.createElement('div');
+  card.className='cycle-card';
+  card.innerHTML=`
+    <div class="cycle-ring">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        <circle cx="36" cy="36" r="30" fill="none" stroke="#e8e8ed" stroke-width="5"/>
+        <circle cx="36" cy="36" r="30" fill="none" stroke="#0071e3" stroke-width="5"
+          stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" stroke-linecap="round"/>
+      </svg>
+      <div class="cycle-ring-label">
+        <span class="cycle-ring-pct">${pct}%</span>
+        <span class="cycle-ring-sub">ciclo</span>
+      </div>
+    </div>
+    <div class="cycle-info">
+      <h3>Settimana ${wk} · Proto v2</h3>
+      <p>Giorno ${elapsed+1} di ${TOTAL_DAYS2} · ${TOTAL_DAYS2-elapsed-1} giorni al termine</p>
+      <div class="cycle-next">⟶ ${nextEv}</div>
+    </div>`;
+
+  // Lab card andamento
+  const labCard=document.createElement('div');
+  labCard.className='cycle-card';
+  labCard.style.cssText='flex:2;gap:20px';
+  labCard.innerHTML=`
+    <div style="flex:1">
+      <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px">PESO KG</div>
+      ${miniSparkline(last14peso,'#0071e3')}
+    </div>
+    <div style="flex:1">
+      <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px">HRV MS</div>
+      ${miniSparkline(last14hrv,'#34c759')}
+    </div>`;
+
+  // Wrapper ciclo card — uguale al v1
+  const wrap=document.createElement('div');
+  wrap.className='dash-two-col';
+  wrap.style.cssText='gap:14px;margin-bottom:20px';
+  wrap.appendChild(card);
+  wrap.appendChild(labCard);
+  container.insertBefore(wrap, container.firstChild);
+}
+
 // ── buildProto2 — tab principale v2 ─────────────────────────────
 function buildProto2() {
   const el=document.getElementById('proto2-view');
@@ -5512,6 +5612,11 @@ function buildProto2() {
 
   // Costruisce i giorni
   buildDays2();
+
+  // Aggiunge cycle card e lab section come nel v1
+  const cont2 = document.getElementById('container2');
+  buildCycleCardV2(cont2);
+  buildLabSection(cont2);
 
   // Carica dal cloud
   loadFromCloudV2();
