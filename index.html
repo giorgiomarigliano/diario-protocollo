@@ -970,7 +970,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 }
 
 </style>
-<!-- deploy 1781279228 -->
+<!-- deploy 1781279529 -->
 </head>
 <body>
 
@@ -1006,13 +1006,20 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   <div class="main-nav-tab" id="main-tab-stock2" onclick="switchView('stock2')">📦 Stock v2</div>
 </div>
 <div class="nav-strip" id="nav-strip"></div>
+<div class="nav-strip" id="nav-strip2" style="display:none"></div>
 <div class="diary-view" id="diary-view">
   <div class="container" id="container"></div>
 </div>
 <div class="dash-view" id="dash-view"></div>
 <div class="med-view" id="med-view"></div>
 <div class="med-view" id="meddash-view"></div>
-<div class="med-view" id="proto2-view"></div>
+<div class="diary-view" id="proto2-view" style="display:none">
+  <div class="container" id="container2"></div>
+</div>
+<div class="save-bar" id="save-bar2" style="display:none">
+  <span class="save-hint" id="last-saved2">Mai salvato</span>
+  <button class="save-btn-main" id="save-btn2" onclick="saveDataV2()">Salva dati</button>
+</div>
 <div class="med-view" id="stock2-view"></div>
 <div class="med-view" id="stock-view"></div>
 
@@ -2209,6 +2216,10 @@ function switchView(view) {
   stockView.classList.remove('visible');
   if (proto2) proto2.classList.remove('visible');
   if (stock2) stock2.classList.remove('visible');
+  document.getElementById('proto2-view').style.display = 'none';
+  document.getElementById('nav-strip2').style.display = 'none';
+  const sb2 = document.getElementById('save-bar2');
+  if (sb2) sb2.style.display = 'none';
   navStrip.style.display = 'none';
   tabDiary.classList.remove('on'); tabDash.classList.remove('on');
   tabMed.classList.remove('on'); tabMedDash.classList.remove('on');
@@ -2232,7 +2243,11 @@ function switchView(view) {
     tabStock.classList.add('on');
     buildStockView();
   } else if (view === 'proto2') {
-    if (proto2) { proto2.classList.add('visible'); tabProto2.classList.add('on'); buildProto2(); }
+    document.getElementById('proto2-view').style.display = '';
+    document.getElementById('nav-strip2').style.display = '';
+    document.getElementById('save-bar2').style.display = '';
+    if (tabProto2) tabProto2.classList.add('on');
+    if (!document.getElementById('proto2-view').dataset.built) buildProto2();
   } else if (view === 'stock2') {
     if (stock2) { stock2.classList.add('visible'); tabStock2.classList.add('on'); buildStock2(); }
   } else {
@@ -5540,91 +5555,53 @@ function buildCycleCardV2(container){
   container.appendChild(wrap);
 }
 
-// ── buildProto2 — tab principale v2 ─────────────────────────────
+// ── buildProto2 — init identico al diario v1 ───────────────────
 function buildProto2() {
-  const el=document.getElementById('proto2-view');
-  if(el.dataset.built)return;
-  el.dataset.built='1';
+  const el = document.getElementById('proto2-view');
+  if (el.dataset.built) return;
+  el.dataset.built = '1';
 
-  const today=new Date();today.setHours(0,0,0,0);
-  const start2=new Date(START2);start2.setHours(0,0,0,0);
-  const elapsed2=Math.floor((today-start2)/86400000);
-  const dayLabel=elapsed2<0?`Inizia tra ${Math.abs(elapsed2)} giorni`:elapsed2<TOTAL_DAYS2?`Giorno ${elapsed2+1} di ${TOTAL_DAYS2}`:'Completato';
-  const pct=Math.min(100,Math.max(0,((elapsed2+1)/TOTAL_DAYS2)*100)).toFixed(1);
-
-  // Riepilogo protocollo in cima
-  const summaryHtml = `
-    <div style="background:var(--surface);border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow)">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div>
-          <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px">Protocollo v2 · Ottimizzazione Asse Somatotropo</div>
-          <div style="font-size:var(--fs-lg);font-weight:var(--fw-semi)">${dayLabel}</div>
-          <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:2px">29 giu → 18 set 2026 · Dr. Seregni</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:var(--fs-2xl);font-weight:var(--fw-semi);color:#0071e3">${pct}%</div>
-          <div style="font-size:var(--fs-xs);color:var(--muted)">completato</div>
-        </div>
-      </div>
-      <div style="background:var(--border);border-radius:4px;height:5px;overflow:hidden;margin-bottom:14px">
-        <div style="background:linear-gradient(90deg,#0071e3,#34c759);height:5px;width:${pct}%;border-radius:4px"></div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
-        ${[
-          {t:'🌅 Mattino',d:'Fragment 250mcg + BPC 250mcg',c:'#ff9500'},
-          {t:'☀️ Pomeriggio',d:'Fragment 250mcg',c:'#5856d6'},
-          {t:'💪 Post-WO',d:'IGF-1 DES 50mcg IM (solo allenamento)',c:'#34c759'},
-          {t:'🌙 Sera',d:'Tesa 2mg + Ipam 100mcg + BPC 250mcg + TB500 500mcg',c:'#0071e3'},
-        ].map(s=>`<div style="background:${s.c}12;border-radius:10px;padding:10px 12px">
-          <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:${s.c};margin-bottom:3px">${s.t}</div>
-          <div style="font-size:var(--fs-xs);color:var(--muted)">${s.d}</div>
-        </div>`).join('')}
-      </div>
-    </div>`;
-
-  // Struttura identica al diario v1
-  el.innerHTML = summaryHtml + `
-    <div class="nav-strip" id="nav-strip2" style="position:sticky;top:52px;z-index:90;background:var(--surface);border-bottom:1px solid var(--border);margin:0 -20px;padding:8px 20px;overflow-x:auto;white-space:nowrap;display:flex;gap:4px"></div>
-    <div class="container" id="container2"></div>
-    <div style="height:80px"></div>`;
-
-  // Save bar
-  const saveBar=document.createElement('div');
-  saveBar.className='save-bar';
-  saveBar.innerHTML=`<span class="save-hint" id="last-saved2">Mai salvato</span><button class="save-btn-main" id="save-btn2" onclick="saveDataV2()">Salva dati</button>`;
-  el.appendChild(saveBar);
-
-  // Nav settimane
-  const navStrip2=document.getElementById('nav-strip2');
-  for(let w=0;w<TOTAL_DAYS2/7;w++){
-    const btn=document.createElement('div');
-    btn.className='nav-wk-tab';
-    btn.textContent=`WK ${w+1}`;
-    btn.dataset.wk=w;
-    btn.onclick=()=>{
-      document.querySelectorAll('#nav-strip2 .nav-wk-tab').forEach(b=>b.classList.remove('on'));
-      btn.classList.add('on');
-      document.getElementById('week2-'+(w+1))?.scrollIntoView({behavior:'smooth',block:'start'});
-    };
-    if(w===Math.floor(Math.max(0,elapsed2)/7))btn.classList.add('on');
-    navStrip2.appendChild(btn);
+  // Nav settimane v2 — identico a buildNav() del v1
+  const nav2 = document.getElementById('nav-strip2');
+  nav2.innerHTML = '';
+  for (let w = 0; w < 16; w++) {
+    const tab = document.createElement('div');
+    tab.className = 'nav-tab'; tab.id = 'nav2-w' + (w+1);
+    tab.textContent = 'WK ' + (w+1);
+    tab.onclick = () => { document.getElementById('week2-'+(w+1))?.scrollIntoView({behavior:'smooth',block:'start'}); };
+    nav2.appendChild(tab);
   }
 
-  // Aggiunge cycle card e lab section PRIMA dei giorni (come nel v1)
-  const cont2 = document.getElementById('container2');
-  buildCycleCardV2(cont2);
-  buildLabSection(cont2);
-
-  // Costruisce i giorni (vengono appesi dopo cycle card e lab)
+  // Costruisce giorni v2
   buildDays2();
+
+  // Cycle card e lab section in cima — identico al v1
+  const container2 = document.getElementById('container2');
+  buildCycleCardV2(container2);
+  buildLabSection(container2);
+
+  // Aggiorna highlight nav v2
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start2 = new Date(START2); start2.setHours(0,0,0,0);
+  const elapsed2 = Math.floor((today - start2) / 86400000);
+  const curWk2 = Math.max(0, Math.floor(elapsed2 / 7));
+  const activeTab2 = document.getElementById('nav2-w' + (curWk2+1));
+  if (activeTab2) activeTab2.classList.add('on');
+
+  // Jump al giorno corrente
+  if (elapsed2 >= 0 && elapsed2 < TOTAL_DAYS2) {
+    setTimeout(() => {
+      document.getElementById('card2-p2_day_'+elapsed2)?.scrollIntoView({behavior:'smooth', block:'center'});
+    }, 100);
+  }
 
   // Carica dal cloud
   loadFromCloudV2();
 
   // Auto-save
-  el.addEventListener('input',()=>{
+  el.addEventListener('input', () => {
     clearTimeout(el._autoSave);
-    el._autoSave=setTimeout(saveDataV2,3000);
+    el._autoSave = setTimeout(saveDataV2, 3000);
   });
 }
 
