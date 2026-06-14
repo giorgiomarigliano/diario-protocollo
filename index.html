@@ -776,9 +776,9 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .lab-ref{font-size:9px;color:var(--faint);margin-top:2px}
 .dexa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
 .check-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
-.check-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--radius-xs);padding:8px 10px;cursor:pointer}
+.check-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--radius-xs);padding:8px 12px;cursor:pointer}
 .check-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--blue);flex-shrink:0}
-.check-item label{font-size:12px;color:var(--text);cursor:pointer;user-select:none}
+.check-item label{font-size:13px;color:var(--text);cursor:pointer;user-select:none}
 .photo-note{background:var(--surface2);border-radius:var(--radius-xs);padding:10px 12px;margin-top:6px;display:flex;align-items:center;gap:10px}
 .photo-note input{flex:1;background:transparent;border:none;outline:none;font-size:13px;color:var(--text);font-family:inherit}
 .photo-note input::placeholder{color:var(--faint)}
@@ -4377,172 +4377,172 @@ function buildStockView2() {
   el.dataset.built = '1';
 
   // ── DATI INVENTARIO PROTO V2 ─────────────────────────────────────────
-  // Fabbisogno calcolato su 112gg · 80gg allenamento (mar/mer/ven/sab/dom)
   const compounds = [
     {
       name: 'Tesamorelin',
-      emoji: '🧬', color: '#0071e3', bg: 'rgba(0,113,227,.07)',
+      emoji: '🧬', color: '#0071e3', bg: 'rgba(0,113,227,.08)',
       dose: '2mg/sera · 7gg/sett',
-      fabbisogno: '224mg (112gg × 2mg)',
+      fabbisogno: '224mg', fab_detail: '112gg × 2mg',
       mgNeeded: 224,
       vials: [
-        { n:3, stato:'intatto', note:'10mg · In frigo, non ancora ricostituito' },
-        { n:4, stato:'intatto', note:'10mg · In frigo' },
-        { n:5, stato:'intatto', note:'10mg · In frigo' },
-        { n:6, stato:'intatto', note:'10mg · In frigo' },
+        { n:3, stato:'intatto' }, { n:4, stato:'intatto' },
+        { n:5, stato:'intatto' }, { n:6, stato:'intatto' },
       ],
       disponibile: 40,
-      alert: true,
-      alertMsg: 'Fabbisogno 224mg · disponibile 40mg · da riordinare ~184mg (~19 vial × 10mg)',
+      gap_note: '~184mg da riordinare (~19 vial)',
     },
     {
       name: 'Fragment 176-191',
-      emoji: '🔥', color: '#ff3b30', bg: 'rgba(255,59,48,.07)',
-      dose: '250mcg mattino + 250mcg pomeriggio · 7gg/sett',
-      fabbisogno: '56mg (112gg × 500mcg/die)',
+      emoji: '🔥', color: '#ff3b30', bg: 'rgba(255,59,48,.08)',
+      dose: '500mcg/die · 2× SC',
+      fabbisogno: '56mg', fab_detail: '112gg × 500mcg',
       mgNeeded: 56,
       vials: [],
       disponibile: 0,
-      alert: true,
-      alertMsg: 'Da ordinare: 56mg totali (~6 vial × 10mg)',
+      gap_note: '56mg totali (~6 vial × 10mg)',
     },
     {
       name: 'Ipamorelin',
-      emoji: '⚡', color: '#34c759', bg: 'rgba(52,199,89,.07)',
-      dose: '100mcg/sera · 7gg/sett',
-      fabbisogno: '11.2mg (112gg × 100mcg)',
+      emoji: '⚡', color: '#34c759', bg: 'rgba(52,199,89,.08)',
+      dose: '100mcg/sera · SC',
+      fabbisogno: '11.2mg', fab_detail: '112gg × 100mcg',
       mgNeeded: 11.2,
       vials: [],
       disponibile: 0,
-      alert: true,
-      alertMsg: 'Da ordinare: 11.2mg (~2 vial × 10mg)',
+      gap_note: '~2 vial × 10mg',
     },
     {
       name: 'IGF-1 DES',
-      emoji: '💪', color: '#af52de', bg: 'rgba(175,82,222,.07)',
-      dose: '25mcg dx + 25mcg sx post-WO · 5gg/sett',
-      fabbisogno: '4mg (80gg × 50mcg)',
+      emoji: '💪', color: '#af52de', bg: 'rgba(175,82,222,.08)',
+      dose: '50mcg post-WO · IM bilat',
+      fabbisogno: '4mg', fab_detail: '80gg WO × 50mcg',
       mgNeeded: 4,
       vials: [],
       disponibile: 0,
-      alert: true,
-      alertMsg: 'Da ordinare: 4mg (~1 vial × 5mg o 10mg)',
+      gap_note: '~1 vial × 5mg',
     },
     {
       name: 'BPC-157',
-      emoji: '🔧', color: '#ff9500', bg: 'rgba(255,149,0,.07)',
-      dose: '250mcg mattino + 250mcg sera · 7gg/sett',
-      fabbisogno: '56mg (112gg × 500mcg/die)',
+      emoji: '🔧', color: '#ff9500', bg: 'rgba(255,149,0,.08)',
+      dose: '500mcg/die · 2× SC',
+      fabbisogno: '56mg', fab_detail: '112gg × 500mcg',
       mgNeeded: 56,
-      vials: [
-        { n:1, stato:'intatto', note:'10mg · In frigo' },
-        { n:2, stato:'intatto', note:'10mg · In frigo' },
-      ],
+      vials: [ { n:1, stato:'intatto' }, { n:2, stato:'intatto' } ],
       disponibile: 20,
-      alert: true,
-      alertMsg: 'Fabbisogno 56mg · disponibile 20mg · da riordinare ~36mg (~4 vial × 10mg)',
+      gap_note: '~36mg da riordinare (~4 vial)',
     },
     {
       name: 'TB-500',
-      emoji: '🩹', color: '#5856d6', bg: 'rgba(88,86,214,.07)',
-      dose: '500mcg/sera · 7gg/sett',
-      fabbisogno: '56mg (112gg × 500mcg)',
+      emoji: '🩹', color: '#5856d6', bg: 'rgba(88,86,214,.08)',
+      dose: '500mcg/sera · SC',
+      fabbisogno: '56mg', fab_detail: '112gg × 500mcg',
       mgNeeded: 56,
       vials: [],
       disponibile: 0,
-      alert: true,
-      alertMsg: 'Da ordinare: 56mg (~6 vial × 10mg)',
+      gap_note: '~6 vial × 10mg',
     },
   ];
 
   function statoColor(s) {
-    if (s === 'intatto') return { bg:'rgba(52,199,89,.10)', color:'#1d7a3a', label:'Intatto' };
-    if (s === 'in_uso')  return { bg:'rgba(0,113,227,.10)', color:'#0071e3', label:'In uso' };
+    if (s === 'intatto') return { bg:'rgba(52,199,89,.12)', color:'#1d7a3a', label:'Intatto' };
+    if (s === 'in_uso')  return { bg:'rgba(0,113,227,.12)', color:'#0071e3', label:'In uso' };
     if (s === 'perso')   return { bg:'rgba(255,59,48,.10)', color:'#ff3b30', label:'Perso' };
     return { bg:'#f5f5f7', color:'#666', label:s };
   }
 
-  let html = `<div style="max-width:860px;margin:0 auto;padding:20px 20px 60px">`;
+  let html = `<div style="width:100%;max-width:1100px;margin:0 auto;padding:16px 16px 60px;box-sizing:border-box">`;
 
   // Header
   html += `
-    <div style="margin-bottom:16px">
-      <div style="font-size:22px;font-weight:600;color:var(--text)">📦 Stock · Protocollo v2</div>
-      <div style="font-size:13px;color:var(--muted);margin-top:3px">29 giu – 18 set 2026 · 112 giorni · Dr. Seregni</div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:20px;font-weight:600;color:var(--text)">📦 Stock · Protocollo v2</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">29 giu – 18 set 2026 · 112 giorni · Dr. Seregni</div>
     </div>`;
 
-  // Alert riordino globale
+  // Alert banner
   html += `
-    <div style="background:rgba(255,59,48,.08);border:1px solid rgba(255,59,48,.25);border-radius:12px;padding:14px 16px;margin-bottom:18px;display:flex;gap:12px;align-items:flex-start">
-      <div style="font-size:20px;line-height:1">⚠️</div>
+    <div style="background:rgba(255,59,48,.07);border:1px solid rgba(255,59,48,.22);border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:center">
+      <span style="font-size:16px">⚠️</span>
       <div>
-        <div style="font-size:13px;font-weight:600;color:#c0392b">Riordino necessario prima del 29 giu 2026</div>
-        <div style="font-size:12px;color:#7a2020;margin-top:3px">Fragment, Ipamorelin, IGF-1 DES, TB-500 non ancora in stock · Tesamorelin e BPC-157 parzialmente coperti</div>
+        <span style="font-size:12px;font-weight:600;color:#c0392b">Riordino necessario prima del 29 giu 2026 · </span>
+        <span style="font-size:12px;color:#7a2020">Fragment, Ipamorelin, IGF-1 DES, TB-500 non in stock · Tesa e BPC-157 parzialmente coperti</span>
       </div>
     </div>`;
 
-  // Riepilogo tabella fabbisogno
-  html += `
-    <div style="background:var(--surface2,#f5f5f7);border-radius:14px;padding:14px;margin-bottom:18px">
-      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">📊 Riepilogo fabbisogno 16 settimane</div>
-      <div style="display:flex;flex-direction:column;gap:5px">`;
+  // ── GRIGLIA COMPATTA COMPOSTI ────────────────────────────────────────
+  // auto-fit: min 260px → su PC ~3 colonne, su tablet ~2, su mobile 1
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:14px">`;
 
   compounds.forEach(c => {
     const gap = c.mgNeeded - c.disponibile;
     const covered = gap <= 0;
-    html += `
-        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--card-bg,#fff);border-radius:9px">
-          <span style="font-size:14px">${c.emoji}</span>
-          <span style="font-size:12px;font-weight:600;color:${c.color};min-width:120px">${c.name}</span>
-          <span style="flex:1;font-size:11px;color:var(--muted)">${c.fabbisogno}</span>
-          <span style="font-size:11px;font-weight:500;background:${covered?'rgba(52,199,89,.12)':'rgba(255,59,48,.10)'};color:${covered?'#1d7a3a':'#c0392b'};padding:2px 8px;border-radius:20px;white-space:nowrap">${covered?'✅ Coperto':'⚠️ '+gap.toFixed(1)+'mg gap'}</span>
-        </div>`;
-  });
-  html += `</div></div>`;
-
-  // Schede per composto
-  compounds.forEach(c => {
     const intatti = c.vials.filter(v => v.stato === 'intatto').length;
+    const pct = Math.min(100, Math.round((c.disponibile / c.mgNeeded) * 100));
+    const barColor = covered ? '#34c759' : (pct > 30 ? '#ff9500' : '#ff3b30');
+
+    // Vial pills
+    const vialPills = c.vials.map(v => {
+      const sc = statoColor(v.stato);
+      return `<span style="font-size:10px;font-weight:600;background:${sc.bg};color:${sc.color};padding:1px 6px;border-radius:20px">V${v.n}</span>`;
+    }).join(' ');
+
     html += `
-      <div style="background:var(--surface2,#f5f5f7);border-radius:14px;padding:14px;margin-bottom:12px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:34px;height:34px;border-radius:9px;background:${c.bg};display:flex;align-items:center;justify-content:center;font-size:17px">${c.emoji}</div>
-            <div>
-              <div style="font-size:14px;font-weight:600;color:${c.color}">${c.name}</div>
-              <div style="font-size:11px;color:var(--muted);margin-top:1px">${c.dose}</div>
-            </div>
+      <div style="background:var(--surface,#fff);border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid var(--border,#e8e8ed);display:flex;flex-direction:column;gap:8px">
+        <!-- Header compound -->
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:30px;height:30px;border-radius:8px;background:${c.bg};display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${c.emoji}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:600;color:${c.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px">${c.dose}</div>
           </div>
-          ${intatti > 0 ? `<span style="font-size:11px;background:rgba(52,199,89,.12);color:#1d7a3a;padding:2px 8px;border-radius:20px">${intatti} intatti</span>` : '<span style="font-size:11px;background:rgba(255,59,48,.10);color:#c0392b;padding:2px 8px;border-radius:20px">Da ordinare</span>'}
+          <span style="font-size:10px;font-weight:500;padding:2px 7px;border-radius:20px;flex-shrink:0;background:${covered?'rgba(52,199,89,.12)':'rgba(255,59,48,.10)'};color:${covered?'#1d7a3a':'#c0392b'}">${covered?'✅':('⚠️')}</span>
         </div>
-        ${c.vials.length > 0 ? `<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:8px">${c.vials.map(v => {
-          const sc = statoColor(v.stato);
-          return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--card-bg,#fff);border-radius:8px">
-            <div style="min-width:22px;font-size:11px;font-weight:600;color:var(--muted)">V${v.n}</div>
-            <div style="flex:1;font-size:12px;color:var(--text)">${v.note}</div>
-            <span style="font-size:11px;font-weight:500;background:${sc.bg};color:${sc.color};padding:2px 7px;border-radius:20px">${sc.label}</span>
-          </div>`;
-        }).join('')}</div>` : ''}
-        <div style="font-size:11px;padding:8px 10px;background:rgba(255,149,0,.08);border-radius:8px;color:#7a4400">
-          ⚠️ ${c.alertMsg}
+        <!-- Progress bar copertura -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:10px;color:var(--muted)">Disponibile</span>
+            <span style="font-size:11px;font-weight:600;color:var(--text)">${c.disponibile}mg <span style="font-weight:400;color:var(--muted)">/ ${c.fabbisogno}</span></span>
+          </div>
+          <div style="height:4px;background:var(--surface2,#f0f0f5);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${barColor};border-radius:2px;transition:width .3s"></div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:3px">${c.fab_detail}</div>
+        </div>
+        <!-- Viali disponibili -->
+        ${c.vials.length > 0 ? `
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:10px;color:var(--muted)">Vial:</span>
+          ${vialPills}
+        </div>` : ''}
+        <!-- Gap note -->
+        <div style="font-size:10px;padding:5px 8px;background:${covered?'rgba(52,199,89,.06)':'rgba(255,149,0,.08)'};border-radius:6px;color:${covered?'#1d7a3a':'#7a4400'}">
+          ${covered ? '✅ Coperto' : '⚠️ ' + c.gap_note}
         </div>
       </div>`;
   });
 
-  // Consumabili (condivisi con v1)
+  html += `</div>`;
+
+  // ── CONSUMABILI ──────────────────────────────────────────────────────
   html += `
-    <div style="background:var(--surface2,#f5f5f7);border-radius:14px;padding:14px;margin-top:4px">
-      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">Consumabili (condivisi v1/v2)</div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px">
-          <span style="font-size:18px">💧</span>
-          <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">BAC Water</div><div style="font-size:11px;color:var(--muted)">4 flaconi disponibili · usare acqua fredda</div></div>
-          <span style="font-size:13px;font-weight:600;color:#34c759">4 flaconi</span>
+    <div style="background:var(--surface,#fff);border-radius:12px;padding:12px 14px;box-shadow:0 1px 4px rgba(0,0,0,.07);border:1px solid var(--border,#e8e8ed)">
+      <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Consumabili</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
+        <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px">💧</span>
+          <div>
+            <div style="font-size:12px;font-weight:500;color:var(--text)">BAC Water</div>
+            <div style="font-size:10px;color:var(--muted)">4 flaconi · frigo</div>
+          </div>
+          <span style="margin-left:auto;font-size:12px;font-weight:700;color:#34c759">×4</span>
         </div>
-        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px">
-          <span style="font-size:18px">💉</span>
-          <div style="flex:1"><div style="font-size:13px;font-weight:500;color:var(--text)">Siringhe insulina</div><div style="font-size:11px;color:var(--muted)">PIC 30G × 8mm · 1ml · attenzione: IGF-1 DES è IM non SC</div></div>
-          <span style="font-size:13px;font-weight:600;color:#34c759">240 pz</span>
+        <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px">💉</span>
+          <div>
+            <div style="font-size:12px;font-weight:500;color:var(--text)">Siringhe insulina</div>
+            <div style="font-size:10px;color:var(--muted)">PIC 30G 8mm · IGF-1 DES → IM</div>
+          </div>
+          <span style="margin-left:auto;font-size:12px;font-weight:700;color:#34c759">240</span>
         </div>
       </div>
     </div>`;
