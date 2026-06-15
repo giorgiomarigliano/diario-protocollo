@@ -2772,6 +2772,32 @@ function buildMedView() {
       <div class="med-panel-title">🗓 Timeline clinica</div>
       <div class="med-panel-sub">Cronologia eventi, esami e milestone</div>
     </div></div>
+
+    <!-- PROSSIMI EVENTI -->
+    <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Prossimi eventi</div>
+    <div class="med-timeline" style="margin-bottom:20px">
+      <div class="med-tl-item">
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.08);border:2px dashed #34c759">🩺</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">Set–Ott 2026 — PIANIFICATO</div><div class="med-tl-title">Visita follow-up Dr. Seregni</div><div class="med-tl-sub">Valutazione ciclo completo · Decisione TRT · Ciclo 2 planning</div></div>
+      </div>
+      <div class="med-tl-item">
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(175,82,222,.08);border:2px dashed #af52de">📊</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#af52de;font-weight:600">Set 2026 — PIANIFICATO</div><div class="med-tl-title">DEXA T1 — Fine ciclo</div><div class="med-tl-sub">Stesso centro · Stesse condizioni T0 · Sabato mattina a digiuno</div></div>
+      </div>
+      <div class="med-tl-item">
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed #0071e3">🔬</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">~ 21 ago 2026 — PIANIFICATO</div><div class="med-tl-title">Mini-panel Mid-cycle · Santagostino <span style="font-size:10px;background:rgba(0,113,227,.1);color:#0071e3;padding:1px 7px;border-radius:20px;font-weight:500">codice 01Q1RUWN</span></div><div class="med-tl-sub">IGF-1 · Glucosio · Insulina · T libero · T totale · SHBG · Emocromo · €126,81</div></div>
+      </div>
+    </div>
+
+    <!-- DIVISORE -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.07em;text-transform:uppercase">Storico · recente → passato</div>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+
+    <!-- STORICO -->
     <div class="med-timeline">
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.15)">✅</div><div class="med-tl-connector"></div></div>
@@ -2779,15 +2805,7 @@ function buildMedView() {
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.15)">🩸</div><div class="med-tl-connector"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date">9 giu 2026</div><div class="med-tl-title">Lab Bionics — Panel baseline</div><div class="med-tl-sub">IGF-1, cortisolo, DHEA-S, T libero, SHBG, zinco, emocromo</div></div>
-      </div>
-      <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(175,82,222,.15)">📊</div><div class="med-tl-connector"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date">9 mag 2026</div><div class="med-tl-title">DEXA T0</div><div class="med-tl-sub">Peso 71.1kg · BF 18.2% · VAT 72cm² · BMD T-score 0.0</div></div>
-      </div>
-      <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.15)">🩸</div><div class="med-tl-connector"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date">20 mag 2026</div><div class="med-tl-title">Panel CDI — T0 Biometrico</div><div class="med-tl-sub">VitD 22 · IGF-1 94↓ · DHEA-S 78↓ · FSH 25.7↑↑ · SHBG 75.10↑↑ · Hb 119↓</div></div>
+        <div class="med-tl-content"><div class="med-tl-date">9 giu 2026</div><div class="med-tl-title">Lab Bionics — Panel baseline</div><div class="med-tl-sub">IGF-1 · Cortisolo · DHEA-S · T libero · SHBG · Zinco · Emocromo</div></div>
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(255,149,0,.15)">🔬</div><div class="med-tl-connector"></div></div>
@@ -2795,28 +2813,22 @@ function buildMedView() {
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.15)">🩸</div><div class="med-tl-connector"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date">20 mag 2026</div><div class="med-tl-title">Panel CDI — T0 Biometrico</div><div class="med-tl-sub">VitD 22 · IGF-1 94↓ · DHEA-S 78↓ · FSH 25.7↑↑ · SHBG 75.10↑↑ · Hb 119↓</div></div>
+      </div>
+      <div class="med-tl-item">
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(175,82,222,.15)">📊</div><div class="med-tl-connector"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date">9 mag 2026</div><div class="med-tl-title">DEXA T0</div><div class="med-tl-sub">Peso 71.1kg · BF 18.2% · VAT 72cm² · BMD T-score 0.0</div></div>
+      </div>
+      <div class="med-tl-item">
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.15)">🩸</div><div class="med-tl-connector"></div></div>
         <div class="med-tl-content"><div class="med-tl-date">10 apr 2026</div><div class="med-tl-title">Panel CDI — Baseline</div><div class="med-tl-sub">HDL 28↓ · Omocist 21.9↑ · VitD 9.5↓ · SHBG 75.10 · Zinco 53.30↓</div></div>
       </div>
-      <div class="med-tl-item" style="opacity:.6">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,0,0,.06)">📋</div><div class="med-tl-connector"></div></div>
+      <div class="med-tl-item" style="opacity:.55">
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,0,0,.06)">📋</div></div>
         <div class="med-tl-content"><div class="med-tl-date">Feb 2025 · Gen 2024 · Nov 2022 · Ott 2020</div><div class="med-tl-title">Panel storici CDI</div><div class="med-tl-sub">Vedi sezioni dettagliate sotto</div></div>
-      </div>
-      <!-- FUTURE -->
-      <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed #0071e3">🔬</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">~ 21 ago 2026 — PIANIFICATO</div><div class="med-tl-title">Mini-panel Mid-cycle · Santagostino <span style="font-size:10px;background:rgba(0,113,227,.1);color:#0071e3;padding:1px 7px;border-radius:20px;font-weight:500">codice 01Q1RUWN</span></div><div class="med-tl-sub">IGF-1 · Glucosio · Insulina · T libero · T totale · SHBG · Emocromo · €126,81</div></div>
-      </div>
-      <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(175,82,222,.08);border:2px dashed #af52de">📊</div><div class="med-tl-connector"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#af52de;font-weight:600">Set 2026 — PIANIFICATO</div><div class="med-tl-title">DEXA T1 — Fine ciclo</div><div class="med-tl-sub">Stesso centro · Stesse condizioni T0 · Sabato mattina a digiuno</div></div>
-      </div>
-      <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.08);border:2px dashed #34c759">🩺</div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">Set–Ott 2026 — PIANIFICATO</div><div class="med-tl-title">Visita follow-up Dr. Seregni</div><div class="med-tl-sub">Valutazione ciclo completo · Decisione TRT · Ciclo 2 planning</div></div>
       </div>
     </div>
   </div>
-
   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px;font-size:12px">
     <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#34c759;display:inline-block"></span>Nella norma</span>
     <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#ff9500;display:inline-block"></span>Attenzione / borderline</span>
