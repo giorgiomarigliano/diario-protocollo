@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Diario Ciclo">
 <title>Diario Protocollo · 16 Settimane</title>
-<!-- v2.1.0 -->
+<!-- v3.0.0 redesign -->
 <style>
 /* Apple-style design system */
 :root {
@@ -1117,8 +1117,253 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .day-card.open .day-body.day-body-desktop { grid-template-columns: 440px 1fr; }
 }
 
+
+/* ══════════════════════════════════════════════
+   REDESIGN v3.0 — earth tones, 12/8px radius
+   ══════════════════════════════════════════════ */
+
+/* Override radius system */
+:root {
+  --radius-card: 12px;
+  --radius-el:   8px;
+  --radius-pill: 980px;
+  /* Earth tone accents (desaturate existing) */
+  --accent-morning:  #5b84b1; /* slate blue */
+  --accent-afternoon:#b87333; /* copper */
+  --accent-postWO:   #7b5ea7; /* muted purple */
+  --accent-evening:  #4a7c59; /* forest green */
+  /* Warm neutrals */
+  --warm-bg: #f7f5f2;
+  --warm-surface: #ffffff;
+  --warm-surface2: #f2efe9;
+  --warm-border: rgba(0,0,0,0.09);
+}
+
+/* KPI strip */
+.kpi-strip {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.kpi-strip::-webkit-scrollbar { display: none; }
+.kpi-s-item {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  flex-shrink: 0;
+  padding: 4px 8px;
+}
+.kpi-s-val {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.kpi-s-lbl {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+.kpi-s-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+/* Warm-up toggle */
+.warmup-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background .15s;
+}
+.warmup-toggle:hover { background: var(--surface2); }
+.warmup-toggle-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  flex-shrink: 0;
+}
+.warmup-toggle-sub {
+  font-size: 12px;
+  color: var(--muted);
+  flex: 1;
+}
+.warmup-chev {
+  font-size: 14px;
+  color: var(--faint);
+  transition: transform .2s;
+  flex-shrink: 0;
+}
+.warmup-toggle.open .warmup-chev { transform: rotate(90deg); }
+.warmup-body {
+  overflow: hidden;
+  transition: max-height .35s ease;
+}
+.warmup-collapsed { max-height: 0; }
+.warmup-open { max-height: 9999px; }
+
+/* Proto v2 section header */
+.proto2-hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.proto2-hdr-icon {
+  font-size: 22px;
+}
+.proto2-hdr-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.proto2-hdr-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Injection chips — tappable stato cycling */
+.inj-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.inj-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text2);
+  cursor: pointer;
+  user-select: none;
+  transition: background .15s, border-color .15s, color .15s;
+  white-space: nowrap;
+}
+.inj-chip:hover { background: var(--surface3, #e8e8ed); }
+.inj-chip[data-stato="fatto"] {
+  background: rgba(75,130,80,.10);
+  border-color: rgba(75,130,80,.30);
+  color: #3a6e40;
+}
+.inj-chip[data-stato="skip"] {
+  background: var(--surface2);
+  border-color: var(--border);
+  color: var(--faint);
+  text-decoration: line-through;
+}
+.inj-chip-icon { font-size: 12px; }
+.inj-chip-stato {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.inj-chip[data-stato="fatto"] .inj-chip-stato { color: #3a6e40; }
+
+/* Slot header strip for chips */
+.inj-slot-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+.inj-slot-icon {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; flex-shrink: 0;
+}
+.inj-slot-icon.mattino    { background: rgba(91,132,177,.15); color: #5b84b1; }
+.inj-slot-icon.pomeriggio { background: rgba(184,115,51,.15); color: #b87333; }
+.inj-slot-icon.postWO     { background: rgba(123,94,167,.15); color: #7b5ea7; }
+.inj-slot-icon.sera       { background: rgba(74,124,89,.15);  color: #4a7c59; }
+.inj-slot-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.inj-slot-timing {
+  font-size: 10px;
+  color: var(--faint);
+  margin-left: auto;
+}
+
+/* Card redesign — earth tones borders */
+.day-card {
+  border-radius: 12px !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 1px 6px rgba(0,0,0,.05) !important;
+}
+.day-card.today {
+  border-color: rgba(91,132,177,.4) !important;
+  box-shadow: 0 0 0 2px rgba(91,132,177,.2), 0 1px 6px rgba(0,0,0,.05) !important;
+}
+.day-card:hover {
+  box-shadow: 0 3px 14px rgba(0,0,0,.08) !important;
+}
+
+/* Redesign phase badges — muted */
+.p1 { background: #eaf0f7; color: #3d6a9e; }
+.p2 { background: #f5ede5; color: #8a5e2a; }
+.p3 { background: #e7f0e8; color: #326339; }
+.p4b { background: #f0ebe8; color: #6e3a30; }
+
+/* Warmup section label */
+.warmup-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 8px 0 4px;
+  border-top: 1px dashed var(--border);
+  margin-top: 4px;
+}
+
+@media (max-width: 600px) {
+  .kpi-strip { padding: 6px 14px; }
+  .kpi-s-item { padding: 3px 6px; }
+  .kpi-s-val { font-size: 14px; }
+  .warmup-toggle { padding: 12px 14px; border-radius: 10px; }
+  .warmup-toggle-sub { display: none; }
+}
 </style>
-<!-- deploy 1781175570 -->
+<!-- deploy 1781536995 -->
 </head>
 <body>
 
@@ -1130,7 +1375,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="header">
   <div class="h-left">
     <h1>Diario Protocollo</h1>
-    <p class="h-subtitle">8 GIU – 25 SET 2026 · 16 settimane · 112 giorni</p>
+    <p class="h-subtitle">29 GIU – 18 SET 2026 · Ciclo 1 · Protocollo v2</p>
   </div>
   <div class="h-right">
     <div class="sync-indicator">
@@ -1148,22 +1393,49 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   <div class="main-nav-tab on" id="main-tab-diary" onclick="switchView('diary')">Diario</div>
   <div class="main-nav-tab" id="main-tab-dash" onclick="switchView('dash')">Dashboard</div>
   <div class="main-nav-tab" id="main-tab-med" onclick="switchView('med')">🩸 Referti</div>
-  <div class="main-nav-tab" id="main-tab-meddash" onclick="switchView('meddash')">📊 Lab</div>
   <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')">📦 Stock</div>
-  <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')">🧬 Proto v2</div>
-  <div class="main-nav-tab" id="main-tab-stock2" onclick="switchView('stock2')">📦 Stock v2</div>
 </div>
 <div class="nav-strip" id="nav-strip"></div>
+<!-- KPI Strip — always visible in diary view -->
+<div id="kpi-strip-wrap" style="display:none">
+  <div class="kpi-strip" id="kpi-strip">
+    <div class="kpi-s-item"><span class="kpi-s-val" id="ks-peso">—</span><span class="kpi-s-lbl">kg</span></div>
+    <div class="kpi-s-sep"></div>
+    <div class="kpi-s-item"><span class="kpi-s-val" id="ks-hrv">—</span><span class="kpi-s-lbl">HRV</span></div>
+    <div class="kpi-s-sep"></div>
+    <div class="kpi-s-item"><span class="kpi-s-val" id="ks-rhr">—</span><span class="kpi-s-lbl">RHR</span></div>
+    <div class="kpi-s-sep"></div>
+    <div class="kpi-s-item"><span class="kpi-s-val" id="ks-wk">—</span><span class="kpi-s-lbl">settimana</span></div>
+    <div class="kpi-s-sep"></div>
+    <div class="kpi-s-item"><span class="kpi-s-val" id="ks-fase">—</span><span class="kpi-s-lbl">fase</span></div>
+  </div>
+</div>
 <div class="diary-view" id="diary-view">
-  <div class="container" id="container"></div>
+  <!-- Warm-up section 8-28 giu: collassabile -->
+  <div id="warmup-section" style="display:none">
+    <div class="container">
+      <div class="warmup-toggle" id="warmup-toggle" onclick="toggleWarmup()">
+        <span class="warmup-toggle-title">Pre-Protocollo · 8 – 28 giu 2026</span>
+        <span class="warmup-toggle-sub" id="warmup-sub">Biometria baseline, allenamenti, note</span>
+        <span class="warmup-chev" id="warmup-chev">›</span>
+      </div>
+      <div id="warmup-body" class="warmup-body warmup-collapsed">
+        <div id="container"></div>
+      </div>
+    </div>
+  </div>
+  <!-- Protocollo v2 section: header + cards dal 29 giu -->
+  <div id="proto2-section">
+    <div class="container" id="container2"></div>
+  </div>
 </div>
 <div class="dash-view" id="dash-view"></div>
 <div class="med-view" id="med-view"></div>
 <div class="med-view" id="meddash-view"></div>
 <div class="med-view" id="stock-view"></div>
-<div class="med-view" id="stock2-view"></div>
-<div class="diary-view hidden" id="proto2-view">
-  <div class="container" id="container2"></div>
+<!-- Legacy views (kept for compat) -->
+<div class="med-view" id="stock2-view" style="display:none!important"></div>
+<div class="diary-view hidden" id="proto2-view" style="display:none!important">
 </div>
 
 <div class="save-bar">
@@ -1928,6 +2200,27 @@ function applyAll(data){
   });
   updateProgress();
   _lastData = data;
+  // Restore chip states from hidden inputs
+  setTimeout(() => {
+    document.querySelectorAll('.inj-chip[data-id][data-f]').forEach(chip => {
+      const dataId = chip.dataset.id;
+      const dataF  = chip.dataset.f;
+      const hidden = document.querySelector(`input[type="hidden"][data-id="${dataId}"][data-f="${dataF}"]`);
+      if (hidden && hidden.value) {
+        chip.dataset.stato = hidden.value;
+        const iconEl  = chip.querySelector('.inj-chip-icon');
+        const statoEl = chip.querySelector('.inj-chip-stato');
+        if (hidden.value === 'fatto') {
+          if (iconEl)  iconEl.textContent  = '✓';
+          if (statoEl) statoEl.textContent = 'fatto';
+        } else if (hidden.value === 'skip') {
+          if (iconEl)  iconEl.textContent  = '·';
+          if (statoEl) statoEl.textContent = 'skip';
+        }
+      }
+    });
+    updateKpiStrip();
+  }, 100);
   setTimeout(refreshWeekSummary, 0);
   setTimeout(() => { if (typeof refreshCharts === 'function') refreshCharts(); }, 50);
 }
@@ -2338,31 +2631,30 @@ function refreshWeekSummary() {
 
 // ── DASHBOARD ──
 function switchView(view) {
-  const diary = document.getElementById('diary-view');
-  const dash = document.getElementById('dash-view');
-  const med = document.getElementById('med-view');
-  const meddash = document.getElementById('meddash-view');
-  const stockView = document.getElementById('stock-view');
-  const proto2View = document.getElementById('proto2-view');
+  const diary    = document.getElementById('diary-view');
+  const dash     = document.getElementById('dash-view');
+  const med      = document.getElementById('med-view');
+  const stockView= document.getElementById('stock-view');
+  const kpiWrap  = document.getElementById('kpi-strip-wrap');
   const navStrip = document.getElementById('nav-strip');
   const tabDiary = document.getElementById('main-tab-diary');
-  const tabDash = document.getElementById('main-tab-dash');
-  const tabMed = document.getElementById('main-tab-med');
-  const tabMedDash = document.getElementById('main-tab-meddash');
+  const tabDash  = document.getElementById('main-tab-dash');
+  const tabMed   = document.getElementById('main-tab-med');
   const tabStock = document.getElementById('main-tab-stock');
-  const tabProto2 = document.getElementById('main-tab-proto2');
-  const stock2View = document.getElementById('stock2-view');
-  const tabStock2 = document.getElementById('main-tab-stock2');
   // Reset all
-  diary.classList.add('hidden'); dash.classList.remove('active');
-  med.classList.remove('visible'); meddash.classList.remove('visible');
-  stockView.classList.remove('visible'); stock2View.classList.remove('visible');
-  proto2View.classList.add('hidden');
+  diary.classList.add('hidden');
+  dash.classList.remove('active');
+  med.classList.remove('visible');
+  stockView.classList.remove('visible');
+  kpiWrap.style.display = 'none';
   navStrip.style.display = 'none';
-  tabDiary.classList.remove('on'); tabDash.classList.remove('on');
-  tabMed.classList.remove('on'); tabMedDash.classList.remove('on');
-  tabStock.classList.remove('on'); tabProto2.classList.remove('on');
-  tabStock2.classList.remove('on');
+  const meddashEl = document.getElementById('meddash-view');
+  if (meddashEl) meddashEl.classList.remove('visible');
+  tabDiary.classList.remove('on');
+  tabDash.classList.remove('on');
+  tabMed.classList.remove('on');
+  tabStock.classList.remove('on');
+
   if (view === 'dash') {
     dash.classList.add('active');
     tabDash.classList.add('on');
@@ -2371,26 +2663,30 @@ function switchView(view) {
     med.classList.add('visible');
     tabMed.classList.add('on');
     buildMedView();
-  } else if (view === 'meddash') {
-    meddash.classList.add('visible');
-    tabMedDash.classList.add('on');
-    buildMedDash();
+    // Also render Lab section inside med-view (merged Referti tab)
+    const meddash = document.getElementById('meddash-view');
+    if (meddash) {
+      buildMedDash();
+      meddash.classList.add('visible');
+      // Move meddash content into med-view if not already there
+      if (!document.getElementById('lab-merged') && meddash.children.length > 0) {
+        const wrapper = document.createElement('div');
+        wrapper.id = 'lab-merged';
+        Array.from(meddash.children).forEach(c => wrapper.appendChild(c));
+        med.appendChild(wrapper);
+      }
+    }
   } else if (view === 'stock') {
     stockView.classList.add('visible');
     tabStock.classList.add('on');
-    buildStockView();
-  } else if (view === 'stock2') {
-    stock2View.classList.add('visible');
-    tabStock2.classList.add('on');
-    buildStockView2();
-  } else if (view === 'proto2') {
-    proto2View.classList.remove('hidden');
-    tabProto2.classList.add('on');
-    buildProtoV2();
+    buildStockView2(); // Use v2 stock
   } else {
+    // diary (default)
     diary.classList.remove('hidden');
     navStrip.style.display = '';
+    kpiWrap.style.display = '';
     tabDiary.classList.add('on');
+    updateKpiStrip();
   }
 }
 
@@ -3901,11 +4197,9 @@ function refreshDashCharts() {
 
 window.addEventListener('load',async()=>{
   buildNav();
-  buildDays();
+  buildUnifiedDiary();
   document.getElementById('loading').style.display='none';
-  const container=document.getElementById('container');
-  buildCycleCard(container);
-  buildLabSection(container);
+  document.getElementById('kpi-strip-wrap').style.display = '';
   updateNavHighlight();
   jumpToday();
   // Always load from cloud first — localStorage only as offline fallback
@@ -4501,43 +4795,7 @@ function buildProtoV2() {
     }
 
     const slots = getInjectionSlots2(i);
-    const slotHTML = slots.map(s => {
-      const muscleField = s.igfMuscle !== undefined ? `
-        <div style="margin-top:8px">
-          <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare</div>
-          <select data-id="${id}" data-f="inj_${s.n}_distretto">
-            ${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m=>`<option value="${m}" ${m===s.igfMuscle?'selected':''}>${m}</option>`).join('')}
-          </select>
-        </div>` : '';
-      const slotClass = s.n === 1 ? 'inj-card-mattino' : s.n === 2 ? 'inj-card-pomeriggio' : s.igfMuscle !== undefined ? 'inj-card-postWO' : 'inj-card-sera';
-      const slotIconMap = {
-        1: '<i class="ti ti-sunrise" style="font-size:15px;color:#0071e3"></i>',
-        2: '<i class="ti ti-sun" style="font-size:15px;color:#ff9500"></i>',
-      };
-      const slotIcon = s.igfMuscle !== undefined
-        ? '<i class="ti ti-barbell" style="font-size:15px;color:#af52de"></i>'
-        : slotIconMap[s.n] || '<i class="ti ti-moon" style="font-size:15px;color:#34c759"></i>';
-      return `
-      <div class="inj-card ${slotClass}">
-        <div class="inj-num">${slotIcon}</div>
-        <div class="inj-body">
-          <div class="inj-title">${s.label}</div>
-          <div class="inj-timing">${s.momento}</div>
-          <div class="inj-fields" style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
-            ${s.fields.map(f => `
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface,#fff);border-radius:8px;padding:6px 10px">
-              <span style="font-size:12px;font-weight:500;color:var(--text);flex:1">${f}</span>
-              <select data-id="${id}" data-f="inj_${s.n}_${f.replace(/[\s\-]/g,'_')}" style="flex-shrink:0;width:110px">
-                <option value="">— stato</option>
-                <option value="fatto">✅ Fatto</option>
-                <option value="skip">⏭ Skip</option>
-              </select>
-            </div>`).join('')}
-          </div>
-          ${muscleField}
-        </div>
-      </div>`;
-    }).join('');
+    const slotHTML = slots.map(s => buildInjChipsSlot(s, id)).join('');
 
     const card = document.createElement('div');
     card.className = 'day-card'+(isToday?' today open':'');
@@ -4578,8 +4836,8 @@ function buildProtoV2() {
           <div class="check-item"><input type="checkbox" id="ck2-gly-${id}" data-id="${id}" data-f="ck_gly"><label for="ck2-gly-${id}">Glicina</label></div>
         </div>
 
-        <div class="section-label" style="margin-top:14px">Iniezioni v2</div>
-        <div class="inj-grid">${slotHTML}</div>
+        <div class="section-label" style="margin-top:14px">Iniezioni <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">· tocca per segnare</span></div>
+        <div>${slotHTML}</div>
 
         ${wo.type !== 'Riposo' ? `
         <div class="section-label" style="margin-top:14px">Sentinel lifts</div>
@@ -4659,13 +4917,40 @@ function saveProto2Data() {
 function applyProto2Data() {
   Object.entries(_lastData2).forEach(([id,fields]) => {
     Object.entries(fields).forEach(([f,v]) => {
+      if (!v) return;
+      // Try normal input/select first
       const el = document.querySelector(`#container2 [data-id="${id}"][data-f="${f}"]`);
-      if (!el) return;
-      if (el.type==='checkbox') el.checked = !!v;
-      else if (v!==''&&v!=null) el.value = v;
+      if (el) {
+        if (el.type==='checkbox') el.checked = !!v;
+        else if (el.tagName === 'SELECT' || el.tagName === 'INPUT') el.value = v;
+        return;
+      }
+      // Try inj chip
+      const chip = document.querySelector(`.inj-chip[data-id="${id}"][data-f="${f}"]`);
+      if (chip && (v === 'fatto' || v === 'skip')) {
+        chip.dataset.stato = v;
+        const iconEl  = chip.querySelector('.inj-chip-icon');
+        const statoEl = chip.querySelector('.inj-chip-stato');
+        if (v === 'fatto') {
+          if (iconEl)  iconEl.textContent  = '✓';
+          if (statoEl) statoEl.textContent = 'fatto';
+        } else {
+          if (iconEl)  iconEl.textContent  = '·';
+          if (statoEl) statoEl.textContent = 'skip';
+        }
+        // Ensure hidden input exists
+        let hidden = document.querySelector(`input[type="hidden"][data-id="${id}"][data-f="${f}"]`);
+        if (!hidden) {
+          hidden = document.createElement('input');
+          hidden.type = 'hidden';
+          hidden.dataset.id = id;
+          hidden.dataset.f  = f;
+          chip.parentNode.appendChild(hidden);
+        }
+        hidden.value = v;
+      }
     });
   });
-  colorInjSelects();
 }
 
 
@@ -5383,6 +5668,185 @@ function buildMedDash() {
   </div>`;
 
   el.innerHTML = html;
+}
+
+
+// ══════════════════════════════════════════════════════════
+// REDESIGN v3.0 — Unified Diary + KPI Strip + Inj Chips
+// ══════════════════════════════════════════════════════════
+
+// Build the unified diary: warm-up section + proto v2 section
+function buildUnifiedDiary() {
+  // 1. Build warm-up cards (8-28 giu) in #container
+  const wu = document.getElementById('container');
+  if (wu) {
+    buildDays(); // existing function — populates #container
+    const wsect = document.getElementById('warmup-section');
+    if (wsect) wsect.style.display = '';
+  }
+
+  // 2. Build proto v2 cards from 29 giu in #container2
+  // buildProtoV2 already inserts: progress, cycle card, charts, header, nav strip, day cards
+  buildProtoV2();
+
+  // 3. Inject proto2 section label header (before container2, once)
+  const proto2sec = document.getElementById('proto2-section');
+  const container2 = document.getElementById('container2');
+  if (proto2sec && container2 && !document.getElementById('proto2-sec-hdr')) {
+    const hdr = document.createElement('div');
+    hdr.id = 'proto2-sec-hdr';
+    hdr.style.cssText = 'padding:20px 20px 0';
+    hdr.innerHTML = '<div class="proto2-hdr">' +
+      '<span class="proto2-hdr-icon">&#129516;</span>' +
+      '<div>' +
+        '<div class="proto2-hdr-title">Protocollo peptidico &middot; Ciclo 1</div>' +
+        '<div class="proto2-hdr-sub">29 giu &ndash; 18 set 2026 &middot; Dr. Seregni &middot; Fragment + Tesa + Ipa + BPC-157 + TB-500</div>' +
+      '</div>' +
+    '</div>';
+    proto2sec.insertBefore(hdr, container2);
+  }
+
+  // 4. KPI strip update after data loads
+  setTimeout(updateKpiStrip, 300);
+}
+
+// Toggle warm-up section open/close
+let _warmupOpen = false;
+function toggleWarmup() {
+  _warmupOpen = !_warmupOpen;
+  const body = document.getElementById('warmup-body');
+  const toggle = document.getElementById('warmup-toggle');
+  const chev = document.getElementById('warmup-chev');
+  if (_warmupOpen) {
+    body.classList.remove('warmup-collapsed');
+    body.classList.add('warmup-open');
+    toggle.classList.add('open');
+    chev.textContent = '↓';
+  } else {
+    body.classList.remove('warmup-open');
+    body.classList.add('warmup-collapsed');
+    toggle.classList.remove('open');
+    chev.textContent = '›';
+  }
+}
+
+// Update KPI strip with today's biometria
+function updateKpiStrip() {
+  // Find today's data from proto2 (dal 29 giu) or v1 (prima)
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start2 = new Date('2026-06-29'); start2.setHours(0,0,0,0);
+  const diff = Math.floor((today - start2) / 86400000);
+
+  let peso = '—', hrv = '—', rhr = '—';
+  let wk = '—', fase = '—';
+
+  if (diff >= 0 && diff < 112) {
+    const id = 'p2_day_' + diff;
+    const pesoEl = document.querySelector(`[data-id="${id}"][data-f="peso"]`);
+    const hrvEl  = document.querySelector(`[data-id="${id}"][data-f="hrv"]`);
+    const rhrEl  = document.querySelector(`[data-id="${id}"][data-f="rhr"]`);
+    if (pesoEl && pesoEl.value) peso = pesoEl.value + ' kg';
+    if (hrvEl  && hrvEl.value)  hrv  = hrvEl.value + ' ms';
+    if (rhrEl  && rhrEl.value)  rhr  = rhrEl.value;
+    wk = 'WK ' + (Math.floor(diff/7)+1);
+    const ph = getPhase2(diff);
+    fase = ph.label.split('+')[0].trim().replace('Tesa ','');
+  } else if (diff < 0) {
+    // Warm-up period
+    const startV1 = new Date('2026-06-08'); startV1.setHours(0,0,0,0);
+    const diffV1 = Math.floor((today - startV1) / 86400000);
+    if (diffV1 >= 0 && diffV1 < 21) {
+      const id = 'day_' + diffV1;
+      const pesoEl = document.querySelector(`[data-id="${id}"][data-f="peso"]`);
+      const hrvEl  = document.querySelector(`[data-id="${id}"][data-f="hrv"]`);
+      if (pesoEl && pesoEl.value) peso = pesoEl.value + ' kg';
+      if (hrvEl  && hrvEl.value)  hrv  = hrvEl.value + ' ms';
+      wk = 'Pre-ciclo';
+      fase = 'Baseline';
+    }
+  }
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set('ks-peso', peso);
+  set('ks-hrv',  hrv);
+  set('ks-rhr',  rhr);
+  set('ks-wk',   wk);
+  set('ks-fase', fase);
+}
+
+// Cycle injection chip state: — → fatto → skip → —
+function cycleInjChip(chip) {
+  const stati = ['', 'fatto', 'skip'];
+  const cur = chip.dataset.stato || '';
+  const next = stati[(stati.indexOf(cur) + 1) % stati.length];
+  chip.dataset.stato = next;
+
+  const iconEl   = chip.querySelector('.inj-chip-icon');
+  const statoEl  = chip.querySelector('.inj-chip-stato');
+  const nameEl   = chip.querySelector('.inj-chip-name');
+
+  if (next === 'fatto') {
+    if (iconEl) iconEl.textContent = '✓';
+    if (statoEl) statoEl.textContent = 'fatto';
+  } else if (next === 'skip') {
+    if (iconEl) iconEl.textContent = '·';
+    if (statoEl) statoEl.textContent = 'skip';
+  } else {
+    if (iconEl) iconEl.textContent = '○';
+    if (statoEl) statoEl.textContent = '';
+  }
+
+  // Sync to hidden input for collectAll / save
+  const dataId = chip.dataset.id;
+  const dataF  = chip.dataset.f;
+  if (dataId && dataF) {
+    let hidden = document.querySelector(`input[type="hidden"][data-id="${dataId}"][data-f="${dataF}"]`);
+    if (!hidden) {
+      hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.dataset.id = dataId;
+      hidden.dataset.f  = dataF;
+      chip.parentNode.appendChild(hidden);
+    }
+    hidden.value = next;
+  }
+}
+
+// Build injection chips for a slot (called from buildProtoV2 override)
+function buildInjChipsSlot(slot, id) {
+  const slotTypes = ['mattino','pomeriggio','postWO','sera'];
+  const slotIcons = { mattino:'☀', pomeriggio:'◑', postWO:'◉', sera:'☾' };
+  const slotType  = slot.n === 1 ? 'mattino' : slot.n === 2 ? 'pomeriggio' :
+                    slot.igfMuscle !== undefined ? 'postWO' : 'sera';
+  const icon = slotIcons[slotType] || '·';
+
+  const hdr = `<div class="inj-slot-hdr">
+    <div class="inj-slot-icon ${slotType}">${icon}</div>
+    <span class="inj-slot-label">${slot.label}</span>
+    <span class="inj-slot-timing">${slot.momento}</span>
+  </div>`;
+
+  const chips = slot.fields.map(f => {
+    const fKey = `inj_${slot.n}_${f.replace(/[\s\-]/g,'_')}`;
+    return `<span class="inj-chip" data-stato="" data-id="${id}" data-f="${fKey}" onclick="cycleInjChip(this)">
+      <span class="inj-chip-icon">○</span>
+      <span class="inj-chip-name">${f}</span>
+      <span class="inj-chip-stato"></span>
+    </span>`;
+  }).join('');
+
+  let muscleHtml = '';
+  if (slot.igfMuscle !== undefined) {
+    const muscles = ['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'];
+    muscleHtml = `<div style="margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Distretto:</span>
+      <select data-id="${id}" data-f="inj_${slot.n}_distretto" style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;background:var(--surface2);color:var(--text);outline:none">
+        ${muscles.map(m=>`<option value="${m}" ${m===slot.igfMuscle?'selected':''}>${m}</option>`).join('')}
+      </select>
+    </div>`;
+  }
+
+  return hdr + `<div class="inj-chips">${chips}</div>` + muscleHtml;
 }
 
 </script>
