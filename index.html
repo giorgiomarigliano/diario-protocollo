@@ -336,6 +336,23 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
   letter-spacing: -0.02em;
 }
 .bio-box input::placeholder { color: var(--faint); font-size: 15px; }
+.bio-box select {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: center;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+}
+.bio-box select option { font-size: 14px; }
 .bio-lbl { font-size: 10px; color: var(--muted); margin-top: 3px; }
 
 /* Field groups */
@@ -433,6 +450,31 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 @media (max-width: 600px) {
   .inj-fields { grid-template-columns: 1fr 1fr; }
 }
+
+/* Select peptide nelle iniezioni v2 */
+.inj-fields select, .inj-grid select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 26px;
+  transition: border-color .12s;
+  width: 100%;
+}
+.inj-fields select:focus, .inj-grid select:focus { border-color: var(--blue); }
+.inj-grid select[value="fatto"], .inj-grid select option[value="fatto"] { color: #34c759; }
+.inj-grid select[value="skip"], .inj-grid select option[value="skip"] { color: var(--muted); }
 
 .sent-tab {
   font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px;
@@ -758,8 +800,11 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .dexa-col h4{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px}
 
 .check-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px}
-.check-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--radius-xs);padding:8px 12px;cursor:pointer}
-.check-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--blue)}
+.check-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--radius-xs);padding:8px 12px;cursor:pointer;transition:background .12s}
+.check-item:hover{background:var(--surface3,#e8e8ed)}
+.check-item input[type=checkbox]{appearance:none;-webkit-appearance:none;width:17px;height:17px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;flex-shrink:0;position:relative;transition:background .12s,border-color .12s}
+.check-item input[type=checkbox]:checked{background:var(--blue);border-color:var(--blue)}
+.check-item input[type=checkbox]:checked::after{content:'';position:absolute;left:4px;top:1.5px;width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(42deg)}
 .check-item label{font-size:13px;color:var(--text);cursor:pointer;user-select:none}
 
 .week-summary-card{background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
@@ -800,8 +845,11 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .lab-ref{font-size:9px;color:var(--faint);margin-top:2px}
 .dexa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
 .check-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
-.check-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--radius-xs);padding:8px 12px;cursor:pointer}
-.check-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--blue);flex-shrink:0}
+.check-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--radius-xs);padding:8px 12px;cursor:pointer;transition:background .12s}
+.check-item:hover{background:var(--surface3,#e8e8ed)}
+.check-item input[type=checkbox]{appearance:none;-webkit-appearance:none;width:17px;height:17px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;flex-shrink:0;position:relative;transition:background .12s,border-color .12s}
+.check-item input[type=checkbox]:checked{background:var(--blue);border-color:var(--blue)}
+.check-item input[type=checkbox]:checked::after{content:'';position:absolute;left:4px;top:1.5px;width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(42deg)}
 .check-item label{font-size:13px;color:var(--text);cursor:pointer;user-select:none}
 .photo-note{background:var(--surface2);border-radius:var(--radius-xs);padding:10px 12px;margin-top:6px;display:flex;align-items:center;gap:10px}
 .photo-note input{flex:1;background:transparent;border:none;outline:none;font-size:13px;color:var(--text);font-family:inherit}
@@ -4271,7 +4319,7 @@ function buildProtoV2() {
       const muscleField = s.igfMuscle !== undefined ? `
         <div style="margin-top:8px">
           <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare</div>
-          <select data-id="${id}" data-f="inj_${s.n}_distretto" style="width:100%;font-size:13px;font-weight:500;color:var(--text)">
+          <select data-id="${id}" data-f="inj_${s.n}_distretto">
             ${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m=>`<option value="${m}" ${m===s.igfMuscle?'selected':''}>${m}</option>`).join('')}
           </select>
         </div>` : '';
@@ -4382,10 +4430,20 @@ function buildProtoV2() {
   // Applica dati salvati
   applyProto2Data();
 
-  // Auto-save
+  // Auto-save + colora select iniezioni
   container.querySelectorAll('input,select,textarea').forEach(el => {
-    el.addEventListener('change', () => saveProto2Data());
+    el.addEventListener('change', () => { saveProto2Data(); colorInjSelects(container); });
     if (el.tagName==='TEXTAREA'||el.type==='number') el.addEventListener('input', () => saveProto2Data());
+  });
+}
+
+function colorInjSelects(root) {
+  const r = root || document.getElementById('container2');
+  r.querySelectorAll('.inj-grid select').forEach(sel => {
+    const v = sel.value;
+    sel.style.color = v === 'fatto' ? '#34c759' : v === 'skip' ? 'var(--muted)' : 'var(--text)';
+    sel.style.borderColor = v === 'fatto' ? '#34c75940' : '';
+    sel.style.background = v === 'fatto' ? 'rgba(52,199,89,.07)' : v === 'skip' ? 'var(--surface2)' : '';
   });
 }
 
@@ -4409,6 +4467,7 @@ function applyProto2Data() {
       else if (v!==''&&v!=null) el.value = v;
     });
   });
+  colorInjSelects();
 }
 
 
