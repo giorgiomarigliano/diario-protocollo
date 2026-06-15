@@ -2357,10 +2357,7 @@ function buildWeekSummary(container, wkIdx) {
         <div class="ws-val">${avgHrv}<span style="font-size:12px;font-weight:400"> ms</span></div>
         <div class="ws-lbl">HRV medio</div>
       </div>
-      <div class="ws-item">
-        <div class="ws-val" style="color:${injColor}">${injLabel}</div>
-        <div class="ws-lbl">Iniezioni</div>
-      </div>
+
       <div class="ws-item">
         <div class="ws-val">${woLabel}</div>
         <div class="ws-lbl">Workout</div>
@@ -2431,7 +2428,8 @@ function switchView(view) {
     buildStockView2();
   } else {
     document.getElementById('diary-view').classList.remove('hidden');
-    if(navStrip) navStrip.style.display='';
+    // nav-strip non usato — il nav settimane è dentro container2
+  // if(navStrip) navStrip.style.display='';
     if(kpiWrap)  kpiWrap.style.display='';
     document.getElementById('main-tab-diary').classList.add('on');
     updateKpiStrip();
@@ -3948,7 +3946,6 @@ function refreshDashCharts() {
 
 
 window.addEventListener('load',async()=>{
-  buildNav();
   buildUnifiedDiary();
   document.getElementById('loading').style.display='none';
   const kw=document.getElementById('kpi-strip-wrap'); if(kw) kw.style.display='';
@@ -4504,7 +4501,7 @@ function buildProtoV2() {
   // 5. Nav settimane
   const navStrip2 = document.createElement('div');
   navStrip2.className = 'nav-strip-inner';
-  navStrip2.style.cssText = 'position:sticky;top:44px;z-index:90';
+  navStrip2.style.cssText = 'position:sticky;top:92px;z-index:90';
   for (let w=0; w<16; w++) {
     const tab = document.createElement('div');
     tab.className = 'nav-tab';
@@ -4549,7 +4546,7 @@ function buildProtoV2() {
         <span class="day-date">${dateStr}</span>
         <span class="day-badge ${wo.badge}">${wo.label}</span>
         ${isToday?'<span class="today-badge">OGGI</span>':''}
-        <span class="day-chevron">›</span>
+        <span class="day-chev">›</span>
       </div>
       <div class="day-body" id="body-${id}">
 
@@ -4580,7 +4577,7 @@ function buildProtoV2() {
         </div>
 
         <div class="section-label" style="margin-top:14px">Iniezioni v2</div>
-        <div class="inj-grid">${slotHTML}</div>
+        <div class="inj-chips">${slotHTML}</div>
 
         ${wo.type !== 'Riposo' ? `
         <div class="section-label" style="margin-top:14px">Sentinel lifts</div>
