@@ -3576,40 +3576,57 @@ function buildMedView() {
 
 
 function getDayData(field, days) {
-  // Returns array of {dayIdx, date, value} for last N days — legge v1 (day_N) + v2 (p2_day_N)
+  // Legge da _lastData (v1, day_N) e _lastData2 (v2, p2_day_N) — in-memory, non dal DOM
   const today = new Date(); today.setHours(0,0,0,0);
-  const start1 = new Date(START);   start1.setHours(0,0,0,0); // 8 giu
-  const start2 = new Date(START2);  start2.setHours(0,0,0,0); // 29 giu
+  const start1 = new Date(START);  start1.setHours(0,0,0,0);
+  const start2 = new Date(START2); start2.setHours(0,0,0,0);
 
-  // Costruiamo un array ordinato di {date, selector} per gli ultimi N giorni
-  const result = [];
-
-  // Scan indietro dal giorno di oggi per N giorni
+  const all = [];
   for (let offset = days - 1; offset >= 0; offset--) {
     const d = new Date(today);
     d.setDate(d.getDate() - offset);
     d.setHours(0,0,0,0);
 
-    let el = null;
-    // Prova prima v2 (dal 29 giu)
+    let val = null;
+
     if (d >= start2) {
-      const idx2 = Math.floor((d - start2) / 86400000);
-      if (idx2 >= 0 && idx2 < TOTAL_DAYS2) {
-        el = document.querySelector(`[data-id="p2_day_${idx2}"][data-f="${field}"]`);
+      const i2 = Math.floor((d - start2) / 86400000);
+      if (i2 >= 0 && i2 < TOTAL_DAYS2) {
+        const rec = (_lastData2 || {})['p2_day_' + i2];
+        if (rec && rec[field] !== undefined && rec[field] !== '') {
+          const v = parseFloat(rec[field]);
+          if (!isNaN(v)) val = v;
+        }
+        // Fallback DOM se _lastData2 non disponibile
+        if (val === null) {
+          const el = document.querySelector(`[data-id="p2_day_${i2}"][data-f="${field}"]`);
+          if (el && el.value) { const v = parseFloat(el.value); if (!isNaN(v)) val = v; }
+        }
       }
-    }
-    // Poi prova v1 (8-28 giu, se non trovato in v2)
-    if (!el && d >= start1 && d < start2) {
-      const idx1 = Math.floor((d - start1) / 86400000);
-      if (idx1 >= 0 && idx1 < TOTAL_DAYS) {
-        el = document.querySelector(`[data-id="day_${idx1}"][data-f="${field}"]`);
+    } else if (d >= start1 && d < start2) {
+      const i1 = Math.floor((d - start1) / 86400000);
+      if (i1 >= 0 && i1 < TOTAL_DAYS) {
+        const rec = (_lastData || {})['day_' + i1];
+        if (rec && rec[field] !== undefined && rec[field] !== '') {
+          const v = parseFloat(rec[field]);
+          if (!isNaN(v)) val = v;
+        }
+        if (val === null) {
+          const el = document.querySelector(`[data-id="day_${i1}"][data-f="${field}"]`);
+          if (el && el.value) { const v = parseFloat(el.value); if (!isNaN(v)) val = v; }
+        }
       }
     }
 
-    const raw = el ? (el.type === 'checkbox' ? (el.checked ? 1 : 0) : parseFloat(el.value)) : null;
-    result.push({ date: d, value: (raw === null || isNaN(raw)) ? null : raw });
+    all.push({ date: d, value: val });
   }
-  return result;
+
+  // Taglia i null iniziali: parti dal primo giorno con dati
+  let firstData = 0;
+  for (let i = 0; i < all.length; i++) {
+    if (all[i].value !== null) { firstData = i; break; }
+  }
+  return all.slice(firstData);
 }
 
 function getComplianceData() {
@@ -4510,23 +4527,21 @@ function refreshDashCharts() {
     if (c) { c.style.width = '100%'; c.style.height = CHART_H + 'px'; }
   });
 
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    drawDashChart('dc-peso', [{data:peso30, color:'#0071e3'}], {height:CHART_H, minScale:0.99, maxScale:1.01});
-    drawDashChart('dc-hrv', [{data:hrv30, color:'#34c759'}], {height:CHART_H});
+  drawDashChart('dc-peso', [{data:peso30, color:'#0071e3'}], {height:CHART_H, minScale:0.99, maxScale:1.01});
+  drawDashChart('dc-hrv', [{data:hrv30, color:'#34c759'}], {height:CHART_H});
 
-    const allBp = [...bpSys.map(p=>p.value), ...bpDia.map(p=>p.value)].filter(v=>v!==null);
-    if (allBp.length >= 2) {
-      drawDashChart('dc-bp', [
-        {data:bpSys, color:'#ff3b30'},
-        {data:bpDia, color:'#0071e3'}
-      ], {height:CHART_H});
-    }
+  const allBp = [...bpSys.map(p=>p.value), ...bpDia.map(p=>p.value)].filter(v=>v!==null);
+  if (allBp.length >= 2) {
+    drawDashChart('dc-bp', [
+      {data:bpSys, color:'#ff3b30'},
+      {data:bpDia, color:'#0071e3'}
+    ], {height:CHART_H});
+  }
 
-    drawDashChart('dc-subj', [
-      {data:energia, color:'#0071e3'},
-      {data:recupero, color:'#34c759'}
-    ], {height:CHART_H, minScale:0.9, maxScale:1.1});
-  }));
+  drawDashChart('dc-subj', [
+    {data:energia, color:'#0071e3'},
+    {data:recupero, color:'#34c759'}
+  ], {height:CHART_H, minScale:0.9, maxScale:1.1});
 
   // Compliance rings
   const comp = getComplianceData();
