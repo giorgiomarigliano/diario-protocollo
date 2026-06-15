@@ -1378,6 +1378,266 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   #container2 { max-width: 1400px; margin: 0 auto; padding: 28px 60px 120px; }
   #proto2-sec-hdr { max-width: 1400px; margin: 0 auto; padding: 28px 60px 0 !important; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   SISTEMA TIPOGRAFICO UNIFICATO — applica su tutti i tab
+   Base: 13px body, scala --fs-xs(11) → --fs-sm(12) → --fs-body(13)
+          → --fs-md(15) → --fs-lg(17) → --fs-xl(22) → --fs-2xl(28)
+   Font unico: -apple-system / SF Pro (già in :root)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Testa e nav ── */
+.h-left h1                    { font-size: var(--fs-md);  font-weight: var(--fw-semi); letter-spacing: -.02em; }
+.h-subtitle                   { font-size: var(--fs-xs);  font-weight: var(--fw-reg);  color: var(--muted); }
+.main-nav-tab                 { font-size: var(--fs-xs);  font-weight: var(--fw-reg); }
+.main-nav-tab.on              { font-weight: var(--fw-semi); }
+.h-btn                        { font-size: var(--fs-xs);  font-weight: var(--fw-med); }
+.save-hint                    { font-size: var(--fs-xs); }
+
+/* ── Card giornaliera — intestazione ── */
+.day-date                     { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.day-badge                    { font-size: var(--fs-xs); }
+.day-sub                      { font-size: var(--fs-sm);  color: var(--muted); }
+.today-badge                  { font-size: 10px; }
+.day-chev                     { font-size: var(--fs-xs);  color: var(--faint); }
+.week-hdr h2                  { font-size: var(--fs-lg);  font-weight: var(--fw-semi); letter-spacing: -.02em; }
+.week-phase                   { font-size: var(--fs-xs);  font-weight: var(--fw-med); }
+.week-range                   { font-size: var(--fs-sm);  color: var(--muted); }
+
+/* ── Sezioni dentro la card ── */
+.section-label                { font-size: var(--fs-xs);  font-weight: var(--fw-semi); letter-spacing: .04em; text-transform: uppercase; }
+.bio-box input                { font-size: var(--fs-md);  font-weight: var(--fw-semi); }
+.bio-lbl                      { font-size: 10px;          color: var(--muted); }
+.fg label,
+.fg input,
+.fg select,
+.fg textarea                  { font-size: var(--fs-body); }
+.note-box label,
+.motra-box label              { font-size: 10px; }
+.note-box textarea,
+.motra-textarea               { font-size: var(--fs-body); }
+.note-ta                      { font-size: var(--fs-body); }
+.wo-header                    { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.wo-box                       { font-size: var(--fs-body); }
+
+/* ── Motra / Sentinel ── */
+.motra-result                 { font-size: var(--fs-sm); }
+.motra-ex-name                { font-size: var(--fs-body); font-weight: var(--fw-med); }
+.motra-ex-sets                { font-size: var(--fs-sm);  color: var(--muted); }
+.motra-meta-val               { font-size: var(--fs-xl);  font-weight: var(--fw-semi); }
+.motra-meta-lbl               { font-size: 10px;          color: var(--muted); }
+.sentinel-baseline            { font-size: 10px; }
+.log-section-title            { font-size: var(--fs-xs);  font-weight: var(--fw-semi); letter-spacing: .04em; }
+.log-table th                 { font-size: 10px; }
+.log-table .ex-name           { font-size: var(--fs-body); }
+.log-input                    { font-size: var(--fs-body); }
+
+/* ── Iniezioni chip ── */
+.inj-slot-label               { font-size: var(--fs-xs);  font-weight: var(--fw-semi); letter-spacing: .04em; text-transform: uppercase; }
+.inj-slot-timing              { font-size: 10px;           color: var(--faint); }
+.inj-chip                     { font-size: var(--fs-xs);  font-weight: var(--fw-med); }
+.inj-chip-icon                { font-size: var(--fs-sm); }
+.inj-chip-stato               { font-size: 9px;            font-weight: var(--fw-semi); letter-spacing: .04em; text-transform: uppercase; }
+
+/* ── KPI strip ── */
+.kpi-s-val                    { font-size: var(--fs-md);  font-weight: var(--fw-semi); }
+.kpi-s-lbl                    { font-size: 10px;           color: var(--muted); }
+
+/* ── Warm-up toggle / proto header ── */
+.warmup-toggle-title          { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.warmup-toggle-sub            { font-size: var(--fs-sm);   color: var(--muted); }
+.warmup-chev                  { font-size: var(--fs-sm);   color: var(--faint); }
+.warmup-section-label         { font-size: 10px; }
+.proto2-hdr-title             { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.proto2-hdr-sub               { font-size: var(--fs-sm);   color: var(--muted); }
+
+/* ── Dashboard ── */
+.dash-section-title           { font-size: var(--fs-xs);  font-weight: var(--fw-semi); letter-spacing: .04em; text-transform: uppercase; }
+.dash-card-title              { font-size: var(--fs-sm);  font-weight: var(--fw-semi); }
+.kpi-val                      { font-size: var(--fs-xl);  font-weight: var(--fw-semi); }
+.kpi-lbl                      { font-size: 10px;           color: var(--muted); }
+.kpi-delta                    { font-size: var(--fs-xs); }
+.kpi-icon                     { font-size: var(--fs-xl); }
+.charts-card-title            { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.chart-label                  { font-size: var(--fs-xs); }
+.chart-axis-label             { font-size: 9px;             color: var(--faint); }
+.dq-v                         { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.dq-l                         { font-size: 10px;            color: var(--muted); }
+.cycle-info h3                { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.cycle-info p                 { font-size: var(--fs-xs); }
+.cycle-next                   { font-size: var(--fs-xs);   color: var(--muted); }
+.cycle-ring-pct               { font-size: var(--fs-md);  font-weight: var(--fw-semi); }
+.cycle-ring-sub               { font-size: 9px;             color: var(--muted); }
+.comp-title                   { font-size: var(--fs-xs);  font-weight: var(--fw-semi); }
+.comp-sub                     { font-size: 9px;             color: var(--muted); }
+.comp-bar-label               { font-size: var(--fs-sm); }
+.comp-bar-pct                 { font-size: var(--fs-xs); }
+.comp-ring-pct                { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.comp-ring-lbl                { font-size: 8px;             color: var(--muted); }
+.ws-lbl                       { font-size: 10px;            color: var(--muted); }
+.ws-sub                       { font-size: var(--fs-xs); }
+.timeline-markers             { font-size: 9px; }
+.milestone-badge              { font-size: var(--fs-xs); }
+.tag-pill                     { font-size: 10px; }
+.subj-leg-item                { font-size: 10px; }
+.t-week-title                 { font-size: var(--fs-md);  font-weight: var(--fw-semi); }
+
+/* ── Referti / Lab ── */
+.med-panel-title              { font-size: var(--fs-md);  font-weight: var(--fw-semi); }
+.med-panel-sub                { font-size: var(--fs-sm);   color: var(--muted); }
+.med-cat-label                { font-size: var(--fs-xs);  font-weight: var(--fw-semi); letter-spacing: .04em; text-transform: uppercase; }
+.med-item-name                { font-size: var(--fs-sm); }
+.med-item-val                 { font-size: var(--fs-body); font-weight: var(--fw-semi); }
+.med-item-ref                 { font-size: 10px;            color: var(--muted); }
+.med-item-note                { font-size: var(--fs-xs); }
+.med-tl-title                 { font-size: var(--fs-body); font-weight: var(--fw-med); }
+.med-tl-date                  { font-size: var(--fs-xs); }
+.med-tl-sub                   { font-size: var(--fs-sm);   color: var(--muted); }
+.med-tl-icon                  { font-size: var(--fs-md); }
+.lab-box label                { font-size: 9px; }
+.lab-box input                { font-size: var(--fs-body); }
+.lab-delta                    { font-size: 10px; }
+.lab-ref                      { font-size: 9px;             color: var(--muted); }
+.dexa-col h4                  { font-size: var(--fs-xs);  font-weight: var(--fw-semi); }
+.check-item label             { font-size: var(--fs-body); }
+.photo-note input             { font-size: var(--fs-body); }
+
+/* ── Stock ── */
+.inj-num                      { font-size: var(--fs-xs); }
+.inj-timing                   { font-size: var(--fs-xs);  color: var(--muted); }
+.inj-title                    { font-size: var(--fs-sm);  font-weight: var(--fw-semi); }
+
+/* ── Nav settimane ── */
+.nav-tab                      { font-size: var(--fs-xs);  font-weight: var(--fw-reg); }
+.phase-dot                    { font-size: 10px; }
+
+/* ── Radial / sparkline ── */
+.radial-ring .ring-val        { font-size: var(--fs-xs); }
+.sparkline                    { font-size: var(--fs-xs); }
+
+/* ── Sent tabs ── */
+.sent-tab                     { font-size: var(--fs-xs);  font-weight: var(--fw-med); }
+
+/* ── BKK banner ── */
+.bkk-banner                   { font-size: var(--fs-sm); }
+
+/* ── Week summary ── */
+.log-select                   { font-size: var(--fs-sm); }
+.sync-indicator               { font-size: var(--fs-sm); }
+
+/* ── Loading ── */
+.loading-overlay p            { font-size: var(--fs-body); }
+
+/* ── Mobile overrides ── */
+@media (max-width: 600px) {
+  .day-date                   { font-size: var(--fs-body); }
+  .cycle-info h3              { font-size: var(--fs-body); }
+  .cycle-next                 { font-size: var(--fs-xs); }
+  .kpi-s-val                  { font-size: var(--fs-body); }
+  .week-hdr h2                { font-size: var(--fs-md); }
+  .proto2-hdr-title           { font-size: var(--fs-body); }
+}
+
+/* ══ BORDER-RADIUS UNIFICATO — tutti i tab ══ */
+/* Card principali */
+.day-card,
+.cycle-card,
+.dash-card,
+.med-panel,
+.kpi-box,
+.charts-card,
+.stock-card,
+.comp-card,
+.ws-card                      { border-radius: var(--radius-card) !important; }
+
+/* Elementi interni */
+.bio-box input,
+.fg input,
+.fg select,
+.fg textarea,
+.note-box textarea,
+.motra-textarea,
+.note-ta,
+.log-input,
+.lab-box input,
+.photo-note input             { border-radius: var(--radius-el); }
+
+.inj-chip                     { border-radius: var(--radius-el); }
+.week-phase,
+.day-badge,
+.tag-pill,
+.milestone-badge,
+.sent-tab,
+.today-badge                  { border-radius: var(--radius-pill); }
+
+.warmup-toggle                { border-radius: var(--radius-card); }
+.proto2-hdr                   { border-radius: var(--radius-card); }
+.kpi-strip                    { border-radius: 0; }
+
+/* Week summary e sparkline box */
+.ws-card,
+.dexa-col,
+.lab-box                      { border-radius: var(--radius-el); }
+
+/* ══ BORDER COERENTE — 1px solid var(--border) ══ */
+.kpi-box,
+.dash-card,
+.charts-card,
+.comp-card,
+.ws-card,
+.med-panel,
+.dexa-col,
+.lab-box                      { border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+
+/* Rimuovi shadow doppi — un solo sistema */
+.cycle-card                   { border: 1px solid var(--border); box-shadow: 0 1px 6px rgba(0,0,0,.05); }
+.proto2-hdr                   { border: 1px solid var(--border); box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+.warmup-toggle                { border: 1px solid var(--border); box-shadow: none; }
+
+/* ══ COLORI SUPERFICIE UNIFORMI ══ */
+/* Assicura che tutte le surface usino le variabili CSS */
+.dash-card,
+.comp-card,
+.ws-card                      { background: var(--surface); }
+
+.kpi-box                      { background: var(--surface); }
+
+.bio-box input,
+.fg input,
+.fg select,
+.fg textarea,
+.note-box textarea,
+.motra-textarea,
+.note-ta,
+.log-input,
+.lab-box input                { background: var(--surface2); color: var(--text); }
+
+/* Coerenza sezioni header dei tab */
+.dash-section-title,
+.section-label,
+.log-section-title,
+.med-cat-label                { color: var(--muted); }
+
+/* Line-height uniformato su tutto */
+.day-card *,
+.dash-card *,
+.med-panel *,
+.kpi-box *                    { line-height: 1.45; }
+
+/* Letter-spacing: solo per label uppercase, non per valori */
+.section-label,
+.dash-section-title,
+.inj-slot-label,
+.med-cat-label,
+.log-section-title,
+.warmup-section-label         { letter-spacing: .05em; text-transform: uppercase; }
+
+/* Valori numerici: no letter-spacing */
+.bio-box input,
+.kpi-val,
+.kpi-s-val,
+.motra-meta-val,
+.lab-box input                { letter-spacing: -.02em; }
 </style>
 <!-- deploy 1781536995 -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
