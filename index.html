@@ -4104,86 +4104,85 @@ function buildDashboard() {
         </div>
       </div>
 
-      <!-- TIMELINE CICLO — full width -->
+      <!-- TIMELINE CICLO v2 — full width -->
       <div class="dash-section">
-        <div class="dash-section-title">Timeline ciclo</div>
+        <div class="dash-section-title">Timeline · Protocollo v2 · Ciclo 1</div>
         <div class="dash-card">
-
           <!-- Barra progress -->
-          <div class="timeline-phases" id="timeline-phases"></div>
-          <div class="timeline-track"><div class="timeline-fill" style="width:${Math.min(100,(elapsed/(inProto2 ? TOTAL_DAYS2 : TOTAL_DAYS))*100).toFixed(1)}%"></div></div>
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px">
-            <span>8 giu</span><span>25 set</span>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <div style="flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden">
+              <div style="height:100%;border-radius:3px;background:var(--blue);transition:width .4s ease;width:${inProto2 ? Math.max(0,Math.min(100,Math.round((elapsed/TOTAL_DAYS2)*100))) : 0}%"></div>
+            </div>
+            <span style="font-size:10px;color:var(--muted);white-space:nowrap">${inProto2 ? Math.round((elapsed/TOTAL_DAYS2)*100) : 0}%</span>
           </div>
 
-          <!-- Fasi: card verticali mobile-friendly -->
-          <div style="display:flex;flex-direction:column;gap:7px;margin-top:14px">
-
-            ${(()=>{
-              const phaseDefs = [
-                { color:'#0071e3', bg:'rgba(0,113,227,.07)', sett:'1–4', date:'8 giu – 5 lug', days:28,
-                  peptides:[
-                    {dot:'#0071e3', name:'Tesamorelin', dose:'1mg · 200µl', giorni:'ogni sera · 7gg/sett'},
-                  ]
-                },
-                { color:'#ff9500', bg:'rgba(255,149,0,.07)', sett:'5–6', date:'6 lug – 19 lug', days:14,
-                  peptides:[
-                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl', giorni:'ogni sera · 7gg/sett'},
-                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg',         giorni:'ogni sera · 7gg/sett'},
-                  ]
-                },
-                { color:'#34c759', bg:'rgba(52,199,89,.07)', sett:'7–12', date:'20 lug – 30 ago', days:42,
-                  bkk: true,
-                  peptides:[
-                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl', giorni:'ogni sera · 7gg/sett'},
-                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg',         giorni:'ogni sera · 7gg/sett'},
-                    {dot:'#34c759', name:'MOTS-C',      dose:'2.5mg',       giorni:'lun + gio · mattina a digiuno'},
-                  ]
-                },
-                { color:'#ff3b30', bg:'rgba(255,59,48,.07)', sett:'13–16', date:'31 ago – 25 set', days:28,
-                  peptides:[
-                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl', giorni:'ogni sera · 7gg/sett'},
-                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg',         giorni:'ogni sera · 7gg/sett'},
-                    {dot:'#34c759', name:'MOTS-C',      dose:'2.5mg',       giorni:'lun + gio · mattina a digiuno'},
-                    {dot:'#ff3b30', name:'BPC-157',     dose:'250mcg',      giorni:'mar/mer/ven/sab/dom · pre-workout'},
-                  ]
-                },
-              ];
-              const phaseStart = [0,28,42,84];
-              return phaseDefs.map((p, i) => {
-                const dayStart = phaseStart[i];
-                const isActive = elapsed >= dayStart && elapsed < dayStart + p.days;
-                const isPast   = elapsed >= dayStart + p.days;
-                const daysLeft = isActive ? (dayStart + p.days - elapsed) : null;
-                const pills = p.peptides.map(px =>
-                  `<div style="padding:5px 0;border-bottom:1px solid rgba(0,0,0,.04)">
-                    <div style="display:flex;align-items:center;gap:6px">
-                      <div style="width:6px;height:6px;border-radius:50%;background:${px.dot};flex-shrink:0"></div>
-                      <span style="font-size:12px;font-weight:600;color:var(--text)">${px.name}</span>
-                      <span style="font-size:11px;color:var(--muted)">${px.dose}</span>
-                    </div>
-                    <div style="margin-left:12px;margin-top:2px;font-size:11px;color:var(--faint,#aaa);">📅 ${px.giorni}</div>
-                  </div>`
-                ).join('');
-                return `
-                <div style="border-radius:11px;background:${isActive ? p.bg : 'var(--surface2,#f5f5f7)'};border:1.5px solid ${isActive ? p.color : 'transparent'};padding:10px 12px;opacity:${isPast?'.55':'1'}">
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
-                    <div style="display:flex;align-items:center;gap:7px">
-                      <div style="width:10px;height:10px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
-                      <span style="font-size:13px;font-weight:600;color:${p.color}">Sett. ${p.sett}</span>
-                      ${p.bkk ? '<span style="font-size:10px;background:rgba(0,113,227,.12);color:#0071e3;padding:1px 6px;border-radius:20px">🇹🇭 BKK</span>' : ''}
-                      ${isActive ? '<span style="font-size:10px;background:'+p.color+';color:#fff;padding:1px 6px;border-radius:20px;font-weight:600">● ATTIVA</span>' : ''}
-                      ${isPast   ? '<span style="font-size:10px;color:var(--muted)">✓ completata</span>' : ''}
-                    </div>
-                    <span style="font-size:11px;color:var(--muted)">${p.date}</span>
-                  </div>
-                  <div style="display:flex;flex-direction:column;gap:0">${pills}</div>
-                  ${isActive ? '<div style="margin-top:6px;font-size:11px;color:'+p.color+';font-weight:500">'+daysLeft+' giorni rimanenti</div>' : ''}
-                </div>`;
-              }).join('');
-            })()}
-
-          </div>
+          <!-- Fasi v2 -->
+          ${(() => {
+            const phaseDefs = [
+              { color:'#5b84b1', bg:'rgba(91,132,177,.08)', sett:'1–4',  date:'29 giu – 26 lug', days:28,
+                peptides:[
+                  {dot:'#5b84b1', name:'Fragment 176-191', dose:'250mcg ×2', giorni:'mattino + pomeriggio SC'},
+                  {dot:'#b87333', name:'Tesamorelin',      dose:'2mg',       giorni:'sera SC · 7gg/sett'},
+                  {dot:'#7b5ea7', name:'Ipamorelin',       dose:'100mcg',    giorni:'sera SC · 7gg/sett'},
+                  {dot:'#4a7c59', name:'BPC-157',          dose:'250mcg ×2', giorni:'mattino + sera SC'},
+                  {dot:'#8e6a3a', name:'TB-500',           dose:'500mcg',    giorni:'sera SC · 7gg/sett'},
+                ]
+              },
+              { color:'#7b5ea7', bg:'rgba(123,94,167,.08)', sett:'5–8',  date:'27 lug – 23 ago', days:28, bkk:true,
+                peptides:[
+                  {dot:'#5b84b1', name:'Fragment 176-191', dose:'250mcg ×2', giorni:'mattino + pomeriggio SC'},
+                  {dot:'#b87333', name:'Tesamorelin',      dose:'2mg',       giorni:'sera SC'},
+                  {dot:'#7b5ea7', name:'Ipamorelin',       dose:'100mcg',    giorni:'sera SC'},
+                  {dot:'#af52de', name:'IGF-1 DES',        dose:'50mcg IM',  giorni:'post-WO bilat (25mcg dx+sx)'},
+                  {dot:'#4a7c59', name:'BPC-157',          dose:'250mcg ×2', giorni:'mattino + sera SC'},
+                  {dot:'#8e6a3a', name:'TB-500',           dose:'500mcg',    giorni:'sera SC'},
+                ]
+              },
+              { color:'#4a7c59', bg:'rgba(74,124,89,.08)', sett:'9–12', date:'24 ago – 20 set', days:28,
+                peptides:[
+                  {dot:'#5b84b1', name:'Fragment 176-191', dose:'250mcg ×2', giorni:'mattino + pomeriggio SC'},
+                  {dot:'#b87333', name:'Tesamorelin',      dose:'2mg',       giorni:'sera SC'},
+                  {dot:'#7b5ea7', name:'Ipamorelin',       dose:'100mcg',    giorni:'sera SC'},
+                  {dot:'#af52de', name:'IGF-1 DES',        dose:'50mcg IM',  giorni:'post-WO bilat'},
+                  {dot:'#4a7c59', name:'BPC-157',          dose:'250mcg ×2', giorni:'mattino + sera SC'},
+                  {dot:'#8e6a3a', name:'TB-500',           dose:'500mcg',    giorni:'sera SC'},
+                ]
+              },
+              { color:'#b87333', bg:'rgba(184,115,51,.08)', sett:'13–16', date:'21 set – 18 ott', days:28,
+                peptides:[
+                  {dot:'#5b84b1', name:'Fragment 176-191', dose:'250mcg ×2', giorni:'mattino + pomeriggio SC'},
+                  {dot:'#b87333', name:'Tesamorelin',      dose:'2mg',       giorni:'sera SC'},
+                  {dot:'#7b5ea7', name:'Ipamorelin',       dose:'100mcg',    giorni:'sera SC'},
+                  {dot:'#af52de', name:'IGF-1 DES',        dose:'50mcg IM',  giorni:'post-WO bilat'},
+                  {dot:'#4a7c59', name:'BPC-157',          dose:'250mcg ×2', giorni:'mattino + sera SC'},
+                  {dot:'#8e6a3a', name:'TB-500',           dose:'500mcg',    giorni:'sera SC'},
+                ]
+              },
+            ];
+            const phaseStart = [0,28,56,84];
+            return phaseDefs.map((p, idx) => {
+              const dayStart = phaseStart[idx];
+              const isActive = inProto2 && elapsed >= dayStart && elapsed < dayStart + p.days;
+              const isPast   = inProto2 && elapsed >= dayStart + p.days;
+              const daysLeft = inProto2 && isActive ? p.days - (elapsed - dayStart) : 0;
+              return `<div style="margin-bottom:10px;padding:14px 16px;border-radius:10px;border:1px solid ${isActive ? p.color+'44' : 'var(--border)'};background:${isActive ? p.bg : 'var(--surface2)'};opacity:${isPast ? 0.5 : 1}">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:${isActive ? 10 : 0}px">
+                  <div style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
+                  <div style="font-size:12px;font-weight:600;color:var(--text)">Sett. ${p.sett}</div>
+                  <div style="font-size:11px;color:var(--muted)">${p.date}</div>
+                  ${p.bkk ? '<div style="font-size:10px;background:rgba(255,149,0,.15);color:#a06000;padding:2px 8px;border-radius:10px;font-weight:600">✈ BKK</div>' : ''}
+                  ${isActive ? '<div style="margin-left:auto;font-size:10px;color:'+p.color+';font-weight:500">'+daysLeft+' gg rimanenti</div>' : ''}
+                </div>
+                ${isActive ? '<div style="display:flex;flex-wrap:wrap;gap:6px">' + p.peptides.map(pep =>
+                  '<div style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px">' +
+                  '<div style="width:6px;height:6px;border-radius:50%;background:'+pep.dot+';flex-shrink:0"></div>' +
+                  '<span style="font-size:11px;font-weight:500;color:var(--text)">'+pep.name+'</span>' +
+                  '<span style="font-size:10px;color:var(--muted)">'+pep.dose+'</span>' +
+                  '</div>'
+                ).join('') + '</div>' : ''}
+              </div>`;
+            }).join('');
+          })()}
         </div>
       </div>
 
@@ -4387,22 +4386,30 @@ function refreshDashCharts() {
   drawSparkline('spark-peso', peso30, '#0071e3');
   drawSparkline('spark-hrv', hrv30, '#34c759');
 
-  drawDashChart('dc-peso', [{data:peso30, color:'#0071e3'}], {height:100, minScale:0.99, maxScale:1.01});
-  drawDashChart('dc-hrv', [{data:hrv30, color:'#34c759'}], {height:100});
+  // Forza dimensione canvas PRIMA del draw — aspetta 2 frame per layout stabilizzato
+  const CHART_H = 140;
+  ['dc-peso','dc-hrv','dc-bp','dc-subj','dc-vol','dc-tonnellaggio','dc-rpe'].forEach(id => {
+    const c = document.getElementById(id);
+    if (c) { c.style.width = '100%'; c.style.height = CHART_H + 'px'; }
+  });
 
-  // Merge bp sys and dia on same chart
-  const allBp = [...bpSys.map(p=>p.value), ...bpDia.map(p=>p.value)].filter(v=>v!==null);
-  if (allBp.length >= 2) {
-    drawDashChart('dc-bp', [
-      {data:bpSys, color:'#ff3b30'},
-      {data:bpDia, color:'#0071e3'}
-    ], {height:100});
-  }
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    drawDashChart('dc-peso', [{data:peso30, color:'#0071e3'}], {height:CHART_H, minScale:0.99, maxScale:1.01});
+    drawDashChart('dc-hrv', [{data:hrv30, color:'#34c759'}], {height:CHART_H});
 
-  drawDashChart('dc-subj', [
-    {data:energia, color:'#0071e3'},
-    {data:recupero, color:'#34c759'}
-  ], {height:100, minScale:0.9, maxScale:1.1});
+    const allBp = [...bpSys.map(p=>p.value), ...bpDia.map(p=>p.value)].filter(v=>v!==null);
+    if (allBp.length >= 2) {
+      drawDashChart('dc-bp', [
+        {data:bpSys, color:'#ff3b30'},
+        {data:bpDia, color:'#0071e3'}
+      ], {height:CHART_H});
+    }
+
+    drawDashChart('dc-subj', [
+      {data:energia, color:'#0071e3'},
+      {data:recupero, color:'#34c759'}
+    ], {height:CHART_H, minScale:0.9, maxScale:1.1});
+  }));
 
   // Compliance rings
   const comp = getComplianceData();
@@ -4448,7 +4455,7 @@ function refreshDashCharts() {
     value: s.volume,
     color: typeColors[s.type] || '#aeaeb2'
   }));
-  drawBarChart('dc-wo-vol', volBars, { height: 110, valFormat: v => (v/1000).toFixed(1)+'t' });
+  drawBarChart('dc-wo-vol', volBars, { height: 140, valFormat: v => (v/1000).toFixed(1)+'t' });
 
   // Kcal per sessione
   const kcalBars = sessions30.map(s => ({
@@ -4456,15 +4463,15 @@ function refreshDashCharts() {
     value: s.kcal,
     color: '#ff9500'
   }));
-  drawBarChart('dc-wo-kcal', kcalBars, { height: 110 });
+  drawBarChart('dc-wo-kcal', kcalBars, { height: 140 });
 
   // RPE nel tempo - line chart
   const rpeData = sessions30.map(s => ({ date: s.date, value: s.rpe }));
-  drawDashChart('dc-wo-rpe', [{data: rpeData, color: '#af52de'}], { height: 100, minScale: 0.8, maxScale: 1.2 });
+  drawDashChart('dc-wo-rpe', [{data: rpeData, color: '#af52de'}], { height: 140, minScale: 0.8, maxScale: 1.2 });
 
   // Durata sessioni - line chart
   const durData = sessions30.map(s => ({ date: s.date, value: s.durata }));
-  drawDashChart('dc-wo-dur', [{data: durData, color: '#5ac8fa'}], { height: 100 });
+  drawDashChart('dc-wo-dur', [{data: durData, color: '#5ac8fa'}], { height: 140 });
 
   // Volume settimanale stacked
   const wklyVol = getWeeklyVolume(8);
@@ -4486,7 +4493,7 @@ function refreshDashCharts() {
   drawDashChart('dc-rpe-hrv', [
     {data: rpeLineData, color: '#af52de'},
     {data: hrvLineData, color: '#34c759'},
-  ], { height: 100, minScale: 0.7, maxScale: 1.3 });
+  ], { height: 140, minScale: 0.7, maxScale: 1.3 });
 }
 
 
@@ -5969,6 +5976,9 @@ function buildUnifiedDiary() {
     buildDays(); // existing function — populates #container
     const wsect = document.getElementById('warmup-section');
     if (wsect) wsect.style.display = '';
+    // Inizializza collapsed via JS (non CSS class)
+    const wbody = document.getElementById('warmup-body');
+    if (wbody) { wbody.style.maxHeight = '0px'; wbody.style.overflow = 'hidden'; }
   }
 
   // 2. Build proto v2 cards from 29 giu in #container2
@@ -6000,17 +6010,32 @@ function buildUnifiedDiary() {
 let _warmupOpen = false;
 function toggleWarmup() {
   _warmupOpen = !_warmupOpen;
-  const body = document.getElementById('warmup-body');
+  const body   = document.getElementById('warmup-body');
   const toggle = document.getElementById('warmup-toggle');
-  const chev = document.getElementById('warmup-chev');
+  const chev   = document.getElementById('warmup-chev');
+
   if (_warmupOpen) {
-    body.classList.remove('warmup-collapsed');
-    body.classList.add('warmup-open');
+    // Misura altezza reale prima di animare
+    body.style.maxHeight = 'none';
+    body.style.overflow  = 'visible';
+    const realH = body.scrollHeight;
+    body.style.maxHeight = '0px';
+    body.style.overflow  = 'hidden';
+    // Forza reflow poi anima verso altezza reale
+    body.getBoundingClientRect();
+    body.style.transition = 'max-height 0.4s ease';
+    body.style.maxHeight  = realH + 'px';
     toggle.classList.add('open');
     chev.textContent = '↓';
+    // Rimuovi max-height dopo animazione per permettere resize
+    setTimeout(() => { body.style.maxHeight = 'none'; body.style.overflow = 'visible'; }, 420);
   } else {
-    body.classList.remove('warmup-open');
-    body.classList.add('warmup-collapsed');
+    const realH = body.scrollHeight;
+    body.style.maxHeight = realH + 'px';
+    body.style.overflow  = 'hidden';
+    body.getBoundingClientRect();
+    body.style.transition = 'max-height 0.35s ease';
+    body.style.maxHeight  = '0px';
     toggle.classList.remove('open');
     chev.textContent = '›';
   }
