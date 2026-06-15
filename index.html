@@ -1855,11 +1855,8 @@ const SESSION_EXERCISES = {
 };
 
 function getPhase(dayIdx) {
-  const wk = Math.floor(dayIdx/7)+1;
-  if (wk<=4)  return {label:'Tesamorelin 1mg',                  badge:'p1b', wk};
-  if (wk<=6)  return {label:'Tesa 2mg · GHK-Cu 1mg',           badge:'p2b', wk};
-  if (wk<=12) return {label:'Tesa 2mg · GHK-Cu · MOTS-C',     badge:'p3b', wk};
-  return             {label:'Tesa · GHK-Cu · MOTS-C · BPC-157', badge:'p4b', wk};
+  // Funzione v1 — usata solo per il periodo baseline 8-28 giu
+  return {label:'Pre-protocollo · baseline', badge:'p1b', wk: Math.floor(dayIdx/7)+1};
 }
 
 function getWeekRange(wkIdx) {
@@ -1987,12 +1984,10 @@ function getWorkout(i){
 }
 
 function getNextEvent(elapsed){
+  // Funzione v1 — protocollo baseline 8-28 giu
   const wk=Math.floor(elapsed/7)+1;
-  if(wk<5){ const d=(4-wk)*7; return `Tesa 2mg + GHK-Cu tra ${d} giorni (settimana 5)`; }
-  if(wk<7){ const d=(6-wk)*7; return `MOTS-C + GHK-Cu tra ${d} giorni (settimana 7)`; }
-  if(wk<9){ const d=(61-elapsed); return d>0?`Bangkok tra ${d} giorni (8 ago)`:'Bangkok · oggi!'; }
-  if(wk<13){ const d=(12-wk)*7; return `BPC-157 tra ${d} giorni (settimana 13)`; }
-  return 'Mini-panel sangue · DEXA T1 fine ciclo';
+  if(wk<3){ return `Inizio protocollo v2 tra ${(21-elapsed)} giorni (29 giu)`; }
+  return 'Avvio Protocollo v2 · 29 giu 2026';
 }
 
 function buildNav(){
@@ -3732,11 +3727,14 @@ function drawDashChart(canvasId, datasets, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = (options.height || 80) * dpr;
+  // Misura larghezza dal parentElement (sempre disponibile anche pre-layout)
+  const W = canvas.parentElement ? canvas.parentElement.offsetWidth || canvas.offsetWidth || 300 : 300;
+  const H = options.height || 140;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
   ctx.scale(dpr, dpr);
-  const W = rect.width, H = options.height || 80;
 
   // Collect all valid values across datasets for scale
   const allVals = datasets.flatMap(ds => ds.data.map(p => p.value).filter(v => v !== null));
@@ -3928,12 +3926,13 @@ function drawBarChart(canvasId, bars, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  const H = options.height || 110;
-  canvas.width = rect.width * dpr;
+  const W = canvas.parentElement ? canvas.parentElement.offsetWidth || canvas.offsetWidth || 300 : 300;
+  const H = options.height || 140;
+  canvas.width  = W * dpr;
   canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
   ctx.scale(dpr, dpr);
-  const W = rect.width;
 
   const vals = bars.map(b => b.value).filter(v => v != null && v > 0);
   if (vals.length < 1) {
@@ -3998,12 +3997,13 @@ function drawStackedBarChart(canvasId, weeks, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  const H = options.height || 120;
-  canvas.width = rect.width * dpr;
+  const W = canvas.parentElement ? canvas.parentElement.offsetWidth || canvas.offsetWidth || 300 : 300;
+  const H = options.height || 140;
+  canvas.width  = W * dpr;
   canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
   ctx.scale(dpr, dpr);
-  const W = rect.width;
 
   const maxV = Math.max(...weeks.map(w => w.total || 0));
   if (maxV === 0) {
@@ -4055,12 +4055,13 @@ function drawScatterChart(canvasId, points, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  const H = options.height || 120;
-  canvas.width = rect.width * dpr;
+  const W = canvas.parentElement ? canvas.parentElement.offsetWidth || canvas.offsetWidth || 300 : 300;
+  const H = options.height || 140;
+  canvas.width  = W * dpr;
   canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
   ctx.scale(dpr, dpr);
-  const W = rect.width;
 
   if (points.length < 3) {
     ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
@@ -4448,13 +4449,12 @@ function buildDashboard() {
     </div>`;
 
   // Build timeline phases
-  // Wk 1-4 (gg 0-27): Tesa 1mg — Wk 5-6 (gg 28-41): Tesa 2mg + GHK-Cu
-  // Wk 7-12 (gg 42-83): + MOTS-C — Wk 13-16 (gg 84-111): + BPC-157
+  // Timeline fasi Protocollo v2
   const phases = [
-    {len:28, color:'#0071e3', label:'Tesa 1mg'},
-    {len:14, color:'#ff9500', label:'Tesa 2mg · GHK-Cu'},
-    {len:42, color:'#34c759', label:'+ MOTS-C'},
-    {len:28, color:'#ff3b30', label:'+ BPC-157'},
+    {len:28, color:'#5b84b1', label:'WK1–4 · Fragment+Tesa+Ipa+BPC-157+TB-500'},
+    {len:28, color:'#7b5ea7', label:'WK5–8 · + IGF-1 DES (Bangkok)'},
+    {len:28, color:'#4a7c59', label:'WK9–12 · + IGF-1 DES'},
+    {len:28, color:'#b87333', label:'WK13–16 · fase finale'},
   ];
   const tl = document.getElementById('timeline-phases');
   phases.forEach(p => {
@@ -4469,8 +4469,8 @@ function buildDashboard() {
   // Sett 5 = gg 28 (6 lug) · Sett 7 = gg 42 (20 lug) · Bangkok gg 60-74 (7-21 ago)
   // Sett 13 = gg 84 (31 ago) · Fine = gg 112 (28 set)
   const events = [
-    {day:28,  label:'Tesamorelin → 2mg · GHK-Cu inizia', color:'#ff9500'},
-    {day:42,  label:'MOTS-C inizia (lun/gio mattina)', color:'#34c759'},
+    {day:28,  label:'WK5 · + IGF-1 DES · partenza Bangkok 7 ago', color:'#7b5ea7'},
+    {day:56,  label:'WK9 · rientro Milano 21 ago', color:'#4a7c59'},
     {day:60,  label:'Partenza Bangkok ✈️', color:'#0071e3'},
     {day:74,  label:'Rientro da Bangkok', color:'#0071e3'},
     {day:84,  label:'BPC-157 inizia · Mini-panel sangue', color:'#ff3b30'},
@@ -4888,18 +4888,20 @@ let   _lastData2  = {};
 
 function getPhase2(dayIdx) {
   const wk = Math.floor(dayIdx/7)+1;
-  if (wk<=4)  return {label:'Tesa + Fragment + Ipa',        badge:'p1'};
-  if (wk<=6)  return {label:'+ GHK-Cu',                     badge:'p2'};
-  if (wk<=12) return {label:'+ MOTS-C + IGF-1 DES',         badge:'p3'};
-  return             {label:'+ BPC-157 + TB-500',            badge:'p4b'};
+  // Protocollo v2: Fragment + Tesa + Ipa + BPC-157 + TB-500 sempre
+  // IGF-1 DES aggiunto dal WK5 (sett BKK)
+  if (wk<=4)  return {label:'Fragment · Tesa · Ipa · BPC-157 · TB-500', badge:'p1'};
+  if (wk<=8)  return {label:'+ IGF-1 DES · BKK sett. 5–8',              badge:'p2'};
+  if (wk<=12) return {label:'+ IGF-1 DES · sett. 9–12',                 badge:'p3'};
+  return             {label:'Fase finale · sett. 13–16',                 badge:'p4b'};
 }
 
 function getNextEvent2(elapsed) {
   const wk = Math.floor(elapsed/7)+1;
-  if (wk<5)  { return `+ GHK-Cu tra ${(4-wk)*7} giorni (sett. 5)`; }
-  if (wk<7)  { return `+ MOTS-C + IGF-1 DES tra ${(6-wk)*7} giorni (sett. 7)`; }
-  if (wk<13) { return `+ BPC-157 + TB-500 tra ${(12-wk)*7} giorni (sett. 13)`; }
-  return 'Fine ciclo · DEXA T1 + panel sangue';
+  if (wk<5)  { return `Bangkok · volo 7 ago · IGF-1 DES inizia WK5`; }
+  if (wk<9)  { return `Fine BKK · rientro 21 ago · WK9 continua`; }
+  if (wk<13) { return `Mini-panel sangue · WK8–10 · DEXA T1 a fine ciclo`; }
+  return 'Fine ciclo 18 set · DEXA T1 + panel sangue';
 }
 
 function getWorkout2(dayIdx) {
@@ -6270,6 +6272,3 @@ function buildInjChipsSlot(slot, id) {
 </script>
 </body>
 </html>
-
-
-
