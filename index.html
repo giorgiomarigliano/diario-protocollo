@@ -1362,6 +1362,22 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .warmup-toggle { padding: 12px 14px; border-radius: 10px; }
   .warmup-toggle-sub { display: none; }
 }
+
+/* container2 mobile */
+@media (max-width: 600px) {
+  #container2 { padding: 14px 12px 110px; }
+  #proto2-sec-hdr { padding: 14px 12px 0 !important; }
+  .proto2-hdr { padding: 12px 14px; border-radius: 10px; }
+}
+
+@media (min-width: 1024px) {
+  #container2 { padding: 28px 40px 120px; }
+  #proto2-sec-hdr { padding: 28px 40px 0 !important; }
+}
+@media (min-width: 1280px) {
+  #container2 { max-width: 1400px; margin: 0 auto; padding: 28px 60px 120px; }
+  #proto2-sec-hdr { max-width: 1400px; margin: 0 auto; padding: 28px 60px 0 !important; }
+}
 </style>
 <!-- deploy 1781536995 -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
@@ -1427,7 +1443,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   </div>
   <!-- Protocollo v2 section: header + cards dal 29 giu -->
   <div id="proto2-section">
-    <div class="container" id="container2"></div>
+    <div id="container2" style="padding:16px 20px 120px"></div>
   </div>
 </div>
 <div class="dash-view" id="dash-view"></div>
@@ -2011,19 +2027,11 @@ function buildDays(){
         </div>`}
         </div><!-- /col-right -->
 
-        <!-- ZONA 2: iniezioni full-width -->
-        <div class="col-full">
-        <div class="section-label">Protocollo iniezione</div>
-        <div class="inj-slots">
-          ${renderInjectionSlots(i, id)}
-        </div>
-        </div><!-- /col-full -->
-
         <!-- ZONA 3: note + soggettivo + stack full-width -->
         <div class="col-full">
         <div class="note-box">
           <label>Note del giorno</label>
-          <textarea placeholder="Sensazioni peptide, qualità del sonno, umore, effetti inattesi, osservazioni fisiche..." data-id="${id}" data-f="note"></textarea>
+          <textarea placeholder="Sensazioni soggettive, qualità del sonno, umore, energia, osservazioni fisiche..." data-id="${id}" data-f="note"></textarea>
         </div>
 
         <div class="section-label" style="margin-top:14px">Soggettivo</div>
@@ -3222,17 +3230,38 @@ function buildMedView() {
 
 
 function getDayData(field, days) {
-  // Returns array of {dayIdx, date, value} for last N days with data
+  // Returns array of {dayIdx, date, value} for last N days — legge v1 (day_N) + v2 (p2_day_N)
   const today = new Date(); today.setHours(0,0,0,0);
-  const start = new Date(START); start.setHours(0,0,0,0);
-  const elapsed = Math.floor((today - start) / 86400000);
-  const from = Math.max(0, elapsed - (days - 1));
+  const start1 = new Date(START);   start1.setHours(0,0,0,0); // 8 giu
+  const start2 = new Date(START2);  start2.setHours(0,0,0,0); // 29 giu
+
+  // Costruiamo un array ordinato di {date, selector} per gli ultimi N giorni
   const result = [];
-  for (let i = from; i <= elapsed && i < TOTAL_DAYS; i++) {
-    const el = document.querySelector(`[data-id="day_${i}"][data-f="${field}"]`);
-    const v = el ? (el.type === 'checkbox' ? (el.checked ? 1 : 0) : parseFloat(el.value)) : null;
-    const d = new Date(START); d.setDate(d.getDate() + i);
-    result.push({ dayIdx: i, date: d, value: isNaN(v) ? null : v });
+
+  // Scan indietro dal giorno di oggi per N giorni
+  for (let offset = days - 1; offset >= 0; offset--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - offset);
+    d.setHours(0,0,0,0);
+
+    let el = null;
+    // Prova prima v2 (dal 29 giu)
+    if (d >= start2) {
+      const idx2 = Math.floor((d - start2) / 86400000);
+      if (idx2 >= 0 && idx2 < TOTAL_DAYS2) {
+        el = document.querySelector(`[data-id="p2_day_${idx2}"][data-f="${field}"]`);
+      }
+    }
+    // Poi prova v1 (8-28 giu, se non trovato in v2)
+    if (!el && d >= start1 && d < start2) {
+      const idx1 = Math.floor((d - start1) / 86400000);
+      if (idx1 >= 0 && idx1 < TOTAL_DAYS) {
+        el = document.querySelector(`[data-id="day_${idx1}"][data-f="${field}"]`);
+      }
+    }
+
+    const raw = el ? (el.type === 'checkbox' ? (el.checked ? 1 : 0) : parseFloat(el.value)) : null;
+    result.push({ date: d, value: (raw === null || isNaN(raw)) ? null : raw });
   }
   return result;
 }
@@ -3759,10 +3788,15 @@ function buildDashboard() {
   dashBuilt = true;
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const start = new Date(START); start.setHours(0,0,0,0);
+  const start1 = new Date(START);  start1.setHours(0,0,0,0);  // 8 giu — v1 baseline
+  const start2 = new Date(START2); start2.setHours(0,0,0,0);  // 29 giu — proto v2
+
+  // Usa protocollo v2 se già iniziato, altrimenti baseline
+  const inProto2 = today >= start2;
+  const start = inProto2 ? start2 : start1;
   const elapsed = Math.floor((today - start) / 86400000);
-  const wk = Math.floor(elapsed / 7) + 1;
-  const ph = getPhase(elapsed);
+  const wk = inProto2 ? (Math.floor(elapsed / 7) + 1) : 0;
+  const ph = inProto2 ? getPhase2(elapsed) : { label: 'Pre-protocollo · baseline', badge: 'p1', wk: 0 };
 
   // ── KPI SECTION ──
   const pesoData = getDayData('peso', 30);
@@ -3806,7 +3840,7 @@ function buildDashboard() {
           <span class="kpi-icon">🧬</span>
           <div class="kpi-val" style="font-size:14px">${ph.label.split('·')[0].trim()}</div>
           <div class="kpi-lbl">Fase attuale</div>
-          <div class="kpi-delta neutral">${TOTAL_DAYS - elapsed - 1} gg al termine</div>
+          <div class="kpi-delta neutral">${(inProto2 ? TOTAL_DAYS2 : TOTAL_DAYS) - elapsed - 1} gg al termine</div>
         </div>
       </div>
 
@@ -3817,7 +3851,7 @@ function buildDashboard() {
 
           <!-- Barra progress -->
           <div class="timeline-phases" id="timeline-phases"></div>
-          <div class="timeline-track"><div class="timeline-fill" style="width:${Math.min(100,(elapsed/TOTAL_DAYS)*100).toFixed(1)}%"></div></div>
+          <div class="timeline-track"><div class="timeline-fill" style="width:${Math.min(100,(elapsed/(inProto2 ? TOTAL_DAYS2 : TOTAL_DAYS))*100).toFixed(1)}%"></div></div>
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px">
             <span>8 giu</span><span>25 set</span>
           </div>
@@ -4741,22 +4775,13 @@ function buildProtoV2() {
   const raw2 = localStorage.getItem(KEY2);
   if (raw2) { try { _lastData2 = JSON.parse(raw2); } catch(e){} }
 
-  // 1. Progress bar
-  const progWrap = document.createElement('div');
-  progWrap.className = 'prog-wrap';
-  const start2h = new Date(START2); start2h.setHours(0,0,0,0);
-  const elapsed2h = Math.floor((today - start2h)/86400000);
-  const pct2 = Math.max(0, Math.min(100, Math.round((elapsed2h/TOTAL_DAYS2)*100)));
-  progWrap.innerHTML = `<div class="prog-bar" style="width:${pct2}%"></div>`;
-  container.appendChild(progWrap);
-
-  // 2. Cycle card (identica struttura v1)
+  // 1. Cycle card
   buildCycleCard2(container);
 
-  // 3. Charts ultimi 14gg
+  // 2. Charts ultimi 14gg
   buildCharts2(container);
 
-  // 4. Riquadro protocollo Seregni
+  // 3. Riquadro protocollo Seregni
   buildProtoHeader2(container);
 
   // 5. Nav settimane
@@ -4956,7 +4981,7 @@ function applyProto2Data() {
 
 
 function buildStockView2() {
-  const el = document.getElementById('stock2-view');
+  const el = document.getElementById('stock-view');
   if (el.dataset.built) return;
   el.dataset.built = '1';
 
