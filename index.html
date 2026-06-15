@@ -4214,11 +4214,11 @@ function getInjectionSlots2(dayIdx) {
   const wo = getWorkout2(dayIdx);
   const isTraining = wo.type !== 'Riposo';
   const slots = [
-    { n:1, label:'🌅 Mattino', momento:'Mattino · digiuno',
+    { n:1, label:'Mattino', momento:'Mattino · digiuno',
       fields:['Fragment 176-191 250mcg','BPC-157 250mcg'] },
-    { n:2, label:'☀️ Pomeriggio', momento:'Pomeriggio',
+    { n:2, label:'Pomeriggio', momento:'Pomeriggio',
       fields:['Fragment 176-191 250mcg'] },
-    { n:3, label:'🌙 Sera', momento:'Sera · 90–120min post-cena',
+    { n:3, label:'Sera', momento:'Sera · 90–120min post-cena',
       fields:['Tesamorelin 2mg','Ipamorelin 100mcg','BPC-157 250mcg','TB-500 500mcg'] },
   ];
   if (isTraining) {
@@ -4227,7 +4227,7 @@ function getInjectionSlots2(dayIdx) {
     // Mapping giorno→muscolo: mar=Petto, mer=Bicipiti, ven=Quadricipiti, sab=Tricipiti, dom=Deltoidi
     const muscleMap = { 1:'Petto', 2:'Bicipiti', 4:'Quadricipiti', 5:'Tricipiti', 6:'Deltoidi' };
     const defaultMuscle = muscleMap[wkDay] || '';
-    slots.splice(2, 0, { n:3, label:'💪 Post-WO', momento:'Post-workout · IM bilaterale',
+    slots.splice(2, 0, { n:3, label:'Post-WO', momento:'Post-workout · IM bilaterale',
       fields:['IGF-1 DES 25mcg dx','IGF-1 DES 25mcg sx'], igfMuscle: defaultMuscle });
     slots[3].n = 4;
   }
@@ -4249,12 +4249,12 @@ function buildCycleCard2(container) {
     ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
       <circle cx="36" cy="36" r="30" fill="none" stroke="#e8e8ed" stroke-width="5"/>
     </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">—</span><span class="cycle-ring-sub">ciclo</span></div>`;
-    infoHtml = `<h3>Protocollo v2</h3><p>Inizio tra <b>${daysTo}</b> giorni · 29 giu 2026</p><div class="cycle-next">⟶ Preparazione in corso</div>`;
+    infoHtml = `<h3>Protocollo peptidico · Ciclo 1</h3><p>Inizio tra <b>${daysTo}</b> giorni · 29 giu 2026</p><div class="cycle-next">⟶ Preparazione in corso</div>`;
   } else if (elapsed >= TOTAL_DAYS2) {
     ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
       <circle cx="36" cy="36" r="30" fill="none" stroke="#34c759" stroke-width="5"/>
     </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">✓</span><span class="cycle-ring-sub">fine</span></div>`;
-    infoHtml = `<h3>Protocollo v2 completato</h3><p>112 giorni · 29 giu – 18 set 2026</p>`;
+    infoHtml = `<h3>Ciclo 1 completato</h3><p>112 giorni · 29 giu – 18 set 2026</p>`;
   } else {
     pct = Math.min(100, Math.round((elapsed/TOTAL_DAYS2)*100));
     wk  = Math.floor(elapsed/7)+1;
@@ -4323,27 +4323,27 @@ function buildProtoHeader2(container) {
   div.style.cssText = 'margin-bottom:8px';
   div.innerHTML = `
     <div style="background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;box-shadow:var(--shadow);border:none">
-      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">🧬 Protocollo v2 · Dr. Seregni</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Protocollo peptidico · Ciclo 1</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px">29 giu – 18 set 2026 · 16 settimane</div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
-          <span style="font-size:15px">🌅</span>
+          <i class="ti ti-sunrise" style="font-size:17px;color:#0071e3;flex-shrink:0;margin-top:1px"></i>
           <div><div style="font-size:12px;font-weight:600;color:#0071e3">Mattino · digiuno</div>
           <div style="font-size:12px;color:var(--text)">Fragment 176-191 <b>250mcg</b> · BPC-157 <b>250mcg</b></div></div>
         </div>
         <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
-          <span style="font-size:15px">☀️</span>
+          <i class="ti ti-sun" style="font-size:17px;color:#ff9500;flex-shrink:0;margin-top:1px"></i>
           <div><div style="font-size:12px;font-weight:600;color:#ff9500">Pomeriggio</div>
           <div style="font-size:12px;color:var(--text)">Fragment 176-191 <b>250mcg</b></div></div>
         </div>
         <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
-          <span style="font-size:15px">💪</span>
+          <i class="ti ti-barbell" style="font-size:17px;color:#af52de;flex-shrink:0;margin-top:1px"></i>
           <div><div style="font-size:12px;font-weight:600;color:#af52de">Post-WO <span style="font-weight:400;color:var(--muted)">(solo giorni allenamento)</span></div>
           <div style="font-size:12px;color:var(--text)">IGF-1 DES <b>25mcg dx</b> · IGF-1 DES <b>25mcg sx</b></div>
           <div style="font-size:11px;color:var(--muted);margin-top:3px">Distretto: rotazione mar=Petto · mer=Bicipiti · ven=Quadricipiti · sab=Tricipiti · dom=Deltoidi</div></div>
         </div>
         <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
-          <span style="font-size:15px">🌙</span>
+          <i class="ti ti-moon" style="font-size:17px;color:#34c759;flex-shrink:0;margin-top:1px"></i>
           <div><div style="font-size:12px;font-weight:600;color:#34c759">Sera · 90–120 min post-cena</div>
           <div style="font-size:12px;color:var(--text)">Tesamorelin <b>2mg</b> · Ipamorelin <b>100mcg</b> · BPC-157 <b>250mcg</b> · TB-500 <b>500mcg</b></div></div>
         </div>
@@ -4510,7 +4510,13 @@ function buildProtoV2() {
           </select>
         </div>` : '';
       const slotClass = s.n === 1 ? 'inj-card-mattino' : s.n === 2 ? 'inj-card-pomeriggio' : s.igfMuscle !== undefined ? 'inj-card-postWO' : 'inj-card-sera';
-      const slotIcon  = s.n === 1 ? '🌅' : s.n === 2 ? '☀️' : s.igfMuscle !== undefined ? '💪' : '🌙';
+      const slotIconMap = {
+        1: '<i class="ti ti-sunrise" style="font-size:15px;color:#0071e3"></i>',
+        2: '<i class="ti ti-sun" style="font-size:15px;color:#ff9500"></i>',
+      };
+      const slotIcon = s.igfMuscle !== undefined
+        ? '<i class="ti ti-barbell" style="font-size:15px;color:#af52de"></i>'
+        : slotIconMap[s.n] || '<i class="ti ti-moon" style="font-size:15px;color:#34c759"></i>';
       return `
       <div class="inj-card ${slotClass}">
         <div class="inj-num">${slotIcon}</div>
@@ -4747,8 +4753,8 @@ function buildStockView2() {
   // Header
   html += `
     <div style="margin-bottom:14px">
-      <div style="font-size:20px;font-weight:600;color:var(--text)">📦 Stock · Protocollo v2</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:2px">29 giu – 18 set 2026 · 112 giorni · Dr. Seregni</div>
+      <div style="font-size:20px;font-weight:600;color:var(--text)">Stock peptidi · Ciclo 1</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">29 giu – 18 set 2026 · 112 giorni</div>
     </div>`;
 
   // Alert banner
