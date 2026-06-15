@@ -43,7 +43,7 @@
   --pull: #34c759;
   --legs: #ff9500;
   --upper: #af52de;
-  --upper-dom: #00b4a6;
+  --upper-dom: #5856d6;
   --rest: #aeaeb2;
   --radius: 18px;
   --radius-sm: 12px;
@@ -1263,7 +1263,7 @@ function getDotColor(type){
   if(type==='Pull')return '#34c759';
   if(type==='Legs')return '#ff9500';
   if(type==='Upper Sab')return '#af52de';
-  if(type==='Upper Dom')return '#00b4a6';
+  if(type==='Upper Dom')return '#5856d6';
   if(type.includes('Upper'))return '#af52de';
   if(type==='BKK_FREE')return '#0071e3';
   return '#aeaeb2';
@@ -3087,7 +3087,7 @@ function drawStackedBarChart(canvasId, weeks, options = {}) {
   const labelH = 16, barAreaH = H - labelH - 4;
   const bw = Math.max(4, (W - 8) / weeks.length - 4);
   const gap = (W - 8 - bw * weeks.length) / Math.max(weeks.length - 1, 1);
-  const colors = { push:'#ff3b30', pull:'#34c759', legs:'#ff9500', upperSab:'#af52de', upperDom:'#00b4a6' };
+  const colors = { push:'#ff3b30', pull:'#34c759', legs:'#ff9500', upperSab:'#af52de', upperDom:'#5856d6' };
 
   // Grid lines
   ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1;
@@ -3478,7 +3478,7 @@ function buildDashboard() {
                 <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>Pull</div>
                 <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff9500"></div>Legs</div>
                 <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#af52de"></div>Upper Sab</div>
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#00b4a6"></div>Upper Dom</div>
+                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#5856d6"></div>Upper Dom</div>
               </div>
               <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-wkly" style="height:120px"></canvas></div>
             </div>
@@ -3599,7 +3599,7 @@ function refreshDashCharts() {
   // Workout breakdown bars
   const breakdown = document.getElementById('cr-wo-breakdown');
   if (breakdown) {
-    const typeColors2 = { Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#00b4a6' };
+    const typeColors2 = { Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#5856d6' };
     const typeLabels  = { Push:'Push', Pull:'Pull', Legs:'Legs', 'Upper Sab':'Upper Sab', 'Upper Dom':'Upper Dom' };
     breakdown.innerHTML = Object.entries(comp.woCounts).map(([type, total]) => {
       const done2 = comp.woDones[type] || 0;
@@ -3617,7 +3617,7 @@ function refreshDashCharts() {
   const sessions30 = getWorkoutSessions(30);
 
   // Volume per sessione - colored bars by type
-  const typeColors = { Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#00b4a6', 'Upper Body':'#af52de', BKK_FREE:'#0071e3' };
+  const typeColors = { Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#5856d6', 'Upper Body':'#af52de', BKK_FREE:'#0071e3' };
   const volBars = sessions30.map(s => ({
     label: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}).replace('/',''),
     value: s.volume,
@@ -3965,7 +3965,7 @@ function getWorkout2(dayIdx) {
 }
 
 function getDotColor2(type) {
-  const m = {Push:'#0071e3',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#00b4a6',Riposo:'#c7c7cc'};
+  const m = {Push:'#0071e3',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#5856d6',Riposo:'#c7c7cc'};
   return m[type]||'#c7c7cc';
 }
 
