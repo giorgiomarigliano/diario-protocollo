@@ -141,6 +141,20 @@ body {
   scrollbar-width: none;
   gap: 0;
 }
+.nav-strip-inner {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 8px;
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 0;
+  margin-bottom: 8px;
+}
+.nav-strip-inner::-webkit-scrollbar { display: none; }
 .nav-strip::-webkit-scrollbar { display: none; }
 .nav-tab {
   padding: 10px 14px;
@@ -4281,7 +4295,7 @@ function buildProtoV2() {
 
   // 5. Nav settimane
   const navStrip2 = document.createElement('div');
-  navStrip2.className = 'nav-strip';
+  navStrip2.className = 'nav-strip-inner';
   navStrip2.style.cssText = 'position:sticky;top:44px;z-index:90';
   for (let w=0; w<16; w++) {
     const tab = document.createElement('div');
