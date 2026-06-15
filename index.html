@@ -528,10 +528,10 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 
 /* Select peptide nelle iniezioni v2 */
 .inj-fields select, .inj-grid select {
-  background: var(--surface);
+  background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 5px 26px 5px 8px;
   font-size: 12px;
   font-weight: 500;
   font-family: inherit;
@@ -543,9 +543,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
-  padding-right: 26px;
   transition: border-color .12s;
-  width: 100%;
 }
 .inj-fields select:focus, .inj-grid select:focus { border-color: var(--blue); }
 .inj-grid select[value="fatto"], .inj-grid select option[value="fatto"] { color: #34c759; }
@@ -4519,12 +4517,16 @@ function buildProtoV2() {
         <div class="inj-body">
           <div class="inj-title">${s.label}</div>
           <div class="inj-timing">${s.momento}</div>
-          <div class="inj-fields" style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
-            ${s.fields.map(f => `<select data-id="${id}" data-f="inj_${s.n}_${f.replace(/[\s\-]/g,'_')}">
-              <option value="">— ${f}</option>
-              <option value="fatto">✅ Fatto</option>
-              <option value="skip">⏭ Skip</option>
-            </select>`).join('')}
+          <div class="inj-fields" style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+            ${s.fields.map(f => `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface,#fff);border-radius:8px;padding:6px 10px">
+              <span style="font-size:12px;font-weight:500;color:var(--text);flex:1">${f}</span>
+              <select data-id="${id}" data-f="inj_${s.n}_${f.replace(/[\s\-]/g,'_')}" style="flex-shrink:0;width:110px">
+                <option value="">— stato</option>
+                <option value="fatto">✅ Fatto</option>
+                <option value="skip">⏭ Skip</option>
+              </select>
+            </div>`).join('')}
           </div>
           ${muscleField}
         </div>
