@@ -4039,8 +4039,8 @@ function getInjectionSlots2(dayIdx) {
   if (isTraining) {
     // Rotazione distretto muscolare IGF-1 DES sui 5 giorni di WO della settimana
     const wkDay = dayIdx % 7; // 0=lun,1=mar,2=mer,3=gio,4=ven,5=sab,6=dom
-    // Mapping giorno→muscolo: mar=Petto, mer=Bicipiti, ven=Deltoidi, sab=Tricipiti, dom=Quadricipiti
-    const muscleMap = { 1:'Petto', 2:'Bicipiti', 4:'Deltoidi', 5:'Tricipiti', 6:'Quadricipiti' };
+    // Mapping giorno→muscolo: mar=Petto, mer=Bicipiti, ven=Quadricipiti, sab=Tricipiti, dom=Deltoidi
+    const muscleMap = { 1:'Petto', 2:'Bicipiti', 4:'Quadricipiti', 5:'Tricipiti', 6:'Deltoidi' };
     const defaultMuscle = muscleMap[wkDay] || '';
     slots.splice(2, 0, { n:3, label:'💪 Post-WO', momento:'Post-workout · IM bilaterale',
       fields:['IGF-1 DES 25mcg dx','IGF-1 DES 25mcg sx'], igfMuscle: defaultMuscle });
@@ -4155,7 +4155,7 @@ function buildProtoHeader2(container) {
           <span style="font-size:15px">💪</span>
           <div><div style="font-size:12px;font-weight:600;color:#af52de">Post-WO <span style="font-weight:400;color:var(--muted)">(solo giorni allenamento)</span></div>
           <div style="font-size:12px;color:var(--text)">IGF-1 DES <b>25mcg dx</b> · IGF-1 DES <b>25mcg sx</b></div>
-          <div style="font-size:11px;color:var(--muted);margin-top:3px">Distretto: rotazione mar=Petto · mer=Bicipiti · ven=Deltoidi · sab=Tricipiti · dom=Quadricipiti</div></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px">Distretto: rotazione mar=Petto · mer=Bicipiti · ven=Quadricipiti · sab=Tricipiti · dom=Deltoidi</div></div>
         </div>
         <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
           <span style="font-size:15px">🌙</span>
