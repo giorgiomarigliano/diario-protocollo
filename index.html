@@ -8,16 +8,10 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Diario Ciclo">
 <title>Diario Protocollo · 16 Settimane</title>
-<!-- v3.0.0 redesign -->
+<!-- v2.1.0 -->
 <style>
-/* ════════════════════════════════════════════════════════════
-   DIARIO PROTOCOLLO — Design System Unificato v4.0
-   Un'unica fonte di verità. Nessun duplicato. Nessun !important.
-   ════════════════════════════════════════════════════════════ */
-
-/* ── 1. TOKENS ─────────────────────────────────────────────── */
+/* Apple-style design system */
 :root {
-  /* Tipografia */
   --fs-xs:   11px;
   --fs-sm:   12px;
   --fs-body: 13px;
@@ -28,772 +22,1168 @@
   --fw-reg:  400;
   --fw-med:  500;
   --fw-semi: 600;
-
-  /* Colori */
-  --bg:         #f5f5f7;
-  --surface:    #ffffff;
-  --surface2:   #f5f5f7;
-  --surface3:   #ebebf0;
-  --border:     rgba(0,0,0,0.08);
-  --border2:    rgba(0,0,0,0.14);
-  --text:       #1d1d1f;
-  --text2:      #424245;
-  --muted:      #6e6e73;
-  --faint:      #aeaeb2;
-  --blue:       #0071e3;
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --surface2: #f5f5f7;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --text: #1d1d1f;
+  --text2: #424245;
+  --muted: #6e6e73;
+  --faint: #aeaeb2;
+  --blue: #0071e3;
   --blue-hover: #0077ed;
   --blue-light: #e8f1fb;
-  --red:        #ff3b30;
-  --green:      #34c759;
-  --orange:     #ff9500;
-  --purple:     #af52de;
-  --teal:       #5ac8fa;
-
-  /* Colori workout */
-  --push:      #ff3b30;
-  --pull:      #34c759;
-  --legs:      #ff9500;
-  --upper:     #af52de;
+  --red: #ff3b30;
+  --green: #34c759;
+  --orange: #ff9500;
+  --purple: #af52de;
+  --teal: #5ac8fa;
+  --push: #ff3b30;
+  --pull: #34c759;
+  --legs: #ff9500;
+  --upper: #af52de;
   --upper-dom: #0071e3;
-  --rest:      #aeaeb2;
-
-  /* Accenti protocollo v2 — earth tones */
-  --slot-mattino:    #5b84b1;
-  --slot-pomeriggio: #b87333;
-  --slot-postWO:     #7b5ea7;
-  --slot-sera:       #4a7c59;
-
-  /* Layout */
-  --radius:    12px;
+  --rest: #aeaeb2;
+  --radius: 18px;
   --radius-sm: 12px;
   --radius-xs: 8px;
-  --radius-pill: 980px;
-  --shadow:    0 1px 4px rgba(0,0,0,0.06), 0 2px 12px rgba(0,0,0,0.04);
+  --shadow: 0 2px 12px rgba(0,0,0,0.07);
   --shadow-md: 0 4px 24px rgba(0,0,0,0.10);
-
-  /* Layout tab */
-  --tab-pad-h:  20px;
-  --tab-pad-v:  20px;
-  --tab-max-w:  1200px;
 }
 
-/* ── 2. BASE ────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-  font-size: var(--fs-body);
-  font-weight: var(--fw-reg);
-  line-height: 1.5;
-  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
   background: var(--bg);
-  margin: 0; padding: 0;
-  -webkit-font-smoothing: antialiased;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100vh;
 }
 
-/* ── 3. HEADER ──────────────────────────────────────────────── */
+/* Header — Apple nav bar style */
 .header {
-  position: sticky; top: 0; z-index: 200;
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid var(--border);
-  padding: 0 var(--tab-pad-h);
-  display: flex; align-items: center; justify-content: space-between;
-  height: 48px; gap: 12px;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
 }
-.h-left { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
-.h-left h1 { font-size: var(--fs-body); font-weight: var(--fw-semi); margin: 0; white-space: nowrap; }
-.h-subtitle { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
-.h-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.h-left h1 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.h-left p {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+  margin-top: 1px;
+}
+.h-right { display: flex; align-items: center; gap: 8px; }
 .h-btn {
-  font-size: var(--fs-xs); font-weight: var(--fw-med);
-  padding: 5px 12px; border-radius: var(--radius-pill);
-  border: 1px solid var(--border2); background: var(--surface);
-  color: var(--text); cursor: pointer; white-space: nowrap;
+  background: transparent;
+  border: none;
+  color: var(--blue);
+  font-size: 15px;
+  font-family: inherit;
+  font-weight: 400;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: background .15s;
+  white-space: nowrap;
 }
-.h-btn:hover { background: var(--surface2); }
-.h-btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+.h-btn:hover { background: var(--blue-light); }
+.h-btn.primary {
+  background: var(--blue);
+  color: #fff;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 980px;
+  font-size: 13px;
+}
 .h-btn.primary:hover { background: var(--blue-hover); }
-
-/* Sync indicator */
+.sync-indicator {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
 .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
-.sync-dot.ok   { background: var(--green); }
-.sync-dot.err  { background: var(--red); }
-#last-saved { font-size: 10px; color: var(--muted); }
+.sync-dot.ok { background: var(--green); }
+.sync-dot.err { background: var(--red); }
 
-/* ── 4. PROGRESS BAR ────────────────────────────────────────── */
-.prog-wrap { height: 3px; background: var(--bg); width: 100%; }
-.prog-bar  { height: 100%; background: var(--blue); transition: width .4s ease; }
+/* Progress bar — thin Apple style */
+.prog-wrap { height: 3px; background: transparent; }
+.prog-bar { height: 3px; background: var(--blue); transition: width .4s ease; border-radius: 0 2px 2px 0; }
 
-/* ── 5. MAIN NAV (4 tab) ────────────────────────────────────── */
-.main-nav {
-  position: sticky; top: 48px; z-index: 190;
-  background: rgba(255,255,255,0.92);
+/* Week navigation */
+.nav-strip {
+  background: rgba(255,255,255,0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
-  display: flex; padding: 0 var(--tab-pad-h);
+  padding: 0 24px;
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
   gap: 0;
 }
-.main-nav-tab {
-  padding: 10px 14px;
-  font-size: var(--fs-xs); font-weight: var(--fw-reg);
-  color: var(--muted); cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: color .15s; white-space: nowrap; flex-shrink: 0;
-}
-.main-nav-tab:hover { color: var(--text); }
-.main-nav-tab.on {
-  color: var(--blue);
-  border-bottom-color: var(--blue);
-  font-weight: var(--fw-semi);
-}
-
-/* ── 6. WEEK NAV STRIP (diario) ─────────────────────────────── */
-.nav-strip {
-  position: sticky; top: 92px; z-index: 180;
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto; scrollbar-width: none;
-  display: flex; padding: 0 var(--tab-pad-h);
-}
-.nav-strip::-webkit-scrollbar { display: none; }
 .nav-strip-inner {
-  position: sticky; top: 92px; z-index: 180;
-  background: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto; scrollbar-width: none;
-  display: flex; width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 8px;
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 0;
+  margin-bottom: 8px;
 }
 .nav-strip-inner::-webkit-scrollbar { display: none; }
+.nav-strip::-webkit-scrollbar { display: none; }
 .nav-tab {
-  padding: 8px 12px;
-  font-size: var(--fs-xs); font-weight: var(--fw-reg);
-  color: var(--muted); cursor: pointer;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
+  cursor: pointer;
   border-bottom: 2px solid transparent;
-  white-space: nowrap; flex-shrink: 0;
+  white-space: nowrap;
   transition: color .15s;
+  flex-shrink: 0;
+  letter-spacing: -0.01em;
 }
 .nav-tab:hover { color: var(--text); }
-.nav-tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: var(--fw-semi); }
+.nav-tab.on { color: var(--blue); border-bottom-color: var(--blue); font-weight: 500; }
 
-/* ── 7. KPI STRIP (sopra diario) ───────────────────────────── */
-.kpi-strip {
-  display: flex; align-items: center;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 8px var(--tab-pad-h);
-  overflow-x: auto; scrollbar-width: none; gap: 0;
-}
-.kpi-strip::-webkit-scrollbar { display: none; }
-.kpi-s-item { display: flex; align-items: baseline; gap: 4px; padding: 2px 10px; flex-shrink: 0; }
-.kpi-s-val  { font-size: var(--fs-md); font-weight: var(--fw-semi); letter-spacing: -.02em; color: var(--text); }
-.kpi-s-lbl  { font-size: 10px; color: var(--muted); }
-.kpi-s-sep  { width: 1px; height: 18px; background: var(--border2); flex-shrink: 0; }
+/* Main container */
+.container { width:100%; margin: 0 auto; padding: 24px 20px 120px; }
+.view-wrap { width:100%; margin: 0 auto; padding: 24px 20px 120px; box-sizing:border-box; }
 
-/* ── 8. LAYOUT TAB — wrapper comune ────────────────────────── */
-/* Tutti i tab usano la stessa struttura di padding e max-width */
-.tab-content {
-  width: 100%;
-  max-width: var(--tab-max-w);
-  margin: 0 auto;
-  padding: var(--tab-pad-v) var(--tab-pad-h) 120px;
-}
+/* ── Typography system ───────────────────────────────── */
+.t-page-title   { font-size: var(--fs-xl);   font-weight: var(--fw-semi); letter-spacing: -.3px; line-height: 1.2; }
+.t-page-sub     { font-size: var(--fs-body); color: var(--muted); margin-top: 3px; }
+.t-section-title{ font-size: var(--fs-xs);   font-weight: var(--fw-semi); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 10px; }
+.t-card-title   { font-size: var(--fs-body); font-weight: var(--fw-semi); letter-spacing: -.1px; }
+.t-card-sub     { font-size: var(--fs-sm);   color: var(--muted); margin-top: 2px; }
+.t-label        { font-size: var(--fs-xs);   color: var(--muted); margin-top: 4px; }
+.t-value-lg     { font-size: var(--fs-2xl);  font-weight: var(--fw-semi); letter-spacing: -.03em; line-height: 1; }
+.t-value-md     { font-size: var(--fs-lg);   font-weight: var(--fw-semi); letter-spacing: -.02em; line-height: 1; }
+.t-value-sm     { font-size: var(--fs-md);   font-weight: var(--fw-semi); }
+.t-week-title   { font-size: 19px; font-weight: var(--fw-semi); letter-spacing: -.3px; }
 
-/* Views */
-.diary-view  { display: block; width: 100%; }
-.diary-view.hidden { display: none; }
-.dash-view   { display: none; width: 100%; }
-.dash-view.active { display: block; }
-.med-view    { display: none; width: 100%; }
-.med-view.visible { display: block; }
-.stock-view  { display: none; width: 100%; }
-.stock-view.visible { display: block; }
-
-/* Container diario (legacy — usato da buildDays) */
-.container {
-  width: 100%; max-width: var(--tab-max-w);
-  margin: 0 auto;
-  padding: var(--tab-pad-v) var(--tab-pad-h) 120px;
-}
-
-/* container2 (proto v2) — no padding proprio, usa .tab-content interno */
-#container2 { width: 100%; }
-
-/* dash-inner */
-.dash-inner {
-  width: 100%; max-width: var(--tab-max-w);
-  margin: 0 auto;
-  padding: var(--tab-pad-v) var(--tab-pad-h) 120px;
-}
-
-/* ── 9. CARD BASE ───────────────────────────────────────────── */
-/* Tutte le card usano la stessa geometria */
-.card {
+/* Cycle indicator card */
+.cycle-card {
   background: var(--surface);
   border-radius: var(--radius);
-  border: 1px solid var(--border);
+  padding: 22px 24px;
+  margin-bottom: 20px;
   box-shadow: var(--shadow);
-  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
+.cycle-ring { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
+.cycle-ring svg { transform: rotate(-90deg); }
+.cycle-ring-label {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.cycle-ring-pct { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.03em; line-height: 1; }
+.cycle-ring-sub { font-size: 9px; color: var(--muted); margin-top: 2px; letter-spacing: 0.02em; text-transform: uppercase; }
+.cycle-info { flex: 1; min-width: 0; }
+.cycle-info h3 { font-size: var(--fs-lg); font-weight: 600; color: var(--text); letter-spacing: -0.02em; margin-bottom: 3px; }
+.cycle-info p { font-size: 13px; color: var(--muted); }
+.cycle-next {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--blue-light);
+  border-radius: var(--radius-xs);
+  font-size: 12px;
+  color: var(--blue);
+  font-weight: 500;
+}
+
+/* Charts card */
+.charts-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.charts-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.chart-label { font-size: 11px; color: var(--muted); margin-bottom: 5px; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
+canvas.mini-chart { width: 100%; height: 64px; display: block; }
+
+/* Week header */
+.week-hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 28px 0 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.week-hdr:first-of-type { margin-top: 0; }
+.week-hdr h2 { font-size: 19px; font-weight: 600; letter-spacing: -0.03em; color: var(--text); }
+.week-phase {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 980px;
+  white-space: nowrap;
+}
+.week-range { font-size: 12px; color: var(--muted); margin-left: auto; }
 
 /* Day card */
 .day-card {
   background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-sm);
   margin-bottom: 8px;
+  box-shadow: var(--shadow);
   overflow: hidden;
-  transition: box-shadow .15s;
+  transition: box-shadow .2s;
 }
 .day-card:hover { box-shadow: var(--shadow-md); }
-.day-card.today { border-color: rgba(91,132,177,.4); box-shadow: 0 0 0 2px rgba(91,132,177,.18), var(--shadow); }
-.day-card.open .day-chev { transform: rotate(180deg); }
-.day-card.open .day-body { display: block; }
-.day-card.open .day-body.day-body-desktop {
-  display: grid;
-  grid-template-columns: 420px 1fr;
-  grid-template-rows: auto;
-  gap: 0;
-}
-.day-card:hover .day-dot { transform: scale(1.25); }
+.day-card.today { box-shadow: 0 0 0 2px var(--blue), var(--shadow); }
 
-/* Cycle card */
-.cycle-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  padding: 20px 22px;
-  margin-bottom: 12px;
-  display: flex; align-items: center; gap: 20px;
-}
-
-/* KPI box (dashboard) */
-.kpi-box {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  padding: 14px 16px;
-  text-align: center; position: relative; overflow: hidden;
-}
-
-/* Dash card */
-.dash-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  padding: 16px 18px;
-  margin-bottom: 10px;
-}
-.dash-section { margin-bottom: 24px; }
-.dash-section-title {
-  font-size: var(--fs-xs); font-weight: var(--fw-semi);
-  color: var(--muted); letter-spacing: .05em; text-transform: uppercase;
-  margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;
-}
-.dash-card-title {
-  font-size: var(--fs-xs); font-weight: var(--fw-semi);
-  color: var(--muted); letter-spacing: .04em; text-transform: uppercase;
-  margin-bottom: 12px;
-}
-.dash-two-col { display: grid; grid-template-columns: 1fr; gap: 0; }
-.charts-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  padding: 16px 18px; margin-bottom: 10px;
-}
-.charts-card-title {
-  font-size: var(--fs-body); font-weight: var(--fw-semi);
-  margin-bottom: 10px;
-}
-
-/* Med panel */
-.med-panel {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  padding: 16px 18px; margin-bottom: 10px;
-}
-
-/* Comp/stock card */
-.comp-card, .ws-card, .stock-card {
-  background: var(--surface);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  padding: 16px 18px; margin-bottom: 10px;
-}
-
-/* ── 10. WEEK HEADER ────────────────────────────────────────── */
-.week-hdr {
-  display: flex; align-items: center; gap: 10px;
-  margin: 24px 0 8px; padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
-}
-.week-hdr:first-of-type { margin-top: 0; }
-.week-hdr h2 { font-size: var(--fs-lg); font-weight: var(--fw-semi); letter-spacing: -.02em; margin: 0; }
-.week-phase {
-  font-size: var(--fs-xs); font-weight: var(--fw-med);
-  padding: 3px 9px; border-radius: var(--radius-pill);
-}
-.week-range { font-size: var(--fs-sm); color: var(--muted); }
-
-/* ── 11. DAY CARD ANATOMY ───────────────────────────────────── */
 .day-head {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 14px; cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  cursor: pointer;
+  gap: 12px;
+  user-select: none;
 }
 .day-dot {
-  width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(0,0,0,.06);
   transition: transform .15s;
 }
-.day-date { font-size: var(--fs-body); font-weight: var(--fw-semi); }
-.day-sub  { font-size: var(--fs-sm); color: var(--muted); margin-left: 2px; }
-.day-badge {
-  font-size: var(--fs-xs); font-weight: var(--fw-med);
-  padding: 2px 8px; border-radius: var(--radius-pill);
-  margin-left: 4px; flex-shrink: 0;
-}
-.today-badge {
-  font-size: 10px; font-weight: var(--fw-semi);
-  padding: 2px 7px; border-radius: var(--radius-pill);
-  background: var(--blue); color: #fff; margin-left: 2px;
-}
-.day-chev {
-  font-size: var(--fs-xs); color: var(--faint);
-  margin-left: auto; transition: transform .2s; flex-shrink: 0;
-}
-.day-body { display: none; border-top: 1px solid var(--border); }
-.day-name { font-size: var(--fs-md); font-weight: var(--fw-semi); color: var(--muted); }
-
-/* ── 12. SEZIONI DENTRO LA CARD ─────────────────────────────── */
-.col-full  { padding: 12px 14px; border-top: 1px solid var(--border); }
-.col-left  { padding: 12px 14px; }
-.col-right { padding: 12px 14px; border-left: 1px solid var(--border); }
-.section-label {
-  font-size: var(--fs-xs); font-weight: var(--fw-semi);
-  color: var(--muted); letter-spacing: .05em; text-transform: uppercase;
-  margin-bottom: 8px;
-}
-
-/* Biometria */
-.bio-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
-.bio-box { display: flex; flex-direction: column; align-items: center; }
-.bio-box input {
-  width: 100%; text-align: center;
-  font-size: var(--fs-md); font-weight: var(--fw-semi); letter-spacing: -.02em;
-  border: 1px solid var(--border); border-radius: var(--radius-xs);
-  background: var(--surface2); color: var(--text);
-  padding: 8px 4px; outline: none;
-}
-.bio-box input:focus { border-color: var(--blue); background: var(--surface); }
-.bio-lbl { font-size: 10px; color: var(--muted); margin-top: 4px; }
-.bio-box select {
-  width: 100%; text-align: center;
-  font-size: var(--fs-body); font-weight: var(--fw-semi);
-  border: 1px solid var(--border); border-radius: var(--radius-xs);
-  background: var(--surface2); color: var(--text);
-  padding: 8px 4px; outline: none;
-}
-
-/* Field groups */
-.fg { margin-bottom: 8px; }
-.fg label { display: block; font-size: 10px; color: var(--muted); margin-bottom: 3px; font-weight: var(--fw-med); }
-.fg input, .fg select, .fg textarea {
-  width: 100%; font-size: var(--fs-body);
-  border: 1px solid var(--border); border-radius: var(--radius-xs);
-  background: var(--surface2); color: var(--text);
-  padding: 7px 9px; outline: none; font-family: inherit;
-}
-.fg input:focus, .fg select:focus, .fg textarea:focus {
-  border-color: var(--blue); background: var(--surface);
-}
-
-/* Note */
-.note-box { }
-.note-box label { font-size: 10px; color: var(--muted); display: block; margin-bottom: 3px; font-weight: var(--fw-med); }
-.note-box textarea, .note-ta {
-  width: 100%; min-height: 60px; resize: vertical;
-  font-size: var(--fs-body); font-family: inherit;
-  border: 1px solid var(--border); border-radius: var(--radius-xs);
-  background: var(--surface2); color: var(--text);
-  padding: 8px 10px; outline: none; line-height: 1.5;
-}
-.note-box textarea:focus, .note-ta:focus {
-  border-color: var(--blue); background: var(--surface);
-}
-
-/* Workout */
-.wo-box { background: var(--surface2); border-radius: var(--radius-xs); padding: 10px 12px; margin-top: 6px; }
-.wo-header { font-size: var(--fs-body); font-weight: var(--fw-semi); margin-bottom: 6px; }
-.wo-row { display: flex; gap: 6px; margin-bottom: 4px; align-items: baseline; }
-.wo-name { font-size: var(--fs-body); color: var(--text2); flex: 1; }
-.wo-sets { font-size: var(--fs-sm); color: var(--muted); }
-.rest-banner {
-  background: var(--surface2); border-radius: var(--radius-xs);
-  padding: 10px 12px; font-size: var(--fs-body); color: var(--muted);
-  text-align: center; margin-top: 6px;
-}
-
-/* ── 13. INIEZIONI CHIP ─────────────────────────────────────── */
-.inj-slot-hdr { display: flex; align-items: center; gap: 8px; margin: 12px 0 5px; }
-.inj-slot-icon {
-  width: 22px; height: 22px; border-radius: 50%;
+.day-card:hover .day-dot { transform: scale(1.25); }
+.day-dot-done {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; flex-shrink: 0;
+  font-size: 10px; color: #fff; font-weight: 700;
+  box-shadow: 0 1px 4px rgba(52,199,89,.3);
 }
-.inj-slot-icon.mattino    { background: rgba(91,132,177,.15); color: var(--slot-mattino); }
-.inj-slot-icon.pomeriggio { background: rgba(184,115,51,.15); color: var(--slot-pomeriggio); }
-.inj-slot-icon.postWO     { background: rgba(123,94,167,.15); color: var(--slot-postWO); }
-.inj-slot-icon.sera       { background: rgba(74,124,89,.15);  color: var(--slot-sera); }
-.inj-slot-label {
-  font-size: var(--fs-xs); font-weight: var(--fw-semi);
-  color: var(--muted); letter-spacing: .04em; text-transform: uppercase;
+.inj-mini-bar {
+  display: flex; align-items: center; gap: 5px;
+  margin-top: 2px;
 }
-.inj-slot-timing { font-size: 10px; color: var(--faint); margin-left: auto; }
-.inj-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-.inj-chip {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 4px 9px; border-radius: var(--radius-xs);
-  border: 1px solid var(--border); background: var(--surface2);
-  font-size: var(--fs-xs); font-weight: var(--fw-med);
-  color: var(--text2); cursor: pointer; user-select: none;
-  transition: background .12s, border-color .12s, color .12s;
+.inj-mini-pips { display: flex; gap: 2px; }
+.inj-mini-pip {
+  width: 6px; height: 6px; border-radius: 2px;
+  background: var(--surface3, #e5e5ea);
+  transition: background .2s;
+}
+.inj-mini-pip.done { background: #34c759; }
+.inj-mini-pip.skip { background: var(--faint); }
+.inj-mini-lbl { font-size: 10px; color: var(--muted); }
+.day-info { flex: 1 }
+.day-name { font-size: 15px; font-weight: 500; color: var(--text); letter-spacing: -0.01em; line-height: 1.2; }
+.day-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.today-badge {
+  display: inline-block;
+  font-size: 10px;
+  background: var(--blue);
+  color: #fff;
+  border-radius: 980px;
+  padding: 1px 7px;
+  font-weight: 600;
+  margin-left: 6px;
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+}
+.day-quick { display: flex; gap: 14px; margin-right: 4px; }
+.dq { text-align: center; }
+.dq-v { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1; }
+.dq-v.empty { color: var(--faint); }
+.dq-l { font-size: 10px; color: var(--faint); margin-top: 1px; }
+.day-badge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 980px;
   white-space: nowrap;
 }
-.inj-chip:hover { background: var(--surface3); }
-.inj-chip[data-stato="fatto"] {
-  background: rgba(52,199,89,.10); border-color: rgba(52,199,89,.30); color: #1a6e32;
-}
-.inj-chip[data-stato="skip"] {
-  background: var(--surface2); border-color: var(--border);
-  color: var(--faint); text-decoration: line-through;
-}
-.inj-chip-icon { font-size: var(--fs-sm); }
-.inj-chip-stato {
-  font-size: 9px; font-weight: var(--fw-semi);
-  letter-spacing: .04em; text-transform: uppercase; color: var(--muted);
-}
-.inj-chip[data-stato="fatto"] .inj-chip-stato { color: #1a6e32; }
+.day-chev { color: var(--faint); font-size: 11px; transition: transform .2s; flex-shrink: 0; }
+.day-card.open .day-chev { transform: rotate(180deg); }
 
-/* ── 14. PROTO HEADER V2 ────────────────────────────────────── */
-.proto2-hdr-wrap { padding: var(--tab-pad-v) var(--tab-pad-h) 0; }
-.proto2-hdr {
-  background: var(--surface);
-  border-radius: var(--radius);
+.day-body { display: none; padding: 0 18px 18px; border-top: 1px solid var(--border); }
+.day-card.open .day-body { display: block; }
+/* col-full su mobile: blocco normale */
+.col-left, .col-right, .col-full { display: block; }
+
+/* Section label */
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin: 18px 0 10px;
+}
+
+/* Biometria grid */
+.bio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.bio-box {
+  background: var(--surface2);
+  border-radius: var(--radius-xs);
+  padding: 10px 8px;
+  text-align: center;
+}
+.bio-box input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+.bio-box input::placeholder { color: var(--faint); font-size: 15px; }
+.bio-box select {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  text-align: center;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+}
+.bio-box select option { font-size: 14px; }
+.bio-lbl { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+/* Field groups */
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.field-row.tri { grid-template-columns: 1fr 1fr 1fr; }
+.field-row.solo { grid-template-columns: 1fr; }
+.field-row.two { grid-template-columns: 1fr 1fr; }
+
+.fg {
+  background: var(--surface2);
+  border-radius: var(--radius-xs);
+  padding: 10px 12px;
+}
+.fg label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.fg input, .fg select, .fg textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: var(--text);
+  font-family: inherit;
+  resize: none;
+}
+.fg textarea { height: 52px; line-height: 1.5; }
+.fg select { cursor: pointer; }
+
+/* Injection card */
+.inj-slots { display: flex; flex-direction: column; gap: 8px; }
+.inj-card {
+  background: var(--surface2);
+  border-radius: var(--radius-xs);
+  padding: 10px 12px;
+  border-left: 3px solid var(--border);
+}
+.inj-card-wo {
+  border-left: 3px solid #af52de;
+  background: var(--surface2);
+}
+.inj-card-mattino  { border-left-color: #0071e3; background: rgba(0,113,227,.04); }
+.inj-card-pomeriggio { border-left-color: #ff9500; background: rgba(255,149,0,.04); }
+.inj-card-sera     { border-left-color: #34c759; background: rgba(52,199,89,.04); }
+.inj-card-postWO   { border-left-color: #af52de; background: rgba(175,82,222,.04); }
+
+/* Radial ring per Stock */
+.radial-ring { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
+.radial-ring svg { transform: rotate(-90deg); }
+.radial-ring .ring-val {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--text);
+}
+
+/* Timeline medico verticale */
+.med-timeline { display: flex; flex-direction: column; gap: 0; padding: 4px 0; }
+.med-tl-item {
+  display: flex; gap: 14px; position: relative; padding-bottom: 20px;
+}
+.med-tl-item:last-child { padding-bottom: 0; }
+.med-tl-line {
+  display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
+}
+.med-tl-icon {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0; z-index: 1;
+}
+.med-tl-connector {
+  width: 2px; flex: 1; background: var(--border); margin-top: 3px;
+}
+.med-tl-item:last-child .med-tl-connector { display: none; }
+.med-tl-content { flex: 1; padding-top: 4px; }
+.med-tl-date { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.med-tl-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.med-tl-sub { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.note-ta {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--surface2);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  padding: 14px 16px;
-  margin-bottom: 12px;
+  border-radius: var(--radius-xs);
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--text);
+  font-family: inherit;
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color .15s;
 }
-.proto2-hdr-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.proto2-hdr-title { font-size: var(--fs-body); font-weight: var(--fw-semi); }
-.proto2-hdr-sub   { font-size: var(--fs-sm); color: var(--muted); margin-top: 1px; }
-.proto2-slot-row {
-  display: flex; align-items: flex-start; gap: 8px;
-  padding: 6px 8px; background: var(--surface2);
-  border-radius: var(--radius-xs); margin-bottom: 4px;
+.note-ta:focus {
+  outline: none;
+  border-color: var(--blue);
 }
-.proto2-slot-info { display: flex; flex-direction: column; gap: 1px; flex: 1; }
-.proto2-slot-drugs { font-size: var(--fs-sm); color: var(--text2); }
+.note-ta::placeholder { color: var(--faint, #c7c7cc); }
+.inj-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.inj-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.inj-title {
+  font-size: 12px; font-weight: 600; color: var(--text);
+  letter-spacing: -0.01em; flex: 1;
+}
+.inj-timing {
+  font-size: 11px; color: var(--muted);
+  background: var(--surface3, #e8e8ed);
+  padding: 2px 8px; border-radius: 10px;
+  flex-shrink: 0;
+}
+.inj-fields {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr 1fr;
+  gap: 8px;
+}
+/* Mobile: 2x2 */
+@media (max-width: 600px) {
+  .inj-fields { grid-template-columns: 1fr 1fr; }
+}
 
-/* ── 15. WARM-UP TOGGLE ─────────────────────────────────────── */
-.warmup-section { padding: var(--tab-pad-v) var(--tab-pad-h) 0; max-width: var(--tab-max-w); margin: 0 auto; }
-.warmup-toggle {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--surface);
-  border-radius: var(--radius);
+/* Select peptide nelle iniezioni v2 */
+.inj-fields select, .inj-grid select {
+  background: var(--surface2);
   border: 1px solid var(--border);
-  padding: 12px 14px; cursor: pointer; user-select: none;
-  transition: background .12s; margin-bottom: 0;
+  border-radius: 8px;
+  padding: 5px 26px 5px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text);
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color .12s;
 }
-.warmup-toggle:hover { background: var(--surface2); }
-.warmup-toggle.open .warmup-chev { transform: rotate(90deg); }
-.warmup-toggle-title { font-size: var(--fs-body); font-weight: var(--fw-semi); flex-shrink: 0; }
-.warmup-toggle-sub   { font-size: var(--fs-sm); color: var(--muted); flex: 1; }
-.warmup-chev         { font-size: var(--fs-sm); color: var(--faint); flex-shrink: 0; transition: transform .2s; }
-.warmup-body         { overflow: hidden; }
-.warmup-section-label {
-  font-size: 10px; font-weight: var(--fw-semi); color: var(--muted);
-  letter-spacing: .06em; text-transform: uppercase;
-  text-align: center; padding: 8px 0 4px;
-  border-top: 1px dashed var(--border); margin-top: 4px;
+.inj-fields select:focus, .inj-grid select:focus { border-color: var(--blue); }
+.inj-grid select[value="fatto"], .inj-grid select option[value="fatto"] { color: #34c759; }
+.inj-grid select[value="skip"], .inj-grid select option[value="skip"] { color: var(--muted); }
+
+.sent-tab {
+  font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--surface2); color: var(--muted);
+  cursor: pointer; transition: all .15s;
 }
-
-/* ── 16. CYCLE CARD ─────────────────────────────────────────── */
-.cycle-ring-pct   { font-size: var(--fs-md); font-weight: var(--fw-semi); letter-spacing: -.02em; }
-.cycle-ring-sub   { font-size: 9px; color: var(--muted); }
-.cycle-ring-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.cycle-ring       { position: relative; flex-shrink: 0; }
-.cycle-info       { flex: 1; }
-.cycle-info h3    { font-size: var(--fs-body); font-weight: var(--fw-semi); margin: 0 0 4px; }
-.cycle-info p     { font-size: var(--fs-xs); color: var(--muted); margin: 0; }
-.cycle-next       { font-size: var(--fs-xs); color: var(--muted); margin-top: 6px; }
-
-/* ── 17. DASHBOARD KPI ──────────────────────────────────────── */
-.kpi-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 20px; }
-.kpi-val  { font-size: var(--fs-xl); font-weight: var(--fw-semi); letter-spacing: -.02em; line-height: 1; }
-.kpi-lbl  { font-size: 10px; color: var(--muted); margin-top: 3px; }
-.kpi-delta { font-size: var(--fs-xs); margin-top: 4px; }
-.kpi-icon { font-size: var(--fs-xl); margin-bottom: 6px; display: block; }
-.kpi-delta.up    { color: var(--green); }
-.kpi-delta.down  { color: var(--red); }
-.kpi-delta.neutral { color: var(--muted); }
-
-/* Sparkline */
-canvas.mini-chart { width: 100%; height: 64px; display: block; }
-.spark-wrap { margin-top: 6px; }
-
-/* Chart wrap */
-.chart-wrap { position: relative; width: 100%; margin-bottom: 6px; }
-canvas.dash-chart { width: 100%; display: block; border-radius: var(--radius-xs); }
-.chart-axis-label { font-size: 9px; color: var(--faint); margin-bottom: 2px; display: flex; justify-content: space-between; }
-.chart-label { font-size: var(--fs-xs); }
-
-/* ── 18. COMPLIANCE ─────────────────────────────────────────── */
-.compliance-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
-.comp-card { text-align: center; padding: 12px 10px; }
-.comp-ring { position: relative; width: 56px; height: 56px; margin: 0 auto 6px; flex-shrink: 0; }
-.comp-ring canvas { width: 56px; height: 56px; display: block; }
-.comp-ring-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.comp-ring-pct { font-size: var(--fs-body); font-weight: var(--fw-semi); letter-spacing: -.02em; }
-.comp-ring-lbl { font-size: 8px; color: var(--muted); }
-.comp-title { font-size: var(--fs-xs); font-weight: var(--fw-semi); }
-.comp-sub   { font-size: 9px; color: var(--muted); }
-.comp-bar-row   { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.comp-bar-label { font-size: var(--fs-sm); color: var(--text2); flex: 0 0 70px; }
-.comp-bar-track { flex: 1; height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
-.comp-bar-fill  { height: 100%; border-radius: 3px; transition: width .4s ease; }
-.comp-bar-pct   { font-size: var(--fs-xs); color: var(--muted); flex: 0 0 36px; text-align: right; }
-
-/* ── 19. WEEK SUMMARY ───────────────────────────────────────── */
-.ws-card  { }
-.ws-lbl   { font-size: 10px; color: var(--muted); letter-spacing: -.01em; }
-.ws-sub   { font-size: var(--fs-xs); font-weight: var(--fw-semi); color: var(--text); }
-.dq-v     { font-size: var(--fs-body); font-weight: var(--fw-semi); letter-spacing: -.02em; }
-.dq-l     { font-size: 10px; color: var(--muted); }
-.subj-legend   { display: flex; gap: 16px; margin-bottom: 8px; }
-.subj-leg-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--muted); }
-.subj-leg-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-/* ── 20. SENTINEL + LOG ─────────────────────────────────────── */
-.sent-tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
-.sent-tab  {
-  font-size: var(--fs-xs); font-weight: var(--fw-med);
-  padding: 4px 10px; border-radius: var(--radius-pill);
-  border: 1px solid var(--border); background: var(--surface2);
-  color: var(--muted); cursor: pointer;
+.sent-tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+.sent-tab:hover:not(.active) { background: var(--surface3, #e8e8ed); }
+.comp-bar-row { display:flex; align-items:center; gap:8px; }
+.comp-bar-label { font-size:12px; font-weight:500; color:var(--text); min-width:72px; }
+.comp-bar-track { flex:1; height:7px; background:var(--border); border-radius:4px; overflow:hidden; }
+.comp-bar-fill { height:100%; border-radius:4px; transition: width .4s ease; }
+.comp-bar-pct { font-size:11px; color:var(--muted); min-width:36px; text-align:right; }
+/* Workout box */
+.wo-box {
+  background: var(--surface2);
+  border-radius: var(--radius-xs);
+  padding: 14px;
+  margin-top: 8px;
 }
-.sent-tab.active { background: var(--blue-light); color: var(--blue); border-color: rgba(0,113,227,.2); }
-.sentinel-baseline { font-size: 10px; color: var(--faint); margin-top: 2px; }
-.log-section-title {
-  font-size: var(--fs-xs); font-weight: var(--fw-semi);
-  color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 8px;
+.wo-header {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
 }
-.log-table { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: var(--fs-body); }
-.log-table th { font-size: 10px; color: var(--muted); font-weight: var(--fw-semi); text-align: left; padding: 3px 6px 6px; }
-.log-table td { padding: 6px 6px; border-top: 1px solid var(--border); }
-.log-table .ex-name { font-weight: var(--fw-med); }
+.wo-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.wo-row.two { grid-template-columns: 1fr 1fr; }
+
+/* Sentinel + Exercise log */
+.log-table { width: 100%; margin-top: 12px; border-collapse: collapse; }
+.log-table th {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+  padding: 0 4px 6px;
+}
+.log-table th:first-child { text-align: left; padding-left: 0; }
+.log-table td { padding: 3px 4px; }
+.log-table td:first-child { padding-left: 0; }
+.log-table .ex-name {
+  font-size: 13px;
+  color: var(--text2);
+  padding: 4px 0;
+}
 .log-input {
-  width: 100%; font-size: var(--fs-body); border: 1px solid var(--border);
-  border-radius: var(--radius-xs); background: var(--surface2);
-  padding: 4px 7px; outline: none; font-family: inherit;
-}
-.log-select {
-  font-size: var(--fs-sm); border: 1px solid var(--border);
-  border-radius: var(--radius-xs); background: var(--surface2);
-  padding: 3px 7px; outline: none;
-}
-
-/* ── 21. MOTRA ──────────────────────────────────────────────── */
-.motra-box { }
-.motra-box label { font-size: 10px; color: var(--muted); display: block; margin-bottom: 3px; font-weight: var(--fw-med); }
-.motra-textarea {
-  width: 100%; min-height: 70px; resize: vertical; font-size: var(--fs-body);
-  font-family: monospace; border: 1px solid var(--border); border-radius: var(--radius-xs);
-  background: var(--surface2); color: var(--text); padding: 8px 10px; outline: none;
-}
-.motra-textarea:focus { border-color: var(--blue); background: var(--surface); }
-.motra-import-btn {
-  font-size: var(--fs-xs); font-weight: var(--fw-med); color: var(--blue);
-  background: none; border: none; cursor: pointer; padding: 4px 0; margin-top: 4px;
-}
-.motra-result { background: var(--surface2); border-radius: var(--radius-xs); padding: 10px 12px; margin-top: 8px; }
-.motra-ex-name { font-size: var(--fs-body); font-weight: var(--fw-med); }
-.motra-ex-sets { font-size: var(--fs-sm); color: var(--muted); }
-.motra-meta-val { font-size: var(--fs-xl); font-weight: var(--fw-semi); letter-spacing: -.02em; line-height: 1; }
-.motra-meta-lbl { font-size: 10px; color: var(--muted); }
-
-/* ── 22. REFERTI/LAB ────────────────────────────────────────── */
-.med-panel-title  { font-size: var(--fs-md); font-weight: var(--fw-semi); }
-.med-panel-sub    { font-size: var(--fs-sm); color: var(--muted); margin-top: 2px; }
-.med-cat-label    {
-  font-size: var(--fs-xs); font-weight: var(--fw-semi);
-  color: var(--muted); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 8px;
-}
-.med-item-name { font-size: var(--fs-sm); }
-.med-item-val  { font-size: var(--fs-body); font-weight: var(--fw-semi); }
-.med-item-ref  { font-size: 10px; color: var(--muted); }
-.med-item-note { font-size: var(--fs-xs); }
-.med-tl-title  { font-size: var(--fs-body); font-weight: var(--fw-med); }
-.med-tl-date   { font-size: var(--fs-xs); color: var(--muted); }
-.med-tl-sub    { font-size: var(--fs-sm); color: var(--muted); }
-.med-tl-icon   { font-size: var(--fs-md); }
-.lab-box {
-  background: var(--surface2); border-radius: var(--radius-xs);
-  padding: 10px 12px; margin-bottom: 6px;
-}
-.lab-box label { font-size: 9px; color: var(--muted); display: block; margin-bottom: 2px; font-weight: var(--fw-med); }
-.lab-box input {
-  font-size: var(--fs-body); border: 1px solid var(--border); border-radius: var(--radius-xs);
-  background: var(--surface); padding: 5px 8px; outline: none; width: 100%;
-}
-.lab-delta { font-size: 10px; }
-.lab-ref   { font-size: 9px; color: var(--muted); }
-.dexa-col  { background: var(--surface2); border-radius: var(--radius-xs); padding: 12px; }
-.dexa-col h4 { font-size: var(--fs-xs); font-weight: var(--fw-semi); margin: 0 0 8px; }
-.check-item label { font-size: var(--fs-body); }
-.photo-note input { font-size: var(--fs-body); }
-
-/* Timeline medico */
-.med-tl-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-
-/* ── 23. STOCK ──────────────────────────────────────────────── */
-.inj-num    { font-size: var(--fs-xs); }
-.inj-timing { font-size: var(--fs-xs); color: var(--muted); }
-.inj-title  { font-size: var(--fs-sm); font-weight: var(--fw-semi); }
-.tag-pill {
-  font-size: 10px; padding: 2px 8px;
-  border-radius: var(--radius-pill); background: var(--surface2); color: var(--muted);
+  width: 100%;
+  background: var(--surface);
   border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 6px;
+  font-size: 13px;
+  font-family: inherit;
+  text-align: center;
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s;
 }
-.radial-ring .ring-val { font-size: var(--fs-xs); }
-
-/* ── 24. TIMELINE DASHBOARD ─────────────────────────────────── */
-.timeline-phases { display: flex; width: 100%; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 6px; }
-.timeline-markers { font-size: 9px; color: var(--faint); display: flex; justify-content: space-between; }
-.phase-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.milestone-badge {
-  font-size: var(--fs-xs); padding: 2px 8px;
-  border-radius: var(--radius-pill); font-weight: var(--fw-med);
+.log-input:focus { border-color: var(--blue); }
+.log-select {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
 }
-.t-week-title { font-size: var(--fs-md); font-weight: var(--fw-semi); }
-
-/* ── 25. PHASE BADGES ───────────────────────────────────────── */
-.p1,  .p1b  { background: #eaf0f7; color: #3d6a9e; }
-.p2,  .p2b  { background: #f0ebe8; color: #7b5430; }
-.p3,  .p3b  { background: #e7f0e8; color: #2e6338; }
-.p4, .p4b   { background: #f5ede5; color: #8a4e1a; }
-
-/* Workout badges */
-.badge-wo     { background: #e8f1fb; color: #0071e3; }
-.badge-rest   { background: #f5f5f7; color: #aeaeb2; }
-.badge-bkk    { background: #fff5e6; color: #a06000; }
-.badge-push   { background: rgba(255,59,48,.10);  color: #c62020; }
-.badge-pull   { background: rgba(52,199,89,.10);  color: #1a6e32; }
-.badge-legs   { background: rgba(255,149,0,.10);  color: #a05a00; }
-.badge-upper  { background: rgba(175,82,222,.10); color: #7a3ab0; }
-.badge-upper-dom { background: rgba(0,113,227,.10); color: #0058b8; }
-
-/* BKK banner */
-.bkk-banner {
-  background: linear-gradient(135deg, rgba(255,149,0,.12), rgba(0,113,227,.08));
-  border-radius: var(--radius-xs); padding: 8px 12px;
-  font-size: var(--fs-sm); color: var(--text2); margin-bottom: 8px;
+.sentinel-baseline {
+  font-size: 10px;
+  color: var(--faint);
+  margin-top: 1px;
+}
+.log-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 14px 0 6px;
 }
 
-/* ── 26. SAVE BAR ───────────────────────────────────────────── */
+/* Note box */
+.note-box {
+  background: var(--surface2);
+  border-radius: var(--radius-xs);
+  padding: 12px 14px;
+  margin-top: 8px;
+}
+.note-box label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.note-box textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: var(--text);
+  font-family: inherit;
+  resize: none;
+  line-height: 1.6;
+  height: 76px;
+}
+.note-box textarea::placeholder { color: var(--faint); }
+
+/* Rest banner */
+.rest-banner {
+  background: var(--surface2);
+  border-radius: var(--radius-xs);
+  padding: 14px 16px;
+  margin-top: 10px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* Phase badge colors */
+.p1b { background: #e8f1fb; color: #0071e3; }
+.p2b { background: #fff5e6; color: #c26000; }
+.p3b { background: #e8f8ed; color: #1a7a3a; }
+.p4b { background: #feeeec; color: #cc2200; }
+
+/* Workout type badges */
+.badge-push  { background: #feeeec; color: #cc2200; }
+.badge-pull  { background: #e8f8ed; color: #1a7a3a; }
+.badge-legs  { background: #fff5e6; color: #c26000; }
+.badge-upper     { background: #f5eeff; color: #8522c0; }
+.badge-upper-dom { background: #e8f1fb; color: #0058b0; }
+.badge-rest  { background: #f5f5f7; color: #aeaeb2; }
+.badge-bkk   { background: #e8f1fb; color: #0071e3; }
+
+/* Save bar */
 .save-bar {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(12px);
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border);
-  padding: 10px 20px;
-  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  z-index: 100;
 }
-.save-hint  { font-size: var(--fs-xs); color: var(--muted); }
+.save-hint { font-size: 12px; color: var(--muted); }
 .save-btn-main {
-  font-size: var(--fs-body); font-weight: var(--fw-semi);
-  padding: 8px 20px; border-radius: var(--radius-pill);
-  background: var(--blue); color: #fff; border: none; cursor: pointer;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 980px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: -0.01em;
+  transition: background .15s, transform .1s;
 }
 .save-btn-main:hover { background: var(--blue-hover); }
+.save-btn-main:active { transform: scale(0.97); }
+.save-btn-main:disabled { opacity: .5; cursor: not-allowed; }
 
-/* ── 27. MISC ───────────────────────────────────────────────── */
+/* Loading */
 .loading-overlay {
-  position: fixed; inset: 0; z-index: 9999;
-  background: var(--surface); display: flex;
-  flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  position: fixed; inset: 0;
+  background: rgba(255,255,255,0.9);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  z-index: 300; gap: 12px;
 }
-.loading-overlay p { font-size: var(--fs-body); color: var(--muted); }
-.spinner { width: 28px; height: 28px; border: 3px solid var(--border2); border-top-color: var(--blue); border-radius: 50%; animation: spin .7s linear infinite; }
+.loading-overlay p { font-size: 14px; color: var(--muted); }
+.spinner {
+  width: 28px; height: 28px;
+  border: 2.5px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Vita field */
-.vita-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.vita-field { margin-top: 8px; }
 
-/* Sync indicator (barra top) */
-.sync-indicator {
-  font-size: var(--fs-sm); display: flex; align-items: center; gap: 5px;
-}
-
-/* Injection grid legacy */
-.inj-fields select, .inj-grid select {
-  font-size: var(--fs-sm); border: 1px solid var(--border);
-  border-radius: var(--radius-xs); background: var(--surface2); padding: 4px 6px;
-}
-
-/* Photo note */
-.photo-note { display: flex; align-items: center; gap: 8px; }
-.photo-note-icon { font-size: 20px; }
-.photo-note input {
-  flex: 1; font-size: var(--fs-body); border: 1px solid var(--border);
-  border-radius: var(--radius-xs); background: var(--surface2); padding: 6px 8px; outline: none;
-}
-
-/* ── 28. RESPONSIVE ─────────────────────────────────────────── */
+/* Mobile */
 @media (max-width: 600px) {
-  :root { --tab-pad-h: 12px; --tab-pad-v: 14px; }
-  .kpi-grid { grid-template-columns: repeat(2,1fr); }
-  .compliance-grid { grid-template-columns: repeat(3,1fr); }
-  .cycle-card { gap: 12px; padding: 14px 14px; }
-  .cycle-info h3 { font-size: var(--fs-body); }
-  .day-card.open .day-body.day-body-desktop { display: block; }
-  .h-left h1 { font-size: var(--fs-body); }
-  .h-subtitle { display: none; }
-  .warmup-toggle-sub { display: none; }
-  .kpi-s-val { font-size: var(--fs-body); }
-  .week-hdr h2 { font-size: var(--fs-md); }
+  .bio-grid { grid-template-columns: repeat(3,1fr); }
+  .inj-row { grid-template-columns: 1fr 1fr; }
+  .wo-row { grid-template-columns: 1fr 1fr; }
+  .day-quick { display: none; }
+  .header { padding: 0 16px; }
+  .container { padding: 20px 12px 110px; }
+  .nav-strip { padding: 0 16px; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .cycle-card { flex-direction: column; text-align: center; }
+  .field-row.tri { grid-template-columns: 1fr 1fr; }
 }
 
-@media (min-width: 768px) {
-  .dash-two-col { grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
-  .day-card.open .day-body.day-body-desktop { display: grid; }
+/* Motra import */
+.motra-box {
+  background: var(--surface2);
+  border-radius: var(--radius-xs);
+  padding: 14px;
+  margin-top: 8px;
+}
+.motra-box label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.motra-textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+  resize: none;
+  height: 100px;
+  line-height: 1.5;
+  outline: none;
+  transition: border-color .15s;
+}
+.motra-textarea:focus { border-color: var(--blue); }
+.motra-textarea::placeholder { color: var(--faint); }
+.motra-import-btn {
+  margin-top: 8px;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 980px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s;
+}
+.motra-import-btn:hover { background: var(--blue-hover); }
+.motra-result {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  display: none;
+}
+.motra-result.ok { color: var(--green); display: block; }
+.motra-result.err { color: var(--red); display: block; }
+.motra-parsed {
+  margin-top: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  display: none;
+}
+.motra-parsed.show { display: block; }
+.motra-ex-row {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.motra-ex-row:last-child { border-bottom: none; padding-bottom: 0; }
+.motra-ex-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.motra-ex-sets {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.motra-meta {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.motra-meta-item { text-align: center; }
+.motra-meta-val { font-size: 17px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+.motra-meta-lbl { font-size: 10px; color: var(--muted); margin-top: 1px; }
+
+
+/* Lab / DEXA sections */
+.milestone-card{background:var(--surface);border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)}
+.milestone-head{display:flex;align-items:center;padding:14px 18px;cursor:pointer;gap:12px;user-select:none}
+.milestone-badge{font-size:11px;font-weight:500;padding:4px 10px;border-radius:980px;white-space:nowrap}
+.milestone-body{display:none;padding:0 18px 18px;border-top:1px solid var(--border)}
+.milestone-card.open .milestone-body{display:block}
+.milestone-card.open .day-chev{transform:rotate(180deg)}
+
+.lab-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.lab-box{background:var(--surface2);border-radius:var(--radius-xs);padding:10px 10px 8px}
+.lab-box label{display:block;font-size:9px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:5px}
+.lab-box input{width:100%;background:transparent;border:none;outline:none;font-size:15px;font-weight:500;color:var(--text);font-family:inherit}
+.lab-box input::placeholder{color:var(--faint);font-size:13px}
+.lab-ref{font-size:9px;color:var(--faint);margin-top:2px}
+.lab-delta{font-size:10px;font-weight:500;margin-top:2px}
+.lab-delta.up{color:#34c759}.lab-delta.down{color:#ff3b30}.lab-delta.neutral{color:var(--muted)}
+
+.dexa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.dexa-compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+.dexa-col h4{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px}
+
+.check-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px}
+.check-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--radius-xs);padding:8px 12px;cursor:pointer;transition:background .12s}
+.check-item:hover{background:var(--surface3,#e8e8ed)}
+.check-item input[type=checkbox]{appearance:none;-webkit-appearance:none;width:17px;height:17px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;flex-shrink:0;position:relative;transition:background .12s,border-color .12s}
+.check-item input[type=checkbox]:checked{background:var(--blue);border-color:var(--blue)}
+.check-item input[type=checkbox]:checked::after{content:'';position:absolute;left:4px;top:1.5px;width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(42deg)}
+.check-item label{font-size:13px;color:var(--text);cursor:pointer;user-select:none}
+
+.week-summary-card{background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.week-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+.ws-item{text-align:center}
+.ws-val{font-size:var(--fs-lg);font-weight:var(--fw-semi);color:var(--text);letter-spacing:-0.03em;line-height:1}
+.ws-lbl{font-size:10px;color:var(--muted);margin-top:3px}
+.ws-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+.photo-note{background:var(--surface2);border-radius:var(--radius-xs);padding:10px 12px;margin-top:8px;display:flex;align-items:center;gap:10px}
+.photo-note-icon{font-size:20px;flex-shrink:0}
+.photo-note input{flex:1;background:transparent;border:none;outline:none;font-size:13px;color:var(--text);font-family:inherit}
+.photo-note input::placeholder{color:var(--faint)}
+
+.tag-pill{display:inline-block;font-size:10px;font-weight:500;padding:2px 8px;border-radius:980px;background:var(--blue-light);color:var(--blue);margin-right:4px}
+
+@media(max-width:600px){
+  .lab-grid{grid-template-columns:repeat(2,1fr)}
+  .dexa-grid{grid-template-columns:repeat(2,1fr)}
+  .week-summary-grid{grid-template-columns:repeat(2,1fr)}
+  .check-grid{grid-template-columns:1fr}
 }
 
+
+/* Extra sections */
+.milestone-card{background:var(--surface);border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)}
+.milestone-head{display:flex;align-items:center;padding:14px 18px;cursor:pointer;gap:12px;user-select:none}
+.milestone-badge{font-size:11px;font-weight:500;padding:4px 10px;border-radius:980px;white-space:nowrap}
+.milestone-body{display:none;padding:0 18px 18px;border-top:1px solid var(--border)}
+.milestone-card.open .milestone-body{display:block}
+.milestone-card.open .ms-chev{transform:rotate(180deg)}
+.ms-chev{color:var(--faint);font-size:11px;transition:transform .2s;flex-shrink:0}
+.lab-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.lab-box{background:var(--surface2);border-radius:var(--radius-xs);padding:10px 10px 8px}
+.lab-box label{display:block;font-size:9px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:5px}
+.lab-box input{width:100%;background:transparent;border:none;outline:none;font-size:15px;font-weight:500;color:var(--text);font-family:inherit}
+.lab-box input::placeholder{color:var(--faint);font-size:13px}
+.lab-ref{font-size:9px;color:var(--faint);margin-top:2px}
+.dexa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.check-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.check-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--radius-xs);padding:8px 12px;cursor:pointer;transition:background .12s}
+.check-item:hover{background:var(--surface3,#e8e8ed)}
+.check-item input[type=checkbox]{appearance:none;-webkit-appearance:none;width:17px;height:17px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;flex-shrink:0;position:relative;transition:background .12s,border-color .12s}
+.check-item input[type=checkbox]:checked{background:var(--blue);border-color:var(--blue)}
+.check-item input[type=checkbox]:checked::after{content:'';position:absolute;left:4px;top:1.5px;width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(42deg)}
+.check-item label{font-size:13px;color:var(--text);cursor:pointer;user-select:none}
+.photo-note{background:var(--surface2);border-radius:var(--radius-xs);padding:10px 12px;margin-top:6px;display:flex;align-items:center;gap:10px}
+.photo-note input{flex:1;background:transparent;border:none;outline:none;font-size:13px;color:var(--text);font-family:inherit}
+.photo-note input::placeholder{color:var(--faint)}
+.week-summary-card{background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
+.week-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:10px}
+.ws-val{font-size:var(--fs-lg);font-weight:var(--fw-semi);color:var(--text);letter-spacing:-0.03em;line-height:1}
+.ws-lbl{font-size:10px;color:var(--muted);margin-top:3px}
+.bkk-banner{background:#e8f1fb;border-radius:var(--radius-xs);padding:10px 14px;margin-bottom:10px;font-size:12px;color:#0071e3;font-weight:500}
+.tag-pill{display:inline-block;font-size:10px;font-weight:500;padding:2px 8px;border-radius:980px;margin-right:4px;margin-top:2px}
+@media(max-width:600px){
+  .lab-grid{grid-template-columns:repeat(2,1fr)}
+  .dexa-grid{grid-template-columns:repeat(2,1fr)}
+  .week-summary-grid{grid-template-columns:repeat(2,1fr)}
+  .check-grid{grid-template-columns:repeat(2,1fr)}
+}
+
+
+/* Dashboard */
+.dash-view{display:none;width:100%;padding:0}
+.dash-view.active{display:block}
+.dash-inner{padding:24px 20px 120px;margin:0 auto}
+.app-view-inner{width:100%;box-sizing:border-box;padding:24px 20px 120px;margin:0 auto}
+.dash-two-col{display:grid;grid-template-columns:1fr;gap:0}
+@media(min-width:1024px){
+  .dash-two-col{grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+}
+.med-view{display:none;overflow-y:auto;width:100%;padding:0}
+.med-view.visible{display:block}
+.med-panel{background:var(--surface1,#f5f5f7);border-radius:14px;padding:18px;margin-bottom:18px}
+.med-panel-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:6px}
+.med-panel-title{font-size:15px;font-weight:600}
+.med-panel-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.med-cat{margin-bottom:14px}
+.med-cat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+.med-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:5px}
+.med-item{border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.med-item-name{font-size:12px;font-weight:500;line-height:1.4}
+.med-item-note{font-size:11px;color:var(--muted)}
+.med-item-val{font-size:13px;font-weight:600;text-align:right;flex-shrink:0;line-height:1.4}
+.med-item-ref{font-size:10px;color:var(--muted);font-weight:400}
+.diary-view{display:block;width:100%;padding:0}
+.diary-view.hidden{display:none}
+.dash-view{padding-top:0}
+
+.dash-section{margin-bottom:28px}
+.dash-section-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.dash-card{background:var(--surface);border-radius:var(--radius-sm);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:10px}
+.dash-card-title{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:14px}
+
+/* KPI row */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.kpi-box{background:var(--surface);border-radius:var(--radius-sm);padding:14px 16px;box-shadow:var(--shadow);text-align:center;position:relative;overflow:hidden}
+.kpi-icon{font-size:22px;margin-bottom:6px;display:block;line-height:1}
+.kpi-val{font-size:20px;font-weight:600;letter-spacing:-0.03em;color:var(--text);line-height:1;word-break:break-all}
+.kpi-lbl{font-size:10px;color:var(--muted);margin-top:4px}
+.kpi-delta{font-size:11px;font-weight:500;margin-top:3px}
+.kpi-delta.up{color:#34c759}.kpi-delta.down{color:#ff3b30}.kpi-delta.neutral{color:var(--muted)}
+.kpi-spark{margin-top:8px;height:28px;width:100%}
+
+/* Charts */
+.chart-wrap{position:relative;width:100%;margin-bottom:8px}
+.chart-axis-label{font-size:9px;color:var(--faint);margin-bottom:4px;display:flex;justify-content:space-between}
+canvas.dash-chart{width:100%;display:block;border-radius:6px}
+
+/* Compliance rings */
+.compliance-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.comp-item{text-align:center;padding:12px 8px;background:var(--surface2);border-radius:var(--radius-xs);overflow:hidden}
+.comp-ring{position:relative;width:56px;height:56px;margin:0 auto 6px;flex-shrink:0}
+.comp-ring canvas{width:56px!important;height:56px!important;display:block}
+.comp-ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.comp-ring-pct{font-size:13px;font-weight:600;letter-spacing:-0.02em;line-height:1}
+.comp-ring-lbl{font-size:8px;color:var(--muted);margin-top:1px}
+.comp-title{font-size:11px;font-weight:500;color:var(--text);line-height:1.2}
+.comp-sub{font-size:9px;color:var(--muted);margin-top:2px}
+
+/* Timeline ciclo */
+.timeline-wrap{position:relative;padding:8px 0}
+.timeline-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:8px}
+.timeline-fill{height:8px;border-radius:4px;background:var(--blue);transition:width .4s ease}
+.timeline-phases{display:flex;gap:2px;margin-bottom:6px}
+.timeline-phase{height:4px;border-radius:2px;flex:1}
+.timeline-markers{display:flex;justify-content:space-between;font-size:9px;color:var(--muted)}
+.phase-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.phase-dot{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.phase-dot-circle{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* Subjective chart */
+.subj-legend{display:flex;gap:16px;margin-bottom:8px}
+.subj-leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.subj-leg-dot{width:8px;height:3px;border-radius:1.5px}
+
+/* Nav tabs for dashboard */
+.main-nav{background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 8px;display:flex;flex-wrap:wrap;gap:0}
+.main-nav-tab{padding:8px 12px;font-size:12px;font-weight:400;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s;white-space:nowrap;flex-shrink:0}
+.main-nav-tab:hover{color:var(--text)}
+.main-nav-tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+
+@media(max-width:600px){
+  .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .compliance-grid{grid-template-columns:repeat(3,1fr)}
+  .cycle-card{gap:12px;padding:16px}
+  .cycle-info h3{font-size:14px}
+  .cycle-info p{font-size:11px}
+  .cycle-next{font-size:11px}
+
+  .header{height:auto;min-height:48px;padding:0 14px}
+  .h-subtitle{display:none}
+  .h-left h1{font-size:15px}
+  .h-btn{padding:4px 8px;font-size:13px}
+  .h-btn.primary{padding:6px 12px;font-size:13px}
+  .sync-indicator span{display:none}
+  .h-right{gap:6px}
+}
+
+/* ═══════════════════════════════════════════════
+   DESKTOP LAYOUT — @media min-width: 1024px
+   ═══════════════════════════════════════════════ */
 @media (min-width: 1024px) {
-  :root { --tab-pad-h: 40px; }
+
+  /* ── Wrapper globale centrato ── */
+  .container         { padding: 28px 40px 120px; }
+  .view-wrap         { padding: 28px 40px 120px; }
+  .app-view-inner    { padding: 28px 40px 120px; }
+  .dash-inner        { padding: 28px 40px 120px; }
+
+  /* ── Header e nav più ampi ── */
+  .header            { padding: 0 40px; }
+  .main-nav          { padding: 0 40px; }
+  .nav-strip         { padding: 0 40px; }
+  .save-bar          { padding: 12px 40px; }
+
+  /* ── Day card aperto: layout 3 zone ── */
+  .day-card.open .day-body.day-body-desktop {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 0;
+    padding: 0;
+  }
+  .day-body-desktop .col-left  {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 16px 20px 20px;
+    border-right: 1px solid var(--border);
+  }
+  .day-body-desktop .col-right {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 16px 20px 20px;
+  }
+  /* Iniezioni e note: full width su entrambe le colonne */
+  .day-body-desktop .col-full {
+    grid-column: 1 / -1;
+    padding: 16px 20px 20px;
+    border-top: 1px solid var(--border);
+  }
+  /* Iniezioni su desktop: 4 campi in una riga spaziosa */
+  .inj-fields {
+    grid-template-columns: 100px 1fr 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* ── Bio grid su desktop: 3+3 ── */
+  .bio-grid          { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+  /* ── Ciclo card + grafici affiancati ── */
+  .cycle-charts-row  { display: flex; gap: 20px; align-items: stretch; margin-bottom: 20px; }
+  .cycle-charts-row .cycle-card  { flex: 0 0 400px; margin-bottom: 0; }
+  .cycle-charts-row .charts-card { flex: 1; margin-bottom: 0; min-height: 0; }
+  .cycle-info h3     { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 18px; }
+
+  /* ── Dashboard ── */
+  .dash-two-col      { grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+  .kpi-grid          { grid-template-columns: repeat(4, 1fr); }
+  .compliance-grid   { grid-template-columns: repeat(3, 1fr); }
+
+  /* ── Medico ── */
+  .med-items         { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
 }
 
 @media (min-width: 1280px) {
-  :root { --tab-pad-h: 60px; }
+  .container         { max-width: 1400px; margin: 0 auto; padding: 28px 60px 120px; }
+  .view-wrap         { max-width: 1400px; margin: 0 auto; padding: 28px 60px 120px; }
+  .app-view-inner    { max-width: 1400px; margin: 0 auto; padding: 28px 60px 120px; }
+  .dash-inner        { max-width: 1400px; margin: 0 auto; padding: 28px 60px 120px; }
+  .save-bar          { padding: 12px 60px; }
+  .header            { padding: 0 60px; }
+  .main-nav          { padding: 0 60px; }
+  .nav-strip         { padding: 0 60px; }
+  .day-card.open .day-body.day-body-desktop { grid-template-columns: 440px 1fr; }
 }
 
+
+/* ── Aggiunte redesign v2 ── */
+
+/* KPI strip */
+.kpi-strip { display:flex; align-items:center; background:rgba(255,255,255,.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); padding:6px 20px; overflow-x:auto; scrollbar-width:none; gap:0; }
+.kpi-strip::-webkit-scrollbar { display:none; }
+.kpi-s-item { display:flex; align-items:baseline; gap:4px; padding:3px 10px; flex-shrink:0; }
+.kpi-s-val  { font-size:16px; font-weight:600; letter-spacing:-.02em; color:var(--text); line-height:1; }
+.kpi-s-lbl  { font-size:10px; color:var(--muted); }
+.kpi-s-sep  { width:1px; height:18px; background:var(--border2); flex-shrink:0; }
+
+/* Warm-up toggle */
+.warmup-toggle { display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 16px; cursor:pointer; user-select:none; transition:background .12s; margin-bottom:0; }
+.warmup-toggle:hover { background:var(--surface2); }
+.warmup-toggle.open .warmup-chev { transform:rotate(90deg); }
+.warmup-toggle-title { font-size:13px; font-weight:600; color:var(--text); flex-shrink:0; }
+.warmup-toggle-sub   { font-size:12px; color:var(--muted); flex:1; }
+.warmup-chev         { font-size:12px; color:var(--faint); flex-shrink:0; transition:transform .2s; }
+.warmup-body         { overflow:hidden; }
+
+/* Proto v2 header */
+.proto2-hdr { background:var(--surface); border-radius:var(--radius-sm); border:1px solid var(--border); box-shadow:var(--shadow); padding:14px 16px; margin-bottom:12px; }
+.proto2-hdr-title { font-size:14px; font-weight:600; color:var(--text); }
+.proto2-hdr-sub   { font-size:12px; color:var(--muted); margin-top:2px; }
+.proto2-hdr-wrap  { padding-top:8px; }
+.proto2-slot-row  { display:flex; align-items:flex-start; gap:8px; padding:5px 8px; background:var(--surface2); border-radius:var(--radius-xs); margin-bottom:3px; }
+.proto2-slot-info { display:flex; flex-direction:column; flex:1; }
+.proto2-slot-drugs { font-size:11px; color:var(--text2); }
+
+/* Injection chips */
+.inj-slot-hdr    { display:flex; align-items:center; gap:7px; margin:10px 0 5px; }
+.inj-slot-icon   { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0; }
+.inj-slot-icon.mattino    { background:rgba(91,132,177,.15); color:#5b84b1; }
+.inj-slot-icon.pomeriggio { background:rgba(184,115,51,.15);  color:#b87333; }
+.inj-slot-icon.postWO     { background:rgba(123,94,167,.15);  color:#7b5ea7; }
+.inj-slot-icon.sera       { background:rgba(74,124,89,.15);   color:#4a7c59; }
+.inj-slot-label  { font-size:10px; font-weight:600; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; }
+.inj-slot-timing { font-size:10px; color:var(--faint); margin-left:auto; }
+.inj-chips { display:flex; flex-wrap:wrap; gap:5px; }
+.inj-chip {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:4px 9px; border-radius:var(--radius-xs);
+  border:1px solid var(--border); background:var(--surface2);
+  font-size:11px; font-weight:500; color:var(--text2);
+  cursor:pointer; user-select:none;
+  transition:background .12s, border-color .12s;
+  white-space:nowrap;
+}
+.inj-chip:hover { background:var(--surface3,#e8e8ed); }
+.inj-chip[data-stato="fatto"] { background:rgba(52,199,89,.10); border-color:rgba(52,199,89,.30); color:#1a6e32; }
+.inj-chip[data-stato="skip"]  { color:var(--faint); text-decoration:line-through; }
+.inj-chip-icon  { font-size:12px; }
+.inj-chip-stato { font-size:9px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+.inj-chip[data-stato="fatto"] .inj-chip-stato { color:#1a6e32; }
+
+/* Phase badges v2 */
+.p1 { background:#eaf0f7; color:#3d6a9e; }
+.p2 { background:#f0ebe8; color:#7b5430; }
+.p3 { background:#e7f0e8; color:#2e6338; }
+
+@media (max-width:600px) {
+  .kpi-strip { padding:5px 12px; }
+  .warmup-toggle-sub { display:none; }
+  .kpi-s-val { font-size:14px; }
+}
 </style>
-<!-- deploy 1781536995 -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<!-- deploy 1781175570 -->
 </head>
 <body>
 
@@ -805,7 +1195,7 @@ canvas.dash-chart { width: 100%; display: block; border-radius: var(--radius-xs)
 <div class="header">
   <div class="h-left">
     <h1>Diario Protocollo</h1>
-    <p class="h-subtitle">29 GIU – 18 SET 2026 · Ciclo 1 · Protocollo v2</p>
+    <p class="h-subtitle">8 GIU – 25 SET 2026 · 16 settimane · 112 giorni</p>
   </div>
   <div class="h-right">
     <div class="sync-indicator">
@@ -826,12 +1216,13 @@ canvas.dash-chart { width: 100%; display: block; border-radius: var(--radius-xs)
   <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')">📦 Stock</div>
 </div>
 <div class="nav-strip" id="nav-strip"></div>
-<!-- KPI Strip — always visible in diary view -->
+
+<!-- KPI Strip -->
 <div id="kpi-strip-wrap" style="display:none">
   <div class="kpi-strip" id="kpi-strip">
     <div class="kpi-s-item"><span class="kpi-s-val" id="ks-peso">—</span><span class="kpi-s-lbl">kg</span></div>
     <div class="kpi-s-sep"></div>
-    <div class="kpi-s-item"><span class="kpi-s-val" id="ks-hrv">—</span><span class="kpi-s-lbl">HRV</span></div>
+    <div class="kpi-s-item"><span class="kpi-s-val" id="ks-hrv">—</span><span class="kpi-s-lbl">HRV ms</span></div>
     <div class="kpi-s-sep"></div>
     <div class="kpi-s-item"><span class="kpi-s-val" id="ks-rhr">—</span><span class="kpi-s-lbl">RHR</span></div>
     <div class="kpi-s-sep"></div>
@@ -840,25 +1231,30 @@ canvas.dash-chart { width: 100%; display: block; border-radius: var(--radius-xs)
     <div class="kpi-s-item"><span class="kpi-s-val" id="ks-fase">—</span><span class="kpi-s-lbl">fase</span></div>
   </div>
 </div>
+
+<!-- Diary view: warm-up + proto v2 unificati -->
 <div class="diary-view" id="diary-view">
-  <!-- Warm-up 8-28 giu: collassabile -->
-  <div id="warmup-section" class="warmup-section" style="display:none">
-    <div class="warmup-toggle" id="warmup-toggle" onclick="toggleWarmup()">
-      <span class="warmup-toggle-title">Pre-Protocollo · 8 – 28 giu 2026</span>
-      <span class="warmup-toggle-sub">Biometria baseline, allenamenti, note</span>
-      <span class="warmup-chev" id="warmup-chev">›</span>
-    </div>
-    <div id="warmup-body" class="warmup-body">
-      <div id="container" class="container"></div>
+  <!-- Pre-protocollo collassabile -->
+  <div id="warmup-section" style="display:none">
+    <div class="container">
+      <div class="warmup-toggle" id="warmup-toggle" onclick="toggleWarmup()">
+        <span class="warmup-toggle-title">Pre-Protocollo · 8–28 giu 2026</span>
+        <span class="warmup-toggle-sub">Biometria baseline, allenamenti, note</span>
+        <span class="warmup-chev" id="warmup-chev">›</span>
+      </div>
+      <div id="warmup-body" class="warmup-body">
+        <div id="container"></div>
+      </div>
     </div>
   </div>
-  <!-- Protocollo v2: dal 29 giu -->
+  <!-- Proto v2 dal 29 giu -->
   <div id="container2"></div>
 </div>
-<div class="dash-view" id="dash-view"><div class="dash-inner" id="dash-inner"></div></div>
+
+<div class="dash-view" id="dash-view"></div>
 <div class="med-view" id="med-view"></div>
 <div class="med-view" id="meddash-view" style="display:none"></div>
-<div class="stock-view" id="stock-view"></div>
+<div class="med-view" id="stock-view"></div>
 
 <div class="save-bar">
   <span class="save-hint" id="last-saved">Mai salvato</span>
@@ -965,8 +1361,11 @@ const SESSION_EXERCISES = {
 };
 
 function getPhase(dayIdx) {
-  // Funzione v1 — usata solo per il periodo baseline 8-28 giu
-  return {label:'Pre-protocollo · baseline', badge:'p1b', wk: Math.floor(dayIdx/7)+1};
+  const wk = Math.floor(dayIdx/7)+1;
+  if (wk<=4)  return {label:'Tesamorelin 1mg',                  badge:'p1b', wk};
+  if (wk<=6)  return {label:'Tesa 2mg · GHK-Cu 1mg',           badge:'p2b', wk};
+  if (wk<=12) return {label:'Tesa 2mg · GHK-Cu · MOTS-C',     badge:'p3b', wk};
+  return             {label:'Tesa · GHK-Cu · MOTS-C · BPC-157', badge:'p4b', wk};
 }
 
 function getWeekRange(wkIdx) {
@@ -1094,10 +1493,12 @@ function getWorkout(i){
 }
 
 function getNextEvent(elapsed){
-  // Funzione v1 — protocollo baseline 8-28 giu
   const wk=Math.floor(elapsed/7)+1;
-  if(wk<3){ return `Inizio protocollo v2 tra ${(21-elapsed)} giorni (29 giu)`; }
-  return 'Avvio Protocollo v2 · 29 giu 2026';
+  if(wk<5){ const d=(4-wk)*7; return `Tesa 2mg + GHK-Cu tra ${d} giorni (settimana 5)`; }
+  if(wk<7){ const d=(6-wk)*7; return `MOTS-C + GHK-Cu tra ${d} giorni (settimana 7)`; }
+  if(wk<9){ const d=(61-elapsed); return d>0?`Bangkok tra ${d} giorni (8 ago)`:'Bangkok · oggi!'; }
+  if(wk<13){ const d=(12-wk)*7; return `BPC-157 tra ${d} giorni (settimana 13)`; }
+  return 'Mini-panel sangue · DEXA T1 fine ciclo';
 }
 
 function buildNav(){
@@ -1431,7 +1832,7 @@ function buildDays(){
         <div class="col-full">
         <div class="note-box">
           <label>Note del giorno</label>
-          <textarea placeholder="Sensazioni soggettive, qualità del sonno, umore, energia, osservazioni fisiche..." data-id="${id}" data-f="note"></textarea>
+          <textarea placeholder="Sensazioni peptide, qualità del sonno, umore, effetti inattesi, osservazioni fisiche..." data-id="${id}" data-f="note"></textarea>
         </div>
 
         <div class="section-label" style="margin-top:14px">Soggettivo</div>
@@ -1609,27 +2010,6 @@ function applyAll(data){
   });
   updateProgress();
   _lastData = data;
-  // Restore chip states from hidden inputs
-  setTimeout(() => {
-    document.querySelectorAll('.inj-chip[data-id][data-f]').forEach(chip => {
-      const dataId = chip.dataset.id;
-      const dataF  = chip.dataset.f;
-      const hidden = document.querySelector(`input[type="hidden"][data-id="${dataId}"][data-f="${dataF}"]`);
-      if (hidden && hidden.value) {
-        chip.dataset.stato = hidden.value;
-        const iconEl  = chip.querySelector('.inj-chip-icon');
-        const statoEl = chip.querySelector('.inj-chip-stato');
-        if (hidden.value === 'fatto') {
-          if (iconEl)  iconEl.textContent  = '✓';
-          if (statoEl) statoEl.textContent = 'fatto';
-        } else if (hidden.value === 'skip') {
-          if (iconEl)  iconEl.textContent  = '·';
-          if (statoEl) statoEl.textContent = 'skip';
-        }
-      }
-    });
-    updateKpiStrip();
-  }, 100);
   setTimeout(refreshWeekSummary, 0);
   setTimeout(() => { if (typeof refreshCharts === 'function') refreshCharts(); }, 50);
 }
@@ -1638,137 +2018,64 @@ let _saving=false;
 let _lastData={};  // cache ultima applyAll per riepilogo
 
 async function saveData(){
-  if(_saving) return; // prevent concurrent saves
-  _saving=true;
+  if(_saving) return; _saving=true;
   const btn=document.getElementById('save-btn');
   btn.disabled=true; btn.textContent='Salvataggio...';
   setSyncStatus('—');
-  const allData = collectAll();
-  const ts = Date.now();
-
-  // Separa dati v1 (day_N, bkk_) da dati v2 (p2_day_N)
-  const data = {}, data2 = {};
-  Object.entries(allData).forEach(([id, fields]) => {
-    if (id.startsWith('p2_day_')) data2[id] = fields;
-    else data[id] = fields;
+  const allData=collectAll();
+  const ts=Date.now(); const isoTs=new Date(ts).toISOString(); const now=new Date();
+  const data={}, data2={};
+  Object.entries(allData).forEach(([id,fields])=>{
+    if(id.startsWith('p2_day_')) data2[id]=fields; else data[id]=fields;
   });
-
   try{localStorage.setItem(KEY,JSON.stringify({data,ts}));}catch(e){}
   try{localStorage.setItem(KEY2,JSON.stringify(data2));_lastData2=data2;}catch(e){}
   try{
-    const now=new Date();
-    const isoTs=new Date(ts).toISOString();
-    // Try PATCH first (update existing record)
     let res=await fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID,{
-      method:'PATCH',
-      headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'},
+      method:'PATCH',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'},
       body:JSON.stringify({data,updated_at:isoTs})
     });
-    // If no record exists (0 rows updated), do POST to insert
     if(res.status===200){
       const patched=await res.json();
       if(!patched||patched.length===0){
-        res=await fetch(SB_URL+'/rest/v1/diary',{
-          method:'POST',
-          headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'},
-          body:JSON.stringify({user_id:USER_ID,data,updated_at:isoTs})
-        });
-        const inserted=await res.json();
-        if(inserted&&inserted[0]&&inserted[0].updated_at){
-          localStorage.setItem(KEY,JSON.stringify({data,ts:new Date(inserted[0].updated_at).getTime()}));
-        }
-      } else {
-        if(patched[0]&&patched[0].updated_at){
-          localStorage.setItem(KEY,JSON.stringify({data,ts:new Date(patched[0].updated_at).getTime()}));
-        }
+        await fetch(SB_URL+'/rest/v1/diary',{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'},body:JSON.stringify({user_id:USER_ID,data,updated_at:isoTs})});
       }
       document.getElementById('last-saved').textContent='Salvato '+now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
       setSyncStatus('ok');
-      // Salva dati v2 (p2_day_N) su USER_ID2 in background
-      if (Object.keys(data2).length > 0) {
-        fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID2, {
-          method:'PATCH',
-          headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'},
-          body:JSON.stringify({data:data2, updated_at:isoTs})
-        }).then(r2 => {
-          if (r2.status===200) return r2.json().then(p2 => {
-            if (!p2||p2.length===0) return fetch(SB_URL+'/rest/v1/diary', {
-              method:'POST',
-              headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY},
-              body:JSON.stringify({user_id:USER_ID2, data:data2, updated_at:isoTs})
-            });
-          });
-        }).catch(()=>{});
+      if(Object.keys(data2).length>0){
+        fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID2,{method:'PATCH',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'},body:JSON.stringify({data:data2,updated_at:isoTs})})
+          .then(r2=>r2.status===200?r2.json().then(p=>{if(!p||p.length===0)fetch(SB_URL+'/rest/v1/diary',{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY},body:JSON.stringify({user_id:USER_ID2,data:data2,updated_at:isoTs})});}):null)
+          .catch(()=>{});
       }
     } else {
-      document.getElementById('last-saved').textContent='Salvato localmente · cloud err '+res.status;
-      setSyncStatus('err');
+      document.getElementById('last-saved').textContent='Salvato localmente · cloud err '+res.status; setSyncStatus('err');
     }
   }catch(e){
-    document.getElementById('last-saved').textContent='Salvato localmente (offline)';
-    setSyncStatus('err');
+    document.getElementById('last-saved').textContent='Salvato localmente'; setSyncStatus('err');
   }
-  btn.disabled=false; btn.textContent='Salva dati';
-  _saving=false;
+  btn.disabled=false; btn.textContent='Salva dati'; _saving=false;
+  updateKpiStrip();
 }
 
 async function loadFromCloud(){
   setSyncStatus('—');
   document.getElementById('last-saved').textContent='Sincronizzazione...';
   try{
-    // Carica v1 (warm-up) e v2 (proto) in parallelo
-    const [res1, res2] = await Promise.all([
-      fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID+'&select=data,updated_at&limit=1',
-        {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}),
-      fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID2+'&select=data,updated_at&limit=1',
-        {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
+    const [r1,r2]=await Promise.all([
+      fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID+'&select=data,updated_at&limit=1',{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}),
+      fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID2+'&select=data,updated_at&limit=1',{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
     ]);
-
-    let lastTs = null;
-
-    // v1: warm-up data (day_N)
-    if(res1.ok){
-      const rows=await res1.json();
-      if(rows&&rows.length>0&&rows[0].data){
-        const cd=rows[0].data, ct=rows[0].updated_at;
-        lastTs = new Date(ct).getTime();
-        applyAll(cd);
-        localStorage.setItem(KEY,JSON.stringify({data:cd,ts:lastTs}));
-      }
-    }
-
-    // v2: proto data (p2_day_N) — applica al DOM via applyAll (gestisce qualsiasi data-id)
-    if(res2.ok){
-      const rows2=await res2.json();
-      if(rows2&&rows2.length>0&&rows2[0].data){
-        const cd2=rows2[0].data, ct2=rows2[0].updated_at;
-        const ts2=new Date(ct2).getTime();
-        _lastData2 = cd2;
-        localStorage.setItem(KEY2,JSON.stringify(cd2));
-        // Popola il DOM proto v2 (chip hidden inputs + input biometria)
-        applyAll(cd2);
-        applyProto2Data();
-        if (!lastTs || ts2 > lastTs) lastTs = ts2;
-      }
-    }
-
-    if (lastTs) {
-      document.getElementById('last-saved').textContent='Caricato dal cloud · '+new Date(lastTs).toLocaleString('it-IT');
-      setSyncStatus('ok');
-    } else {
-      document.getElementById('last-saved').textContent='Nessun dato nel cloud';
-      setSyncStatus('—');
-    }
-    setTimeout(refreshCharts, 200);
-
+    let ts=null;
+    if(r1.ok){const rows=await r1.json();if(rows&&rows[0]&&rows[0].data){const cd=rows[0].data,ct=rows[0].updated_at;ts=new Date(ct).getTime();applyAll(cd);localStorage.setItem(KEY,JSON.stringify({data:cd,ts}));}}
+    if(r2.ok){const rows=await r2.json();if(rows&&rows[0]&&rows[0].data){const cd=rows[0].data,ct=rows[0].updated_at;_lastData2=cd;localStorage.setItem(KEY2,JSON.stringify(cd));applyAll(cd);applyProto2Data();const ts2=new Date(ct).getTime();if(!ts||ts2>ts)ts=ts2;}}
+    if(ts){document.getElementById('last-saved').textContent='Caricato dal cloud · '+new Date(ts).toLocaleString('it-IT');setSyncStatus('ok');}
+    else{document.getElementById('last-saved').textContent='Nessun dato nel cloud';setSyncStatus('—');}
+    setTimeout(refreshCharts,200);
   }catch(e){
-    // Fallback localStorage
-    const lr=localStorage.getItem(KEY);
-    if(lr){try{const p=JSON.parse(lr);applyAll(p.data||p);}catch(e2){}}
-    const lr2=localStorage.getItem(KEY2);
-    if(lr2){try{_lastData2=JSON.parse(lr2);applyAll(_lastData2);applyProto2Data();}catch(e2){}}
-    document.getElementById('last-saved').textContent='Locale (offline)';
-    setSyncStatus('err');
+    const lr=localStorage.getItem(KEY);if(lr){try{const p=JSON.parse(lr);applyAll(p.data||p);}catch(e2){}}
+    const lr2=localStorage.getItem(KEY2);if(lr2){try{_lastData2=JSON.parse(lr2);applyAll(_lastData2);applyProto2Data();}catch(e2){}}
+    document.getElementById('last-saved').textContent='Offline — dati locali';setSyncStatus('err');
+    setTimeout(refreshCharts,200);
   }
   refreshWeekSummary();
 }
@@ -2096,55 +2403,40 @@ function refreshWeekSummary() {
 
 // ── DASHBOARD ──
 function switchView(view) {
-  const diary    = document.getElementById('diary-view');
-  const dash     = document.getElementById('dash-view');
-  const med      = document.getElementById('med-view');
-  const stockView= document.getElementById('stock-view');
-  const kpiWrap  = document.getElementById('kpi-strip-wrap');
-  const navStrip = document.getElementById('nav-strip');
-  const tabDiary = document.getElementById('main-tab-diary');
-  const tabDash  = document.getElementById('main-tab-dash');
-  const tabMed   = document.getElementById('main-tab-med');
-  const tabStock = document.getElementById('main-tab-stock');
-  // Reset all
-  diary.classList.add('hidden');
-  dash.classList.remove('active');
-  med.classList.remove('visible');
-  stockView.classList.remove('visible');
-  kpiWrap.style.display = 'none';
-  navStrip.style.display = 'none';
-  const meddashEl = document.getElementById('meddash-view');
-  if (meddashEl) meddashEl.classList.remove('visible');
-  tabDiary.classList.remove('on');
-  tabDash.classList.remove('on');
-  tabMed.classList.remove('on');
-  tabStock.classList.remove('on');
+  ['diary-view','dash-view','med-view','stock-view'].forEach(id => {
+    const el=document.getElementById(id); if(!el) return;
+    el.classList.remove('active','visible');
+    if(id==='diary-view') el.classList.add('hidden');
+  });
+  ['main-tab-diary','main-tab-dash','main-tab-med','main-tab-stock'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.classList.remove('on');
+  });
+  const navStrip=document.getElementById('nav-strip');
+  const kpiWrap=document.getElementById('kpi-strip-wrap');
+  if(navStrip) navStrip.style.display='none';
+  if(kpiWrap)  kpiWrap.style.display='none';
 
-  if (view === 'dash') {
-    dash.classList.add('active');
-    tabDash.classList.add('on');
+  if (view==='dash') {
+    document.getElementById('dash-view').classList.add('active');
+    document.getElementById('main-tab-dash').classList.add('on');
     buildDashboard();
-  } else if (view === 'med') {
-    med.classList.add('visible');
-    tabMed.classList.add('on');
+  } else if (view==='med') {
+    document.getElementById('med-view').classList.add('visible');
+    document.getElementById('main-tab-med').classList.add('on');
     buildMedView();
-    // Also render Lab section inside med-view (merged Referti tab)
-    // Lab section: buildMedDash scrive in #med-view direttamente
     buildMedDash();
-  } else if (view === 'stock') {
-    stockView.classList.add('visible');
-    tabStock.classList.add('on');
-    buildStockView2(); // Use v2 stock
+  } else if (view==='stock') {
+    document.getElementById('stock-view').classList.add('visible');
+    document.getElementById('main-tab-stock').classList.add('on');
+    buildStockView2();
   } else {
-    // diary (default)
-    diary.classList.remove('hidden');
-    navStrip.style.display = '';
-    kpiWrap.style.display = '';
-    tabDiary.classList.add('on');
+    document.getElementById('diary-view').classList.remove('hidden');
+    if(navStrip) navStrip.style.display='';
+    if(kpiWrap)  kpiWrap.style.display='';
+    document.getElementById('main-tab-diary').classList.add('on');
     updateKpiStrip();
   }
 }
-
 function buildMedView() {
   const med = document.getElementById('med-view');
   if (med.dataset.built) return;
@@ -2513,7 +2805,7 @@ function buildMedView() {
   const miniPanel = ['IGF-1','Glucosio / Insulina / HOMA','HDL','Omocisteina','Vitamina D','Testosterone libero / SHBG','CRP','Zinco','Folato / B12','Emoglobina / MCHC','eGFR / Creatinina'];
 
   // ── RENDER ────────────────────────────────────────────────────────────────
-  let html = `<div class="tab-content">
+  let html = `<div class="app-view-inner view-wrap">
 
   <!-- TIMELINE CLINICA VISIVA -->
   <div class="med-panel" style="margin-bottom:20px">
@@ -2676,130 +2968,71 @@ function buildMedView() {
 
 
 function getDayData(field, days) {
-  // Legge da _lastData (v1, day_N) e _lastData2 (v2, p2_day_N) — in-memory, non dal DOM
-  const today = new Date(); today.setHours(0,0,0,0);
-  const start1 = new Date(START);  start1.setHours(0,0,0,0);
-  const start2 = new Date(START2); start2.setHours(0,0,0,0);
-
-  const all = [];
-  for (let offset = days - 1; offset >= 0; offset--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - offset);
-    d.setHours(0,0,0,0);
-
-    let val = null;
-
-    if (d >= start2) {
-      const i2 = Math.floor((d - start2) / 86400000);
-      if (i2 >= 0 && i2 < TOTAL_DAYS2) {
-        const rec = (_lastData2 || {})['p2_day_' + i2];
-        if (rec && rec[field] !== undefined && rec[field] !== '') {
-          const v = parseFloat(rec[field]);
-          if (!isNaN(v)) val = v;
-        }
-        // Fallback DOM se _lastData2 non disponibile
-        if (val === null) {
-          const el = document.querySelector(`[data-id="p2_day_${i2}"][data-f="${field}"]`);
-          if (el && el.value) { const v = parseFloat(el.value); if (!isNaN(v)) val = v; }
-        }
-      }
-    } else if (d >= start1 && d < start2) {
-      const i1 = Math.floor((d - start1) / 86400000);
-      if (i1 >= 0 && i1 < TOTAL_DAYS) {
-        const rec = (_lastData || {})['day_' + i1];
-        if (rec && rec[field] !== undefined && rec[field] !== '') {
-          const v = parseFloat(rec[field]);
-          if (!isNaN(v)) val = v;
-        }
-        if (val === null) {
-          const el = document.querySelector(`[data-id="day_${i1}"][data-f="${field}"]`);
-          if (el && el.value) { const v = parseFloat(el.value); if (!isNaN(v)) val = v; }
-        }
-      }
+  const today=new Date(); today.setHours(0,0,0,0);
+  const start1=new Date('2026-06-08'); start1.setHours(0,0,0,0);
+  const start2=new Date(START2); start2.setHours(0,0,0,0);
+  const all=[];
+  for(let offset=days-1;offset>=0;offset--){
+    const d=new Date(today); d.setDate(d.getDate()-offset); d.setHours(0,0,0,0);
+    let val=null;
+    if(d>=start2){
+      const i2=Math.floor((d-start2)/86400000);
+      if(i2>=0&&i2<TOTAL_DAYS2){const rec=(_lastData2||{})['p2_day_'+i2];if(rec&&rec[field]!==undefined&&rec[field]!==''){const v=parseFloat(rec[field]);if(!isNaN(v))val=v;}}
+    } else if(d>=start1&&d<start2){
+      const i1=Math.floor((d-start1)/86400000);
+      if(i1>=0){const rec=(_lastData||{})['day_'+i1];if(rec&&rec[field]!==undefined&&rec[field]!==''){const v=parseFloat(rec[field]);if(!isNaN(v))val=v;}}
     }
-
-    all.push({ date: d, value: val });
+    all.push({date:d,value:val});
   }
-
-  // Taglia i null iniziali: parti dal primo giorno con dati
-  let firstData = 0;
-  for (let i = 0; i < all.length; i++) {
-    if (all[i].value !== null) { firstData = i; break; }
-  }
-  return all.slice(firstData);
+  let first=0;
+  for(let i=0;i<all.length;i++){if(all[i].value!==null){first=i;break;}}
+  return all.slice(first);
 }
-
 function getComplianceData() {
   const today = new Date(); today.setHours(0,0,0,0);
-  const start1 = new Date(START);  start1.setHours(0,0,0,0);
-  const start2 = new Date(START2); start2.setHours(0,0,0,0);
-  const inProto2 = today >= start2;
+  const start = new Date(START); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today - start) / 86400000);
 
   let injPrev = 0, injDone = 0;
   let woPrev = 0, woDone = 0;
   let stackDays = 0, stackDone = 0;
-  const woCounts = {}, woDones = {};
 
-  if (inProto2) {
-    // ── Proto v2 (dal 29 giu) ──
-    const elapsed2 = Math.floor((today - start2) / 86400000);
-    for (let i = 0; i <= elapsed2 && i < TOTAL_DAYS2; i++) {
-      const id = 'p2_day_' + i;
-      const wo2 = getWorkout2(i);
-
-      // Iniezioni: conta chip con stato fatto/skip
-      // Ogni giorno ha 4 slot: mattino(3inj) + pomeriggio(1inj) + postWO(1inj se WO) + sera(4inj)
-      const slots2 = getInjectionSlots2(i);
-      slots2.forEach(slot => {
-        slot.fields.forEach(f => {
-          injPrev++;
-          const fKey = `inj_${slot.n}_${f.replace(/[\s\-]/g,'_')}`;
-          const hidden = document.querySelector(`input[type="hidden"][data-id="${id}"][data-f="${fKey}"]`);
-          const stato = hidden ? hidden.value : ((_lastData2[id]||{})[fKey]||'');
-          if (stato === 'fatto') injDone++;
-        });
-      });
-
-      // Workout
-      if (wo2.type !== 'Riposo') {
-        woPrev++;
-        woCounts[wo2.type] = (woCounts[wo2.type]||0) + 1;
-        // Considera fatto se c'è testo Motra
-        const motraEl = document.querySelector(`[data-id="${id}"][data-f="motra_raw"]`);
-        const motraVal = motraEl ? motraEl.value : ((_lastData2[id]||{})['motra_raw']||'');
-        if (motraVal.trim().length > 10) {
-          woDone++;
-          woDones[wo2.type] = (woDones[wo2.type]||0) + 1;
-        }
+  for (let i = 0; i <= elapsed && i < TOTAL_DAYS; i++) {
+    const id = 'day_' + i;
+    // Injections
+    ['inj1','inj2','inj3','inj4'].forEach(k => {
+      const p = document.querySelector(`[data-id="${id}"][data-f="${k}_peptide"]`)?.value;
+      if (p) {
+        injPrev++;
+        if (document.querySelector(`[data-id="${id}"][data-f="${k}_eseguita"]`)?.value === 'Sì') injDone++;
       }
-
-      // Stack (integratori) — campo check "stack_ok"
-      stackDays++;
-      const stackEl = document.querySelector(`[data-id="${id}"][data-f="stack_ok"]`);
-      const stackVal = stackEl ? stackEl.checked : !!((_lastData2[id]||{})['stack_ok']);
-      if (stackVal) stackDone++;
+    });
+    // Workout
+    const wo = getWorkout(i);
+    if (wo.type !== 'Riposo') {
+      woPrev++;
+      const _ld = _lastData[id] || {};
+      const _woExec = (_ld['wo_rpe']) || (_ld['wo_kcal'] && parseFloat(_ld['wo_kcal']) > 0) || (_ld['wo_volume'] && parseFloat(_ld['wo_volume']) > 0);
+      if (_woExec) woDone++;
     }
-  } else {
-    // ── Pre-proto v1 (8-28 giu) ──
-    const elapsed1 = Math.floor((today - start1) / 86400000);
-    for (let i = 0; i <= elapsed1 && i < TOTAL_DAYS; i++) {
-      const id = 'day_' + i;
-      const wo = getWorkout(i);
-      if (wo.type !== 'Riposo') {
-        woPrev++;
-        woCounts[wo.type] = (woCounts[wo.type]||0) + 1;
-        const motraEl = document.querySelector(`[data-id="${id}"][data-f="motra_raw"]`);
-        if (motraEl && motraEl.value.trim().length > 10) {
-          woDone++;
-          woDones[wo.type] = (woDones[wo.type]||0) + 1;
-        }
-      }
-      stackDays++;
-      const stackEl = document.querySelector(`[data-id="${id}"][data-f="stack_ok"]`);
-      if (stackEl && stackEl.checked) stackDone++;
+    // Stack
+    stackDays++;
+    const checks = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm','ck_mag','ck_gly'];
+    const allChecked = checks.every(c => document.querySelector(`[data-id="${id}"][data-f="${c}"]`)?.checked);
+    if (allChecked) stackDone++;
+  }
+  // Per-type breakdown
+  const woCounts = { Push:0, Pull:0, Legs:0, 'Upper Sab':0, 'Upper Dom':0 };
+  const woDones  = { Push:0, Pull:0, Legs:0, 'Upper Sab':0, 'Upper Dom':0 };
+  for (let i = 0; i <= elapsed && i < TOTAL_DAYS; i++) {
+    const wo2 = getWorkout(i);
+    if (wo2.type in woCounts) {
+      woCounts[wo2.type]++;
+      const _ld2 = _lastData['day_' + i] || {};
+      const _exec2 = (_ld2['wo_rpe']) || (_ld2['wo_kcal'] && parseFloat(_ld2['wo_kcal']) > 0) || (_ld2['wo_volume'] && parseFloat(_ld2['wo_volume']) > 0);
+      if (_exec2) woDones[wo2.type]++;
     }
   }
-
   return { injPrev, injDone, woPrev, woDone, stackDays, stackDone, woCounts, woDones };
 }
 
@@ -2844,14 +3077,11 @@ function drawDashChart(canvasId, datasets, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  // Misura larghezza dal parentElement (sempre disponibile anche pre-layout)
-  const W = canvas.parentElement ? canvas.parentElement.offsetWidth || canvas.offsetWidth || 300 : 300;
-  const H = options.height || 140;
-  canvas.width  = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = (options.height || 80) * dpr;
   ctx.scale(dpr, dpr);
+  const W = rect.width, H = options.height || 80;
 
   // Collect all valid values across datasets for scale
   const allVals = datasets.flatMap(ds => ds.data.map(p => p.value).filter(v => v !== null));
@@ -3043,13 +3273,12 @@ function drawBarChart(canvasId, bars, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  const W = canvas.parentElement ? canvas.parentElement.offsetWidth || canvas.offsetWidth || 300 : 300;
-  const H = options.height || 140;
-  canvas.width  = W * dpr;
+  const rect = canvas.getBoundingClientRect();
+  const H = options.height || 110;
+  canvas.width = rect.width * dpr;
   canvas.height = H * dpr;
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
   ctx.scale(dpr, dpr);
+  const W = rect.width;
 
   const vals = bars.map(b => b.value).filter(v => v != null && v > 0);
   if (vals.length < 1) {
@@ -3114,13 +3343,12 @@ function drawStackedBarChart(canvasId, weeks, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  const W = canvas.parentElement ? canvas.parentElement.offsetWidth || canvas.offsetWidth || 300 : 300;
-  const H = options.height || 140;
-  canvas.width  = W * dpr;
+  const rect = canvas.getBoundingClientRect();
+  const H = options.height || 120;
+  canvas.width = rect.width * dpr;
   canvas.height = H * dpr;
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
   ctx.scale(dpr, dpr);
+  const W = rect.width;
 
   const maxV = Math.max(...weeks.map(w => w.total || 0));
   if (maxV === 0) {
@@ -3172,13 +3400,12 @@ function drawScatterChart(canvasId, points, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  const W = canvas.parentElement ? canvas.parentElement.offsetWidth || canvas.offsetWidth || 300 : 300;
-  const H = options.height || 140;
-  canvas.width  = W * dpr;
+  const rect = canvas.getBoundingClientRect();
+  const H = options.height || 120;
+  canvas.width = rect.width * dpr;
   canvas.height = H * dpr;
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
   ctx.scale(dpr, dpr);
+  const W = rect.width;
 
   if (points.length < 3) {
     ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
@@ -3278,21 +3505,15 @@ function drawSentinelGroup(group) {
 }
 let dashBuilt = false;
 function buildDashboard() {
-  const dash = document.getElementById('dash-inner') || document.getElementById('dash-view');
-  if (!dash) return;
+  const dash = document.getElementById('dash-view');
   if (dashBuilt) { setTimeout(refreshDashCharts, 100); return; }
   dashBuilt = true;
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const start1 = new Date(START);  start1.setHours(0,0,0,0);  // 8 giu — v1 baseline
-  const start2 = new Date(START2); start2.setHours(0,0,0,0);  // 29 giu — proto v2
-
-  // Usa protocollo v2 se già iniziato, altrimenti baseline
-  const inProto2 = today >= start2;
-  const start = inProto2 ? start2 : start1;
+  const start = new Date(START); start.setHours(0,0,0,0);
   const elapsed = Math.floor((today - start) / 86400000);
-  const wk = inProto2 ? (Math.floor(elapsed / 7) + 1) : 0;
-  const ph = inProto2 ? getPhase2(elapsed) : { label: 'Pre-protocollo · baseline', badge: 'p1', wk: 0 };
+  const wk = Math.floor(elapsed / 7) + 1;
+  const ph = getPhase(elapsed);
 
   // ── KPI SECTION ──
   const pesoData = getDayData('peso', 30);
@@ -3307,7 +3528,7 @@ function buildDashboard() {
   const hrvDelta = hrvVals.length >= 2 ? Math.round(hrvVals[hrvVals.length-1] - hrvVals[0]) : null;
 
   dash.innerHTML = `
-    <div class="tab-content">
+    <div class="dash-inner view-wrap">
 
       <!-- KPI -->
       <div class="kpi-grid">
@@ -3336,89 +3557,90 @@ function buildDashboard() {
           <span class="kpi-icon">🧬</span>
           <div class="kpi-val" style="font-size:14px">${ph.label.split('·')[0].trim()}</div>
           <div class="kpi-lbl">Fase attuale</div>
-          <div class="kpi-delta neutral">${(inProto2 ? TOTAL_DAYS2 : TOTAL_DAYS) - elapsed - 1} gg al termine</div>
+          <div class="kpi-delta neutral">${TOTAL_DAYS - elapsed - 1} gg al termine</div>
         </div>
       </div>
 
-      <!-- TIMELINE CICLO v2 — full width -->
+      <!-- TIMELINE CICLO — full width -->
       <div class="dash-section">
-        <div class="dash-section-title">Timeline · Protocollo v2 · Ciclo 1</div>
+        <div class="dash-section-title">Timeline ciclo</div>
         <div class="dash-card">
+
           <!-- Barra progress -->
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-            <div style="flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden">
-              <div style="height:100%;border-radius:3px;background:var(--blue);transition:width .4s ease;width:${inProto2 ? Math.max(0,Math.min(100,Math.round((elapsed/TOTAL_DAYS2)*100))) : 0}%"></div>
-            </div>
-            <span style="font-size:10px;color:var(--muted);white-space:nowrap">${inProto2 ? Math.round((elapsed/TOTAL_DAYS2)*100) : 0}%</span>
+          <div class="timeline-phases" id="timeline-phases"></div>
+          <div class="timeline-track"><div class="timeline-fill" style="width:${Math.min(100,(elapsed/TOTAL_DAYS)*100).toFixed(1)}%"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px">
+            <span>8 giu</span><span>25 set</span>
           </div>
 
-          <!-- Fasi v2 -->
-          ${(() => {
-            const phaseDefs = [
-              { color:'#5b84b1', bg:'rgba(91,132,177,.08)', sett:'1–4',  date:'29 giu – 26 lug', days:28,
-                peptides:[
-                  {dot:'#5b84b1', name:'Fragment 176-191', dose:'250mcg ×2', giorni:'mattino + pomeriggio SC'},
-                  {dot:'#b87333', name:'Tesamorelin',      dose:'2mg',       giorni:'sera SC · 7gg/sett'},
-                  {dot:'#7b5ea7', name:'Ipamorelin',       dose:'100mcg',    giorni:'sera SC · 7gg/sett'},
-                  {dot:'#4a7c59', name:'BPC-157',          dose:'250mcg ×2', giorni:'mattino + sera SC'},
-                  {dot:'#8e6a3a', name:'TB-500',           dose:'500mcg',    giorni:'sera SC · 7gg/sett'},
-                ]
-              },
-              { color:'#7b5ea7', bg:'rgba(123,94,167,.08)', sett:'5–8',  date:'27 lug – 23 ago', days:28, bkk:true,
-                peptides:[
-                  {dot:'#5b84b1', name:'Fragment 176-191', dose:'250mcg ×2', giorni:'mattino + pomeriggio SC'},
-                  {dot:'#b87333', name:'Tesamorelin',      dose:'2mg',       giorni:'sera SC'},
-                  {dot:'#7b5ea7', name:'Ipamorelin',       dose:'100mcg',    giorni:'sera SC'},
-                  {dot:'#af52de', name:'IGF-1 DES',        dose:'50mcg IM',  giorni:'post-WO bilat (25mcg dx+sx)'},
-                  {dot:'#4a7c59', name:'BPC-157',          dose:'250mcg ×2', giorni:'mattino + sera SC'},
-                  {dot:'#8e6a3a', name:'TB-500',           dose:'500mcg',    giorni:'sera SC'},
-                ]
-              },
-              { color:'#4a7c59', bg:'rgba(74,124,89,.08)', sett:'9–12', date:'24 ago – 20 set', days:28,
-                peptides:[
-                  {dot:'#5b84b1', name:'Fragment 176-191', dose:'250mcg ×2', giorni:'mattino + pomeriggio SC'},
-                  {dot:'#b87333', name:'Tesamorelin',      dose:'2mg',       giorni:'sera SC'},
-                  {dot:'#7b5ea7', name:'Ipamorelin',       dose:'100mcg',    giorni:'sera SC'},
-                  {dot:'#af52de', name:'IGF-1 DES',        dose:'50mcg IM',  giorni:'post-WO bilat'},
-                  {dot:'#4a7c59', name:'BPC-157',          dose:'250mcg ×2', giorni:'mattino + sera SC'},
-                  {dot:'#8e6a3a', name:'TB-500',           dose:'500mcg',    giorni:'sera SC'},
-                ]
-              },
-              { color:'#b87333', bg:'rgba(184,115,51,.08)', sett:'13–16', date:'21 set – 18 ott', days:28,
-                peptides:[
-                  {dot:'#5b84b1', name:'Fragment 176-191', dose:'250mcg ×2', giorni:'mattino + pomeriggio SC'},
-                  {dot:'#b87333', name:'Tesamorelin',      dose:'2mg',       giorni:'sera SC'},
-                  {dot:'#7b5ea7', name:'Ipamorelin',       dose:'100mcg',    giorni:'sera SC'},
-                  {dot:'#af52de', name:'IGF-1 DES',        dose:'50mcg IM',  giorni:'post-WO bilat'},
-                  {dot:'#4a7c59', name:'BPC-157',          dose:'250mcg ×2', giorni:'mattino + sera SC'},
-                  {dot:'#8e6a3a', name:'TB-500',           dose:'500mcg',    giorni:'sera SC'},
-                ]
-              },
-            ];
-            const phaseStart = [0,28,56,84];
-            return phaseDefs.map((p, idx) => {
-              const dayStart = phaseStart[idx];
-              const isActive = inProto2 && elapsed >= dayStart && elapsed < dayStart + p.days;
-              const isPast   = inProto2 && elapsed >= dayStart + p.days;
-              const daysLeft = inProto2 && isActive ? p.days - (elapsed - dayStart) : 0;
-              return `<div style="margin-bottom:10px;padding:14px 16px;border-radius:10px;border:1px solid ${isActive ? p.color+'44' : 'var(--border)'};background:${isActive ? p.bg : 'var(--surface2)'};opacity:${isPast ? 0.5 : 1}">
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:${isActive ? 10 : 0}px">
-                  <div style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
-                  <div style="font-size:12px;font-weight:600;color:var(--text)">Sett. ${p.sett}</div>
-                  <div style="font-size:11px;color:var(--muted)">${p.date}</div>
-                  ${p.bkk ? '<div style="font-size:10px;background:rgba(255,149,0,.15);color:#a06000;padding:2px 8px;border-radius:10px;font-weight:600">✈ BKK</div>' : ''}
-                  ${isActive ? '<div style="margin-left:auto;font-size:10px;color:'+p.color+';font-weight:500">'+daysLeft+' gg rimanenti</div>' : ''}
-                </div>
-                ${isActive ? '<div style="display:flex;flex-wrap:wrap;gap:6px">' + p.peptides.map(pep =>
-                  '<div style="display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px">' +
-                  '<div style="width:6px;height:6px;border-radius:50%;background:'+pep.dot+';flex-shrink:0"></div>' +
-                  '<span style="font-size:11px;font-weight:500;color:var(--text)">'+pep.name+'</span>' +
-                  '<span style="font-size:10px;color:var(--muted)">'+pep.dose+'</span>' +
-                  '</div>'
-                ).join('') + '</div>' : ''}
-              </div>`;
-            }).join('');
-          })()}
+          <!-- Fasi: card verticali mobile-friendly -->
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:14px">
+
+            ${(()=>{
+              const phaseDefs = [
+                { color:'#0071e3', bg:'rgba(0,113,227,.07)', sett:'1–4', date:'8 giu – 5 lug', days:28,
+                  peptides:[
+                    {dot:'#0071e3', name:'Tesamorelin', dose:'1mg · 200µl', giorni:'ogni sera · 7gg/sett'},
+                  ]
+                },
+                { color:'#ff9500', bg:'rgba(255,149,0,.07)', sett:'5–6', date:'6 lug – 19 lug', days:14,
+                  peptides:[
+                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl', giorni:'ogni sera · 7gg/sett'},
+                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg',         giorni:'ogni sera · 7gg/sett'},
+                  ]
+                },
+                { color:'#34c759', bg:'rgba(52,199,89,.07)', sett:'7–12', date:'20 lug – 30 ago', days:42,
+                  bkk: true,
+                  peptides:[
+                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl', giorni:'ogni sera · 7gg/sett'},
+                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg',         giorni:'ogni sera · 7gg/sett'},
+                    {dot:'#34c759', name:'MOTS-C',      dose:'2.5mg',       giorni:'lun + gio · mattina a digiuno'},
+                  ]
+                },
+                { color:'#ff3b30', bg:'rgba(255,59,48,.07)', sett:'13–16', date:'31 ago – 25 set', days:28,
+                  peptides:[
+                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl', giorni:'ogni sera · 7gg/sett'},
+                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg',         giorni:'ogni sera · 7gg/sett'},
+                    {dot:'#34c759', name:'MOTS-C',      dose:'2.5mg',       giorni:'lun + gio · mattina a digiuno'},
+                    {dot:'#ff3b30', name:'BPC-157',     dose:'250mcg',      giorni:'mar/mer/ven/sab/dom · pre-workout'},
+                  ]
+                },
+              ];
+              const phaseStart = [0,28,42,84];
+              return phaseDefs.map((p, i) => {
+                const dayStart = phaseStart[i];
+                const isActive = elapsed >= dayStart && elapsed < dayStart + p.days;
+                const isPast   = elapsed >= dayStart + p.days;
+                const daysLeft = isActive ? (dayStart + p.days - elapsed) : null;
+                const pills = p.peptides.map(px =>
+                  `<div style="padding:5px 0;border-bottom:1px solid rgba(0,0,0,.04)">
+                    <div style="display:flex;align-items:center;gap:6px">
+                      <div style="width:6px;height:6px;border-radius:50%;background:${px.dot};flex-shrink:0"></div>
+                      <span style="font-size:12px;font-weight:600;color:var(--text)">${px.name}</span>
+                      <span style="font-size:11px;color:var(--muted)">${px.dose}</span>
+                    </div>
+                    <div style="margin-left:12px;margin-top:2px;font-size:11px;color:var(--faint,#aaa);">📅 ${px.giorni}</div>
+                  </div>`
+                ).join('');
+                return `
+                <div style="border-radius:11px;background:${isActive ? p.bg : 'var(--surface2,#f5f5f7)'};border:1.5px solid ${isActive ? p.color : 'transparent'};padding:10px 12px;opacity:${isPast?'.55':'1'}">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+                    <div style="display:flex;align-items:center;gap:7px">
+                      <div style="width:10px;height:10px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
+                      <span style="font-size:13px;font-weight:600;color:${p.color}">Sett. ${p.sett}</span>
+                      ${p.bkk ? '<span style="font-size:10px;background:rgba(0,113,227,.12);color:#0071e3;padding:1px 6px;border-radius:20px">🇹🇭 BKK</span>' : ''}
+                      ${isActive ? '<span style="font-size:10px;background:'+p.color+';color:#fff;padding:1px 6px;border-radius:20px;font-weight:600">● ATTIVA</span>' : ''}
+                      ${isPast   ? '<span style="font-size:10px;color:var(--muted)">✓ completata</span>' : ''}
+                    </div>
+                    <span style="font-size:11px;color:var(--muted)">${p.date}</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:0">${pills}</div>
+                  ${isActive ? '<div style="margin-top:6px;font-size:11px;color:'+p.color+';font-weight:500">'+daysLeft+' giorni rimanenti</div>' : ''}
+                </div>`;
+              }).join('');
+            })()}
+
+          </div>
         </div>
       </div>
 
@@ -3567,12 +3789,13 @@ function buildDashboard() {
     </div>`;
 
   // Build timeline phases
-  // Timeline fasi Protocollo v2
+  // Wk 1-4 (gg 0-27): Tesa 1mg — Wk 5-6 (gg 28-41): Tesa 2mg + GHK-Cu
+  // Wk 7-12 (gg 42-83): + MOTS-C — Wk 13-16 (gg 84-111): + BPC-157
   const phases = [
-    {len:28, color:'#5b84b1', label:'WK1–4 · Fragment+Tesa+Ipa+BPC-157+TB-500'},
-    {len:28, color:'#7b5ea7', label:'WK5–8 · + IGF-1 DES (Bangkok)'},
-    {len:28, color:'#4a7c59', label:'WK9–12 · + IGF-1 DES'},
-    {len:28, color:'#b87333', label:'WK13–16 · fase finale'},
+    {len:28, color:'#0071e3', label:'Tesa 1mg'},
+    {len:14, color:'#ff9500', label:'Tesa 2mg · GHK-Cu'},
+    {len:42, color:'#34c759', label:'+ MOTS-C'},
+    {len:28, color:'#ff3b30', label:'+ BPC-157'},
   ];
   const tl = document.getElementById('timeline-phases');
   phases.forEach(p => {
@@ -3587,8 +3810,8 @@ function buildDashboard() {
   // Sett 5 = gg 28 (6 lug) · Sett 7 = gg 42 (20 lug) · Bangkok gg 60-74 (7-21 ago)
   // Sett 13 = gg 84 (31 ago) · Fine = gg 112 (28 set)
   const events = [
-    {day:28,  label:'WK5 · + IGF-1 DES · partenza Bangkok 7 ago', color:'#7b5ea7'},
-    {day:56,  label:'WK9 · rientro Milano 21 ago', color:'#4a7c59'},
+    {day:28,  label:'Tesamorelin → 2mg · GHK-Cu inizia', color:'#ff9500'},
+    {day:42,  label:'MOTS-C inizia (lun/gio mattina)', color:'#34c759'},
     {day:60,  label:'Partenza Bangkok ✈️', color:'#0071e3'},
     {day:74,  label:'Rientro da Bangkok', color:'#0071e3'},
     {day:84,  label:'BPC-157 inizia · Mini-panel sangue', color:'#ff3b30'},
@@ -3621,28 +3844,22 @@ function refreshDashCharts() {
   drawSparkline('spark-peso', peso30, '#0071e3');
   drawSparkline('spark-hrv', hrv30, '#34c759');
 
-  // Forza dimensione canvas PRIMA del draw — aspetta 2 frame per layout stabilizzato
-  const CHART_H = 140;
-  ['dc-peso','dc-hrv','dc-bp','dc-subj','dc-vol','dc-tonnellaggio','dc-rpe'].forEach(id => {
-    const c = document.getElementById(id);
-    if (c) { c.style.width = '100%'; c.style.height = CHART_H + 'px'; }
-  });
+  drawDashChart('dc-peso', [{data:peso30, color:'#0071e3'}], {height:100, minScale:0.99, maxScale:1.01});
+  drawDashChart('dc-hrv', [{data:hrv30, color:'#34c759'}], {height:100});
 
-  drawDashChart('dc-peso', [{data:peso30, color:'#0071e3'}], {height:CHART_H, minScale:0.99, maxScale:1.01});
-  drawDashChart('dc-hrv', [{data:hrv30, color:'#34c759'}], {height:CHART_H});
-
+  // Merge bp sys and dia on same chart
   const allBp = [...bpSys.map(p=>p.value), ...bpDia.map(p=>p.value)].filter(v=>v!==null);
   if (allBp.length >= 2) {
     drawDashChart('dc-bp', [
       {data:bpSys, color:'#ff3b30'},
       {data:bpDia, color:'#0071e3'}
-    ], {height:CHART_H});
+    ], {height:100});
   }
 
   drawDashChart('dc-subj', [
     {data:energia, color:'#0071e3'},
     {data:recupero, color:'#34c759'}
-  ], {height:CHART_H, minScale:0.9, maxScale:1.1});
+  ], {height:100, minScale:0.9, maxScale:1.1});
 
   // Compliance rings
   const comp = getComplianceData();
@@ -3688,7 +3905,7 @@ function refreshDashCharts() {
     value: s.volume,
     color: typeColors[s.type] || '#aeaeb2'
   }));
-  drawBarChart('dc-wo-vol', volBars, { height: 140, valFormat: v => (v/1000).toFixed(1)+'t' });
+  drawBarChart('dc-wo-vol', volBars, { height: 110, valFormat: v => (v/1000).toFixed(1)+'t' });
 
   // Kcal per sessione
   const kcalBars = sessions30.map(s => ({
@@ -3696,15 +3913,15 @@ function refreshDashCharts() {
     value: s.kcal,
     color: '#ff9500'
   }));
-  drawBarChart('dc-wo-kcal', kcalBars, { height: 140 });
+  drawBarChart('dc-wo-kcal', kcalBars, { height: 110 });
 
   // RPE nel tempo - line chart
   const rpeData = sessions30.map(s => ({ date: s.date, value: s.rpe }));
-  drawDashChart('dc-wo-rpe', [{data: rpeData, color: '#af52de'}], { height: 140, minScale: 0.8, maxScale: 1.2 });
+  drawDashChart('dc-wo-rpe', [{data: rpeData, color: '#af52de'}], { height: 100, minScale: 0.8, maxScale: 1.2 });
 
   // Durata sessioni - line chart
   const durData = sessions30.map(s => ({ date: s.date, value: s.durata }));
-  drawDashChart('dc-wo-dur', [{data: durData, color: '#5ac8fa'}], { height: 140 });
+  drawDashChart('dc-wo-dur', [{data: durData, color: '#5ac8fa'}], { height: 100 });
 
   // Volume settimanale stacked
   const wklyVol = getWeeklyVolume(8);
@@ -3726,7 +3943,7 @@ function refreshDashCharts() {
   drawDashChart('dc-rpe-hrv', [
     {data: rpeLineData, color: '#af52de'},
     {data: hrvLineData, color: '#34c759'},
-  ], { height: 140, minScale: 0.7, maxScale: 1.3 });
+  ], { height: 100, minScale: 0.7, maxScale: 1.3 });
 }
 
 
@@ -3734,26 +3951,18 @@ window.addEventListener('load',async()=>{
   buildNav();
   buildUnifiedDiary();
   document.getElementById('loading').style.display='none';
-  document.getElementById('kpi-strip-wrap').style.display = '';
+  const kw=document.getElementById('kpi-strip-wrap'); if(kw) kw.style.display='';
   updateNavHighlight();
   jumpToday();
-  // Always load from cloud first — localStorage only as offline fallback
   try{
     await loadFromCloud();
   }catch(e){
-    // Cloud failed — fall back to localStorage
     const lr=localStorage.getItem(KEY);
-    if(lr){
-      try{
-        const p=JSON.parse(lr);
-        applyAll(p.data||p);
-        document.getElementById('last-saved').textContent='Offline — dati locali';
-        setSyncStatus('err');
-      }catch(e2){}
-    }
+    if(lr){try{const p=JSON.parse(lr);applyAll(p.data||p);document.getElementById('last-saved').textContent='Offline — dati locali';setSyncStatus('err');}catch(e2){}}
+    const lr2=localStorage.getItem(KEY2);
+    if(lr2){try{_lastData2=JSON.parse(lr2);applyAll(_lastData2);applyProto2Data();}catch(e2){}}
     setTimeout(refreshCharts,200);
   }
-  // buildCharts viene chiamato da refreshCharts() dentro loadFromCloud — non duplicare qui
 });
 
 window.addEventListener('beforeunload',()=>{
@@ -4003,21 +4212,18 @@ const USER_ID2    = 'giorgio_proto2_2026';
 let   _lastData2  = {};
 
 function getPhase2(dayIdx) {
-  const wk = Math.floor(dayIdx/7)+1;
-  // Protocollo v2: Fragment + Tesa + Ipa + BPC-157 + TB-500 sempre
-  // IGF-1 DES aggiunto dal WK5 (sett BKK)
-  if (wk<=4)  return {label:'Fragment · Tesa · Ipa · BPC-157 · TB-500', badge:'p1'};
-  if (wk<=8)  return {label:'+ IGF-1 DES · BKK sett. 5–8',              badge:'p2'};
-  if (wk<=12) return {label:'+ IGF-1 DES · sett. 9–12',                 badge:'p3'};
-  return             {label:'Fase finale · sett. 13–16',                 badge:'p4b'};
+  const wk=Math.floor(dayIdx/7)+1;
+  if(wk<=4)  return {label:'Fragment · Tesa · Ipa · BPC-157 · TB-500', badge:'p1'};
+  if(wk<=8)  return {label:'+ IGF-1 DES (WK5–8 · Bangkok)',             badge:'p2'};
+  if(wk<=12) return {label:'+ IGF-1 DES (WK9–12)',                       badge:'p3'};
+  return             {label:'Fase finale WK13–16',                        badge:'p4b'};
 }
-
 function getNextEvent2(elapsed) {
   const wk = Math.floor(elapsed/7)+1;
-  if (wk<5)  { return `Bangkok · volo 7 ago · IGF-1 DES inizia WK5`; }
-  if (wk<9)  { return `Fine BKK · rientro 21 ago · WK9 continua`; }
-  if (wk<13) { return `Mini-panel sangue · WK8–10 · DEXA T1 a fine ciclo`; }
-  return 'Fine ciclo 18 set · DEXA T1 + panel sangue';
+  if (wk<5)  { return `+ GHK-Cu tra ${(4-wk)*7} giorni (sett. 5)`; }
+  if (wk<7)  { return `+ MOTS-C + IGF-1 DES tra ${(6-wk)*7} giorni (sett. 7)`; }
+  if (wk<13) { return `+ BPC-157 + TB-500 tra ${(12-wk)*7} giorni (sett. 13)`; }
+  return 'Fine ciclo · DEXA T1 + panel sangue';
 }
 
 function getWorkout2(dayIdx) {
@@ -4151,49 +4357,38 @@ function buildCharts2(container) {
 // ── RIQUADRO PROTOCOLLO SEREGNI ───────────────────────────────────────────
 function buildProtoHeader2(container) {
   const div = document.createElement('div');
-  div.className = 'proto2-hdr-wrap';
+  div.style.cssText = 'margin-bottom:8px';
   div.innerHTML = `
-    <div class="proto2-hdr" style="flex-direction:column;gap:10px;align-items:stretch">
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:20px">🧬</span>
-        <div>
-          <div class="proto2-hdr-title">Protocollo peptidico · Ciclo 1</div>
-          <div class="proto2-hdr-sub">29 giu – 18 set 2026 · 16 settimane · Dr. Seregni</div>
+    <div style="background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;box-shadow:var(--shadow);border:none">
+      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Protocollo peptidico · Ciclo 1</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">29 giu – 18 set 2026 · 16 settimane</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
+          <i class="ti ti-sunrise" style="font-size:17px;color:#0071e3;flex-shrink:0;margin-top:1px"></i>
+          <div><div style="font-size:12px;font-weight:600;color:#0071e3">Mattino · digiuno</div>
+          <div style="font-size:12px;color:var(--text)">Fragment 176-191 <b>250mcg</b> · BPC-157 <b>250mcg</b></div></div>
         </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:5px">
-        <div class="proto2-slot-row">
-          <span class="inj-slot-icon mattino"><i class="ti ti-sunrise"></i></span>
-          <div class="proto2-slot-info">
-            <span class="inj-slot-label">Mattino · digiuno</span>
-            <span class="proto2-slot-drugs">Fragment 176-191 250mcg · BPC-157 250mcg</span>
-          </div>
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
+          <i class="ti ti-sun" style="font-size:17px;color:#ff9500;flex-shrink:0;margin-top:1px"></i>
+          <div><div style="font-size:12px;font-weight:600;color:#ff9500">Pomeriggio</div>
+          <div style="font-size:12px;color:var(--text)">Fragment 176-191 <b>250mcg</b></div></div>
         </div>
-        <div class="proto2-slot-row">
-          <span class="inj-slot-icon pomeriggio"><i class="ti ti-sun"></i></span>
-          <div class="proto2-slot-info">
-            <span class="inj-slot-label">Pomeriggio</span>
-            <span class="proto2-slot-drugs">Fragment 176-191 250mcg</span>
-          </div>
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
+          <i class="ti ti-barbell" style="font-size:17px;color:#af52de;flex-shrink:0;margin-top:1px"></i>
+          <div><div style="font-size:12px;font-weight:600;color:#af52de">Post-WO <span style="font-weight:400;color:var(--muted)">(solo giorni allenamento)</span></div>
+          <div style="font-size:12px;color:var(--text)">IGF-1 DES <b>25mcg dx</b> · IGF-1 DES <b>25mcg sx</b></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px">Distretto: rotazione mar=Petto · mer=Bicipiti · ven=Quadricipiti · sab=Tricipiti · dom=Deltoidi</div></div>
         </div>
-        <div class="proto2-slot-row">
-          <span class="inj-slot-icon postWO"><i class="ti ti-barbell"></i></span>
-          <div class="proto2-slot-info">
-            <span class="inj-slot-label">Post-WO (gg allenamento)</span>
-            <span class="proto2-slot-drugs">IGF-1 DES 50mcg IM bilat</span>
-          </div>
-        </div>
-        <div class="proto2-slot-row">
-          <span class="inj-slot-icon sera"><i class="ti ti-moon"></i></span>
-          <div class="proto2-slot-info">
-            <span class="inj-slot-label">Sera · 2.5–3h post-pasto</span>
-            <span class="proto2-slot-drugs">Tesamorelin 2mg · Ipamorelin 100mcg · BPC-157 250mcg · TB-500 500mcg</span>
-          </div>
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
+          <i class="ti ti-moon" style="font-size:17px;color:#34c759;flex-shrink:0;margin-top:1px"></i>
+          <div><div style="font-size:12px;font-weight:600;color:#34c759">Sera · 90–120 min post-cena</div>
+          <div style="font-size:12px;color:var(--text)">Tesamorelin <b>2mg</b> · Ipamorelin <b>100mcg</b> · BPC-157 <b>250mcg</b> · TB-500 <b>500mcg</b></div></div>
         </div>
       </div>
     </div>`;
   container.appendChild(div);
 }
+
 
 function buildWeekSummary2(container, wkIdx) {
   const today = new Date(); today.setHours(0,0,0,0);
@@ -4288,13 +4483,25 @@ function buildProtoV2() {
   const raw2 = localStorage.getItem(KEY2);
   if (raw2) { try { _lastData2 = JSON.parse(raw2); } catch(e){} }
 
-  // 1. Header protocollo (unico — no duplicato)
-  buildProtoHeader2(container);
+  // 1. Progress bar
+  const progWrap = document.createElement('div');
+  progWrap.className = 'prog-wrap';
+  const start2h = new Date(START2); start2h.setHours(0,0,0,0);
+  const elapsed2h = Math.floor((today - start2h)/86400000);
+  const pct2 = Math.max(0, Math.min(100, Math.round((elapsed2h/TOTAL_DAYS2)*100)));
+  progWrap.innerHTML = `<div class="prog-bar" style="width:${pct2}%"></div>`;
+  container.appendChild(progWrap);
 
-  // 2. Cycle card
+  // 2. Cycle card (identica struttura v1)
   buildCycleCard2(container);
 
-  // 3. Nav settimane (sotto la cycle card, appiccicosa)
+  // 3. Charts ultimi 14gg
+  buildCharts2(container);
+
+  // 4. Riquadro protocollo Seregni
+  buildProtoHeader2(container);
+
+  // 5. Nav settimane
   const navStrip2 = document.createElement('div');
   navStrip2.className = 'nav-strip-inner';
   navStrip2.style.cssText = 'position:sticky;top:44px;z-index:90';
@@ -4307,14 +4514,7 @@ function buildProtoV2() {
   }
   container.appendChild(navStrip2);
 
-  // 5. Card giornaliere — in un wrapper .container per padding uniforme
-  const cardsWrap = document.createElement('div');
-  cardsWrap.className = 'container';
-  cardsWrap.style.paddingTop = '16px';
-  container.appendChild(cardsWrap);
-  // Da qui tutto viene appeso a cardsWrap invece di container
-  const _origContainer = container;
-  // (ridefiniamo container localmente per il loop)
+  // 5. Card giornaliere
   let curWk = -1;
   for (let i=0; i<TOTAL_DAYS2; i++) {
     const d = new Date(START2); d.setDate(d.getDate()+i); d.setHours(0,0,0,0);
@@ -4331,10 +4531,10 @@ function buildProtoV2() {
       const wh = document.createElement('div');
       wh.id = 'proto2-week-'+wk; wh.className = 'week-hdr';
       wh.innerHTML = `<h2>Settimana ${wk}</h2><span class="week-phase ${ph.badge}">${ph.label}</span><span class="week-range">${getWeekRange2(wk-1)}</span>`;
-      cardsWrap.appendChild(wh);
+      container.appendChild(wh);
       // Week summary (solo settimana corrente)
       const ws2 = buildWeekSummary2(container, wk-1);
-      if (ws2) cardsWrap.appendChild(ws2);
+      if (ws2) container.appendChild(ws2);
     }
 
     const slots = getInjectionSlots2(i);
@@ -4379,8 +4579,8 @@ function buildProtoV2() {
           <div class="check-item"><input type="checkbox" id="ck2-gly-${id}" data-id="${id}" data-f="ck_gly"><label for="ck2-gly-${id}">Glicina</label></div>
         </div>
 
-        <div class="section-label" style="margin-top:14px">Iniezioni <span style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">· tocca per segnare</span></div>
-        <div>${slotHTML}</div>
+        <div class="section-label" style="margin-top:14px">Iniezioni v2</div>
+        <div class="inj-grid">${slotHTML}</div>
 
         ${wo.type !== 'Riposo' ? `
         <div class="section-label" style="margin-top:14px">Sentinel lifts</div>
@@ -4423,7 +4623,7 @@ function buildProtoV2() {
         <button class="save-btn" onclick="saveProto2Data()" style="margin-top:12px">Salva</button>
       </div>`;
 
-    cardsWrap.appendChild(card);
+    container.appendChild(card);
   }
 
   // Applica dati salvati
@@ -4460,40 +4660,13 @@ function saveProto2Data() {
 function applyProto2Data() {
   Object.entries(_lastData2).forEach(([id,fields]) => {
     Object.entries(fields).forEach(([f,v]) => {
-      if (!v) return;
-      // Try normal input/select first
       const el = document.querySelector(`#container2 [data-id="${id}"][data-f="${f}"]`);
-      if (el) {
-        if (el.type==='checkbox') el.checked = !!v;
-        else if (el.tagName === 'SELECT' || el.tagName === 'INPUT') el.value = v;
-        return;
-      }
-      // Try inj chip
-      const chip = document.querySelector(`.inj-chip[data-id="${id}"][data-f="${f}"]`);
-      if (chip && (v === 'fatto' || v === 'skip')) {
-        chip.dataset.stato = v;
-        const iconEl  = chip.querySelector('.inj-chip-icon');
-        const statoEl = chip.querySelector('.inj-chip-stato');
-        if (v === 'fatto') {
-          if (iconEl)  iconEl.textContent  = '✓';
-          if (statoEl) statoEl.textContent = 'fatto';
-        } else {
-          if (iconEl)  iconEl.textContent  = '·';
-          if (statoEl) statoEl.textContent = 'skip';
-        }
-        // Ensure hidden input exists
-        let hidden = document.querySelector(`input[type="hidden"][data-id="${id}"][data-f="${f}"]`);
-        if (!hidden) {
-          hidden = document.createElement('input');
-          hidden.type = 'hidden';
-          hidden.dataset.id = id;
-          hidden.dataset.f  = f;
-          chip.parentNode.appendChild(hidden);
-        }
-        hidden.value = v;
-      }
+      if (!el) return;
+      if (el.type==='checkbox') el.checked = !!v;
+      else if (v!==''&&v!=null) el.value = v;
     });
   });
+  colorInjSelects();
 }
 
 
@@ -4576,7 +4749,7 @@ function buildStockView2() {
     return { bg:'#f5f5f7', color:'#666', label:s };
   }
 
-  let html = `<div class="tab-content">`; // wrapper uniforme
+  let html = `<div style="width:100%;max-width:1100px;margin:0 auto;padding:16px 16px 60px;box-sizing:border-box">`;
 
   // Header
   html += `
@@ -4892,7 +5065,7 @@ function buildStockView() {
 }
 
 function buildMedDash() {
-  const el = document.getElementById('meddash-view');
+  const el = document.getElementById('med-view');
   if (el.dataset.built) return;
   el.dataset.built = '1';
 
@@ -5112,7 +5285,7 @@ function buildMedDash() {
   // ══════════════════════════════════════════════
   //  RENDER
   // ══════════════════════════════════════════════
-  let html = `<div class="tab-content">
+  let html = `<div class="app-view-inner view-wrap">
 
   <!-- KPI GRID -->
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:28px">
@@ -5214,184 +5387,73 @@ function buildMedDash() {
 }
 
 
-// ══════════════════════════════════════════════════════════
-// REDESIGN v3.0 — Unified Diary + KPI Strip + Inj Chips
-// ══════════════════════════════════════════════════════════
-
-// Build the unified diary: warm-up section + proto v2 section
+// ── Nuove funzioni redesign ──────────────────────────────
 function buildUnifiedDiary() {
-  // 1. Warm-up 8-28 giu: collassabile, solo biometria+WO+note (no iniezioni)
-  const wu = document.getElementById('container');
-  if (wu) {
-    buildDays();
-    const wsect = document.getElementById('warmup-section');
-    if (wsect) wsect.style.display = '';
-    const wbody = document.getElementById('warmup-body');
-    if (wbody) { wbody.style.maxHeight = '0px'; wbody.style.overflow = 'hidden'; }
-  }
-
-  // 2. Protocollo v2 dal 29 giu — buildProtoV2 inserisce tutto in container2:
-  //    CycleCard2 + Charts2 + ProtoHeader2 + NavStrip + Card giornaliere
+  const wu=document.getElementById('container');
+  if(wu){ buildDays(); const ws=document.getElementById('warmup-section'); if(ws) ws.style.display=''; const wb=document.getElementById('warmup-body'); if(wb){wb.style.maxHeight='0';wb.style.overflow='hidden';} }
   buildProtoV2();
-
-  // 3. KPI strip aggiornamento dopo caricamento dati
-  setTimeout(updateKpiStrip, 300);
 }
 
-// Toggle warm-up section open/close
-let _warmupOpen = false;
+let _warmupOpen=false;
 function toggleWarmup() {
-  _warmupOpen = !_warmupOpen;
-  const body   = document.getElementById('warmup-body');
-  const toggle = document.getElementById('warmup-toggle');
-  const chev   = document.getElementById('warmup-chev');
-
-  if (_warmupOpen) {
-    // Misura altezza reale prima di animare
-    body.style.maxHeight = 'none';
-    body.style.overflow  = 'visible';
-    const realH = body.scrollHeight;
-    body.style.maxHeight = '0px';
-    body.style.overflow  = 'hidden';
-    // Forza reflow poi anima verso altezza reale
-    body.getBoundingClientRect();
-    body.style.transition = 'max-height 0.4s ease';
-    body.style.maxHeight  = realH + 'px';
-    toggle.classList.add('open');
-    chev.textContent = '↓';
-    // Rimuovi max-height dopo animazione per permettere resize
-    setTimeout(() => { body.style.maxHeight = 'none'; body.style.overflow = 'visible'; }, 420);
+  _warmupOpen=!_warmupOpen;
+  const body=document.getElementById('warmup-body');
+  const toggle=document.getElementById('warmup-toggle');
+  const chev=document.getElementById('warmup-chev');
+  if(_warmupOpen){
+    body.style.transition='max-height .4s ease';
+    body.style.maxHeight=body.scrollHeight+'px';
+    toggle.classList.add('open'); chev.textContent='↓';
+    setTimeout(()=>{body.style.maxHeight='none';body.style.overflow='visible';},420);
   } else {
-    const realH = body.scrollHeight;
-    body.style.maxHeight = realH + 'px';
-    body.style.overflow  = 'hidden';
+    body.style.maxHeight=body.scrollHeight+'px'; body.style.overflow='hidden';
     body.getBoundingClientRect();
-    body.style.transition = 'max-height 0.35s ease';
-    body.style.maxHeight  = '0px';
-    toggle.classList.remove('open');
-    chev.textContent = '›';
+    body.style.transition='max-height .35s ease';
+    body.style.maxHeight='0';
+    toggle.classList.remove('open'); chev.textContent='›';
   }
 }
 
-// Update KPI strip with today's biometria
 function updateKpiStrip() {
-  // Find today's data from proto2 (dal 29 giu) or v1 (prima)
-  const today = new Date(); today.setHours(0,0,0,0);
-  const start2 = new Date('2026-06-29'); start2.setHours(0,0,0,0);
-  const diff = Math.floor((today - start2) / 86400000);
-
-  let peso = '—', hrv = '—', rhr = '—';
-  let wk = '—', fase = '—';
-
-  if (diff >= 0 && diff < 112) {
-    const id = 'p2_day_' + diff;
-    const pesoEl = document.querySelector(`[data-id="${id}"][data-f="peso"]`);
-    const hrvEl  = document.querySelector(`[data-id="${id}"][data-f="hrv"]`);
-    const rhrEl  = document.querySelector(`[data-id="${id}"][data-f="rhr"]`);
-    if (pesoEl && pesoEl.value) peso = pesoEl.value + ' kg';
-    if (hrvEl  && hrvEl.value)  hrv  = hrvEl.value + ' ms';
-    if (rhrEl  && rhrEl.value)  rhr  = rhrEl.value;
-    wk = 'WK ' + (Math.floor(diff/7)+1);
-    const ph = getPhase2(diff);
-    fase = ph.label.split('+')[0].trim().replace('Tesa ','');
-  } else if (diff < 0) {
-    // Warm-up period
-    const startV1 = new Date('2026-06-08'); startV1.setHours(0,0,0,0);
-    const diffV1 = Math.floor((today - startV1) / 86400000);
-    if (diffV1 >= 0 && diffV1 < 21) {
-      const id = 'day_' + diffV1;
-      const pesoEl = document.querySelector(`[data-id="${id}"][data-f="peso"]`);
-      const hrvEl  = document.querySelector(`[data-id="${id}"][data-f="hrv"]`);
-      if (pesoEl && pesoEl.value) peso = pesoEl.value + ' kg';
-      if (hrvEl  && hrvEl.value)  hrv  = hrvEl.value + ' ms';
-      wk = 'Pre-ciclo';
-      fase = 'Baseline';
-    }
+  const today=new Date(); today.setHours(0,0,0,0);
+  const start2=new Date(START2); start2.setHours(0,0,0,0);
+  const diff=Math.floor((today-start2)/86400000);
+  let peso='—',hrv='—',rhr='—',wk='—',fase='—';
+  if(diff>=0&&diff<TOTAL_DAYS2){
+    const rec=(_lastData2||{})['p2_day_'+diff]||{};
+    if(rec.peso) peso=rec.peso+' kg'; if(rec.hrv) hrv=rec.hrv+' ms'; if(rec.rhr) rhr=rec.rhr;
+    wk='WK '+(Math.floor(diff/7)+1); fase=getPhase2(diff).label.split(' · ')[0];
+  } else if(diff<0){
+    const s1=new Date('2026-06-08'); s1.setHours(0,0,0,0);
+    const d1=Math.floor((today-s1)/86400000);
+    if(d1>=0){const rec=(_lastData||{})['day_'+d1]||{};if(rec.peso)peso=rec.peso+' kg';if(rec.hrv)hrv=rec.hrv+' ms';wk='Pre-ciclo';fase='Baseline';}
   }
-
-  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-  set('ks-peso', peso);
-  set('ks-hrv',  hrv);
-  set('ks-rhr',  rhr);
-  set('ks-wk',   wk);
-  set('ks-fase', fase);
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('ks-peso',peso);set('ks-hrv',hrv);set('ks-rhr',rhr);set('ks-wk',wk);set('ks-fase',fase);
 }
 
-// Cycle injection chip state: — → fatto → skip → —
-function cycleInjChip(chip) {
-  const stati = ['', 'fatto', 'skip'];
-  const cur = chip.dataset.stato || '';
-  const next = stati[(stati.indexOf(cur) + 1) % stati.length];
-  chip.dataset.stato = next;
-
-  const iconEl   = chip.querySelector('.inj-chip-icon');
-  const statoEl  = chip.querySelector('.inj-chip-stato');
-  const nameEl   = chip.querySelector('.inj-chip-name');
-
-  if (next === 'fatto') {
-    if (iconEl) iconEl.textContent = '✓';
-    if (statoEl) statoEl.textContent = 'fatto';
-  } else if (next === 'skip') {
-    if (iconEl) iconEl.textContent = '·';
-    if (statoEl) statoEl.textContent = 'skip';
-  } else {
-    if (iconEl) iconEl.textContent = '○';
-    if (statoEl) statoEl.textContent = '';
-  }
-
-  // Sync to hidden input for collectAll / save
-  const dataId = chip.dataset.id;
-  const dataF  = chip.dataset.f;
-  if (dataId && dataF) {
-    let hidden = document.querySelector(`input[type="hidden"][data-id="${dataId}"][data-f="${dataF}"]`);
-    if (!hidden) {
-      hidden = document.createElement('input');
-      hidden.type = 'hidden';
-      hidden.dataset.id = dataId;
-      hidden.dataset.f  = dataF;
-      chip.parentNode.appendChild(hidden);
-    }
-    hidden.value = next;
-  }
-}
-
-// Build injection chips for a slot (called from buildProtoV2 override)
 function buildInjChipsSlot(slot, id) {
-  const slotTypes = ['mattino','pomeriggio','postWO','sera'];
-  const slotIcons = { mattino:'☀', pomeriggio:'◑', postWO:'◉', sera:'☾' };
-  const slotType  = slot.n === 1 ? 'mattino' : slot.n === 2 ? 'pomeriggio' :
-                    slot.igfMuscle !== undefined ? 'postWO' : 'sera';
-  const icon = slotIcons[slotType] || '·';
-
-  const hdr = `<div class="inj-slot-hdr">
-    <div class="inj-slot-icon ${slotType}">${icon}</div>
-    <span class="inj-slot-label">${slot.label}</span>
-    <span class="inj-slot-timing">${slot.momento}</span>
-  </div>`;
-
-  const chips = slot.fields.map(f => {
-    const fKey = `inj_${slot.n}_${f.replace(/[\s\-]/g,'_')}`;
-    return `<span class="inj-chip" data-stato="" data-id="${id}" data-f="${fKey}" onclick="cycleInjChip(this)">
-      <span class="inj-chip-icon">○</span>
-      <span class="inj-chip-name">${f}</span>
-      <span class="inj-chip-stato"></span>
-    </span>`;
-  }).join('');
-
-  let muscleHtml = '';
-  if (slot.igfMuscle !== undefined) {
-    const muscles = ['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'];
-    muscleHtml = `<div style="margin-top:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-      <span style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em">Distretto:</span>
-      <select data-id="${id}" data-f="inj_${slot.n}_distretto" style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:3px 6px;background:var(--surface2);color:var(--text);outline:none">
-        ${muscles.map(m=>`<option value="${m}" ${m===slot.igfMuscle?'selected':''}>${m}</option>`).join('')}
-      </select>
-    </div>`;
-  }
-
-  return hdr + `<div class="inj-chips">${chips}</div>` + muscleHtml;
+  const icons={mattino:'☀',pomeriggio:'◑',postWO:'◉',sera:'☾'};
+  const hdr=`<div class="inj-slot-hdr"><span class="inj-slot-icon ${slot.icon||''}">${icons[slot.icon]||'·'}</span><span class="inj-slot-label">${slot.label}</span><span class="inj-slot-timing">${slot.momento||''}</span></div>`;
+  const chips=slot.fields.map(f=>{const fKey='inj_'+slot.n+'_'+f.replace(/[\s\-]/g,'_');return `<span class="inj-chip" data-stato="" data-id="${id}" data-f="${fKey}" onclick="cycleInjChip(this)"><span class="inj-chip-icon">○</span><span>${f}</span><span class="inj-chip-stato"></span></span>`;}).join('');
+  let muscle='';
+  if(slot.igfMuscle!==undefined){const ms=['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'];muscle=`<div style="margin-top:4px;display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase">Distretto:</span><select data-id="${id}" data-f="inj_${slot.n}_distretto" style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:2px 5px;background:var(--surface2)">${ms.map(m=>`<option${m===slot.igfMuscle?' selected':''}>${m}</option>`).join('')}</select></div>`;}
+  return hdr+`<div class="inj-chips">${chips}</div>`+muscle;
 }
 
+function cycleInjChip(chip) {
+  const stati=['','fatto','skip']; const next=stati[(stati.indexOf(chip.dataset.stato||'')+1)%3];
+  chip.dataset.stato=next;
+  const ic=chip.querySelector('.inj-chip-icon'),st=chip.querySelector('.inj-chip-stato');
+  if(next==='fatto'){if(ic)ic.textContent='✓';if(st)st.textContent='fatto';}
+  else if(next==='skip'){if(ic)ic.textContent='·';if(st)st.textContent='skip';}
+  else{if(ic)ic.textContent='○';if(st)st.textContent='';}
+  const dataId=chip.dataset.id,dataF=chip.dataset.f;
+  if(dataId&&dataF){let h=document.querySelector(`input[type="hidden"][data-id="${dataId}"][data-f="${dataF}"]`);if(!h){h=document.createElement('input');h.type='hidden';h.dataset.id=dataId;h.dataset.f=dataF;chip.parentNode.appendChild(h);}h.value=next;}
+}
 </script>
 </body>
 </html>
+
+
+
