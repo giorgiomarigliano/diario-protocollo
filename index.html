@@ -1172,9 +1172,36 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   max-height: 0;
   transition: max-height .4s ease;
 }
+/* Riduce spazio tra le due sezioni */
+#pre-proto-section { margin-bottom: 0; }
+#pre-proto-section .container { padding-bottom: 20px; }
+#container2 > .container:first-child { padding-top: 12px; }
 @media (max-width: 600px) {
   .pre-proto-sub { display: none; }
   .pre-proto-title { font-size: 14px; }
+}
+
+/* Soggettivo select — stile coerente con bio-box input */
+.bio-box select {
+  width: 100%;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--surface2);
+  color: var(--text);
+  padding: 8px 4px;
+  outline: none;
+  font-family: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+.bio-box select:focus {
+  border-color: var(--blue);
+  background: var(--surface);
 }
 </style>
 <!-- deploy 1781175570 -->
@@ -1231,7 +1258,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
     </div>
   </div>
   <!-- SEZIONE 2: Protocollo v2 dal 29 giu -->
-  <div id="container2"></div>
+  <div id="container2" class="container" style="padding-top:8px"></div>
 </div>
 <div class="dash-view" id="dash-view"></div>
 <div class="med-view" id="med-view"></div>
@@ -1695,7 +1722,7 @@ function buildDays(){
         <div class="day-quick">
           <div class="dq"><div class="dq-v empty" id="q-${id}-peso">—</div><div class="dq-l">kg</div></div>
           <div class="dq"><div class="dq-v empty" id="q-${id}-hrv">—</div><div class="dq-l">HRV</div></div>
-          <div class="dq"><div class="dq-v empty" id="q-${id}-sonno">—</div><div class="dq-l">sonno</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-ore_sonno">—</div><div class="dq-l">sonno</div></div>
         </div>
         <span class="day-badge ${wo.badge}">${wo.label}</span>
         <span class="day-chev">▾</span>
@@ -1813,14 +1840,6 @@ function buildDays(){
           ${buildMotraSection(id)}
         </div>`}
         </div><!-- /col-right -->
-
-        <!-- ZONA 2: iniezioni full-width -->
-        <div class="col-full">
-        <div class="section-label">Protocollo iniezione</div>
-        <div class="inj-slots">
-          ${renderInjectionSlots(i, id)}
-        </div>
-        </div><!-- /col-full -->
 
         <!-- ZONA 3: note + soggettivo + stack full-width -->
         <div class="col-full">
@@ -4639,21 +4658,27 @@ function buildProtoV2() {
     card.innerHTML = `
       <div class="day-head" onclick="toggleDay('${id}')">
         <span class="day-dot" style="background:${dotColor}"></span>
-        <span class="day-date">${dateStr}</span>
+        <div class="day-info">
+          <div class="day-name">${dateStr}${isToday?'<span class="today-badge">Oggi</span>':''}</div>
+        </div>
+        <div class="day-quick">
+          <div class="dq"><div class="dq-v empty" id="q-${id}-peso">—</div><div class="dq-l">kg</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-hrv">—</div><div class="dq-l">HRV</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-ore_sonno">—</div><div class="dq-l">sonno</div></div>
+        </div>
         <span class="day-badge ${wo.badge}">${wo.label}</span>
-        ${isToday?'<span class="today-badge">OGGI</span>':''}
-        <span class="day-chevron">›</span>
+        <span class="day-chev">▾</span>
       </div>
       <div class="day-body" id="body-${id}">
 
         <div class="section-label">Biometria</div>
         <div class="bio-grid">
-          <div class="bio-box"><input type="number" placeholder="70.0" data-id="${id}" data-f="peso"><div class="bio-lbl">Peso kg</div></div>
-          <div class="bio-box"><input type="number" placeholder="48"   data-id="${id}" data-f="hrv"><div class="bio-lbl">HRV ms</div></div>
+          <div class="bio-box"><input type="number" placeholder="70.0" data-id="${id}" data-f="peso" oninput="onInput(this,'${id}','peso')"><div class="bio-lbl">Peso kg</div></div>
+          <div class="bio-box"><input type="number" placeholder="48"   data-id="${id}" data-f="hrv"  oninput="onInput(this,'${id}','hrv')"><div class="bio-lbl">HRV ms</div></div>
           <div class="bio-box"><input type="number" placeholder="55"   data-id="${id}" data-f="rhr"><div class="bio-lbl">RHR bpm</div></div>
           <div class="bio-box"><input type="number" placeholder="120"  data-id="${id}" data-f="bp_sys"><div class="bio-lbl">Sistolica</div></div>
           <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="bp_dia"><div class="bio-lbl">Diastolica</div></div>
-          <div class="bio-box"><input type="number" placeholder="6.5"  data-id="${id}" data-f="ore_sonno"><div class="bio-lbl">Ore sonno</div></div>
+          <div class="bio-box"><input type="number" placeholder="6.5"  data-id="${id}" data-f="ore_sonno" oninput="onInput(this,'${id}','ore_sonno')"><div class="bio-lbl">Ore sonno</div></div>
         </div>
 
         <div class="section-label" style="margin-top:14px">Stack mattutino</div>
@@ -4758,6 +4783,13 @@ function applyProto2Data() {
       if (el.type==='checkbox') el.checked = !!v;
       else if (v!==''&&v!=null) el.value = v;
     });
+    // Aggiorna quick-data visibili nella card chiusa
+    const qPeso  = document.getElementById('q-'+id+'-peso');
+    const qHrv   = document.getElementById('q-'+id+'-hrv');
+    const qSonno = document.getElementById('q-'+id+'-ore_sonno');
+    if (qPeso  && fields.peso)     { qPeso.textContent  = fields.peso;     qPeso.classList.remove('empty'); }
+    if (qHrv   && fields.hrv)      { qHrv.textContent   = fields.hrv;      qHrv.classList.remove('empty'); }
+    if (qSonno && fields.ore_sonno){ qSonno.textContent = fields.ore_sonno; qSonno.classList.remove('empty'); }
   });
   colorInjSelects();
 }
