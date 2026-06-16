@@ -1415,35 +1415,36 @@ function buildWarmup() {
         ${isT?'<span class="today-pill">OGGI</span>':''}
         <span class="day-chev">›</span>
       </div>
-      <div class="day-body" id="body-day-${id}" style="display:none">
-        <div class="day-body-cols">
-          <div class="day-col">
-            <div class="section-hdr">Biometria</div>
-            <div class="bio-grid">
-              ${bioBuild(id,'peso','kg','number')}
-              ${bioBuild(id,'hrv','HRV ms','number')}
-              ${bioBuild(id,'rhr','RHR','number')}
-              ${bioBuild(id,'bp_sys','Sist.','number')}
-              ${bioBuild(id,'bp_dia','Diast.','number')}
-              ${bioBuild(id,'sonno','Sonno h','number')}
+      <div class="day-body day-body-desktop" id="body-day-${id}" style="display:none">
+        <div class="col-left">
+          <div class="section-hdr">Biometria</div>
+          <div class="bio-grid">
+            ${bioBuild(id,'peso','kg','number')}
+            ${bioBuild(id,'hrv','HRV ms','number')}
+            ${bioBuild(id,'rhr','RHR','number')}
+            ${bioBuild(id,'bp_sys','Sistolica','number')}
+            ${bioBuild(id,'bp_dia','Diastolica','number')}
+            ${bioBuild(id,'sonno','Sonno h','number')}
+          </div>
+          <div style="margin-top:14px">
+            <div class="section-hdr">Soggettivo</div>
+            <div class="subj-row">
+              ${subjSel(id,'energia','Energia /10')}
+              ${subjSel(id,'recupero','Recupero /10')}
+              ${subjSel(id,'umore','Umore /10')}
+              ${subjSel(id,'rpe','RPE')}
             </div>
           </div>
-          <div class="day-col">
-            ${wo.type!=='Riposo'?`
-            <div class="section-hdr">Allenamento</div>
-            ${buildMotraSection(id)}
-            ${buildSentinelSection(id,wo.type)}
-            `:'<div class="rest-banner">🛌 Riposo · recupero attivo</div>'}
-          </div>
         </div>
-        <div class="day-row-full">
-          <div class="section-hdr">Soggettivo &amp; Note</div>
-          <div class="subj-row" style="margin-bottom:8px">
-            ${subjSel(id,'energia','Energia /10')}
-            ${subjSel(id,'recupero','Recupero /10')}
-            ${subjSel(id,'umore','Umore /10')}
-            ${subjSel(id,'rpe','RPE allenamento')}
-          </div>
+        <div class="col-right">
+          ${wo.type!=='Riposo'?`
+          <div class="section-hdr">Allenamento</div>
+          ${buildMotraSection(id)}
+          ${buildSentinelSection(id,wo.type)}
+          `:'<div class="rest-banner">🛌 Riposo · recupero attivo</div>'}
+        </div>
+        <div class="col-full">
+          <div class="section-hdr">Note del giorno</div>
           <textarea class="note-ta" placeholder="Sensazioni soggettive, qualità sonno, osservazioni fisiche…" data-id="${id}" data-f="note" rows="2"></textarea>
         </div>
       </div>`;
@@ -1712,13 +1713,16 @@ function subjSel(id,f,lbl) {
 
 // ── Motra section ────────────────────────────────────────────
 function buildMotraSection(id) {
-  return `<div class="motra-wrap">
-    <div class="fg">
-      <label>Importa log Motra</label>
-      <textarea class="fg-textarea note-ta" rows="3" placeholder="Incolla qui il testo del log Motra…" data-id="${id}" data-f="motra_raw" style="font-size:11px;font-family:monospace"></textarea>
-    </div>
+  // Gli id devono corrispondere a quelli usati da importMotra(dayId)
+  return `<div class="motra-wrap motra-box">
+    <label class="section-hdr">Importa log Motra</label>
+    <textarea id="motra-ta-${id}" class="motra-textarea note-ta" rows="3"
+      placeholder="Incolla qui il testo del log Motra…"
+      data-id="${id}" data-f="motra_raw"
+      style="font-size:11px;font-family:monospace"></textarea>
     <button class="motra-import-btn" onclick="importMotra('${id}')">↓ Importa log</button>
-    <div id="motra-result-${id}" class="motra-result" style="display:none"></div>
+    <div id="motra-res-${id}" class="motra-result" style="display:none"></div>
+    <div id="motra-parsed-${id}" style="display:none"></div>
   </div>`;
 }
 
@@ -2044,23 +2048,40 @@ function drawDashCharts(peso30,hrv30,bpSys,bpDia) {
 
 function getSessionData(days) {
   const today=new Date(); today.setHours(0,0,0,0);
-  const start2=new Date(START_V2); start2.setHours(0,0,0,0);
+  const startWU=new Date(START_WU); startWU.setHours(0,0,0,0);
+  const startV2=new Date(START_V2); startV2.setHours(0,0,0,0);
+  const colors={Push:'#c0392b',Pull:'#1d8348',Legs:'#b84c00','Upper Sab':'#6d4c9e','Upper Dom':'#1a5a8a'};
   const results=[];
+
   for(let offset=days-1;offset>=0;offset--){
     const d=new Date(today); d.setDate(d.getDate()-offset); d.setHours(0,0,0,0);
-    if(d<start2) continue;
-    const i=Math.floor((d-start2)/86400000);
-    if(i<0||i>=DAYS_V2) continue;
-    const rec=(_lastData2||{})['v2_'+i]||(_lastData2||{})['p2_day_'+i]||{};
+
+    let rec={}, wo, baseDate, idxDay;
+
+    if(d>=startV2){
+      idxDay=Math.floor((d-startV2)/86400000);
+      if(idxDay<0||idxDay>=DAYS_V2) continue;
+      rec=(_lastData2||{})['v2_'+idxDay]||(_lastData2||{})['p2_day_'+idxDay]||{};
+      wo=getWorkout(idxDay,startV2);
+    } else if(d>=startWU){
+      idxDay=Math.floor((d-startWU)/86400000);
+      if(idxDay<0||idxDay>=DAYS_WU) continue;
+      rec=(_lastData||{})['day_'+idxDay]||{};
+      wo=getWorkout(idxDay,startWU);
+    } else {
+      continue;
+    }
+
     const motra=rec.motra_raw||'';
     if(!motra.trim()) continue;
-    const wo=getWorkout(i,START_V2);
+    if(wo.type==='Riposo') continue;
+
     const parsed=parseMotraText(motra);
     const vol=parsed?parsed.volume:0;
+    const dur=parsed?parsed.duration:0;
     const rpe=parseFloat(rec.rpe)||0;
-    const colors={Push:'#c0392b',Pull:'#1d8348',Legs:'#b84c00','Upper Sab':'#6d4c9e','Upper Dom':'#1a5a8a'};
     const ds=d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}).replace('/','');
-    results.push({d,vol,rpe,dateStr:ds,color:colors[wo.type]||'#aeaeb2',type:wo.type});
+    results.push({d,vol,dur,rpe,dateStr:ds,color:colors[wo.type]||'#aeaeb2',type:wo.type});
   }
   return results;
 }
@@ -2221,7 +2242,7 @@ function buildReferti() {
 function buildStock() {
   const c=document.getElementById('stock-content');
   if(!c) return;
-  buildStockContent(c);
+  buildStockDirect(c);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2339,51 +2360,8 @@ async function saveData() {
 // ═══════════════════════════════════════════════════════════════
 // MOTRA PARSER (riusa la funzione originale)
 // ═══════════════════════════════════════════════════════════════
-function parseMotraText(text) {
-  if(!text||!text.trim()) return null;
-  const lines=text.split('\n');
-  const exercises=[];
-  let volume=0,duration=0;
-  const durationMatch=text.match(/(\d+)h\s*(\d+)m|(\d+)\s*min/);
-  if(durationMatch){duration=durationMatch[1]?parseInt(durationMatch[1])*60+parseInt(durationMatch[2]):parseInt(durationMatch[3]);}
-  const volMatch=text.match(/([\d.]+)\s*t(?:on(?:nellate)?)?[^\w]/i);
-  if(volMatch) volume=parseFloat(volMatch[1])*1000;
-  for(const line of lines){
-    const exMatch=line.match(/^(.+?)\s*[\:\-\|]\s*([\d,]+)\s*serie/i)||line.match(/^•?\s*(.+?)\s*\|\s*(\d+)×/);
-    if(exMatch){
-      const sets=[];
-      const setMatches=[...line.matchAll(/(\d+)\s*×\s*([\d.]+)\s*(kg)?/g)];
-      setMatches.forEach(m=>{sets.push({reps:parseInt(m[1]),kg:parseFloat(m[2])});if(!isNaN(m[2]))volume+=parseInt(m[1])*parseFloat(m[2]);});
-      exercises.push({name:exMatch[1].trim(),sets});
-    }
-  }
-  return {exercises,volume,duration};
-}
 
-function importMotra(id) {
-  const ta=document.querySelector(`[data-id="${id}"][data-f="motra_raw"]`);
-  const resultDiv=document.getElementById('motra-result-'+id);
-  if(!ta||!resultDiv) return;
-  const parsed=parseMotraText(ta.value);
-  if(!parsed||!parsed.exercises.length){resultDiv.style.display='none';return;}
-  resultDiv.style.display='';
-  resultDiv.innerHTML=`
-    <div class="motra-totals">
-      <div><div class="motra-tot-val">${parsed.duration?parsed.duration+'min':'—'}</div><div class="motra-tot-lbl">Durata</div></div>
-      <div><div class="motra-tot-val">${parsed.volume>0?(parsed.volume/1000).toFixed(1)+'t':'—'}</div><div class="motra-tot-lbl">Volume</div></div>
-      <div><div class="motra-tot-val">${parsed.exercises.length}</div><div class="motra-tot-lbl">Esercizi</div></div>
-    </div>
-    ${parsed.exercises.map(e=>`<div class="motra-ex">
-      <span class="motra-ex-name">${e.name}</span>
-      <span class="motra-ex-sets">${e.sets.map(s=>s.reps+'×'+s.kg+'kg').join(', ')}</span>
-    </div>`).join('')}`;
-  // Salva dati parsed
-  if(ta.dataset.id&&ta.dataset.f){
-    const hidVol=document.querySelector(`[data-id="${id}"][data-f="motra_vol"]`)||createHidden(id,'motra_vol',ta.parentNode);
-    const hidDur=document.querySelector(`[data-id="${id}"][data-f="motra_dur"]`)||createHidden(id,'motra_dur',ta.parentNode);
-    hidVol.value=parsed.volume; hidDur.value=parsed.duration;
-  }
-}
+
 function createHidden(id,f,parent){const h=document.createElement('input');h.type='hidden';h.dataset.id=id;h.dataset.f=f;parent.appendChild(h);return h;}
 
 // ── Utils ────────────────────────────────────────────────────
