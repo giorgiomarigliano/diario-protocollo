@@ -3226,7 +3226,7 @@ function drawSparkline(canvasId, data, color) {
   if (vals.length < 2) return;
   let W = 0; let el = canvas.parentElement;
   while (el && W === 0) { W = el.clientWidth || el.offsetWidth || 0; el = el.parentElement; }
-  if (W === 0) W = 120;
+  if (W === 0) { requestAnimationFrame(() => drawSparkline(canvasId, data, color)); return; }
   const H = 32;
   canvas.width = W * 2; canvas.height = H * 2;
   canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
@@ -3263,14 +3263,18 @@ function drawDashChart(canvasId, datasets, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  // Forza layout reflow per ottenere larghezza reale
   canvas.style.display = 'block';
   canvas.style.width = '100%';
-  // Misura il container dopo il reflow
   const chartCard = canvas.closest('.charts-card') || canvas.parentElement;
-  const W = Math.max(100, (chartCard ? chartCard.clientWidth - 32 : 0) || 
+  let W = (chartCard ? chartCard.clientWidth - 32 : 0) ||
     (canvas.parentElement?.offsetWidth || 0) ||
-    Math.floor((document.getElementById('dash-view')?.clientWidth || window.innerWidth) * 0.44));
+    Math.floor((document.getElementById('dash-view')?.clientWidth || window.innerWidth) * 0.44);
+  // Se la larghezza è ancora 0 (layout non stabilizzato), riprova al prossimo frame
+  if (W <= 0) {
+    requestAnimationFrame(() => drawDashChart(canvasId, datasets, options));
+    return;
+  }
+  W = Math.max(100, W);
   const H = options.height || 80;
   canvas.width = W * dpr; canvas.height = H * dpr;
   canvas.style.width = W+'px'; canvas.style.height = H+'px';
@@ -3473,6 +3477,7 @@ function drawBarChart(canvasId, bars, options = {}) {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
+  if (rect.width <= 0) { requestAnimationFrame(() => drawBarChart(canvasId, bars, options)); return; }
   const H = options.height || 110;
   canvas.width = rect.width * dpr;
   canvas.height = H * dpr;
@@ -3740,9 +3745,13 @@ function getDayDataAll(field, days) {
     } else if (d >= startWU) {
       const i = Math.floor((d-startWU)/86400000);
       if (i>=0 && i<TOTAL_DAYS) {
+        // Legge prima da cache _lastData, poi DOM come fallback
         const rec = _lastData['day_'+i]||{};
-        const el = document.querySelector(`[data-id="day_${i}"][data-f="${field}"]`);
-        const fv = el ? parseFloat(el.value) : parseFloat(rec[field]);
+        let fv = parseFloat(rec[field]);
+        if (isNaN(fv)) {
+          const el = document.querySelector(`[data-id="day_${i}"][data-f="${field}"]`);
+          if (el) fv = parseFloat(el.value);
+        }
         if (!isNaN(fv)) v=fv;
       }
     }
@@ -3797,8 +3806,9 @@ function getSessionsAll(days) {
       if (i>=0&&i<TOTAL_DAYS) {
         const wo=getWorkout(i); if (wo.type==='Riposo') continue;
         const rec=_lastData['day_'+i]||{};
-        const el=document.querySelector(`[data-id="day_${i}"][data-f="wo_volume"]`);
-        const vol=parseFloat(el?el.value:rec.wo_volume)||NaN, rpe=parseFloat(rec.wo_rpe)||NaN;
+        let rawVol=parseFloat(rec.wo_volume);
+        if (isNaN(rawVol)){const el=document.querySelector(`[data-id="day_${i}"][data-f="wo_volume"]`);if(el)rawVol=parseFloat(el.value);}
+        const vol=isNaN(rawVol)?NaN:rawVol, rpe=parseFloat(rec.wo_rpe)||NaN;
         sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,phase:'wu'};
       }
     }
@@ -3828,7 +3838,7 @@ function getInjComplianceV2() {
 
 function buildDashboard() {
   const dash = document.getElementById('dash-view');
-  if (dashBuilt) { setTimeout(refreshDashCharts, 100); return; }
+  if (dashBuilt) { requestAnimationFrame(()=>requestAnimationFrame(refreshDashCharts)); return; }
   dashBuilt = true;
 
   const today = new Date(); today.setHours(0,0,0,0);
@@ -3893,7 +3903,7 @@ function buildDashboard() {
         <div class="kpi-box">
           <span class="kpi-icon">🧬</span>
           <div class="kpi-val" style="font-size:${inV2?'18px':'14px'}">${inV2?`WK${wkV2}`:'Pre-ciclo'}</div>
-          <div class="kpi-lbl">${inV2?`Giorno ${elapsedV2+1}/112`:`Giorno ${elapsedWU+1}/21 baseline`}</div>
+          <div class="kpi-lbl">${inV2?`Giorno ${elapsedV2+1}/112`:`Giorno ${elapsedWU+1}/21 warm-up`}</div>
           ${inV2?`<div class="kpi-delta neutral">${112-elapsedV2-1} gg al termine</div>`:`<div class="kpi-delta neutral">Ciclo v2 tra ${Math.abs(elapsedV2)} gg</div>`}
           <div style="margin-top:8px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
             <div style="height:100%;width:${pctCiclo}%;background:#0071e3;border-radius:2px"></div>
