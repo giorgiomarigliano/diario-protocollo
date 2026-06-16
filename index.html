@@ -3678,486 +3678,468 @@ function drawSentinelGroup(group) {
   drawDashChart('dc-sentinel', datasets, { height: 110 });
 }
 let dashBuilt = false;
+
+// ── Dati da proto v2 (_lastData2) ─────────────────────────────
+function getDayDataV2(field, days) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START2); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today - start) / 86400000);
+  if (elapsed < 0) return [];
+  const from = Math.max(0, elapsed - (days-1));
+  const result = [];
+  for (let i = from; i <= elapsed && i < TOTAL_DAYS2; i++) {
+    const rec = _lastData2['p2_day_'+i] || {};
+    const v = parseFloat(rec[field]);
+    const d = new Date(START2); d.setDate(d.getDate()+i);
+    result.push({ dayIdx:i, date:d, value:isNaN(v)?null:v });
+  }
+  return result;
+}
+
+// ── Dati unificati WU + V2 (ultimi N giorni) ──────────────────
+function getDayDataAll(field, days) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const startWU = new Date(START);  startWU.setHours(0,0,0,0);
+  const startV2 = new Date(START2); startV2.setHours(0,0,0,0);
+  const result = [];
+  for (let offset = days-1; offset >= 0; offset--) {
+    const d = new Date(today); d.setDate(d.getDate()-offset); d.setHours(0,0,0,0);
+    let v = null;
+    if (d >= startV2) {
+      const i = Math.floor((d-startV2)/86400000);
+      if (i>=0 && i<TOTAL_DAYS2) {
+        const rec = _lastData2['p2_day_'+i]||{};
+        const fv = parseFloat(rec[field]);
+        if (!isNaN(fv)) v=fv;
+      }
+    } else if (d >= startWU) {
+      const i = Math.floor((d-startWU)/86400000);
+      if (i>=0 && i<TOTAL_DAYS) {
+        const rec = _lastData['day_'+i]||{};
+        const el = document.querySelector(`[data-id="day_${i}"][data-f="${field}"]`);
+        const fv = el ? parseFloat(el.value) : parseFloat(rec[field]);
+        if (!isNaN(fv)) v=fv;
+      }
+    }
+    result.push({date:d, value:v});
+  }
+  return result;
+}
+
+// ── Sessioni allenamento da V2 ────────────────────────────────
+function getSessionsV2(days) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START2); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today-start)/86400000);
+  if (elapsed<0) return [];
+  const from = Math.max(0, elapsed-(days-1));
+  const sessions = [];
+  for (let i=from; i<=elapsed && i<TOTAL_DAYS2; i++) {
+    const wo = getWorkout2(i);
+    if (wo.type==='Riposo') continue;
+    const rec = _lastData2['p2_day_'+i]||{};
+    const vol  = parseFloat(rec.wo_volume)||NaN;
+    const kcal = parseFloat(rec.wo_kcal)||NaN;
+    const dur  = parseFloat(rec.wo_durata)||NaN;
+    const rpe  = parseFloat(rec.rpe)||NaN;
+    const d = new Date(START2); d.setDate(d.getDate()+i);
+    sessions.push({ dayIdx:i, date:d, type:wo.type,
+      volume:isNaN(vol)?null:vol, kcal:isNaN(kcal)?null:kcal,
+      durata:isNaN(dur)?null:dur, rpe:isNaN(rpe)?null:rpe });
+  }
+  return sessions;
+}
+
+// ── Sessioni allenamento WU + V2 ──────────────────────────────
+function getSessionsAll(days) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const startWU = new Date(START);  startWU.setHours(0,0,0,0);
+  const startV2 = new Date(START2); startV2.setHours(0,0,0,0);
+  const sessions = [];
+  for (let offset=days-1; offset>=0; offset--) {
+    const d = new Date(today); d.setDate(d.getDate()-offset); d.setHours(0,0,0,0);
+    let sess = null;
+    if (d>=startV2) {
+      const i=Math.floor((d-startV2)/86400000);
+      if (i>=0&&i<TOTAL_DAYS2) {
+        const wo=getWorkout2(i); if (wo.type==='Riposo') continue;
+        const rec=_lastData2['p2_day_'+i]||{};
+        const vol=parseFloat(rec.wo_volume)||NaN, rpe=parseFloat(rec.rpe)||NaN;
+        sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,phase:'v2'};
+      }
+    } else if (d>=startWU) {
+      const i=Math.floor((d-startWU)/86400000);
+      if (i>=0&&i<TOTAL_DAYS) {
+        const wo=getWorkout(i); if (wo.type==='Riposo') continue;
+        const rec=_lastData['day_'+i]||{};
+        const el=document.querySelector(`[data-id="day_${i}"][data-f="wo_volume"]`);
+        const vol=parseFloat(el?el.value:rec.wo_volume)||NaN, rpe=parseFloat(rec.wo_rpe)||NaN;
+        sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,phase:'wu'};
+      }
+    }
+    if (sess) sessions.push(sess);
+  }
+  return sessions;
+}
+
+// ── Compliance iniezioni V2 ────────────────────────────────────
+function getInjComplianceV2() {
+  const today=new Date(); today.setHours(0,0,0,0);
+  const start=new Date(START2); start.setHours(0,0,0,0);
+  const elapsed=Math.floor((today-start)/86400000);
+  if (elapsed<0) return {done:0,total:0,pct:0};
+  let done=0,total=0;
+  for (let i=0;i<=Math.min(elapsed,TOTAL_DAYS2-1);i++) {
+    const rec=_lastData2['p2_day_'+i]||{};
+    const slots=getInjectionSlots2(i);
+    slots.forEach(s=>s.fields.forEach(f=>{
+      total++;
+      const k='inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_');
+      if((rec[k]||'')==='fatto') done++;
+    }));
+  }
+  return {done,total,pct:total?Math.round((done/total)*100):0};
+}
+
 function buildDashboard() {
   const dash = document.getElementById('dash-view');
   if (dashBuilt) { setTimeout(refreshDashCharts, 100); return; }
   dashBuilt = true;
 
   const today = new Date(); today.setHours(0,0,0,0);
-  const start = new Date(START); start.setHours(0,0,0,0);
-  const elapsed = Math.floor((today - start) / 86400000);
-  const wk = Math.floor(elapsed / 7) + 1;
-  const ph = getPhase(elapsed);
+  const startWU = new Date(START);  startWU.setHours(0,0,0,0);
+  const startV2 = new Date(START2); startV2.setHours(0,0,0,0);
+  const elapsedWU = Math.floor((today-startWU)/86400000);
+  const elapsedV2 = Math.floor((today-startV2)/86400000);
+  const inV2 = elapsedV2 >= 0;
+  const wkV2 = inV2 ? Math.floor(elapsedV2/7)+1 : 0;
+  const ph   = inV2 ? getPhase2(elapsedV2) : {label:'Pre-ciclo',badge:'ph-baseline'};
 
-  // ── KPI SECTION ──
-  const pesoData = getDayData('peso', 30);
-  const hrvData = getDayData('hrv', 30);
-  const pesoVals = pesoData.filter(p => p.value !== null).map(p => p.value);
-  const hrvVals = hrvData.filter(p => p.value !== null).map(p => p.value);
-  const avgPeso = pesoVals.length ? (pesoVals.reduce((a,b)=>a+b,0)/pesoVals.length).toFixed(1) : '—';
-  const avgHrv = hrvVals.length ? Math.round(hrvVals.reduce((a,b)=>a+b,0)/hrvVals.length) : '—';
-  const lastPeso = pesoVals.length ? pesoVals[pesoVals.length-1].toFixed(1) : '—';
-  const lastHrv = hrvVals.length ? Math.round(hrvVals[hrvVals.length-1]) : '—';
-  const pesoDelta = pesoVals.length >= 2 ? (pesoVals[pesoVals.length-1] - pesoVals[0]).toFixed(1) : null;
-  const hrvDelta = hrvVals.length >= 2 ? Math.round(hrvVals[hrvVals.length-1] - hrvVals[0]) : null;
+  // Leggi ultimi valori biometrici
+  function lastVal(field, days) {
+    const d = getDayDataAll(field, days);
+    const v = d.filter(p=>p.value!==null);
+    return v.length ? v[v.length-1].value : null;
+  }
+  const lPeso = lastVal('peso',60);
+  const lHrv  = lastVal('hrv',60);
+  const lRhr  = lastVal('rhr',60);
+  const lBpS  = lastVal('bp_sys',60);
+  const lBpD  = lastVal('bp_dia',60);
+  const inj   = getInjComplianceV2();
+  const pctCiclo = inV2 ? Math.min(100,Math.round((elapsedV2/112)*100)) : 0;
 
-  dash.innerHTML = `
-    <div class="dash-inner view-wrap">
+  // Delta peso vs T0 (DEXA: 71.1kg)
+  const T0_PESO = 71.1, T0_HRV = 37;
+  const deltaPeso = lPeso ? (lPeso - T0_PESO).toFixed(1) : null;
+  const deltaHrv  = lHrv  ? Math.round(lHrv - T0_HRV)  : null;
 
-      <!-- KPI -->
+  dash.innerHTML = `<div class="dash-inner view-wrap">
+
+    <!-- ══ SEZ. STATO ══════════════════════════════════════════ -->
+    <div class="dash-section">
+      <div class="dash-section-title">Stato ciclo</div>
       <div class="kpi-grid">
+
         <div class="kpi-box">
           <span class="kpi-icon">⚖️</span>
-          <div class="kpi-val">${lastPeso}<span style="font-size:13px;font-weight:400"> kg</span></div>
+          <div class="kpi-val">${lPeso?lPeso.toFixed(1):'—'}<span style="font-size:13px;font-weight:400"> kg</span></div>
           <div class="kpi-lbl">Peso attuale</div>
-          ${pesoDelta !== null ? `<div class="kpi-delta ${parseFloat(pesoDelta)<0?'up':'down'}">${parseFloat(pesoDelta)>0?'+':''}${pesoDelta} kg</div>` : ''}
-          <canvas class="kpi-spark" id="spark-peso"></canvas>
+          ${deltaPeso!==null?`<div class="kpi-delta ${parseFloat(deltaPeso)<0?'up':'down'}">${parseFloat(deltaPeso)>0?'+':''}${deltaPeso} vs T0 (71.1)</div>`:'<div class="kpi-delta neutral">T0: 71.1 kg · target 66–68</div>'}
+          <canvas class="kpi-spark" id="spark-peso" style="margin-top:8px"></canvas>
         </div>
+
         <div class="kpi-box">
           <span class="kpi-icon">💓</span>
-          <div class="kpi-val">${lastHrv}<span style="font-size:13px;font-weight:400"> ms</span></div>
-          <div class="kpi-lbl">HRV ultimo</div>
-          ${hrvDelta !== null ? `<div class="kpi-delta ${parseInt(hrvDelta)>0?'up':'down'}">${parseInt(hrvDelta)>0?'+':''}${hrvDelta} ms</div>` : ''}
-          <canvas class="kpi-spark" id="spark-hrv"></canvas>
+          <div class="kpi-val">${lHrv?Math.round(lHrv):'—'}<span style="font-size:13px;font-weight:400"> ms</span></div>
+          <div class="kpi-lbl">HRV</div>
+          ${deltaHrv!==null?`<div class="kpi-delta ${deltaHrv>0?'up':'down'}">${deltaHrv>0?'+':''}${deltaHrv} ms vs T0 (37ms)</div>`:'<div class="kpi-delta neutral">T0: 37ms</div>'}
+          <canvas class="kpi-spark" id="spark-hrv" style="margin-top:8px"></canvas>
         </div>
+
         <div class="kpi-box">
-          <span class="kpi-icon">📅</span>
-          <div class="kpi-val">${wk}<span style="font-size:13px;font-weight:400">/16</span></div>
-          <div class="kpi-lbl">Settimana</div>
-          <div class="kpi-delta neutral">Giorno ${elapsed+1}</div>
-          <div style="margin-top:8px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden"><div style="height:100%;width:${Math.round((elapsed/112)*100)}%;background:#0071e3;border-radius:2px"></div></div>
+          <span class="kpi-icon">❤️</span>
+          <div class="kpi-val">${lRhr?Math.round(lRhr):'—'}<span style="font-size:13px;font-weight:400"> bpm</span></div>
+          <div class="kpi-lbl">RHR</div>
+          <div class="kpi-delta neutral">${lBpS&&lBpD?`PA: ${Math.round(lBpS)}/${Math.round(lBpD)} mmHg`:'PA: —'}</div>
+          <canvas class="kpi-spark" id="spark-rhr" style="margin-top:8px"></canvas>
         </div>
+
         <div class="kpi-box">
           <span class="kpi-icon">🧬</span>
-          <div class="kpi-val" style="font-size:14px">${ph.label.split('·')[0].trim()}</div>
-          <div class="kpi-lbl">Fase attuale</div>
-          <div class="kpi-delta neutral">${TOTAL_DAYS - elapsed - 1} gg al termine</div>
-        </div>
-      </div>
-
-      <!-- TIMELINE CICLO — full width -->
-      <div class="dash-section">
-        <div class="dash-section-title">Timeline ciclo</div>
-        <div class="dash-card">
-
-          <!-- Barra progress -->
-          <div class="timeline-phases" id="timeline-phases"></div>
-          <div class="timeline-track"><div class="timeline-fill" style="width:${Math.min(100,(elapsed/TOTAL_DAYS)*100).toFixed(1)}%"></div></div>
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:3px">
-            <span>8 giu</span><span>25 set</span>
-          </div>
-
-          <!-- Fasi: card verticali mobile-friendly -->
-          <div style="display:flex;flex-direction:column;gap:7px;margin-top:14px">
-
-            ${(()=>{
-              const phaseDefs = [
-                { color:'#0071e3', bg:'rgba(0,113,227,.07)', sett:'1–4', date:'8 giu – 5 lug', days:28,
-                  peptides:[
-                    {dot:'#0071e3', name:'Tesamorelin', dose:'1mg · 200µl', giorni:'ogni sera · 7gg/sett'},
-                  ]
-                },
-                { color:'#ff9500', bg:'rgba(255,149,0,.07)', sett:'5–6', date:'6 lug – 19 lug', days:14,
-                  peptides:[
-                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl', giorni:'ogni sera · 7gg/sett'},
-                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg',         giorni:'ogni sera · 7gg/sett'},
-                  ]
-                },
-                { color:'#34c759', bg:'rgba(52,199,89,.07)', sett:'7–12', date:'20 lug – 30 ago', days:42,
-                  bkk: true,
-                  peptides:[
-                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl', giorni:'ogni sera · 7gg/sett'},
-                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg',         giorni:'ogni sera · 7gg/sett'},
-                    {dot:'#34c759', name:'MOTS-C',      dose:'2.5mg',       giorni:'lun + gio · mattina a digiuno'},
-                  ]
-                },
-                { color:'#ff3b30', bg:'rgba(255,59,48,.07)', sett:'13–16', date:'31 ago – 25 set', days:28,
-                  peptides:[
-                    {dot:'#ff9500', name:'Tesamorelin', dose:'2mg · 400µl', giorni:'ogni sera · 7gg/sett'},
-                    {dot:'#af52de', name:'GHK-Cu',      dose:'1mg',         giorni:'ogni sera · 7gg/sett'},
-                    {dot:'#34c759', name:'MOTS-C',      dose:'2.5mg',       giorni:'lun + gio · mattina a digiuno'},
-                    {dot:'#ff3b30', name:'BPC-157',     dose:'250mcg',      giorni:'mar/mer/ven/sab/dom · pre-workout'},
-                  ]
-                },
-              ];
-              const phaseStart = [0,28,42,84];
-              return phaseDefs.map((p, i) => {
-                const dayStart = phaseStart[i];
-                const isActive = elapsed >= dayStart && elapsed < dayStart + p.days;
-                const isPast   = elapsed >= dayStart + p.days;
-                const daysLeft = isActive ? (dayStart + p.days - elapsed) : null;
-                const pills = p.peptides.map(px =>
-                  `<div style="padding:5px 0;border-bottom:1px solid rgba(0,0,0,.04)">
-                    <div style="display:flex;align-items:center;gap:6px">
-                      <div style="width:6px;height:6px;border-radius:50%;background:${px.dot};flex-shrink:0"></div>
-                      <span style="font-size:12px;font-weight:600;color:var(--text)">${px.name}</span>
-                      <span style="font-size:11px;color:var(--muted)">${px.dose}</span>
-                    </div>
-                    <div style="margin-left:12px;margin-top:2px;font-size:11px;color:var(--faint,#aaa);">📅 ${px.giorni}</div>
-                  </div>`
-                ).join('');
-                return `
-                <div style="border-radius:11px;background:${isActive ? p.bg : 'var(--surface2,#f5f5f7)'};border:1.5px solid ${isActive ? p.color : 'transparent'};padding:10px 12px;opacity:${isPast?'.55':'1'}">
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
-                    <div style="display:flex;align-items:center;gap:7px">
-                      <div style="width:10px;height:10px;border-radius:50%;background:${p.color};flex-shrink:0"></div>
-                      <span style="font-size:13px;font-weight:600;color:${p.color}">Sett. ${p.sett}</span>
-                      ${p.bkk ? '<span style="font-size:10px;background:rgba(0,113,227,.12);color:#0071e3;padding:1px 6px;border-radius:20px">🇹🇭 BKK</span>' : ''}
-                      ${isActive ? '<span style="font-size:10px;background:'+p.color+';color:#fff;padding:1px 6px;border-radius:20px;font-weight:600">● ATTIVA</span>' : ''}
-                      ${isPast   ? '<span style="font-size:10px;color:var(--muted)">✓ completata</span>' : ''}
-                    </div>
-                    <span style="font-size:11px;color:var(--muted)">${p.date}</span>
-                  </div>
-                  <div style="display:flex;flex-direction:column;gap:0">${pills}</div>
-                  ${isActive ? '<div style="margin-top:6px;font-size:11px;color:'+p.color+';font-weight:500">'+daysLeft+' giorni rimanenti</div>' : ''}
-                </div>`;
-              }).join('');
-            })()}
-
+          <div class="kpi-val" style="font-size:${inV2?'18px':'14px'}">${inV2?`WK${wkV2}`:'Pre-ciclo'}</div>
+          <div class="kpi-lbl">${inV2?`Giorno ${elapsedV2+1}/112`:`Giorno ${elapsedWU+1}/21 baseline`}</div>
+          ${inV2?`<div class="kpi-delta neutral">${112-elapsedV2-1} gg al termine</div>`:`<div class="kpi-delta neutral">Ciclo v2 tra ${Math.abs(elapsedV2)} gg</div>`}
+          <div style="margin-top:8px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${pctCiclo}%;background:#0071e3;border-radius:2px"></div>
           </div>
         </div>
-      </div>
 
-      <!-- 2-COL: biometria+soggettivo sx · workout dx -->
+        ${inV2?`<div class="kpi-box">
+          <span class="kpi-icon">💉</span>
+          <div class="kpi-val">${inj.pct}<span style="font-size:13px;font-weight:400">%</span></div>
+          <div class="kpi-lbl">Compliance iniezioni</div>
+          <div class="kpi-delta neutral">${inj.done}/${inj.total} dosi</div>
+          <div style="margin-top:8px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${inj.pct}%;background:${inj.pct>=80?'#34c759':inj.pct>=60?'#ff9500':'#ff3b30'};border-radius:2px"></div>
+          </div>
+        </div>`:''}
+
+      </div>
+    </div>
+
+    <!-- ══ SEZ. BIOMETRIA ══════════════════════════════════════ -->
+    <div class="dash-section">
+      <div class="dash-section-title">Biometria · ultimi 60 giorni</div>
       <div class="dash-two-col">
-
-        <!-- COLONNA SX -->
         <div>
-          <!-- BIOMETRIA CHARTS -->
-          <div class="dash-section">
-            <div class="dash-section-title">Biometria · ultimi 30 giorni</div>
-            <div class="dash-card">
-              <div class="dash-card-title">Peso kg <span style="font-weight:400;color:var(--faint)">target 66–68kg</span></div>
-              <div class="chart-wrap"><canvas class="dash-chart" id="dc-peso" style="height:100px"></canvas></div>
-            </div>
-            <div class="dash-card">
-              <div class="dash-card-title">HRV ms <span style="font-weight:400;color:var(--faint)">baseline T0: 37ms</span></div>
-              <div class="chart-wrap"><canvas class="dash-chart" id="dc-hrv" style="height:100px"></canvas></div>
-            </div>
-            <div class="dash-card">
-              <div class="dash-card-title">Pressione mmHg</div>
-              <div class="subj-legend">
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Sistolica</div>
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#0071e3"></div>Diastolica</div>
-              </div>
-              <div class="chart-wrap"><canvas class="dash-chart" id="dc-bp" style="height:100px"></canvas></div>
-            </div>
+          <div class="charts-card">
+            <div class="dash-card-title">Peso (kg) <span style="font-size:11px;color:var(--muted);font-weight:400">— target 66–68 · T0: 71.1</span></div>
+            <canvas class="dash-chart" id="dc-peso" height="110"></canvas>
           </div>
-
-          <!-- SOGGETTIVO -->
-          <div class="dash-section">
-            <div class="dash-section-title">Soggettivo · ultimi 30 giorni</div>
-            <div class="dash-card">
-              <div class="subj-legend">
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#0071e3"></div>Energia</div>
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>Recupero</div>
-              </div>
-              <div class="chart-wrap"><canvas class="dash-chart" id="dc-subj" style="height:100px"></canvas></div>
-            </div>
-          </div>
-
-          <!-- COMPLIANCE -->
-          <div class="dash-section">
-            <div class="dash-section-title">Compliance protocollo</div>
-            <div class="dash-card">
-              <div class="compliance-grid">
-                <div class="comp-item">
-                  <div class="comp-ring"><canvas id="cr-inj"></canvas>
-                    <div class="comp-ring-label"><span class="comp-ring-pct" id="cr-inj-pct">—</span><span class="comp-ring-lbl">%</span></div>
-                  </div>
-                  <div class="comp-title">Iniezioni</div>
-                  <div class="comp-sub" id="cr-inj-sub">—</div>
-                </div>
-                <div class="comp-item">
-                  <div class="comp-ring"><canvas id="cr-wo"></canvas>
-                    <div class="comp-ring-label"><span class="comp-ring-pct" id="cr-wo-pct">—</span><span class="comp-ring-lbl">%</span></div>
-                  </div>
-                  <div class="comp-title">Workout</div>
-                  <div class="comp-sub" id="cr-wo-sub">—</div>
-                </div>
-                <div class="comp-item">
-                  <div class="comp-ring"><canvas id="cr-stack"></canvas>
-                    <div class="comp-ring-label"><span class="comp-ring-pct" id="cr-stack-pct">—</span><span class="comp-ring-lbl">%</span></div>
-                  </div>
-                  <div class="comp-title">Stack</div>
-                  <div class="comp-sub" id="cr-stack-sub">—</div>
-                </div>
-              </div>
-            </div>
-            <div class="dash-card" style="margin-top:10px">
-              <div class="dash-card-title">Workout per tipo · compliance</div>
-              <div style="display:flex;flex-direction:column;gap:6px;margin-top:8px" id="cr-wo-breakdown"></div>
-            </div>
-          </div>
-
-          <!-- PROSSIMI EVENTI -->
-          <div class="dash-section">
-            <div class="dash-section-title">Prossimi eventi</div>
-            <div class="dash-card" id="next-events"></div>
+          <div class="charts-card" style="margin-top:10px">
+            <div class="dash-card-title">HRV (ms) <span style="font-size:11px;color:var(--muted);font-weight:400">— T0: 37ms</span></div>
+            <canvas class="dash-chart" id="dc-hrv" height="110"></canvas>
           </div>
         </div>
-
-        <!-- COLONNA DX: WORKOUT & PERFORMANCE -->
         <div>
-          <div class="dash-section">
-            <div class="dash-section-title">Workout &amp; Performance</div>
-            <div class="dash-card">
-              <div class="dash-card-title">Volume per sessione (kg) <span style="font-weight:400;color:var(--faint)">ultimi 30gg</span></div>
-              <div class="subj-legend">
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Push</div>
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>Pull</div>
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff9500"></div>Legs</div>
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#af52de"></div>Altro</div>
-              </div>
-              <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-vol" style="height:110px"></canvas></div>
+          <div class="charts-card">
+            <div class="dash-card-title">RHR (bpm)</div>
+            <canvas class="dash-chart" id="dc-rhr" height="110"></canvas>
+          </div>
+          <div class="charts-card" style="margin-top:10px">
+            <div class="dash-card-title">Pressione arteriosa (mmHg)
+              <span style="margin-left:8px;font-size:10px">
+                <span style="color:#ff3b30">● Sistolica</span>
+                <span style="color:#0071e3;margin-left:6px">● Diastolica</span>
+              </span>
             </div>
-            <div class="dash-card">
-              <div class="dash-card-title">Kcal bruciate per sessione <span style="font-weight:400;color:var(--faint)">ultimi 30gg</span></div>
-              <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-kcal" style="height:110px"></canvas></div>
-            </div>
-            <div class="dash-card">
-              <div class="dash-card-title">RPE globale nel tempo <span style="font-weight:400;color:var(--faint)">scala 1–10</span></div>
-              <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-rpe" style="height:100px"></canvas></div>
-            </div>
-            <div class="dash-card">
-              <div class="dash-card-title">Durata sessioni (min) <span style="font-weight:400;color:var(--faint)">ultimi 30gg</span></div>
-              <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-dur" style="height:100px"></canvas></div>
-            </div>
-            <div class="dash-card">
-              <div class="dash-card-title">Volume settimanale per tipo (kg)</div>
-              <div class="subj-legend" style="flex-wrap:wrap">
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff3b30"></div>Push</div>
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#34c759"></div>Pull</div>
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#ff9500"></div>Legs</div>
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#af52de"></div>Upper Sab</div>
-                <div class="subj-leg-item"><div class="subj-leg-dot" style="background:#0071e3"></div>Upper Dom</div>
-              </div>
-              <div class="chart-wrap"><canvas class="dash-chart" id="dc-wo-wkly" style="height:120px"></canvas></div>
-            </div>
-            <div class="dash-card">
-              <div class="dash-card-title">Sentinel lifts · progressione kg</div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px" id="sentinel-tabs">
-                <button class="sent-tab active" onclick="switchSentinelGroup('chest',this)">Petto</button>
-                <button class="sent-tab" onclick="switchSentinelGroup('shoulder',this)">Spalle</button>
-                <button class="sent-tab" onclick="switchSentinelGroup('tricep',this)">Tricipiti</button>
-                <button class="sent-tab" onclick="switchSentinelGroup('back',this)">Dorso</button>
-                <button class="sent-tab" onclick="switchSentinelGroup('bicep',this)">Bicipiti</button>
-                <button class="sent-tab" onclick="switchSentinelGroup('legs',this)">Gambe</button>
-              </div>
-              <div id="sentinel-legend" class="subj-legend" style="flex-wrap:wrap;margin-bottom:4px"></div>
-              <div class="chart-wrap"><canvas class="dash-chart" id="dc-sentinel" style="height:110px"></canvas></div>
-            </div>
-            <div class="dash-card">
-              <div class="dash-card-title">HRV vs Volume allenamento <span style="font-weight:400;color:var(--faint)">scatter</span></div>
-              <div class="chart-wrap"><canvas class="dash-chart" id="dc-hrv-vol" style="height:130px"></canvas></div>
-            </div>
-            <div class="dash-card">
-              <div class="dash-card-title">RPE vs HRV <span style="font-weight:400;color:var(--faint)">fatica percepita · recupero</span></div>
-              <div class="chart-wrap"><canvas class="dash-chart" id="dc-rpe-hrv" style="height:100px"></canvas></div>
-            </div>
+            <canvas class="dash-chart" id="dc-bp" height="110"></canvas>
           </div>
         </div>
+      </div>
+    </div>
 
-      </div><!-- /dash-two-col -->
+    <!-- ══ SEZ. SOGGETTIVO ════════════════════════════════════ -->
+    <div class="dash-section">
+      <div class="dash-section-title">Soggettivo · ultimi 30 giorni</div>
+      <div class="charts-card">
+        <div class="dash-card-title">Energia / Recupero / Umore (1–10)
+          <span style="margin-left:8px;font-size:10px">
+            <span style="color:#0071e3">● Energia</span>
+            <span style="color:#34c759;margin-left:6px">● Recupero</span>
+            <span style="color:#af52de;margin-left:6px">● Umore</span>
+          </span>
+        </div>
+        <canvas class="dash-chart" id="dc-subj" height="100"></canvas>
+      </div>
+    </div>
 
-    </div>`;
+    <!-- ══ SEZ. ALLENAMENTO ═══════════════════════════════════ -->
+    <div class="dash-section">
+      <div class="dash-section-title">Allenamento · ultimi 60 giorni</div>
+      <div class="dash-two-col">
+        <div>
+          <div class="charts-card">
+            <div class="dash-card-title">Volume per sessione (tonnellate)</div>
+            <canvas class="dash-chart" id="dc-vol" height="120"></canvas>
+          </div>
+        </div>
+        <div>
+          <div class="charts-card">
+            <div class="dash-card-title">RPE sessioni</div>
+            <canvas class="dash-chart" id="dc-rpe" height="120"></canvas>
+          </div>
+        </div>
+      </div>
 
-  // Build timeline phases
-  // Wk 1-4 (gg 0-27): Tesa 1mg — Wk 5-6 (gg 28-41): Tesa 2mg + GHK-Cu
-  // Wk 7-12 (gg 42-83): + MOTS-C — Wk 13-16 (gg 84-111): + BPC-157
-  const phases = [
-    {len:28, color:'#0071e3', label:'Tesa 1mg'},
-    {len:14, color:'#ff9500', label:'Tesa 2mg · GHK-Cu'},
-    {len:42, color:'#34c759', label:'+ MOTS-C'},
-    {len:28, color:'#ff3b30', label:'+ BPC-157'},
-  ];
-  const tl = document.getElementById('timeline-phases');
-  phases.forEach(p => {
-    const el = document.createElement('div');
-    el.className = 'timeline-phase';
-    el.title = p.label;
-    el.style.cssText = `background:${p.color};flex:${p.len}`;
-    tl.appendChild(el);
-  });
+      <!-- Sentinel lifts -->
+      <div style="margin-top:10px">
+        <div class="dash-section-title" style="margin-top:16px">Sentinel lifts · trend</div>
+        <div class="dash-two-col">
+          <div class="charts-card">
+            <div class="dash-card-title">Petto compound (kg)</div>
+            <canvas class="dash-chart" id="dc-bench" height="100"></canvas>
+          </div>
+          <div class="charts-card">
+            <div class="dash-card-title">Leg Press (kg)</div>
+            <canvas class="dash-chart" id="dc-legpress" height="100"></canvas>
+          </div>
+        </div>
+        <div class="dash-two-col" style="margin-top:10px">
+          <div class="charts-card">
+            <div class="dash-card-title">RDL (kg)</div>
+            <canvas class="dash-chart" id="dc-rdl" height="100"></canvas>
+          </div>
+          <div class="charts-card">
+            <div class="dash-card-title">Military Press (kg)</div>
+            <canvas class="dash-chart" id="dc-milpress" height="100"></canvas>
+          </div>
+        </div>
+      </div>
 
-  // Build next events — giorni calcolati da START (8 giu 2026)
-  // Sett 5 = gg 28 (6 lug) · Sett 7 = gg 42 (20 lug) · Bangkok gg 60-74 (7-21 ago)
-  // Sett 13 = gg 84 (31 ago) · Fine = gg 112 (28 set)
-  const events = [
-    {day:28,  label:'Tesamorelin → 2mg · GHK-Cu inizia', color:'#ff9500'},
-    {day:42,  label:'MOTS-C inizia (lun/gio mattina)', color:'#34c759'},
-    {day:60,  label:'Partenza Bangkok ✈️', color:'#0071e3'},
-    {day:74,  label:'Rientro da Bangkok', color:'#0071e3'},
-    {day:84,  label:'BPC-157 inizia · Mini-panel sangue', color:'#ff3b30'},
-    {day:112, label:'Fine ciclo · DEXA T1', color:'#af52de'},
-  ];
-  const ne = document.getElementById('next-events');
-  const upcoming = events.filter(e => e.day > elapsed).slice(0, 5);
-  ne.innerHTML = upcoming.map(e => {
-    const d = new Date(START); d.setDate(d.getDate() + e.day);
-    const daysLeft = e.day - elapsed;
-    return `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);last-child:border:none">
-      <div style="width:8px;height:8px;border-radius:50%;background:${e.color};flex-shrink:0"></div>
-      <div style="flex:1;font-size:13px;font-weight:500">${e.label}</div>
-      <div style="font-size:11px;color:var(--muted)">${daysLeft === 1 ? 'domani' : `tra ${daysLeft} gg`} · ${d.toLocaleDateString('it-IT',{day:'2-digit',month:'short'})}</div>
-    </div>`;
-  }).join('');
+      <!-- Breakdown tipo sessione -->
+      <div class="dash-two-col" style="margin-top:10px">
+        <div class="charts-card">
+          <div class="dash-card-title">Distribuzione sessioni per tipo</div>
+          <div id="dc-breakdown" style="padding-top:8px"></div>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">HRV vs Volume <span style="font-size:10px;color:var(--muted);font-weight:400">(correlazione recupero)</span></div>
+          <canvas class="dash-chart" id="dc-scatter" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SEZ. COMPLIANCE CICLO ══════════════════════════════ -->
+    ${inV2?`<div class="dash-section">
+      <div class="dash-section-title">Compliance protocollo v2</div>
+      <div class="compliance-grid" id="comp-grid"></div>
+    </div>`:''}
+
+  </div>`;
 
   setTimeout(refreshDashCharts, 150);
 }
 
 function refreshDashCharts() {
-  const peso30 = getDayData('peso', 30);
-  const hrv30 = getDayData('hrv', 30);
-  const bpSys = getDayData('bp_sys', 30);
-  const bpDia = getDayData('bp_dia', 30);
-  const energia = getDayData('energia', 30);
-  const recupero = getDayData('recupero', 30);
+  // ── Biometria (60gg unificata WU+V2) ──────────────────────
+  const peso60 = getDayDataAll('peso', 60);
+  const hrv60  = getDayDataAll('hrv',  60);
+  const rhr60  = getDayDataAll('rhr',  60);
+  const bpSys  = getDayDataAll('bp_sys',60);
+  const bpDia  = getDayDataAll('bp_dia',60);
 
-  // Sparkline nei KPI
-  drawSparkline('spark-peso', peso30, '#0071e3');
-  drawSparkline('spark-hrv', hrv30, '#34c759');
+  // ── Soggettivo (30gg) ──────────────────────────────────────
+  const energ = getDayDataAll('energia', 30);
+  const recup = getDayDataAll('recupero',30);
+  const umore = getDayDataAll('umore',   30);
 
-  drawDashChart('dc-peso', [{data:peso30, color:'#0071e3'}], {height:100, minScale:0.99, maxScale:1.01});
-  drawDashChart('dc-hrv', [{data:hrv30, color:'#34c759'}], {height:100});
+  // ── Sparkline KPI ──────────────────────────────────────────
+  drawSparkline('spark-peso', peso60, '#0071e3');
+  drawSparkline('spark-hrv',  hrv60,  '#34c759');
+  drawSparkline('spark-rhr',  rhr60,  '#ff3b30');
 
-  // Merge bp sys and dia on same chart
-  const allBp = [...bpSys.map(p=>p.value), ...bpDia.map(p=>p.value)].filter(v=>v!==null);
-  if (allBp.length >= 2) {
-    drawDashChart('dc-bp', [
-      {data:bpSys, color:'#ff3b30'},
-      {data:bpDia, color:'#0071e3'}
-    ], {height:100});
-  }
+  // ── Grafici biometria ──────────────────────────────────────
+  drawDashChart('dc-peso',[{data:peso60,color:'#0071e3'}],{height:110,minScale:0.98,maxScale:1.02,refLine:71.1});
+  drawDashChart('dc-hrv', [{data:hrv60, color:'#34c759'}],{height:110,refLine:37});
+  drawDashChart('dc-rhr', [{data:rhr60, color:'#ff3b30'}],{height:110});
 
-  drawDashChart('dc-subj', [
-    {data:energia, color:'#0071e3'},
-    {data:recupero, color:'#34c759'}
-  ], {height:100, minScale:0.9, maxScale:1.1});
+  const allBp=[...bpSys,...bpDia].filter(p=>p.value!==null);
+  if(allBp.length>=2)
+    drawDashChart('dc-bp',[{data:bpSys,color:'#ff3b30'},{data:bpDia,color:'#0071e3'}],{height:110});
 
-  // Compliance rings
-  const comp = getComplianceData();
-  const injPct = comp.injPrev > 0 ? Math.round((comp.injDone/comp.injPrev)*100) : 0;
-  const woPct = comp.woPrev > 0 ? Math.round((comp.woDone/comp.woPrev)*100) : 0;
-  const stackPct = comp.stackDays > 0 ? Math.round((comp.stackDone/comp.stackDays)*100) : 0;
+  // ── Soggettivo ─────────────────────────────────────────────
+  const hasSubj=[...energ,...recup,...umore].some(p=>p.value!==null);
+  if(hasSubj)
+    drawDashChart('dc-subj',[
+      {data:energ,color:'#0071e3'},
+      {data:recup,color:'#34c759'},
+      {data:umore,color:'#af52de'}
+    ],{height:100,minVal:1,maxVal:10});
 
-  document.getElementById('cr-inj-pct').textContent = injPct;
-  document.getElementById('cr-inj-sub').textContent = `${comp.injDone}/${comp.injPrev}`;
-  document.getElementById('cr-wo-pct').textContent = woPct;
-  document.getElementById('cr-wo-sub').textContent = `${comp.woDone}/${comp.woPrev}`;
-  document.getElementById('cr-stack-pct').textContent = stackPct;
-  document.getElementById('cr-stack-sub').textContent = `${comp.stackDone}/${comp.stackDays} giorni`;
+  // ── Allenamento sessioni (60gg WU+V2) ──────────────────────
+  const sessions = getSessionsAll(60);
+  if(sessions.length>0){
+    // Volume bar chart
+    const volBars = sessions.filter(s=>s.volume).map(s=>({
+      label: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}),
+      value: s.volume/1000,
+      color: {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'}[s.type]||'#aeaeb2'
+    }));
+    if(volBars.length) drawBarChart('dc-vol', volBars, {height:120, unit:'t'});
 
-  drawComplianceRing('cr-inj', injPct, '#34c759');
-  drawComplianceRing('cr-wo', woPct, '#0071e3');
-  drawComplianceRing('cr-stack', stackPct, '#ff9500');
+    // RPE line
+    const rpeData = sessions.filter(s=>s.rpe).map(s=>({
+      date:s.date, value:s.rpe
+    }));
+    if(rpeData.length) drawDashChart('dc-rpe',[{data:rpeData,color:'#ff9500'}],{height:120,minVal:1,maxVal:10});
 
-  // Workout breakdown bars
-  const breakdown = document.getElementById('cr-wo-breakdown');
-  if (breakdown) {
-    const typeColors2 = { Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#0071e3' };
-    const typeLabels  = { Push:'Push', Pull:'Pull', Legs:'Legs', 'Upper Sab':'Upper Sab', 'Upper Dom':'Upper Dom' };
-    breakdown.innerHTML = Object.entries(comp.woCounts).map(([type, total]) => {
-      const done2 = comp.woDones[type] || 0;
-      const pct2 = total > 0 ? Math.round((done2/total)*100) : 0;
-      const col = typeColors2[type] || '#aeaeb2';
-      return `<div class="comp-bar-row">
-        <div class="comp-bar-label">${typeLabels[type]}</div>
-        <div class="comp-bar-track"><div class="comp-bar-fill" style="width:${pct2}%;background:${col}"></div></div>
-        <div class="comp-bar-pct">${done2}/${total}</div>
-      </div>`;
-    }).join('');
-  }
-
-  // ── WORKOUT CHARTS ──────────────────────────────────────────────────────────
-  const sessions30 = getWorkoutSessions(30);
-
-  // Volume per sessione - colored bars by type
-  const typeColors = { Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#0071e3', 'Upper Body':'#af52de', BKK_FREE:'#0071e3' };
-  const volBars = sessions30.map(s => ({
-    label: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}).replace('/',''),
-    value: s.volume,
-    color: typeColors[s.type] || '#aeaeb2'
-  }));
-  drawBarChart('dc-wo-vol', volBars, { height: 110, valFormat: v => (v/1000).toFixed(1)+'t' });
-
-  // Kcal per sessione
-  const kcalBars = sessions30.map(s => ({
-    label: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}).replace('/',''),
-    value: s.kcal,
-    color: '#ff9500'
-  }));
-  drawBarChart('dc-wo-kcal', kcalBars, { height: 110 });
-
-  // RPE nel tempo - line chart
-  const rpeData = sessions30.map(s => ({ date: s.date, value: s.rpe }));
-  drawDashChart('dc-wo-rpe', [{data: rpeData, color: '#af52de'}], { height: 100, minScale: 0.8, maxScale: 1.2 });
-
-  // Durata sessioni - line chart
-  const durData = sessions30.map(s => ({ date: s.date, value: s.durata }));
-  drawDashChart('dc-wo-dur', [{data: durData, color: '#5ac8fa'}], { height: 100 });
-
-  // Volume settimanale stacked
-  const wklyVol = getWeeklyVolume(8);
-  drawStackedBarChart('dc-wo-wkly', wklyVol, { height: 120 });
-
-  // Sentinel lifts - grouped by muscle, draw current group
-  drawSentinelGroup(_currentSentinelGroup);
-
-  // HRV vs Volume scatter
-  const scatterHV = getHrvVsVolume(60);
-  drawScatterChart('dc-hrv-vol', scatterHV, { height: 130 });
-
-  // RPE vs HRV line overlay
-  const rpeLineData = sessions30.filter(s => s.rpe).map(s => ({ date: s.date, value: s.rpe }));
-  const hrvLineData = sessions30.filter(s => s.rpe).map(s => {
-    const v = parseFloat((_lastData['day_' + s.dayIdx] || {})['hrv']) || NaN;
-    return { date: s.date, value: isNaN(v) ? null : v / 10 }; // scale HRV /10 for overlay
-  });
-  drawDashChart('dc-rpe-hrv', [
-    {data: rpeLineData, color: '#af52de'},
-    {data: hrvLineData, color: '#34c759'},
-  ], { height: 100, minScale: 0.7, maxScale: 1.3 });
-}
-
-
-window.addEventListener('load',async()=>{
-  buildNav();
-  buildDays();                          // popola #container (dentro pre-proto-body)
-  buildProtoV2();                       // popola #container2 (proto v2 dal 29 giu)
-  document.getElementById('loading').style.display='none';
-  // Lab section (andamento) — fuori dal collasso, sempre visibile
-  const labWrap = document.getElementById('lab-section-wrap');
-  if (labWrap) buildLabSection(labWrap);
-  updateNavHighlight();
-  jumpToday();
-  // Always load from cloud first — localStorage only as offline fallback
-  try{
-    await loadFromCloud();
-  }catch(e){
-    // Cloud failed — fall back to localStorage
-    const lr=localStorage.getItem(KEY);
-    if(lr){
-      try{
-        const p=JSON.parse(lr);
-        applyAll(p.data||p);
-        document.getElementById('last-saved').textContent='Offline — dati locali';
-        setSyncStatus('err');
-      }catch(e2){}
+    // Breakdown tipo
+    const breakdown = {};
+    sessions.forEach(s=>{breakdown[s.type]=(breakdown[s.type]||0)+1;});
+    const bdEl = document.getElementById('dc-breakdown');
+    if(bdEl){
+      const colors={Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'};
+      const tot=Object.values(breakdown).reduce((a,b)=>a+b,0);
+      bdEl.innerHTML=Object.entries(breakdown).map(([type,n])=>`
+        <div class="comp-bar-row">
+          <div class="comp-bar-label" style="color:${colors[type]||'#aeaeb2'}">${type}</div>
+          <div class="comp-bar-track"><div class="comp-bar-fill" style="width:${Math.round((n/tot)*100)}%;background:${colors[type]||'#aeaeb2'}"></div></div>
+          <div class="comp-bar-pct">${n} sessioni</div>
+        </div>`).join('');
     }
-    setTimeout(refreshCharts,200);
-  }
-  // buildCharts viene chiamato da refreshCharts() dentro loadFromCloud — non duplicare qui
-});
 
-window.addEventListener('beforeunload',()=>{
-  // Only save to localStorage on unload, never trigger cloud save
-  try {
-    const data=collectAll();
-    if(Object.values(data).some(d=>Object.keys(d).length>0))
-      localStorage.setItem(KEY,JSON.stringify({data,ts:Date.now()}));
-  } catch(e) {}
-});
+    // HRV vs Volume scatter
+    const scatterPts=sessions.filter(s=>s.volume&&s.rpe).map(s=>{
+      const rHrv=getDayDataAll('hrv',60).find(p=>p.date&&p.date.toDateString()===s.date.toDateString());
+      return rHrv&&rHrv.value?{x:s.volume/1000,y:rHrv.value}:null;
+    }).filter(Boolean);
+    if(scatterPts.length>=3) drawScatterChart('dc-scatter',scatterPts,{height:120,xLabel:'Vol (t)',yLabel:'HRV (ms)'});
+  }
+
+  // ── Sentinel lifts (dati da DOM e _lastData/_lastData2) ────
+  function sentData(fieldId, days) {
+    const result=[];
+    const today=new Date(); today.setHours(0,0,0,0);
+    const startWU=new Date(START); startWU.setHours(0,0,0,0);
+    const startV2=new Date(START2); startV2.setHours(0,0,0,0);
+    for(let offset=days-1;offset>=0;offset--){
+      const d=new Date(today);d.setDate(d.getDate()-offset);d.setHours(0,0,0,0);
+      let v=null;
+      if(d>=startV2){
+        const i=Math.floor((d-startV2)/86400000);
+        if(i>=0&&i<TOTAL_DAYS2){const rec=_lastData2['p2_day_'+i]||{};const fv=parseFloat(rec['sent_'+fieldId]);if(!isNaN(fv))v=fv;}
+      } else if(d>=startWU){
+        const i=Math.floor((d-startWU)/86400000);
+        if(i>=0&&i<TOTAL_DAYS){const rec=_lastData['day_'+i]||{};const fv=parseFloat(rec['sent_'+fieldId]);if(!isNaN(fv))v=fv;}
+      }
+      if(v!==null) result.push({date:d,value:v});
+    }
+    return result;
+  }
+  const benchD    = sentData('bench',   90);
+  const legpressD = sentData('legpress',90);
+  const rdlD      = sentData('rdl',     90);
+  const milpressD = sentData('milpress',90);
+
+  if(benchD.length>1)    drawDashChart('dc-bench',   [{data:benchD,   color:'#0071e3'}],{height:100,refLine:55});
+  if(legpressD.length>1) drawDashChart('dc-legpress',[{data:legpressD,color:'#ff9500'}],{height:100,refLine:117.5});
+  if(rdlD.length>1)      drawDashChart('dc-rdl',     [{data:rdlD,     color:'#34c759'}],{height:100,refLine:60});
+  if(milpressD.length>1) drawDashChart('dc-milpress',[{data:milpressD,color:'#af52de'}],{height:100,refLine:40});
+
+  // ── Compliance ring iniezioni ──────────────────────────────
+  const compGrid=document.getElementById('comp-grid');
+  if(compGrid){
+    const inj=getInjComplianceV2();
+    const woSessions=getSessionsV2(112);
+    const woDone=woSessions.filter(s=>s.volume).length;
+    const woTot=woSessions.length;
+    const items=[
+      {label:'Iniezioni',pct:inj.pct,detail:`${inj.done}/${inj.total}`,color:'#34c759'},
+      {label:'Workout',  pct:woTot?Math.round((woDone/woTot)*100):0,detail:`${woDone}/${woTot}`,color:'#0071e3'},
+    ];
+    compGrid.innerHTML=items.map(item=>`
+      <div class="comp-card">
+        <div class="comp-ring">
+          <canvas id="cr-${item.label}" width="60" height="60"></canvas>
+          <div class="comp-ring-label"><span class="comp-ring-pct">${item.pct}%</span></div>
+        </div>
+        <div class="comp-title">${item.label}</div>
+        <div class="comp-sub">${item.detail}</div>
+      </div>`).join('');
+    items.forEach(item=>{
+      const canvas=document.getElementById('cr-'+item.label);
+      if(!canvas) return;
+      const ctx=canvas.getContext('2d');
+      const C=2*Math.PI*22,off=C*(1-item.pct/100);
+      ctx.clearRect(0,0,60,60);
+      ctx.beginPath();ctx.arc(30,30,22,0,Math.PI*2);ctx.strokeStyle='var(--surface2)';ctx.lineWidth=5;ctx.stroke();
+      ctx.beginPath();ctx.arc(30,30,22,-Math.PI/2,-Math.PI/2+C*(item.pct/100),false);
+      ctx.strokeStyle=item.color;ctx.lineWidth=5;ctx.lineCap='round';ctx.stroke();
+    });
+  }
+}
 
 function buildMotraSection(dayId) {
   return `
