@@ -1314,6 +1314,8 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
       </div>
     </div>
   </div>
+  <!-- Cycle card e grafico andamento (sempre visibili, fuori dal collasso) -->
+  <div id="cycle-card-wrap" class="container" style="padding-top:16px;padding-bottom:0"></div>
   <!-- SEZIONE 2: Protocollo v2 dal 29 giu -->
   <div id="container2" class="container" style="padding-top:8px"></div>
 </div>
@@ -4098,7 +4100,10 @@ window.addEventListener('load',async()=>{
   buildProtoV2();                       // popola #container2 (proto v2 dal 29 giu)
   document.getElementById('loading').style.display='none';
   const container=document.getElementById('container');
-  buildCycleCard(container);
+  // Cycle card fuori dal collasso pre-proto
+  const cycleWrap=document.getElementById('cycle-card-wrap');
+  if(cycleWrap) buildCycleCard(cycleWrap);
+  // Lab section rimane dentro pre-proto (è riepilogo baseline)
   buildLabSection(container);
   updateNavHighlight();
   jumpToday();
@@ -4823,7 +4828,7 @@ function buildProtoV2() {
         <div class="section-label" style="margin-top:18px">Note del giorno</div>
         <textarea class="note-ta" data-id="${id}" data-f="note" placeholder="Sensazioni, variazioni, effetti peptidi, qualità sonno, osservazioni fisiche…" rows="3"></textarea>
 
-        <button class="save-btn" onclick="saveProto2Data()" class="proto2-save-btn">Salva dati</button>
+        <button class="proto2-save-btn" onclick="saveProto2Data()">Salva dati</button>
       </div>`;
 
     container.appendChild(card);
