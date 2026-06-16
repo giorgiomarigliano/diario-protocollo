@@ -3265,15 +3265,11 @@ function drawDashChart(canvasId, datasets, options = {}) {
   const dpr = window.devicePixelRatio || 1;
   canvas.style.display = 'block';
   canvas.style.width = '100%';
-  canvas.style.height = H + 'px';
-  // Misura la larghezza reale del container (non del canvas stesso)
   const chartCard = canvas.closest('.charts-card') || canvas.parentElement;
-  let W = 0;
-  if (chartCard) {
-    const rect = chartCard.getBoundingClientRect();
-    W = Math.floor(rect.width) - 48; // padding 24px per lato
-  }
-  if (W <= 0) W = canvas.parentElement?.getBoundingClientRect()?.width || 0;
+  let W = (chartCard ? chartCard.clientWidth - 32 : 0) ||
+    (canvas.parentElement?.offsetWidth || 0) ||
+    Math.floor((document.getElementById('dash-view')?.clientWidth || window.innerWidth) * 0.44);
+  // Se la larghezza è ancora 0 (layout non stabilizzato), riprova al prossimo frame
   if (W <= 0) {
     requestAnimationFrame(() => drawDashChart(canvasId, datasets, options));
     return;
@@ -3286,7 +3282,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
 
   // Collect all valid values across datasets for scale
   const allVals = datasets.flatMap(ds => ds.data.map(p => p.value).filter(v => v !== null));
-  if (allVals.length < 1) {
+  if (allVals.length < 2) {
     ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
     ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2);
     return;
@@ -3295,29 +3291,12 @@ function drawDashChart(canvasId, datasets, options = {}) {
   let mx = options.maxVal !== undefined ? options.maxVal : Math.max(...allVals);
   if (options.minScale) mn = mn * options.minScale;
   if (options.maxScale) mx = mx * options.maxScale;
+  // Garantisce almeno 10 unità di range per evitare grafici piatti
   if (mx - mn < 5) { const mid = (mx+mn)/2; mn = mid - 5; mx = mid + 5; }
+  // Padding verticale 5%
   const rng5 = mx - mn; mn -= rng5 * 0.05; mx += rng5 * 0.05;
   const rng = mx - mn || 1;
-
-  // Range temporale basato sui soli punti validi + padding 1 giorno per lato
-  const DAY_MS = 86400000;
-  const allDates = datasets.flatMap(ds => ds.data.filter(p => p.value !== null && p.date).map(p => p.date.getTime()));
-  if (!allDates.length) {
-    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
-    ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2);
-    return;
-  }
-  const tMin = Math.min(...allDates) - DAY_MS;
-  const tMax = Math.max(...allDates) + DAY_MS;
-  const tRange = tMax - tMin || 1;
-
-  function xForDate(date) {
-    if (!date || allDates.length < 2) return W / 2;
-    return 8 + (date.getTime() - tMin) / tRange * (W - 16);
-  }
-  function yForVal(v) {
-    return H - ((v - mn) / rng) * (H - 16) - 4;
-  }
+  const n = datasets[0].data.length;
 
   // Grid lines
   ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1;
@@ -3326,29 +3305,23 @@ function drawDashChart(canvasId, datasets, options = {}) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   });
 
-  // Ref line se presente
-  if (options.refLine !== undefined) {
-    const ry = yForVal(options.refLine);
-    ctx.save();
-    ctx.setLineDash([4, 4]);
-    ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, ry); ctx.lineTo(W, ry); ctx.stroke();
-    ctx.restore();
-  }
-
   datasets.forEach(ds => {
-    const pts = ds.data
-      .filter(p => p.value !== null && p.date)
-      .map(p => ({ x: xForDate(p.date), y: yForVal(p.value), v: p.value }));
-
-    if (!pts.length) return;
+    // Filtra solo i punti con valore reale — li distribuisce su tutta la larghezza
+    const validPts = ds.data.filter(p => p.value !== null);
+    if (!validPts.length) return;
+    const nv = validPts.length;
+    const pts = validPts.map((p, i) => ({
+      x: nv > 1 ? i / (nv - 1) * (W - 4) + 2 : W / 2,
+      y: H - ((p.value - mn) / rng) * (H - 16) - 4,
+      v: p.value
+    }));
 
     // Fill area
     const fp = pts[0], lp = pts[pts.length - 1];
     ctx.beginPath();
     ctx.moveTo(fp.x, fp.y);
     pts.forEach(p => ctx.lineTo(p.x, p.y));
-    ctx.lineTo(lp.x, H - 4); ctx.lineTo(fp.x, H - 4); ctx.closePath();
+    ctx.lineTo(lp.x, H); ctx.lineTo(fp.x, H); ctx.closePath();
     const g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, ds.color + '22'); g.addColorStop(1, ds.color + '00');
     ctx.fillStyle = g; ctx.fill();
@@ -3366,7 +3339,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
 
     // Last value label
     ctx.font = '500 10px -apple-system'; ctx.fillStyle = ds.color;
-    ctx.fillText(lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1), Math.min(lp.x + 4, W - 32), Math.max(lp.y - 4, 12));
+    ctx.fillText(lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1), Math.min(lp.x, W - 32), Math.max(lp.y - 6, 10));
   });
 }
 
@@ -3504,16 +3477,13 @@ function drawBarChart(canvasId, bars, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width <= 0) { requestAnimationFrame(() => drawBarChart(canvasId, bars, options)); return; }
   const H = options.height || 110;
-  const chartCard = canvas.closest('.charts-card') || canvas.parentElement;
-  let W = 0;
-  if (chartCard) W = Math.floor(chartCard.getBoundingClientRect().width) - 48;
-  if (W <= 0) W = Math.floor((canvas.parentElement?.getBoundingClientRect()?.width || 0)) - 48;
-  if (W <= 0) { requestAnimationFrame(() => drawBarChart(canvasId, bars, options)); return; }
-  W = Math.max(100, W);
-  canvas.width = W * dpr;
+  canvas.width = rect.width * dpr;
   canvas.height = H * dpr;
   ctx.scale(dpr, dpr);
+  const W = rect.width;
 
   const vals = bars.map(b => b.value).filter(v => v != null && v > 0);
   if (vals.length < 1) {
@@ -3957,28 +3927,33 @@ function buildDashboard() {
     <!-- ══ SEZ. BIOMETRIA ══════════════════════════════════════ -->
     <div class="dash-section">
       <div class="dash-section-title">Biometria · ultimi 60 giorni</div>
-      <div class="charts-card">
-        <div class="dash-card-title">Peso (kg) <span style="font-size:11px;color:var(--muted);font-weight:400">— target 66–68 · T0: 71.1</span></div>
-        <canvas class="dash-chart" id="dc-peso" height="110"></canvas>
-      </div>
-      <div class="charts-card">
-        <div class="dash-card-title">HRV (ms) <span style="font-size:11px;color:var(--muted);font-weight:400">— T0: 37ms</span></div>
-        <canvas class="dash-chart" id="dc-hrv" height="110"></canvas>
-      </div>
-      <div class="charts-card">
-        <div class="dash-card-title">RHR (bpm)</div>
-        <canvas class="dash-chart" id="dc-rhr" height="110"></canvas>
-      </div>
-      <div class="charts-card">
-        <div class="dash-card-title">Pressione arteriosa (mmHg)
-          <span style="margin-left:8px;font-size:10px">
-            <span style="color:#ff3b30">● Sistolica</span>
-            <span style="color:#0071e3;margin-left:6px">● Diastolica</span>
-          </span>
+      <div class="dash-two-col">
+        <div>
+          <div class="charts-card">
+            <div class="dash-card-title">Peso (kg) <span style="font-size:11px;color:var(--muted);font-weight:400">— target 66–68 · T0: 71.1</span></div>
+            <canvas class="dash-chart" id="dc-peso" height="110"></canvas>
+          </div>
+          <div class="charts-card" style="margin-top:10px">
+            <div class="dash-card-title">HRV (ms) <span style="font-size:11px;color:var(--muted);font-weight:400">— T0: 37ms</span></div>
+            <canvas class="dash-chart" id="dc-hrv" height="110"></canvas>
+          </div>
         </div>
-        <canvas class="dash-chart" id="dc-bp" height="110"></canvas>
+        <div>
+          <div class="charts-card">
+            <div class="dash-card-title">RHR (bpm)</div>
+            <canvas class="dash-chart" id="dc-rhr" height="110"></canvas>
+          </div>
+          <div class="charts-card" style="margin-top:10px">
+            <div class="dash-card-title">Pressione arteriosa (mmHg)
+              <span style="margin-left:8px;font-size:10px">
+                <span style="color:#ff3b30">● Sistolica</span>
+                <span style="color:#0071e3;margin-left:6px">● Diastolica</span>
+              </span>
+            </div>
+            <canvas class="dash-chart" id="dc-bp" height="110"></canvas>
+          </div>
+        </div>
       </div>
-    </div>
     </div>
 
     <!-- ══ SEZ. SOGGETTIVO ════════════════════════════════════ -->
@@ -3999,13 +3974,19 @@ function buildDashboard() {
     <!-- ══ SEZ. ALLENAMENTO ═══════════════════════════════════ -->
     <div class="dash-section">
       <div class="dash-section-title">Allenamento · ultimi 60 giorni</div>
-      <div class="charts-card">
-        <div class="dash-card-title">Volume per sessione (tonnellate)</div>
-        <canvas class="dash-chart" id="dc-vol" height="120"></canvas>
-      </div>
-      <div class="charts-card">
-        <div class="dash-card-title">RPE sessioni</div>
-        <canvas class="dash-chart" id="dc-rpe" height="120"></canvas>
+      <div class="dash-two-col">
+        <div>
+          <div class="charts-card">
+            <div class="dash-card-title">Volume per sessione (tonnellate)</div>
+            <canvas class="dash-chart" id="dc-vol" height="120"></canvas>
+          </div>
+        </div>
+        <div>
+          <div class="charts-card">
+            <div class="dash-card-title">RPE sessioni</div>
+            <canvas class="dash-chart" id="dc-rpe" height="120"></canvas>
+          </div>
+        </div>
       </div>
 
       <!-- Sentinel lifts -->
@@ -4149,7 +4130,7 @@ function refreshDashCharts() {
         if(i>=0&&i<TOTAL_DAYS2){const rec=_lastData2['p2_day_'+i]||{};const fv=parseFloat(rec['sl_'+fieldId+'_kg'])||parseFloat(rec['sent_'+fieldId]);if(!isNaN(fv))v=fv;}
       } else if(d>=startWU){
         const i=Math.floor((d-startWU)/86400000);
-        if(i>=0&&i<TOTAL_DAYS){const rec=_lastData['day_'+i]||{};let fv=parseFloat(rec['sl_'+fieldId+'_kg']);if(isNaN(fv))fv=parseFloat(rec['sent_'+fieldId]);if(isNaN(fv)){const el=document.querySelector(`[data-id="day_${i}"][data-f="sl_${fieldId}_kg"]`);if(el)fv=parseFloat(el.value);}if(!isNaN(fv))v=fv;}
+        if(i>=0&&i<TOTAL_DAYS){const rec=_lastData['day_'+i]||{};const fv=parseFloat(rec['sl_'+fieldId+'_kg'])||parseFloat(rec['sent_'+fieldId]);if(!isNaN(fv))v=fv;}
       }
       if(v!==null) result.push({date:d,value:v});
     }
@@ -4160,23 +4141,10 @@ function refreshDashCharts() {
   const rdlD      = sentData('rdl',     90);
   const milpressD = sentData('milpress',90);
 
-  // Aggiunge punto baseline T0 se mancano dati sufficienti per il trend
-  function withBaseline(data, baselineKg) {
-    if (data.length >= 2) return data;
-    const t0 = new Date(START); t0.setHours(0,0,0,0);
-    const base = {date: t0, value: baselineKg};
-    return data.length === 0 ? [base] : [base, ...data];
-  }
-
-  const benchPlot    = withBaseline(benchD,    55);
-  const legpressPlot = withBaseline(legpressD, 117.5);
-  const rdlPlot      = withBaseline(rdlD,      60);
-  const milpressPlot = withBaseline(milpressD, 40);
-
-  if(benchPlot.length>=1)    drawDashChart('dc-bench',   [{data:benchPlot,   color:'#0071e3'}],{height:100,refLine:55});
-  if(legpressPlot.length>=1) drawDashChart('dc-legpress',[{data:legpressPlot,color:'#ff9500'}],{height:100,refLine:117.5});
-  if(rdlPlot.length>=1)      drawDashChart('dc-rdl',     [{data:rdlPlot,     color:'#34c759'}],{height:100,refLine:60});
-  if(milpressPlot.length>=1) drawDashChart('dc-milpress',[{data:milpressPlot,color:'#af52de'}],{height:100,refLine:40});
+  if(benchD.length>1)    drawDashChart('dc-bench',   [{data:benchD,   color:'#0071e3'}],{height:100,refLine:55});
+  if(legpressD.length>1) drawDashChart('dc-legpress',[{data:legpressD,color:'#ff9500'}],{height:100,refLine:117.5});
+  if(rdlD.length>1)      drawDashChart('dc-rdl',     [{data:rdlD,     color:'#34c759'}],{height:100,refLine:60});
+  if(milpressD.length>1) drawDashChart('dc-milpress',[{data:milpressD,color:'#af52de'}],{height:100,refLine:40});
 
   // ── Compliance ring iniezioni ──────────────────────────────
   const compGrid=document.getElementById('comp-grid');
