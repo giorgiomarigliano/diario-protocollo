@@ -4923,82 +4923,88 @@ function buildStockView2() {
   // ── DATI COMPOSTI ────────────────────────────────────────────────────
   const compounds = [
     {
-      id: 'tesa',
-      name: 'Tesamorelin', emoji: '🧬', color: '#0071e3', bg: 'rgba(0,113,227,.08)',
-      dose: '2mg/sera · 7gg/sett', fabbisogno: '224mg', fab_detail: '112gg × 2mg',
-      mgNeeded: 224, mgPerVial: 10,
-      vials: [
-        { n:3, stato:'intatto'  },
-        { n:4, stato:'intatto'  },
-        { n:5, stato:'intatto'  },
-        { n:6, stato:'intatto'  },
-      ],
-      disponibile: 40,
-      gap_note: '~184mg da riordinare (~19 vial)',
+      id:'tesa', name:'Tesamorelin', emoji:'🧬', color:'#0071e3', bg:'rgba(0,113,227,.08)',
+      dose:'2mg/sera · SC', fabbisogno:'224mg', fab_detail:'112gg × 2mg',
+      mgNeeded:224, dosePerInj:2.0,
+      stabilityDays:21, stabilityNote:'21 gg frigo · sensibile alla luce',
+      mgOptions:[2,5,10], bacOptions:[0.5,1.0,2.0],
+      vials:[{n:1,stato:'intatto'},{n:2,stato:'intatto'},{n:3,stato:'intatto'},{n:4,stato:'intatto'}],
+      disponibile:40, gap_note:'~184mg da riordinare (~19 vial)',
     },
     {
-      id: 'fragment',
-      name: 'Fragment 176-191', emoji: '🔥', color: '#ff3b30', bg: 'rgba(255,59,48,.08)',
-      dose: '500mcg/die · 2× SC', fabbisogno: '56mg', fab_detail: '112gg × 500mcg',
-      mgNeeded: 56, mgPerVial: 10,
-      vials: [],
-      disponibile: 0,
-      gap_note: '56mg totali (~6 vial × 10mg)',
+      id:'fragment', name:'Fragment 176-191', emoji:'🔥', color:'#ff3b30', bg:'rgba(255,59,48,.08)',
+      dose:'250mcg × 2/die · SC', fabbisogno:'56mg', fab_detail:'112gg × 500mcg',
+      mgNeeded:56, dosePerInj:0.250,
+      stabilityDays:30, stabilityNote:'30 gg frigo',
+      mgOptions:[5,10], bacOptions:[1.0,2.0],
+      vials:[], disponibile:0, gap_note:'56mg totali (~6 vial × 10mg)',
     },
     {
-      id: 'ipa',
-      name: 'Ipamorelin', emoji: '⚡', color: '#34c759', bg: 'rgba(52,199,89,.08)',
-      dose: '100mcg/sera · SC', fabbisogno: '11.2mg', fab_detail: '112gg × 100mcg',
-      mgNeeded: 11.2, mgPerVial: 10,
-      vials: [],
-      disponibile: 0,
-      gap_note: '~2 vial × 10mg',
+      id:'ipa', name:'Ipamorelin', emoji:'⚡', color:'#34c759', bg:'rgba(52,199,89,.08)',
+      dose:'100mcg/sera · SC', fabbisogno:'11.2mg', fab_detail:'112gg × 100mcg',
+      mgNeeded:11.2, dosePerInj:0.100,
+      stabilityDays:30, stabilityNote:'30 gg frigo',
+      mgOptions:[2,5,10], bacOptions:[1.0,2.0],
+      vials:[], disponibile:0, gap_note:'~2 vial × 10mg',
     },
     {
-      id: 'igf',
-      name: 'IGF-1 DES', emoji: '💪', color: '#af52de', bg: 'rgba(175,82,222,.08)',
-      dose: '50mcg post-WO · IM bilat', fabbisogno: '4mg', fab_detail: '80gg WO × 50mcg',
-      mgNeeded: 4, mgPerVial: 1,
-      vials: [],
-      disponibile: 0,
-      gap_note: '~4 vial × 1mg',
+      id:'igf', name:'IGF-1 DES', emoji:'💪', color:'#af52de', bg:'rgba(175,82,222,.08)',
+      dose:'50mcg post-WO · IM bilat', fabbisogno:'4mg', fab_detail:'80gg WO × 50mcg',
+      mgNeeded:4, dosePerInj:0.050,
+      stabilityDays:7, stabilityNote:'⚡ 7 gg frigo · aliquotare subito',
+      mgOptions:[1,2,5], bacOptions:[0.5,1.0],
+      vials:[], disponibile:0, gap_note:'~4 vial × 1mg',
     },
     {
-      id: 'bpc',
-      name: 'BPC-157', emoji: '🔧', color: '#ff9500', bg: 'rgba(255,149,0,.08)',
-      dose: '500mcg/die · 2× SC', fabbisogno: '56mg', fab_detail: '112gg × 500mcg',
-      mgNeeded: 56, mgPerVial: 10,
-      vials: [ { n:1, stato:'in_uso' }, { n:2, stato:'intatto' } ],
-      disponibile: 20,
-      gap_note: '~36mg da riordinare (~4 vial)',
+      id:'bpc', name:'BPC-157', emoji:'🔧', color:'#ff9500', bg:'rgba(255,149,0,.08)',
+      dose:'250mcg × 2/die · SC', fabbisogno:'56mg', fab_detail:'112gg × 500mcg',
+      mgNeeded:56, dosePerInj:0.250,
+      stabilityDays:28, stabilityNote:'28 gg frigo',
+      mgOptions:[5,10], bacOptions:[1.0,2.0],
+      vials:[{n:1,stato:'in_uso'},{n:2,stato:'intatto'}],
+      disponibile:20, gap_note:'~36mg da riordinare (~4 vial)',
     },
     {
-      id: 'tb500',
-      name: 'TB-500', emoji: '🩹', color: '#5856d6', bg: 'rgba(88,86,214,.08)',
-      dose: '500mcg/sera · SC', fabbisogno: '56mg', fab_detail: '112gg × 500mcg',
-      mgNeeded: 56, mgPerVial: 10,
-      vials: [],
-      disponibile: 0,
-      gap_note: '~6 vial × 10mg',
+      id:'tb500', name:'TB-500', emoji:'🩹', color:'#5856d6', bg:'rgba(88,86,214,.08)',
+      dose:'500mcg/sera · SC', fabbisogno:'56mg', fab_detail:'112gg × 500mcg',
+      mgNeeded:56, dosePerInj:0.500,
+      stabilityDays:28, stabilityNote:'28 gg frigo',
+      mgOptions:[5,10], bacOptions:[1.0,2.0],
+      vials:[], disponibile:0, gap_note:'~6 vial × 10mg',
     },
   ];
 
-  // ── STATO VIAL ────────────────────────────────────────────────────────
   function statoStyle(s) {
-    if (s === 'intatto')    return { dot:'#34c759', text:'Intatto',    bg:'rgba(52,199,89,.10)',  color:'#1d6e32' };
-    if (s === 'in_uso')     return { dot:'#0071e3', text:'In uso',     bg:'rgba(0,113,227,.10)',  color:'#0058b8' };
-    if (s === 'esaurito')   return { dot:'#ff3b30', text:'Esaurito',   bg:'rgba(255,59,48,.10)',  color:'#c0392b' };
-    if (s === 'perso')      return { dot:'#ff9500', text:'Perso',      bg:'rgba(255,149,0,.10)',  color:'#a05a00' };
-    if (s === 'congelato')  return { dot:'#5ac8fa', text:'Congelato',  bg:'rgba(90,200,250,.10)', color:'#006fa6' };
-    return { dot:'#aeaeb2', text:s, bg:'#f5f5f7', color:'#6e6e73' };
+    if(s==='intatto')   return {dot:'#34c759',text:'Intatto',  bg:'rgba(52,199,89,.10)', color:'#1d6e32'};
+    if(s==='in_uso')    return {dot:'#0071e3',text:'In uso',   bg:'rgba(0,113,227,.10)', color:'#0058b8'};
+    if(s==='esaurito')  return {dot:'#ff3b30',text:'Esaurito', bg:'rgba(255,59,48,.10)', color:'#c0392b'};
+    if(s==='perso')     return {dot:'#ff9500',text:'Perso',    bg:'rgba(255,149,0,.10)', color:'#a05a00'};
+    if(s==='congelato') return {dot:'#5ac8fa',text:'Congelato',bg:'rgba(90,200,250,.10)',color:'#006fa6'};
+    return {dot:'#aeaeb2',text:s,bg:'#f5f5f7',color:'#6e6e73'};
   }
 
-  // Legge dati vial da localStorage
+  // Calcola UI per dose e scadenza
+  function calcRecon(mg, bac, dosePerInj, stabilityDays, recoDate) {
+    const conc = mg / bac; // mg/ml
+    const dose_ml = dosePerInj / conc;
+    const ui = Math.round(dose_ml * 100 * 10) / 10;
+    let expire = '';
+    if (recoDate) {
+      const d = new Date(recoDate);
+      d.setDate(d.getDate() + stabilityDays);
+      expire = d.toLocaleDateString('it-IT',{day:'numeric',month:'short',year:'numeric'});
+      const today = new Date(); today.setHours(0,0,0,0);
+      d.setHours(0,0,0,0);
+      const daysLeft = Math.floor((d - today) / 86400000);
+      expire += daysLeft < 0 ? ' ⛔ SCADUTO' : daysLeft <= 5 ? ` ⚠️ ${daysLeft}gg` : ` (${daysLeft}gg)`;
+    }
+    return { conc: conc.toFixed(1), ui: ui.toFixed(1), expire };
+  }
+
   const VKEY = 'stock_v2_vials';
   let vialData = {};
   try { vialData = JSON.parse(localStorage.getItem(VKEY)||'{}'); } catch(e) {}
 
-  // ── HTML CONTAINER ────────────────────────────────────────────────────
   const wrap = document.createElement('div');
   wrap.style.cssText = 'max-width:1100px;margin:0 auto;padding:16px 16px 80px';
 
@@ -5010,152 +5016,244 @@ function buildStockView2() {
     </div>`;
 
   // Alert
-  const hasMissing = compounds.some(c => c.disponibile < c.mgNeeded);
-  if (hasMissing) {
-    const missing = compounds.filter(c => c.disponibile === 0).map(c => c.name).join(', ');
-    const partial = compounds.filter(c => c.disponibile > 0 && c.disponibile < c.mgNeeded).map(c => c.name).join(', ');
-    const alertDiv = document.createElement('div');
-    alertDiv.style.cssText = 'background:rgba(255,59,48,.07);border:1px solid rgba(255,59,48,.2);border-radius:10px;padding:10px 14px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start';
-    alertDiv.innerHTML = `<span style="font-size:16px;flex-shrink:0">⚠️</span><div><span style="font-size:12px;font-weight:600;color:#c0392b">Riordino necessario prima del 29 giu 2026 · </span><span style="font-size:12px;color:#7a2020">${missing} non in stock${partial?` · ${partial} parzialmente coperti`:''}</span></div>`;
-    wrap.appendChild(alertDiv);
+  const missing = compounds.filter(c=>c.disponibile===0).map(c=>c.name).join(', ');
+  const partial = compounds.filter(c=>c.disponibile>0&&c.disponibile<c.mgNeeded).map(c=>c.name).join(', ');
+  if (missing||partial) {
+    const ab = document.createElement('div');
+    ab.style.cssText = 'background:rgba(255,59,48,.07);border:1px solid rgba(255,59,48,.2);border-radius:10px;padding:10px 14px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start';
+    ab.innerHTML = `<span style="font-size:16px;flex-shrink:0">⚠️</span><div><span style="font-size:12px;font-weight:600;color:#c0392b">Riordino necessario prima del 29 giu · </span><span style="font-size:12px;color:#7a2020">${[missing&&missing+' non in stock',partial&&partial+' parzialmente coperti'].filter(Boolean).join(' · ')}</span></div>`;
+    wrap.appendChild(ab);
   }
 
-  // Griglia composti
+  // Griglia
   const grid = document.createElement('div');
-  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-bottom:16px';
+  grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px;margin-bottom:16px';
 
   compounds.forEach(c => {
-    const pct   = Math.min(100, Math.round((c.disponibile / c.mgNeeded) * 100));
-    const gap   = c.mgNeeded - c.disponibile;
-    const barColor = pct >= 100 ? '#34c759' : pct > 30 ? '#ff9500' : '#ff3b30';
-    const C = 2*Math.PI*20;
-    const off = C*(1-pct/100);
+    const pct = Math.min(100,Math.round((c.disponibile/c.mgNeeded)*100));
+    const gap = c.mgNeeded - c.disponibile;
+    const barColor = pct>=100?'#34c759':pct>30?'#ff9500':'#ff3b30';
+    const C = 2*Math.PI*20; const off = C*(1-pct/100);
 
-    // Card
     const card = document.createElement('div');
-    card.style.cssText = `background:var(--surface,#fff);border-radius:12px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 4px rgba(0,0,0,.06);overflow:hidden`;
+    card.style.cssText = 'background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);overflow:hidden;display:flex;flex-direction:column';
 
     // ── Header card ──
-    let headerHtml = `
-      <div style="padding:12px 14px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border,#e8e8ed)">
-        <div style="width:36px;height:36px;border-radius:10px;background:${c.bg};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${c.emoji}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:700;color:${c.color}">${c.name}</div>
-          <div style="font-size:11px;color:var(--muted)">${c.dose}</div>
-        </div>
-        <div style="position:relative;width:48px;height:48px;flex-shrink:0">
-          <svg width="48" height="48" viewBox="0 0 48 48">
-            <circle cx="24" cy="24" r="20" fill="none" stroke="var(--surface2,#f5f5f7)" stroke-width="4.5"/>
-            <circle cx="24" cy="24" r="20" fill="none" stroke="${barColor}" stroke-width="4.5"
-              stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"
-              stroke-linecap="round" transform="rotate(-90 24 24)"/>
-          </svg>
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${barColor}">${pct}%</div>
-        </div>
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border,#e8e8ed)';
+    hdr.innerHTML = `
+      <div style="width:38px;height:38px;border-radius:10px;background:${c.bg};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${c.emoji}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:700;color:${c.color};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px">${c.dose}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:1px">🧊 ${c.stabilityNote}</div>
+      </div>
+      <div style="position:relative;width:48px;height:48px;flex-shrink:0">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <circle cx="24" cy="24" r="20" fill="none" stroke="var(--surface2,#f5f5f7)" stroke-width="5"/>
+          <circle cx="24" cy="24" r="20" fill="none" stroke="${barColor}" stroke-width="5"
+            stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"
+            stroke-linecap="round" transform="rotate(-90 24 24)"/>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${barColor}">${pct}%</div>
       </div>`;
+    card.appendChild(hdr);
 
-    // ── Fabbisogno + disponibile ──
-    headerHtml += `
-      <div style="padding:8px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border,#e8e8ed)">
-        <span style="font-size:11px;color:var(--muted)">${c.fab_detail}</span>
-        <span style="font-size:13px;font-weight:700;color:var(--text)">${c.disponibile}mg <span style="font-weight:400;color:var(--muted);font-size:11px">/ ${c.fabbisogno}</span></span>
-      </div>`;
+    // ── Fabbisogno ──
+    const fab = document.createElement('div');
+    fab.style.cssText = 'padding:7px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border,#e8e8ed);background:var(--surface2,#f5f5f7)';
+    fab.innerHTML = `<span style="font-size:11px;color:var(--muted)">${c.fab_detail}</span><span style="font-size:13px;font-weight:700;color:var(--text)">${c.disponibile}mg <span style="font-weight:400;color:var(--muted);font-size:11px">/ ${c.fabbisogno}</span></span>`;
+    card.appendChild(fab);
 
-    // ── Barra lineare ──
-    headerHtml += `
-      <div style="padding:6px 14px;border-bottom:1px solid var(--border,#e8e8ed)">
-        <div style="height:5px;background:var(--surface2,#f5f5f7);border-radius:3px;overflow:hidden">
-          <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .4s"></div>
-        </div>
-      </div>`;
+    // Barra
+    const bar = document.createElement('div');
+    bar.style.cssText = 'padding:0 14px 8px;background:var(--surface2,#f5f5f7);border-bottom:1px solid var(--border,#e8e8ed)';
+    bar.innerHTML = `<div style="height:4px;background:var(--surface3,#e8e8ed);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:2px"></div></div>`;
+    card.appendChild(bar);
 
-    card.innerHTML = headerHtml;
+    // ── Vial section ──
+    const vs = document.createElement('div');
+    vs.style.cssText = 'padding:10px 14px;flex:1';
 
-    // ── Sezione vial con tracker ──
-    const vialSection = document.createElement('div');
-    vialSection.style.cssText = 'padding:10px 14px';
-
-    if (c.vials.length === 0 && gap > 0) {
-      // Nessun vial — mostra info riordino
-      vialSection.innerHTML = `
-        <div style="background:rgba(255,59,48,.06);border-radius:8px;padding:8px 10px;font-size:11px;color:#7a2020;display:flex;gap:6px;align-items:center">
-          <span>⚠️</span><span>${c.gap_note}</span>
-        </div>`;
+    if (c.vials.length === 0) {
+      vs.innerHTML = `<div style="background:rgba(255,59,48,.06);border-radius:8px;padding:9px 11px;font-size:11px;color:#7a2020;display:flex;gap:6px;align-items:center"><span>⚠️</span><span>${c.gap_note}</span></div>`;
     } else {
-      // Vial tracker
-      vialSection.innerHTML = `<div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">Vial tracker</div>`;
+      const vhdr = document.createElement('div');
+      vhdr.style.cssText = 'font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px';
+      vhdr.textContent = 'VIAL TRACKER';
+      vs.appendChild(vhdr);
 
       c.vials.forEach(v => {
-        const dkey = `${c.id}_v${v.n}`;
-        const saved = vialData[dkey] || {};
-        const st = statoStyle(saved.stato || v.stato);
+        const k = `${c.id}_v${v.n}`;
+        const sv = vialData[k] || {};
+        const stato = sv.stato || v.stato;
+        const st = statoStyle(stato);
 
-        const vRow = document.createElement('div');
-        vRow.style.cssText = 'background:var(--surface2,#f5f5f7);border-radius:8px;padding:8px 10px;margin-bottom:6px';
-        vRow.dataset.cid = c.id;
-        vRow.dataset.vn  = v.n;
+        // Calcolo auto da ricostituzione
+        const mg  = parseFloat(sv.mg)  || c.mgOptions[c.mgOptions.length-1];
+        const bac = parseFloat(sv.bac) || c.bacOptions[c.bacOptions.length-1];
+        const rc  = calcRecon(mg, bac, c.dosePerInj, c.stabilityDays, sv.reco);
 
-        // Header vial row
-        const statoBtns = ['intatto','in_uso','esaurito','perso','congelato'].map(s => {
+        const vrow = document.createElement('div');
+        vrow.dataset.cid = c.id; vrow.dataset.vn = v.n;
+        vrow.style.cssText = 'border:1px solid var(--border,#e8e8ed);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--surface,#fff)';
+
+        // Titolo vial + stato
+        const vTitle = document.createElement('div');
+        vTitle.style.cssText = 'display:flex;align-items:center;gap:7px;margin-bottom:8px';
+        vTitle.innerHTML = `
+          <div style="width:8px;height:8px;border-radius:50%;background:${st.dot};flex-shrink:0"></div>
+          <span style="font-size:13px;font-weight:700;color:var(--text)">Vial ${v.n}</span>
+          <span style="font-size:10px;font-weight:600;background:${st.bg};color:${st.color};padding:2px 8px;border-radius:10px">${st.text}</span>`;
+        vrow.appendChild(vTitle);
+
+        // Bottoni stato
+        const stBtns = document.createElement('div');
+        stBtns.style.cssText = 'display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px';
+        ['intatto','in_uso','esaurito','perso','congelato'].forEach(s => {
           const ss = statoStyle(s);
-          const active = (saved.stato||v.stato) === s;
-          return `<button onclick="setVialStato('${c.id}',${v.n},'${s}',this)"
-            style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px;border:1px solid ${active?ss.color:'var(--border,#e8e8ed)'};background:${active?ss.bg:'transparent'};color:${active?ss.color:'var(--muted)'};cursor:pointer;transition:all .12s">${ss.text}</button>`;
-        }).join('');
+          const active = stato === s;
+          const b = document.createElement('button');
+          b.textContent = ss.text;
+          b.style.cssText = `font-size:9px;font-weight:600;padding:3px 8px;border-radius:10px;border:1px solid ${active?ss.color:'var(--border,#e8e8ed)'};background:${active?ss.bg:'transparent'};color:${active?ss.color:'var(--muted)'};cursor:pointer;font-family:inherit;transition:all .12s`;
+          b.onclick = () => stockSetStato(c.id, v.n, s);
+          stBtns.appendChild(b);
+        });
+        vrow.appendChild(stBtns);
 
-        vRow.innerHTML = `
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <div style="width:8px;height:8px;border-radius:50%;background:${st.dot};flex-shrink:0"></div>
-            <span style="font-size:12px;font-weight:600;color:var(--text)">Vial ${v.n}</span>
-            <span style="font-size:10px;color:${st.color};background:${st.bg};padding:1px 7px;border-radius:10px;font-weight:600;margin-left:2px">${st.text}</span>
-            <span style="margin-left:auto;font-size:10px;color:var(--muted)">${c.mgPerVial}mg</span>
-          </div>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px">${statoBtns}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-            <div>
-              <div style="font-size:9px;color:var(--muted);margin-bottom:2px;font-weight:500">DATA RICOSTITUZIONE</div>
-              <input type="date" id="reco-${c.id}-${v.n}" value="${saved.reco||''}"
-                onchange="saveVialDate('${c.id}',${v.n},'reco',this.value)"
-                style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:4px 6px;background:var(--surface,#fff);color:var(--text);outline:none;font-family:inherit">
-            </div>
-            <div>
-              <div style="font-size:9px;color:var(--muted);margin-bottom:2px;font-weight:500">DATA ESAURIMENTO</div>
-              <input type="date" id="esau-${c.id}-${v.n}" value="${saved.esau||''}"
-                onchange="saveVialDate('${c.id}',${v.n},'esau',this.value)"
-                style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:4px 6px;background:var(--surface,#fff);color:var(--text);outline:none;font-family:inherit">
-            </div>
-          </div>
-          ${saved.reco ? `<div id="days-${c.id}-${v.n}" style="margin-top:5px;font-size:10px;color:var(--muted)">${daysFromReco(saved.reco,saved.esau)}</div>` : `<div id="days-${c.id}-${v.n}"></div>`}
-          <div style="margin-top:6px">
-            <div style="font-size:9px;color:var(--muted);margin-bottom:2px;font-weight:500">NOTE VIAL</div>
-            <input type="text" id="note-${c.id}-${v.n}" value="${saved.note||''}"
-              placeholder="es. 2ml BAC water, 10mg/ml"
-              onblur="saveVialNote('${c.id}',${v.n},this.value)"
-              style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:4px 6px;background:var(--surface,#fff);color:var(--text);outline:none;font-family:inherit">
-          </div>`;
+        // Griglia ricostituzione
+        const reconGrid = document.createElement('div');
+        reconGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px';
 
-        vialSection.appendChild(vRow);
+        // Select mg
+        const mgWrap = document.createElement('div');
+        mgWrap.innerHTML = `<div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Grammatura</div>`;
+        const mgSel = document.createElement('select');
+        mgSel.id = `mg-${c.id}-${v.n}`;
+        mgSel.style.cssText = 'width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit';
+        c.mgOptions.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m; opt.textContent = `${m}mg`;
+          if (parseFloat(sv.mg) === m || (!sv.mg && m === c.mgOptions[c.mgOptions.length-1])) opt.selected = true;
+          mgSel.appendChild(opt);
+        });
+        mgSel.onchange = () => stockSaveRecon(c.id, v.n);
+        mgWrap.appendChild(mgSel);
+        reconGrid.appendChild(mgWrap);
+
+        // Select BAC
+        const bacWrap = document.createElement('div');
+        bacWrap.innerHTML = `<div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">BAC Water</div>`;
+        const bacSel = document.createElement('select');
+        bacSel.id = `bac-${c.id}-${v.n}`;
+        bacSel.style.cssText = mgSel.style.cssText;
+        c.bacOptions.forEach(b2 => {
+          const opt = document.createElement('option');
+          opt.value = b2; opt.textContent = `${b2}ml`;
+          if (parseFloat(sv.bac) === b2 || (!sv.bac && b2 === c.bacOptions[c.bacOptions.length-1])) opt.selected = true;
+          bacSel.appendChild(opt);
+        });
+        bacSel.onchange = () => stockSaveRecon(c.id, v.n);
+        bacWrap.appendChild(bacSel);
+        reconGrid.appendChild(bacWrap);
+
+        // Unità calcolate (readonly)
+        const uiWrap = document.createElement('div');
+        uiWrap.innerHTML = `<div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Unità / dose</div>`;
+        const uiBox = document.createElement('div');
+        uiBox.id = `ui-${c.id}-${v.n}`;
+        uiBox.style.cssText = 'font-size:16px;font-weight:700;color:var(--text);line-height:1.2;padding-top:3px';
+        uiBox.textContent = `${rc.ui} UI`;
+        const concSpan = document.createElement('div');
+        concSpan.style.cssText = 'font-size:9px;color:var(--muted);margin-top:1px';
+        concSpan.textContent = `${rc.conc}mg/ml`;
+        concSpan.id = `conc-${c.id}-${v.n}`;
+        uiWrap.appendChild(uiBox);
+        uiWrap.appendChild(concSpan);
+        reconGrid.appendChild(uiWrap);
+
+        vrow.appendChild(reconGrid);
+
+        // Data ricostituzione + scadenza auto
+        const dateGrid = document.createElement('div');
+        dateGrid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px';
+
+        const recoWrap = document.createElement('div');
+        recoWrap.innerHTML = `<div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Data ricostituzione</div>`;
+        const recoInp = document.createElement('input');
+        recoInp.type = 'date'; recoInp.id = `reco-${c.id}-${v.n}`;
+        recoInp.value = sv.reco || '';
+        recoInp.style.cssText = 'width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit';
+        recoInp.onchange = () => stockSaveRecon(c.id, v.n);
+        recoWrap.appendChild(recoInp);
+        dateGrid.appendChild(recoWrap);
+
+        // Scadenza auto
+        const expWrap = document.createElement('div');
+        expWrap.innerHTML = `<div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Scadenza (auto)</div>`;
+        const expBox = document.createElement('div');
+        expBox.id = `exp-${c.id}-${v.n}`;
+        expBox.style.cssText = 'font-size:11px;font-weight:600;padding:5px 6px;background:var(--surface2,#f5f5f7);border:1px solid var(--border,#e8e8ed);border-radius:6px;min-height:28px;color:var(--text)';
+        expBox.textContent = sv.reco ? rc.expire : '—';
+        expWrap.appendChild(expBox);
+        dateGrid.appendChild(expWrap);
+
+        vrow.appendChild(dateGrid);
+
+        // Barra giorni rimasti
+        if (sv.reco) {
+          const today = new Date(); today.setHours(0,0,0,0);
+          const recoD = new Date(sv.reco); recoD.setHours(0,0,0,0);
+          const elapsed = Math.floor((today - recoD) / 86400000);
+          const pctDays = Math.min(100, Math.round((elapsed / c.stabilityDays) * 100));
+          const dColor = pctDays >= 90 ? '#ff3b30' : pctDays >= 70 ? '#ff9500' : '#34c759';
+          const dBar = document.createElement('div');
+          dBar.style.cssText = 'margin-bottom:8px';
+          dBar.innerHTML = `
+            <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px">
+              <span>Vita residua</span>
+              <span>${Math.max(0, c.stabilityDays - elapsed)} gg rimanenti su ${c.stabilityDays}</span>
+            </div>
+            <div style="height:4px;background:var(--surface3,#e8e8ed);border-radius:2px;overflow:hidden">
+              <div style="height:100%;width:${pctDays}%;background:${dColor};border-radius:2px"></div>
+            </div>`;
+          vrow.appendChild(dBar);
+        }
+
+        // Note vial
+        const noteWrap = document.createElement('div');
+        noteWrap.innerHTML = `<div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Note</div>`;
+        const noteInp = document.createElement('input');
+        noteInp.type = 'text'; noteInp.id = `note-${c.id}-${v.n}`;
+        noteInp.value = sv.note || '';
+        noteInp.placeholder = 'es. 10mg + 2ml BAC · frigo A';
+        noteInp.style.cssText = 'width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit';
+        noteInp.onblur = () => {
+          const VKEY2='stock_v2_vials'; let vd2={};
+          try{vd2=JSON.parse(localStorage.getItem(VKEY2)||'{}');}catch(e){}
+          const k2=`${c.id}_v${v.n}`; if(!vd2[k2])vd2[k2]={};
+          vd2[k2].note=noteInp.value; localStorage.setItem(VKEY2,JSON.stringify(vd2));
+        };
+        noteWrap.appendChild(noteInp);
+        vrow.appendChild(noteWrap);
+
+        vs.appendChild(vrow);
       });
 
-      // Gap warning se parziale
       if (gap > 0) {
-        vialSection.innerHTML += `
-          <div style="background:rgba(255,149,0,.08);border-radius:8px;padding:7px 10px;margin-top:4px;font-size:11px;color:#7a4400;display:flex;gap:6px;align-items:center">
-            <span>⚠️</span><span>${c.gap_note}</span>
-          </div>`;
+        vs.innerHTML += `<div style="background:rgba(255,149,0,.08);border-radius:8px;padding:8px 10px;margin-top:4px;font-size:11px;color:#7a4400;display:flex;gap:6px"><span>⚠️</span><span>${c.gap_note}</span></div>`;
       } else {
-        vialSection.innerHTML += `
-          <div style="background:rgba(52,199,89,.08);border-radius:8px;padding:7px 10px;margin-top:4px;font-size:11px;color:#1d6e32">✅ Copertura completa</div>`;
+        vs.innerHTML += `<div style="background:rgba(52,199,89,.08);border-radius:8px;padding:8px 10px;margin-top:4px;font-size:11px;color:#1d6e32">✅ Copertura completa</div>`;
       }
     }
 
-    card.appendChild(vialSection);
+    card.appendChild(vs);
     grid.appendChild(card);
   });
 
   wrap.appendChild(grid);
 
-  // ── CONSUMABILI ──────────────────────────────────────────────────────
+  // Consumabili
   const cons = document.createElement('div');
   cons.style.cssText = 'background:var(--surface,#fff);border-radius:12px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 4px rgba(0,0,0,.06);padding:12px 14px';
   cons.innerHTML = `
@@ -5173,266 +5271,52 @@ function buildStockView2() {
       </div>
     </div>`;
   wrap.appendChild(cons);
-
   el.appendChild(wrap);
 }
 
-// ── Helper: giorni dalla ricostituzione ──────────────────────────────
-function daysFromReco(reco, esau) {
-  if (!reco) return '';
-  const start = new Date(reco); start.setHours(0,0,0,0);
-  const end   = esau ? new Date(esau) : new Date(); end.setHours(0,0,0,0);
-  const days  = Math.floor((end - start) / 86400000);
-  const suffix = esau ? `durato ${days} giorni` : `${days} giorni in uso`;
-  return `📅 Ricostituito il ${start.toLocaleDateString('it-IT',{day:'numeric',month:'short',year:'numeric'})} · ${suffix}`;
+// ── Helper globali stock ─────────────────────────────────────────────
+function stockCalcRecon(mg, bac, dosePerInj, stabilityDays, recoDate) {
+  const conc = mg / bac;
+  const ui = Math.round((dosePerInj / conc) * 100 * 10) / 10;
+  let expire = '—';
+  if (recoDate) {
+    const d = new Date(recoDate); d.setDate(d.getDate() + stabilityDays);
+    const today = new Date(); today.setHours(0,0,0,0); d.setHours(0,0,0,0);
+    const dLeft = Math.floor((d - today) / 86400000);
+    expire = d.toLocaleDateString('it-IT',{day:'numeric',month:'short',year:'numeric'});
+    expire += dLeft < 0 ? ' ⛔ SCADUTO' : dLeft <= 5 ? ` ⚠️ ${dLeft}gg` : ` (+${dLeft}gg)`;
+  }
+  return { conc: conc.toFixed(1), ui: ui.toFixed(1), expire };
 }
 
-// ── Salva stato vial ─────────────────────────────────────────────────
-function setVialStato(cid, vn, stato, btn) {
+function stockSaveRecon(cid, vn) {
+  const VKEY = 'stock_v2_vials';
+  let vd = {}; try { vd = JSON.parse(localStorage.getItem(VKEY)||'{}'); } catch(e) {}
+  const k = `${cid}_v${vn}`;
+  if (!vd[k]) vd[k] = {};
+  const mgEl   = document.getElementById(`mg-${cid}-${vn}`);
+  const bacEl  = document.getElementById(`bac-${cid}-${vn}`);
+  const recoEl = document.getElementById(`reco-${cid}-${vn}`);
+  if (mgEl)   vd[k].mg   = mgEl.value;
+  if (bacEl)  vd[k].bac  = bacEl.value;
+  if (recoEl) vd[k].reco = recoEl.value;
+  localStorage.setItem(VKEY, JSON.stringify(vd));
+  // Ricalcola e aggiorna UI senza rebuild
+  const el2 = document.getElementById(`stock2-view`);
+  if (el2) { delete el2.dataset.built; el2.innerHTML=''; buildStockView2(); }
+}
+
+function stockSetStato(cid, vn, stato) {
   const VKEY = 'stock_v2_vials';
   let vd = {}; try { vd = JSON.parse(localStorage.getItem(VKEY)||'{}'); } catch(e) {}
   const k = `${cid}_v${vn}`;
   if (!vd[k]) vd[k] = {};
   vd[k].stato = stato;
   localStorage.setItem(VKEY, JSON.stringify(vd));
-  // Aggiorna bottoni nella riga
-  const row = btn.closest('[data-cid]');
-  if (row) {
-    const st = ['intatto','in_uso','esaurito','perso','congelato'];
-    row.querySelectorAll('button').forEach((b,i) => {
-      const ss = ['intatto','in_uso','esaurito','perso','congelato'];
-      // Trova quale stato rappresenta questo bottone dal suo testo
-    });
-  }
-  // Ricostruisce la sezione (più semplice che aggiornare singoli bottoni)
   const el2 = document.getElementById('stock2-view');
-  if (el2) { delete el2.dataset.built; el2.innerHTML = ''; buildStockView2(); }
+  if (el2) { delete el2.dataset.built; el2.innerHTML=''; buildStockView2(); }
 }
 
-function saveVialDate(cid, vn, field, val) {
-  const VKEY = 'stock_v2_vials';
-  let vd = {}; try { vd = JSON.parse(localStorage.getItem(VKEY)||'{}'); } catch(e) {}
-  const k = `${cid}_v${vn}`;
-  if (!vd[k]) vd[k] = {};
-  vd[k][field] = val;
-  localStorage.setItem(VKEY, JSON.stringify(vd));
-  const dayEl = document.getElementById(`days-${cid}-${vn}`);
-  if (dayEl) dayEl.textContent = daysFromReco(vd[k].reco, vd[k].esau);
-}
-
-function saveVialNote(cid, vn, val) {
-  const VKEY = 'stock_v2_vials';
-  let vd = {}; try { vd = JSON.parse(localStorage.getItem(VKEY)||'{}'); } catch(e) {}
-  const k = `${cid}_v${vn}`;
-  if (!vd[k]) vd[k] = {};
-  vd[k].note = val;
-  localStorage.setItem(VKEY, JSON.stringify(vd));
-}
-
-function buildStockView() {
-  const el = document.getElementById('stock-view');
-  if (el.dataset.built) return;
-  el.dataset.built = '1';
-
-  // ── DATI INVENTARIO (aggiornato 11/06/2026) ──────────────────────────
-  // Tesamorelin: 6 originali, 2 vial persi (vial 1 ricostituita male, vial 2 persa),
-  // vial 3 in uso (ricostituita 2ml BAC → 5mcg/µl → 1mg = 200µl), vial 4-6 intatte in frigo
-  const today = new Date('2026-06-11');
-  const protocolStart = new Date('2026-06-08');
-  const dayElapsed = Math.floor((today - protocolStart) / 86400000) + 1; // day 4
-
-  // Stima dose consumata Tesa vial-in-uso: 3 iniezioni × 1mg = 3mg = 600µl → rimasto ~1400µl su 2000µl
-
-  const peptides = [
-    {
-      name: 'Tesamorelin',
-      emoji: '🧬',
-      color: '#0071e3',
-      bg: '#e8f1fb',
-      unit: 'mg',
-      vials: [
-        { n: 1, stato: 'perso', qty: null, note: 'Ricostituzione errata (temp. amb. + acqua calda) — solidificato' },
-        { n: 2, stato: 'perso', qty: null, note: 'Vial perso' },
-        { n: 3, stato: 'intatto', qty: '10mg', note: 'In frigo, intatto — non ancora ricostituito' },
-        { n: 4, stato: 'intatto', qty: '10mg', note: 'In frigo, intatto' },
-        { n: 5, stato: 'intatto', qty: '10mg', note: 'In frigo, intatto' },
-        { n: 6, stato: 'intatto', qty: '10mg', note: 'In frigo, intatto' },
-      ],
-      totale: '40mg disponibili (4 vial × 10mg, tutti intatti)',
-      protocolNote: 'Sett 1–4: 1mg/notte · Sett 5–6: 2mg/notte · Sett 7–16: 1mg/notte (con MOTS-C/GHK-Cu/BPC)',
-    },
-    {
-      name: 'MOTS-C',
-      emoji: '⚡',
-      color: '#34c759',
-      bg: 'rgba(52,199,89,.08)',
-      unit: 'vial',
-      vials: [
-        { n: 1, stato: 'intatto', qty: '10mg', note: '10mg · In frigo, intatto' },
-        { n: 2, stato: 'intatto', qty: '10mg', note: '10mg · In frigo, intatto' },
-        { n: 3, stato: 'intatto', qty: '10mg', note: '10mg · In frigo, intatto' },
-        { n: 4, stato: 'intatto', qty: '10mg', note: '10mg · In frigo, intatto' },
-        { n: 5, stato: 'intatto', qty: '10mg', note: '10mg · In frigo, intatto' },
-      ],
-      totale: '5 vial × 10mg = 50mg totali',
-      protocolNote: 'Fase attiva: Sett 7–16 · iniezione mattutina a digiuno',
-    },
-    {
-      name: 'BPC-157',
-      emoji: '🔧',
-      color: '#ff9500',
-      bg: 'rgba(255,149,0,.08)',
-      unit: 'vial',
-      vials: [
-        { n: 1, stato: 'intatto', qty: '10mg', note: '10mg · In frigo, intatto' },
-        { n: 2, stato: 'intatto', qty: '10mg', note: '10mg · In frigo, intatto' },
-      ],
-      totale: '2 vial × 10mg = 20mg totali',
-      protocolNote: 'Fase attiva: Sett 13–16',
-    },
-    {
-      name: 'GHK-Cu',
-      emoji: '🩵',
-      color: '#af52de',
-      bg: 'rgba(175,82,222,.08)',
-      unit: 'vial',
-      vials: [
-        { n: 1, stato: 'intatto', qty: '100mg', note: '100mg · In frigo, intatto' },
-      ],
-      totale: '1 vial × 100mg = 100mg totali',
-      protocolNote: 'Fase attiva: Sett 7–12',
-    },
-  ];
-
-  const consumabili = [
-    { name: 'BAC Water (Bacteriostatic Water)', emoji: '💧', qty: '4 flaconi', stato: 'intatto', note: 'In frigo · usare acqua fredda, iniezione lungo parete vial' },
-    { name: 'Siringhe insulina', emoji: '💉', qty: '240 pz', note: 'PIC 30G × 8mm · 1ml · stock completo' },
-  ];
-
-  // ── CALCOLO SCORTE TESA ──────────────────────────────────────────────
-  // Fase 1-4: 28gg × 1mg = 28mg · Fase 5-6: 14gg × 2mg = 28mg · Fase 7-16: 70gg × 1mg = 70mg
-  // Totale fabbisogno: 126mg · Disponibile: ~37mg → ⚠️ insufficiente, serve riordino
-  const fabbisognoTesa = 126;
-  const disponibileTesa = 40;
-  const gapTesa = fabbisognoTesa - disponibileTesa;
-
-  function statoColor(s) {
-    if (s === 'intatto') return { bg: 'rgba(52,199,89,.10)', color: '#1d7a3a', label: 'Intatto' };
-    if (s === 'in_uso') return { bg: 'rgba(0,113,227,.10)', color: '#0071e3', label: 'In uso' };
-    if (s === 'perso') return { bg: 'rgba(255,59,48,.10)', color: '#ff3b30', label: 'Perso' };
-    return { bg: '#f5f5f7', color: '#666', label: s };
-  }
-
-  let html = `<div style="max-width:860px;margin:0 auto;padding:20px 20px 60px">`;
-
-  // ── HEADER ──
-  html += `
-    <div style="margin-bottom:20px">
-      <div style="font-size:22px;font-weight:600;color:var(--text)">📦 Inventario Peptidi</div>
-      <div style="font-size:13px;color:var(--muted);margin-top:3px">Aggiornato 11 giu 2026 · Protocollo 16 settimane · Giorno ${dayElapsed}</div>
-    </div>`;
-
-  // ── ALERT TESA SCORTE ──
-  html += `
-    <div style="background:rgba(255,149,0,.10);border:1px solid rgba(255,149,0,.3);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start">
-      <div style="font-size:20px;line-height:1">⚠️</div>
-      <div>
-        <div style="font-size:13px;font-weight:600;color:#b36200">Riordino Tesamorelin necessario</div>
-        <div style="font-size:12px;color:#7a4400;margin-top:3px">Fabbisogno totale protocollo: <b>${fabbisognoTesa}mg</b> · Disponibile: <b>~${disponibileTesa}mg</b> · Gap: <b>${gapTesa}mg</b> (≈ ${Math.ceil(gapTesa/10)} vial da 10mg)</div>
-      </div>
-    </div>`;
-
-  // ── PEPTIDI ──
-  peptides.forEach(p => {
-    const intatti = p.vials.filter(v => v.stato === 'intatto').length;
-    const inUso = p.vials.filter(v => v.stato === 'in_uso').length;
-    const persi = p.vials.filter(v => v.stato === 'perso').length;
-
-    html += `
-      <div style="background:var(--surface2,#f5f5f7);border-radius:14px;padding:16px;margin-bottom:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div style="width:36px;height:36px;border-radius:10px;background:${p.bg};display:flex;align-items:center;justify-content:center;font-size:18px">${p.emoji}</div>
-            <div>
-              <div style="font-size:15px;font-weight:600;color:${p.color}">${p.name}</div>
-              <div style="font-size:11px;color:var(--muted);margin-top:1px">${p.totale}</div>
-            </div>
-          </div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-            ${intatti > 0 ? `<span style="font-size:11px;background:rgba(52,199,89,.12);color:#1d7a3a;padding:2px 8px;border-radius:20px">${intatti} intatti</span>` : ''}
-            ${inUso > 0 ? `<span style="font-size:11px;background:rgba(0,113,227,.12);color:#0071e3;padding:2px 8px;border-radius:20px">${inUso} in uso</span>` : ''}
-            ${persi > 0 ? `<span style="font-size:11px;background:rgba(255,59,48,.12);color:#ff3b30;padding:2px 8px;border-radius:20px">${persi} persi</span>` : ''}
-          </div>
-        </div>`;
-
-    // Vials table
-    html += `<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px">`;
-    p.vials.forEach(v => {
-      const sc = statoColor(v.stato);
-      html += `
-        <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;background:var(--card-bg,#fff);border-radius:9px">
-          <div style="min-width:22px;font-size:12px;font-weight:600;color:var(--muted);padding-top:1px">V${v.n}</div>
-          <div style="flex:1;font-size:12px;color:var(--text)">${v.note}</div>
-          <div style="min-width:60px;text-align:right">
-            <span style="font-size:11px;font-weight:500;background:${sc.bg};color:${sc.color};padding:2px 7px;border-radius:20px;white-space:nowrap">${sc.label}</span>
-          </div>
-        </div>`;
-    });
-    html += `</div>`;
-
-    // Protocol note
-    html += `<div style="font-size:11px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px">🗓 ${p.protocolNote}</div>`;
-    html += `</div>`;
-  });
-
-  // ── CONSUMABILI ──
-  html += `
-    <div style="margin-top:4px;margin-bottom:14px">
-      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px">Consumabili</div>
-      <div style="display:flex;flex-direction:column;gap:6px">`;
-  consumabili.forEach(c => {
-    html += `
-        <div style="background:var(--surface2,#f5f5f7);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px">
-          <div style="font-size:20px">${c.emoji}</div>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:500;color:var(--text)">${c.name}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">${c.note}</div>
-          </div>
-          <div style="font-size:13px;font-weight:600;color:#34c759;white-space:nowrap">${c.qty}</div>
-        </div>`;
-  });
-  html += `</div></div>`;
-
-  // ── RIEPILOGO FABBISOGNO ──
-  html += `
-    <div style="background:var(--surface2,#f5f5f7);border-radius:14px;padding:16px;margin-top:6px">
-      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">📊 Fabbisogno protocollo completo</div>
-      <div style="display:grid;gap:8px">`;
-
-  const rows = [
-    { fase: 'Sett 1–4', detail: '28 gg × 1mg Tesa', qty: '28mg Tesa', ok: disponibileTesa >= 28 },
-    { fase: 'Sett 5–6', detail: '14 gg × 2mg Tesa', qty: '28mg Tesa', ok: disponibileTesa >= 56 },
-    { fase: 'Sett 7–12', detail: '42 gg · Tesa 1mg + MOTS-C + GHK-Cu', qty: '42mg Tesa · 3–4 vial MOTS-C · 1 vial GHK-Cu', ok: true },
-    { fase: 'Sett 13–16', detail: '28 gg · Tesa 1mg + MOTS-C + BPC-157', qty: '28mg Tesa · 1–2 vial MOTS-C · 2 vial BPC-157', ok: true },
-  ];
-  rows.forEach(r => {
-    html += `
-        <div style="display:flex;align-items:flex-start;gap:10px;padding:9px 10px;background:var(--card-bg,#fff);border-radius:9px">
-          <div style="font-size:11px;font-weight:600;color:var(--muted);min-width:60px;padding-top:1px">${r.fase}</div>
-          <div style="flex:1;font-size:12px;color:var(--text)">${r.detail}<div style="font-size:11px;color:var(--muted);margin-top:1px">${r.qty}</div></div>
-          <div style="font-size:14px">${r.ok ? '✅' : '⚠️'}</div>
-        </div>`;
-  });
-
-  html += `</div>
-      <div style="margin-top:12px;padding:10px 12px;background:rgba(255,149,0,.08);border-radius:9px;font-size:12px;color:#7a4400">
-        <b>Totale Tesamorelin:</b> fabbisogno ${fabbisognoTesa}mg · disponibile ~${disponibileTesa}mg · da riordinare ~<b>${gapTesa}mg</b> (${Math.ceil(gapTesa/10)} vial × 10mg)
-      </div>
-    </div>`;
-
-  html += `</div>`;
-  el.innerHTML = html;
-}
 
 function buildMedDash() {
   const el = document.getElementById('meddash-view');
