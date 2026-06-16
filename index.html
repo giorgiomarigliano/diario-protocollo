@@ -5636,26 +5636,14 @@ let _preProtoOpen = false;
 
 function togglePreProto() {
   _preProtoOpen = !_preProtoOpen;
-  const body  = document.getElementById('pre-proto-body');
-  const chev  = document.getElementById('pre-proto-chev');
-  const tog   = document.getElementById('pre-proto-toggle');
+  const body = document.getElementById('pre-proto-body');
+  const chev = document.getElementById('pre-proto-chev');
   if (_preProtoOpen) {
-    // Apri
-    body.style.maxHeight = body.scrollHeight + 'px';
-    body.style.overflow  = 'visible';
-    if (chev) chev.style.transform = 'rotate(90deg)';
-    // Dopo la transizione rimuovi max-height per permettere l'espansione
-    setTimeout(() => {
-      body.style.maxHeight = 'none';
-    }, 420);
+    body.classList.add('open');
+    if (chev) chev.textContent = '⌄';
   } else {
-    // Chiudi
-    body.style.maxHeight = body.scrollHeight + 'px';
-    body.style.overflow  = 'hidden';
-    body.getBoundingClientRect(); // force reflow
-    body.style.transition = 'max-height .35s ease';
-    body.style.maxHeight  = '0';
-    if (chev) chev.style.transform = '';
+    body.classList.remove('open');
+    if (chev) chev.textContent = '›';
   }
 }
 
