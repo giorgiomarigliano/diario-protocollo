@@ -4921,55 +4921,64 @@ function buildStockView2() {
   el.dataset.built = '1';
 
   // ── DATI COMPOSTI ────────────────────────────────────────────────────
+  // ── DATI COMPOSTI ────────────────────────────────────────────────────
+  // dose_mcg = dose per SINGOLA iniezione (non dose giornaliera)
+  // UI = (dose_mcg / 1000 / concentrazione_mg_per_ml) × 100
   const compounds = [
     {
       id:'tesa', name:'Tesamorelin', emoji:'🧬', color:'#0071e3', bg:'rgba(0,113,227,.08)',
-      dose:'2mg/sera · SC', fabbisogno:'224mg', fab_detail:'112gg × 2mg',
-      mgNeeded:224, dosePerInj:2.0,
+      dose:'2mg/sera · SC', fabbisogno:'224mg', fab_detail:'112gg × 2mg/die',
+      mgNeeded:224, dose_mcg:2000,
       stabilityDays:21, stabilityNote:'21 gg frigo · sensibile alla luce',
       mgOptions:[2,5,10], bacOptions:[0.5,1.0,2.0],
+      defaultMg:10, defaultBac:2.0,   // → 5mg/ml → 40 UI
       vials:[{n:1,stato:'intatto'},{n:2,stato:'intatto'},{n:3,stato:'intatto'},{n:4,stato:'intatto'}],
       disponibile:40, gap_note:'~184mg da riordinare (~19 vial)',
     },
     {
       id:'fragment', name:'Fragment 176-191', emoji:'🔥', color:'#ff3b30', bg:'rgba(255,59,48,.08)',
-      dose:'250mcg × 2/die · SC', fabbisogno:'56mg', fab_detail:'112gg × 500mcg',
-      mgNeeded:56, dosePerInj:0.250,
+      dose:'250mcg × 2/die · SC', fabbisogno:'56mg', fab_detail:'112gg × 500mcg/die',
+      mgNeeded:56, dose_mcg:250,
       stabilityDays:30, stabilityNote:'30 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0],
+      defaultMg:10, defaultBac:2.0,   // → 5mg/ml → 5 UI per iniezione
       vials:[], disponibile:0, gap_note:'56mg totali (~6 vial × 10mg)',
     },
     {
       id:'ipa', name:'Ipamorelin', emoji:'⚡', color:'#34c759', bg:'rgba(52,199,89,.08)',
-      dose:'100mcg/sera · SC', fabbisogno:'11.2mg', fab_detail:'112gg × 100mcg',
-      mgNeeded:11.2, dosePerInj:0.100,
+      dose:'100mcg/sera · SC', fabbisogno:'11.2mg', fab_detail:'112gg × 100mcg/die',
+      mgNeeded:11.2, dose_mcg:100,
       stabilityDays:30, stabilityNote:'30 gg frigo',
       mgOptions:[2,5,10], bacOptions:[1.0,2.0],
+      defaultMg:10, defaultBac:2.0,   // → 5mg/ml → 2 UI per iniezione
       vials:[], disponibile:0, gap_note:'~2 vial × 10mg',
     },
     {
       id:'igf', name:'IGF-1 DES', emoji:'💪', color:'#af52de', bg:'rgba(175,82,222,.08)',
-      dose:'50mcg post-WO · IM bilat', fabbisogno:'4mg', fab_detail:'80gg WO × 50mcg',
-      mgNeeded:4, dosePerInj:0.050,
+      dose:'50mcg post-WO · IM bilat (25mcg dx + 25mcg sx)', fabbisogno:'4mg', fab_detail:'80gg WO × 50mcg/die',
+      mgNeeded:4, dose_mcg:50,
       stabilityDays:7, stabilityNote:'⚡ 7 gg frigo · aliquotare subito',
       mgOptions:[1,2,5], bacOptions:[0.5,1.0],
+      defaultMg:1, defaultBac:1.0,    // → 1mg/ml → 5 UI per iniezione (bilat: 2.5 UI per lato)
       vials:[], disponibile:0, gap_note:'~4 vial × 1mg',
     },
     {
       id:'bpc', name:'BPC-157', emoji:'🔧', color:'#ff9500', bg:'rgba(255,149,0,.08)',
-      dose:'250mcg × 2/die · SC', fabbisogno:'56mg', fab_detail:'112gg × 500mcg',
-      mgNeeded:56, dosePerInj:0.250,
+      dose:'250mcg × 2/die · SC', fabbisogno:'56mg', fab_detail:'112gg × 500mcg/die',
+      mgNeeded:56, dose_mcg:250,
       stabilityDays:28, stabilityNote:'28 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0],
+      defaultMg:10, defaultBac:2.0,   // → 5mg/ml → 5 UI per iniezione
       vials:[{n:1,stato:'in_uso'},{n:2,stato:'intatto'}],
       disponibile:20, gap_note:'~36mg da riordinare (~4 vial)',
     },
     {
       id:'tb500', name:'TB-500', emoji:'🩹', color:'#5856d6', bg:'rgba(88,86,214,.08)',
-      dose:'500mcg/sera · SC', fabbisogno:'56mg', fab_detail:'112gg × 500mcg',
-      mgNeeded:56, dosePerInj:0.500,
+      dose:'500mcg/sera · SC', fabbisogno:'56mg', fab_detail:'112gg × 500mcg/die',
+      mgNeeded:56, dose_mcg:500,
       stabilityDays:28, stabilityNote:'28 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0],
+      defaultMg:10, defaultBac:2.0,   // → 5mg/ml → 10 UI per iniezione
       vials:[], disponibile:0, gap_note:'~6 vial × 10mg',
     },
   ];
@@ -5090,9 +5099,9 @@ function buildStockView2() {
         const st = statoStyle(stato);
 
         // Calcolo auto da ricostituzione
-        const mg  = parseFloat(sv.mg)  || c.mgOptions[c.mgOptions.length-1];
-        const bac = parseFloat(sv.bac) || c.bacOptions[c.bacOptions.length-1];
-        const rc  = calcRecon(mg, bac, c.dosePerInj, c.stabilityDays, sv.reco);
+        const mg  = parseFloat(sv.mg)  || c.defaultMg;
+        const bac = parseFloat(sv.bac) || c.defaultBac;
+        const rc  = calcRecon(mg, bac, c.dose_mcg/1000, c.stabilityDays, sv.reco);
 
         const vrow = document.createElement('div');
         vrow.dataset.cid = c.id; vrow.dataset.vn = v.n;
@@ -5134,7 +5143,7 @@ function buildStockView2() {
         c.mgOptions.forEach(m => {
           const opt = document.createElement('option');
           opt.value = m; opt.textContent = `${m}mg`;
-          if (parseFloat(sv.mg) === m || (!sv.mg && m === c.mgOptions[c.mgOptions.length-1])) opt.selected = true;
+          if (parseFloat(sv.mg) === m || (!sv.mg && m === c.defaultMg)) opt.selected = true;
           mgSel.appendChild(opt);
         });
         mgSel.onchange = () => stockSaveRecon(c.id, v.n);
@@ -5150,7 +5159,7 @@ function buildStockView2() {
         c.bacOptions.forEach(b2 => {
           const opt = document.createElement('option');
           opt.value = b2; opt.textContent = `${b2}ml`;
-          if (parseFloat(sv.bac) === b2 || (!sv.bac && b2 === c.bacOptions[c.bacOptions.length-1])) opt.selected = true;
+          if (parseFloat(sv.bac) === b2 || (!sv.bac && b2 === c.defaultBac)) opt.selected = true;
           bacSel.appendChild(opt);
         });
         bacSel.onchange = () => stockSaveRecon(c.id, v.n);
@@ -5163,7 +5172,14 @@ function buildStockView2() {
         const uiBox = document.createElement('div');
         uiBox.id = `ui-${c.id}-${v.n}`;
         uiBox.style.cssText = 'font-size:16px;font-weight:700;color:var(--text);line-height:1.2;padding-top:3px';
+        const isIgf = cid === 'igf' || c.id === 'igf';
         uiBox.textContent = `${rc.ui} UI`;
+        if (c.id === 'igf') {
+          const bilat = document.createElement('div');
+          bilat.style.cssText = 'font-size:9px;color:var(--muted);margin-top:1px';
+          bilat.textContent = `→ ${(parseFloat(rc.ui)/2).toFixed(1)} UI per lato`;
+          uiWrap.appendChild(bilat);
+        }
         const concSpan = document.createElement('div');
         concSpan.style.cssText = 'font-size:9px;color:var(--muted);margin-top:1px';
         concSpan.textContent = `${rc.conc}mg/ml`;
