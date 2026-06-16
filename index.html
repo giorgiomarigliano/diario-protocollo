@@ -1167,17 +1167,13 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   transition: transform .2s;
   margin-left: auto;
 }
-.pre-proto-body {
-  overflow: hidden;
-  max-height: 0;
-  transition: max-height .4s ease;
-}
-#pre-proto-body > .container { overflow: hidden; }
+
+
 /* Spazio tra le due sezioni */
 #pre-proto-section { margin-bottom: 0; }
 #pre-proto-section .container { padding-bottom: 20px; }
 /* Spazio tra toggle e primo elemento dentro pre-proto */
-#pre-proto-body { padding-top: 16px; }
+
 /* Spazio tra pre-proto e protocollo v2 */
 #container2.container { padding-top: 20px; }
 @media (max-width: 600px) {
@@ -1295,6 +1291,10 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 #container2 .week-range {
   font-size: 12px;
 }
+
+/* Pre-proto collasso */
+.pre-proto-body { display: none; }
+.pre-proto-body.open { display: block; padding-top: 8px; }
 </style>
 <!-- deploy 1781175570 -->
 </head>
