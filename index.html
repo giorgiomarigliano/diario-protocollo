@@ -1415,7 +1415,7 @@ function buildWarmup() {
         ${isT?'<span class="today-pill">OGGI</span>':''}
         <span class="day-chev">›</span>
       </div>
-      <div class="day-body" id="body-wu-${id}" style="display:none">
+      <div class="day-body" id="body-day-${id}" style="display:none">
         <div class="day-body-cols">
           <div class="day-col">
             <div class="section-hdr">Biometria</div>
@@ -1836,7 +1836,9 @@ function buildDashboard() {
 
   const today=new Date(); today.setHours(0,0,0,0);
   const start=new Date(START_V2); start.setHours(0,0,0,0);
-  const elapsed=Math.max(0,Math.floor((today-start)/86400000));
+  const elapsedRaw=Math.floor((today-start)/86400000);
+  const elapsed=Math.max(0,elapsedRaw);
+  const notStarted=elapsedRaw<0;
   const wk=Math.floor(elapsed/7)+1;
   const ph=getPhaseV2(Math.min(elapsed,111));
 
@@ -1947,6 +1949,10 @@ function buildDashboard() {
 }
 
 function buildTimeline(elapsed) {
+  // elapsed=0 può significare "non ancora iniziato" o "giorno 0"
+  const today=new Date(); today.setHours(0,0,0,0);
+  const startV2=new Date(START_V2); startV2.setHours(0,0,0,0);
+  const actualElapsed=Math.floor((today-startV2)/86400000);
   const bar=document.getElementById('tl-bar');
   const phases=[
     {len:28,color:'#1a5a8a',label:'WK1–4'},
@@ -1957,9 +1963,9 @@ function buildTimeline(elapsed) {
   if(bar){
     bar.innerHTML=phases.map((p,i)=>{
       const phStart=i*28;
-      const isActive=elapsed>=phStart&&elapsed<phStart+28;
-      const isPast=elapsed>=phStart+28;
-      const pctInPhase=isActive?Math.round(((elapsed-phStart)/28)*100):0;
+      const isActive=actualElapsed>=phStart&&actualElapsed<phStart+28;
+      const isPast=actualElapsed>=phStart+28;
+      const pctInPhase=isActive?Math.round(((actualElapsed-phStart)/28)*100):0;
       const bg=isPast?p.color:isActive?p.color:'var(--c-surface3)';
       const op=isPast?1:isActive?0.85:0.25;
       return `<div style="flex:${p.len};background:${bg};opacity:${op};position:relative" title="${p.label}: ${isPast?'completata':isActive?pctInPhase+'%':'futura'}">`+
@@ -4782,32 +4788,44 @@ function renderPanel(p) {
 // ── Referti (usa buildMedView originale) ────────────────────
 function buildMedViewDirect(container) {
   if (!container) return;
-  container.id = 'med-view';
+  const origGetById = document.getElementById.bind(document);
+  document.getElementById = function(id) {
+    if (id === 'med-view') return container;
+    return origGetById(id);
+  };
   delete container.dataset.built;
   try { buildMedView(); } catch(e) {
     container.innerHTML = '<p style="padding:20px;color:#6e6e73">Referti non disponibili.</p>';
   }
-  container.removeAttribute('id');
+  document.getElementById = origGetById;
 }
 function buildMedDashDirect(container) {
   if (!container) return;
-  container.id = 'meddash-view';
+  const origGetById = document.getElementById.bind(document);
+  document.getElementById = function(id) {
+    if (id === 'meddash-view') return container;
+    return origGetById(id);
+  };
   delete container.dataset.built;
   try { buildMedDash(); } catch(e) {}
-  container.removeAttribute('id');
+  document.getElementById = origGetById;
 }
 function buildStockDirect(container) {
   if (!container) return;
-  // buildStockView2 cerca #stock-view — usiamo il container direttamente
-  container.id = 'stock-view';
-  delete container.dataset.built; // reset guard
+  // Monkey-patch getElementById temporaneamente per intercettare 'stock-view'
+  const origGetById = document.getElementById.bind(document);
+  document.getElementById = function(id) {
+    if (id === 'stock-view') return container;
+    return origGetById(id);
+  };
+  delete container.dataset.built;
   try {
     buildStockView2();
   } catch(e) {
-    container.innerHTML = '<p style="padding:20px;color:var(--c-label)">Stock non disponibile.</p>';
+    console.error('Stock error:', e);
+    container.innerHTML = '<p style="padding:20px;color:#6e6e73">Errore caricamento stock.</p>';
   }
-  // Rimuovi id temporaneo
-  container.removeAttribute('id');
+  document.getElementById = origGetById;
 }
 </script>
 </body>
