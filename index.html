@@ -1172,6 +1172,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   max-height: 0;
   transition: max-height .4s ease;
 }
+#pre-proto-body > .container { overflow: hidden; }
 /* Spazio tra le due sezioni */
 #pre-proto-section { margin-bottom: 0; }
 #pre-proto-section .container { padding-bottom: 20px; }
@@ -1260,6 +1261,40 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 .proto2-save-btn:hover { background: var(--blue-hover, #0077ed); }
 /* Rimuovi override bio-box select (era troppo grande) */
 .bio-box select { font-size: 14px; font-weight: 600; }
+
+/* Uniforma font buildProtoV2 a buildDays */
+#container2 .day-date {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+#container2 .day-info .day-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+#container2 .day-badge {
+  font-size: 11px;
+  font-weight: 600;
+}
+#container2 .dq-v {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+#container2 .dq-l {
+  font-size: 10px;
+  color: var(--muted);
+}
+#container2 .week-hdr h2 {
+  font-size: 17px;
+}
+#container2 .week-phase {
+  font-size: 11px;
+}
+#container2 .week-range {
+  font-size: 12px;
+}
 </style>
 <!-- deploy 1781175570 -->
 </head>
@@ -1314,8 +1349,6 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
       </div>
     </div>
   </div>
-  <!-- Cycle card e grafico andamento (sempre visibili, fuori dal collasso) -->
-  <div id="cycle-card-wrap" class="container" style="padding-top:16px;padding-bottom:0"></div>
   <!-- SEZIONE 2: Protocollo v2 dal 29 giu -->
   <div id="container2" class="container" style="padding-top:8px"></div>
 </div>
@@ -4099,12 +4132,8 @@ window.addEventListener('load',async()=>{
   buildDays();                          // popola #container (dentro pre-proto-body)
   buildProtoV2();                       // popola #container2 (proto v2 dal 29 giu)
   document.getElementById('loading').style.display='none';
-  const container=document.getElementById('container');
-  // Cycle card fuori dal collasso pre-proto
-  const cycleWrap=document.getElementById('cycle-card-wrap');
-  if(cycleWrap) buildCycleCard(cycleWrap);
-  // Lab section rimane dentro pre-proto (è riepilogo baseline)
-  buildLabSection(container);
+  // buildCycleCard e buildLabSection sono dentro pre-proto-body (collassato)
+  // Non le chiamiamo qui — buildDays() le ha già rese disponibili
   updateNavHighlight();
   jumpToday();
   // Always load from cloud first — localStorage only as offline fallback
