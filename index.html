@@ -1349,6 +1349,8 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
       </div>
     </div>
   </div>
+  <!-- Widget andamento (sempre visibile) -->
+  <div id="lab-section-wrap" class="container" style="padding-bottom:0;padding-top:12px"></div>
   <!-- SEZIONE 2: Protocollo v2 dal 29 giu -->
   <div id="container2" class="container" style="padding-top:8px"></div>
 </div>
@@ -1745,18 +1747,10 @@ function drawChart(id,data,color){
 
 function refreshCharts(){
   const old=document.getElementById('charts-card');
-  if(old){
-    // Se è dentro cycle-charts-row, rimuovi solo il charts-card e sciogli il row
-    const row=old.closest('.cycle-charts-row');
-    if(row){
-      const cycleCard=row.querySelector('.cycle-card');
-      if(cycleCard) row.parentNode.insertBefore(cycleCard, row);
-      row.remove();
-    } else {
-      old.remove();
-    }
-  }
-  buildCharts(document.getElementById('container'));
+  if(old){ old.remove(); }
+  // Usa lab-section-wrap (sempre visibile, fuori dal collasso pre-proto)
+  const target = document.getElementById('lab-section-wrap') || document.getElementById('container');
+  buildCharts(target);
 }
 
 function buildSentinelSection(dayId,woType){
@@ -4132,8 +4126,9 @@ window.addEventListener('load',async()=>{
   buildDays();                          // popola #container (dentro pre-proto-body)
   buildProtoV2();                       // popola #container2 (proto v2 dal 29 giu)
   document.getElementById('loading').style.display='none';
-  // buildCycleCard e buildLabSection sono dentro pre-proto-body (collassato)
-  // Non le chiamiamo qui — buildDays() le ha già rese disponibili
+  // Lab section (andamento) — fuori dal collasso, sempre visibile
+  const labWrap = document.getElementById('lab-section-wrap');
+  if (labWrap) buildLabSection(labWrap);
   updateNavHighlight();
   jumpToday();
   // Always load from cloud first — localStorage only as offline fallback
