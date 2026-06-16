@@ -1117,32 +1117,6 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .day-card.open .day-body.day-body-desktop { grid-template-columns: 440px 1fr; }
 }
 
-
-/* ── Redesign additions ── */
-.kpi-strip{display:flex;align-items:center;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 20px;overflow-x:auto;scrollbar-width:none;height:40px;gap:0}
-.kpi-strip::-webkit-scrollbar{display:none}
-.ks-item{display:flex;align-items:baseline;gap:3px;padding:0 12px;flex-shrink:0}
-.ks-val{font-size:16px;font-weight:600;letter-spacing:-.02em;color:var(--text);line-height:1}
-.ks-lbl{font-size:10px;color:var(--muted)}
-.ks-sep{width:1px;height:18px;background:var(--border2);flex-shrink:0}
-.wu-toggle{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;cursor:pointer;margin-bottom:0;transition:background .12s}
-.wu-toggle:hover{background:var(--surface2)}
-.inj-chip{display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:var(--radius-xs);border:1px solid var(--border);background:var(--surface2);font-size:11px;font-weight:500;color:var(--text2);cursor:pointer;user-select:none;white-space:nowrap;transition:background .1s}
-.inj-chip:hover{background:#e0e0e5}
-.inj-chip[data-s="fatto"]{background:rgba(52,199,89,.10);border-color:rgba(52,199,89,.30);color:#1a6e32}
-.inj-chip[data-s="skip"]{color:var(--faint);text-decoration:line-through}
-.chip-icon{font-size:11px}
-.chip-st{font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
-.inj-chip[data-s="fatto"] .chip-st{color:#1a6e32}
-.inj-slot-hdr{display:flex;align-items:center;gap:7px;margin:10px 0 5px}
-.slot-icon{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
-.slot-icon.m{background:rgba(0,113,227,.12);color:#0058b8}
-.slot-icon.p{background:rgba(184,115,51,.12);color:#8a4a00}
-.slot-icon.w{background:rgba(90,45,138,.12);color:#5a2d8a}
-.slot-icon.s{background:rgba(26,90,58,.12);color:#1a5a3a}
-.slot-lbl{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
-.slot-time{font-size:10px;color:var(--faint);margin-left:auto}
-.inj-chips{display:flex;flex-wrap:wrap;gap:4px}
 </style>
 <!-- deploy 1781175570 -->
 </head>
@@ -1171,49 +1145,26 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 
 <div class="prog-wrap"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
 <div class="main-nav">
-  <div class="main-nav-tab on" id="main-tab-diary"  onclick="switchView('diary')">Diario</div>
-  <div class="main-nav-tab"   id="main-tab-dash"   onclick="switchView('dash')">Dashboard</div>
-  <div class="main-nav-tab"   id="main-tab-med"    onclick="switchView('med')">🩸 Referti</div>
-  <div class="main-nav-tab"   id="main-tab-stock"  onclick="switchView('stock')">📦 Stock</div>
+  <div class="main-nav-tab on" id="main-tab-diary" onclick="switchView('diary')">Diario</div>
+  <div class="main-nav-tab" id="main-tab-dash" onclick="switchView('dash')">Dashboard</div>
+  <div class="main-nav-tab" id="main-tab-med" onclick="switchView('med')">🩸 Referti</div>
+  <div class="main-nav-tab" id="main-tab-meddash" onclick="switchView('meddash')">📊 Lab</div>
+  <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')">📦 Stock</div>
+  <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')">🧬 Proto v2</div>
+  <div class="main-nav-tab" id="main-tab-stock2" onclick="switchView('stock2')">📦 Stock v2</div>
 </div>
 <div class="nav-strip" id="nav-strip"></div>
-
-<!-- KPI strip (visibile solo nel tab diario) -->
-<div id="kpi-wrap" style="display:none">
-  <div class="kpi-strip">
-    <div class="ks-item"><span class="ks-val" id="ks-peso">—</span><span class="ks-lbl">kg</span></div>
-    <div class="ks-sep"></div>
-    <div class="ks-item"><span class="ks-val" id="ks-hrv">—</span><span class="ks-lbl">HRV ms</span></div>
-    <div class="ks-sep"></div>
-    <div class="ks-item"><span class="ks-val" id="ks-rhr">—</span><span class="ks-lbl">RHR</span></div>
-    <div class="ks-sep"></div>
-    <div class="ks-item"><span class="ks-val" id="ks-wk">—</span><span class="ks-lbl">settimana</span></div>
-    <div class="ks-sep"></div>
-    <div class="ks-item"><span class="ks-val" id="ks-fase">—</span><span class="ks-lbl">fase</span></div>
-  </div>
-</div>
-
 <div class="diary-view" id="diary-view">
-  <!-- Pre-protocollo collassabile -->
-  <div id="wu-wrap" style="display:none">
-    <div class="container">
-      <div class="wu-toggle" id="wu-toggle" onclick="toggleWU()">
-        <div><b>Pre-Protocollo · 8–28 giu 2026</b> <span style="font-size:12px;color:var(--muted);margin-left:8px">Biometria baseline · allenamenti · note</span></div>
-        <span id="wu-chev" style="color:var(--faint);font-size:13px;margin-left:auto">›</span>
-      </div>
-      <div id="wu-body" style="overflow:hidden;max-height:0">
-        <div id="container"></div>
-      </div>
-    </div>
-  </div>
-  <!-- Protocollo v2 dal 29 giu -->
-  <div id="container2"></div>
+  <div class="container" id="container"></div>
 </div>
-
-<div class="dash-view"  id="dash-view"></div>
-<div class="med-view"   id="med-view"></div>
-<div class="med-view"   id="meddash-view" style="display:none"></div>
-<div class="med-view"   id="stock-view"></div>
+<div class="dash-view" id="dash-view"></div>
+<div class="med-view" id="med-view"></div>
+<div class="med-view" id="meddash-view"></div>
+<div class="med-view" id="stock-view"></div>
+<div class="med-view" id="stock2-view"></div>
+<div class="diary-view hidden" id="proto2-view">
+  <div class="container" id="container2"></div>
+</div>
 
 <div class="save-bar">
   <span class="save-hint" id="last-saved">Mai salvato</span>
@@ -1787,6 +1738,14 @@ function buildDays(){
         </div>`}
         </div><!-- /col-right -->
 
+        <!-- ZONA 2: iniezioni full-width -->
+        <div class="col-full">
+        <div class="section-label">Protocollo iniezione</div>
+        <div class="inj-slots">
+          ${renderInjectionSlots(i, id)}
+        </div>
+        </div><!-- /col-full -->
+
         <!-- ZONA 3: note + soggettivo + stack full-width -->
         <div class="col-full">
         <div class="note-box">
@@ -1977,58 +1936,83 @@ let _saving=false;
 let _lastData={};  // cache ultima applyAll per riepilogo
 
 async function saveData(){
-  if(_saving) return; _saving=true;
+  if(_saving) return; // prevent concurrent saves
+  _saving=true;
   const btn=document.getElementById('save-btn');
-  if(btn){btn.disabled=true;btn.textContent='Salvataggio...';}
+  btn.disabled=true; btn.textContent='Salvataggio...';
   setSyncStatus('—');
-  const all=collectAll();
-  const ts=Date.now(),isoTs=new Date(ts).toISOString(),now=new Date();
-  const dataWU={},dataV2={};
-  Object.entries(all).forEach(([id,f])=>{
-    if(id.startsWith('p2_day_')||id.startsWith('v2_')) dataV2[id]=f; else dataWU[id]=f;
-  });
-  try{localStorage.setItem(KEY,JSON.stringify({data:dataWU,ts}));_lastData=dataWU;}catch(e){}
-  try{localStorage.setItem(KEY2,JSON.stringify(dataV2));_lastData2=dataV2;}catch(e){}
-  async function upsert(userId,data){
-    const url=SB_URL+'/rest/v1/diary';
-    let r=await fetch(url+'?user_id=eq.'+userId,{method:'PATCH',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'},body:JSON.stringify({data,updated_at:isoTs})});
-    if(r.status===200){const p=await r.json();if(!p||!p.length)await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY},body:JSON.stringify({user_id:userId,data,updated_at:isoTs})});}
-  }
+  const data=collectAll();
+  const ts=Date.now();
+  try{localStorage.setItem(KEY,JSON.stringify({data,ts}));}catch(e){}
   try{
-    await upsert(USER_ID,dataWU);
-    upsert(USER_ID2,dataV2).catch(()=>{});
-    document.getElementById('last-saved').textContent='Salvato '+now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-    setSyncStatus('ok');
+    const now=new Date();
+    const isoTs=new Date(ts).toISOString();
+    // Try PATCH first (update existing record)
+    let res=await fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID,{
+      method:'PATCH',
+      headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'},
+      body:JSON.stringify({data,updated_at:isoTs})
+    });
+    // If no record exists (0 rows updated), do POST to insert
+    if(res.status===200){
+      const patched=await res.json();
+      if(!patched||patched.length===0){
+        res=await fetch(SB_URL+'/rest/v1/diary',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'},
+          body:JSON.stringify({user_id:USER_ID,data,updated_at:isoTs})
+        });
+        const inserted=await res.json();
+        if(inserted&&inserted[0]&&inserted[0].updated_at){
+          localStorage.setItem(KEY,JSON.stringify({data,ts:new Date(inserted[0].updated_at).getTime()}));
+        }
+      } else {
+        if(patched[0]&&patched[0].updated_at){
+          localStorage.setItem(KEY,JSON.stringify({data,ts:new Date(patched[0].updated_at).getTime()}));
+        }
+      }
+      document.getElementById('last-saved').textContent='Salvato '+now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+      setSyncStatus('ok');
+    } else {
+      document.getElementById('last-saved').textContent='Salvato localmente · cloud err '+res.status;
+      setSyncStatus('err');
+    }
   }catch(e){
-    document.getElementById('last-saved').textContent='Salvato localmente';setSyncStatus('err');
+    document.getElementById('last-saved').textContent='Salvato localmente (offline)';
+    setSyncStatus('err');
   }
-  if(btn){btn.disabled=false;btn.textContent='Salva dati';}
+  btn.disabled=false; btn.textContent='Salva dati';
   _saving=false;
-  updateKpiStrip();
 }
 
 async function loadFromCloud(){
   setSyncStatus('—');
   document.getElementById('last-saved').textContent='Sincronizzazione...';
   try{
-    const [r1,r2]=await Promise.all([
-      fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID+'&select=data,updated_at&limit=1',{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}),
-      fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID2+'&select=data,updated_at&limit=1',{headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
-    ]);
-    let ts=null;
-    if(r1.ok){const rows=await r1.json();if(rows&&rows[0]&&rows[0].data){const cd=rows[0].data,ct=rows[0].updated_at;ts=new Date(ct).getTime();_lastData=cd;applyAll(cd);localStorage.setItem(KEY,JSON.stringify({data:cd,ts}));}}
-    if(r2.ok){const rows=await r2.json();if(rows&&rows[0]&&rows[0].data){const cd=rows[0].data,ct=rows[0].updated_at;_lastData2=cd;localStorage.setItem(KEY2,JSON.stringify(cd));applyAll(cd);applyProto2Data();const ts2=new Date(ct).getTime();if(!ts||ts2>ts)ts=ts2;}}
-    if(ts){document.getElementById('last-saved').textContent='Caricato · '+new Date(ts).toLocaleString('it-IT');setSyncStatus('ok');}
-    else{document.getElementById('last-saved').textContent='Nessun dato';setSyncStatus('—');}
-    setTimeout(refreshCharts,200);
+    const res=await fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID+'&select=data,updated_at&limit=1',
+      {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+    if(res.ok){
+      const rows=await res.json();
+      if(rows&&rows.length>0&&rows[0].data){
+        const cd=rows[0].data,ct=rows[0].updated_at;
+        const ctMs=new Date(ct).getTime();
+        // Always apply cloud data on explicit sync
+        applyAll(cd);
+        localStorage.setItem(KEY,JSON.stringify({data:cd,ts:ctMs}));
+          document.getElementById('last-saved').textContent='Caricato dal cloud · '+new Date(ct).toLocaleString('it-IT');
+          setSyncStatus('ok');
+          setTimeout(refreshCharts,200);
+      } else {
+        document.getElementById('last-saved').textContent='Nessun dato nel cloud';
+        setSyncStatus('—');
+      }
+    } else throw new Error('HTTP '+res.status);
   }catch(e){
-    const lr=localStorage.getItem(KEY);if(lr){try{const p=JSON.parse(lr);_lastData=p.data||p;applyAll(_lastData);}catch(e2){}}
-    const lr2=localStorage.getItem(KEY2);if(lr2){try{_lastData2=JSON.parse(lr2);applyAll(_lastData2);applyProto2Data();}catch(e2){}}
-    document.getElementById('last-saved').textContent='Offline';setSyncStatus('err');
-    setTimeout(refreshCharts,200);
+    const lr=localStorage.getItem(KEY);
+    if(lr){try{const p=JSON.parse(lr);applyAll(p.data||p);document.getElementById('last-saved').textContent='Locale (offline)';setSyncStatus('err');}catch(e2){}}
+    else{document.getElementById('last-saved').textContent='Errore connessione';setSyncStatus('err');}
   }
   refreshWeekSummary();
-  updateKpiStrip();
 }
 
 function jumpToday(){
@@ -2354,49 +2338,59 @@ function refreshWeekSummary() {
 
 // ── DASHBOARD ──
 function switchView(view) {
-  // Reset
-  const ids = ['diary-view','dash-view','med-view','stock-view'];
-  document.getElementById('diary-view').classList.add('hidden');
-  document.getElementById('dash-view').classList.remove('active');
-  document.getElementById('med-view').classList.remove('visible');
-  document.getElementById('stock-view').classList.remove('visible');
-  ['main-tab-diary','main-tab-dash','main-tab-med','main-tab-stock'].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.classList.remove('on');
-  });
-  document.getElementById('nav-strip').style.display='none';
-  const kw=document.getElementById('kpi-wrap'); if(kw) kw.style.display='none';
-
-  if (view==='dash') {
-    document.getElementById('dash-view').classList.add('active');
-    document.getElementById('main-tab-dash').classList.add('on');
+  const diary = document.getElementById('diary-view');
+  const dash = document.getElementById('dash-view');
+  const med = document.getElementById('med-view');
+  const meddash = document.getElementById('meddash-view');
+  const stockView = document.getElementById('stock-view');
+  const proto2View = document.getElementById('proto2-view');
+  const navStrip = document.getElementById('nav-strip');
+  const tabDiary = document.getElementById('main-tab-diary');
+  const tabDash = document.getElementById('main-tab-dash');
+  const tabMed = document.getElementById('main-tab-med');
+  const tabMedDash = document.getElementById('main-tab-meddash');
+  const tabStock = document.getElementById('main-tab-stock');
+  const tabProto2 = document.getElementById('main-tab-proto2');
+  const stock2View = document.getElementById('stock2-view');
+  const tabStock2 = document.getElementById('main-tab-stock2');
+  // Reset all
+  diary.classList.add('hidden'); dash.classList.remove('active');
+  med.classList.remove('visible'); meddash.classList.remove('visible');
+  stockView.classList.remove('visible'); stock2View.classList.remove('visible');
+  proto2View.classList.add('hidden');
+  navStrip.style.display = 'none';
+  tabDiary.classList.remove('on'); tabDash.classList.remove('on');
+  tabMed.classList.remove('on'); tabMedDash.classList.remove('on');
+  tabStock.classList.remove('on'); tabProto2.classList.remove('on');
+  tabStock2.classList.remove('on');
+  if (view === 'dash') {
+    dash.classList.add('active');
+    tabDash.classList.add('on');
     buildDashboard();
-  } else if (view==='med') {
-    const mv=document.getElementById('med-view'); mv.classList.add('visible');
-    document.getElementById('main-tab-med').classList.add('on');
+  } else if (view === 'med') {
+    med.classList.add('visible');
+    tabMed.classList.add('on');
     buildMedView();
-    // Meddash dentro med-view
-    if (!mv.dataset.medDash) {
-      mv.dataset.medDash='1';
-      const tmp=document.createElement('div'); tmp.id='meddash-view'; tmp.dataset.built='';
-      document.body.appendChild(tmp);
-      buildMedDash();
-      const inner=document.createElement('div');
-      inner.style.marginTop='20px';
-      inner.innerHTML=tmp.innerHTML;
-      mv.appendChild(inner);
-      document.body.removeChild(tmp);
-    }
-  } else if (view==='stock') {
-    document.getElementById('stock-view').classList.add('visible');
-    document.getElementById('main-tab-stock').classList.add('on');
+  } else if (view === 'meddash') {
+    meddash.classList.add('visible');
+    tabMedDash.classList.add('on');
+    buildMedDash();
+  } else if (view === 'stock') {
+    stockView.classList.add('visible');
+    tabStock.classList.add('on');
+    buildStockView();
+  } else if (view === 'stock2') {
+    stock2View.classList.add('visible');
+    tabStock2.classList.add('on');
     buildStockView2();
+  } else if (view === 'proto2') {
+    proto2View.classList.remove('hidden');
+    tabProto2.classList.add('on');
+    buildProtoV2();
   } else {
-    // diary
-    document.getElementById('diary-view').classList.remove('hidden');
-    document.getElementById('nav-strip').style.display='';
-    if(kw) kw.style.display='';
-    document.getElementById('main-tab-diary').classList.add('on');
-    updateKpiStrip();
+    diary.classList.remove('hidden');
+    navStrip.style.display = '';
+    tabDiary.classList.add('on');
   }
 }
 
@@ -3906,20 +3900,31 @@ function refreshDashCharts() {
 
 
 window.addEventListener('load',async()=>{
-  buildUnifiedDiary();
+  buildNav();
+  buildDays();
   document.getElementById('loading').style.display='none';
-  const kw=document.getElementById('kpi-wrap'); if(kw) kw.style.display='';
+  const container=document.getElementById('container');
+  buildCycleCard(container);
+  buildLabSection(container);
   updateNavHighlight();
   jumpToday();
-  try {
+  // Always load from cloud first — localStorage only as offline fallback
+  try{
     await loadFromCloud();
-  } catch(e) {
+  }catch(e){
+    // Cloud failed — fall back to localStorage
     const lr=localStorage.getItem(KEY);
-    if(lr){try{const p=JSON.parse(lr);applyAll(p.data||p);document.getElementById('last-saved').textContent='Offline';setSyncStatus('err');}catch(e2){}}
-    const lr2=localStorage.getItem(KEY2);
-    if(lr2){try{_lastData2=JSON.parse(lr2);applyAll(_lastData2);}catch(e2){}}
+    if(lr){
+      try{
+        const p=JSON.parse(lr);
+        applyAll(p.data||p);
+        document.getElementById('last-saved').textContent='Offline — dati locali';
+        setSyncStatus('err');
+      }catch(e2){}
+    }
     setTimeout(refreshCharts,200);
   }
+  // buildCharts viene chiamato da refreshCharts() dentro loadFromCloud — non duplicare qui
 });
 
 window.addEventListener('beforeunload',()=>{
@@ -4169,11 +4174,11 @@ const USER_ID2    = 'giorgio_proto2_2026';
 let   _lastData2  = {};
 
 function getPhase2(dayIdx) {
-  const wk=Math.floor(dayIdx/7)+1;
-  if(wk<=4)  return {label:'Fragment · Tesa · Ipa · BPC-157 · TB-500',badge:'p1'};
-  if(wk<=8)  return {label:'+ IGF-1 DES · WK5–8 (Bangkok)',           badge:'p2'};
-  if(wk<=12) return {label:'+ IGF-1 DES · WK9–12',                    badge:'p3'};
-  return             {label:'Fase finale · WK13–16',                   badge:'p4b'};
+  const wk = Math.floor(dayIdx/7)+1;
+  if (wk<=4)  return {label:'Tesa + Fragment + Ipa',        badge:'p1'};
+  if (wk<=6)  return {label:'+ GHK-Cu',                     badge:'p2'};
+  if (wk<=12) return {label:'+ MOTS-C + IGF-1 DES',         badge:'p3'};
+  return             {label:'+ BPC-157 + TB-500',            badge:'p4b'};
 }
 
 function getNextEvent2(elapsed) {
@@ -4496,7 +4501,43 @@ function buildProtoV2() {
     }
 
     const slots = getInjectionSlots2(i);
-    const slotHTML = slots.map(s => buildInjChipsSlot(s, id)).join('');
+    const slotHTML = slots.map(s => {
+      const muscleField = s.igfMuscle !== undefined ? `
+        <div style="margin-top:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare</div>
+          <select data-id="${id}" data-f="inj_${s.n}_distretto">
+            ${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m=>`<option value="${m}" ${m===s.igfMuscle?'selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>` : '';
+      const slotClass = s.n === 1 ? 'inj-card-mattino' : s.n === 2 ? 'inj-card-pomeriggio' : s.igfMuscle !== undefined ? 'inj-card-postWO' : 'inj-card-sera';
+      const slotIconMap = {
+        1: '<i class="ti ti-sunrise" style="font-size:15px;color:#0071e3"></i>',
+        2: '<i class="ti ti-sun" style="font-size:15px;color:#ff9500"></i>',
+      };
+      const slotIcon = s.igfMuscle !== undefined
+        ? '<i class="ti ti-barbell" style="font-size:15px;color:#af52de"></i>'
+        : slotIconMap[s.n] || '<i class="ti ti-moon" style="font-size:15px;color:#34c759"></i>';
+      return `
+      <div class="inj-card ${slotClass}">
+        <div class="inj-num">${slotIcon}</div>
+        <div class="inj-body">
+          <div class="inj-title">${s.label}</div>
+          <div class="inj-timing">${s.momento}</div>
+          <div class="inj-fields" style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+            ${s.fields.map(f => `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface,#fff);border-radius:8px;padding:6px 10px">
+              <span style="font-size:12px;font-weight:500;color:var(--text);flex:1">${f}</span>
+              <select data-id="${id}" data-f="inj_${s.n}_${f.replace(/[\s\-]/g,'_')}" style="flex-shrink:0;width:110px">
+                <option value="">— stato</option>
+                <option value="fatto">✅ Fatto</option>
+                <option value="skip">⏭ Skip</option>
+              </select>
+            </div>`).join('')}
+          </div>
+          ${muscleField}
+        </div>
+      </div>`;
+    }).join('');
 
     const card = document.createElement('div');
     card.className = 'day-card'+(isToday?' today open':'');
@@ -4629,7 +4670,7 @@ function applyProto2Data() {
 
 
 function buildStockView2() {
-  const el = document.getElementById('stock-view');
+  const el = document.getElementById('stock2-view');
   if (el.dataset.built) return;
   el.dataset.built = '1';
 
@@ -5344,124 +5385,6 @@ function buildMedDash() {
   el.innerHTML = html;
 }
 
-
-// ═══════════════════════════════════════════════════════════════
-// REDESIGN — nuove funzioni (aggiunte al backup originale)
-// ═══════════════════════════════════════════════════════════════
-
-function buildUnifiedDiary() {
-  // 1. Warm-up 8-28 giu (card v1 senza iniezioni)
-  buildDays();
-  const wuWrap=document.getElementById('wu-wrap');
-  if(wuWrap) wuWrap.style.display='';
-  // Init collapsed
-  const wuBody=document.getElementById('wu-body');
-  if(wuBody){wuBody.style.maxHeight='0';wuBody.style.overflow='hidden';}
-  // 2. Proto v2 dal 29 giu
-  buildProtoV2();
-  updateProgress();
-}
-
-function toggleWU() {
-  _wuOpen=!_wuOpen;
-  const body=document.getElementById('wu-body');
-  const tog=document.getElementById('wu-toggle');
-  const chev=document.getElementById('wu-chev');
-  if(_wuOpen){
-    body.style.transition='max-height .4s ease';
-    body.style.maxHeight=body.scrollHeight+'px';
-    body.style.overflow='visible';
-    if(chev) chev.textContent='↓';
-    setTimeout(()=>{body.style.maxHeight='none';},420);
-  } else {
-    body.style.maxHeight=body.scrollHeight+'px';
-    body.style.overflow='hidden';
-    body.getBoundingClientRect();
-    body.style.transition='max-height .35s ease';
-    body.style.maxHeight='0';
-    if(chev) chev.textContent='›';
-  }
-}
-
-function updateKpiStrip() {
-  const today=new Date(); today.setHours(0,0,0,0);
-  const s2=new Date('2026-06-29'); s2.setHours(0,0,0,0);
-  const diff=Math.floor((today-s2)/86400000);
-  let peso='—',hrv='—',rhr='—',wk='—',fase='—';
-  if(diff>=0){
-    const rec=(_lastData2||{})['p2_day_'+diff]||{};
-    if(rec.peso) peso=rec.peso;
-    if(rec.hrv)  hrv=rec.hrv;
-    if(rec.rhr)  rhr=rec.rhr;
-    wk='WK'+(Math.floor(diff/7)+1);
-    fase=getPhase2(diff).label.split(' · ')[0];
-  } else {
-    const s1=new Date('2026-06-08'); s1.setHours(0,0,0,0);
-    const d1=Math.floor((today-s1)/86400000);
-    if(d1>=0){
-      const rec=(_lastData||{})['day_'+d1]||{};
-      if(rec.peso) peso=rec.peso;
-      if(rec.hrv)  hrv=rec.hrv;
-      wk='Pre'; fase='Baseline';
-    }
-  }
-  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  set('ks-peso',peso+(peso!=='—'?' kg':'')); set('ks-hrv',hrv+(hrv!=='—'?' ms':''));
-  set('ks-rhr',rhr); set('ks-wk',wk); set('ks-fase',fase);
-}
-
-function buildInjChipsSlot(slot, id) {
-  const icons={mattino:'☀',pomeriggio:'◑',postWO:'◉',sera:'☾'};
-  const cls={mattino:'m',pomeriggio:'p',postWO:'w',sera:'s'};
-  const slotType=slot.n===1?'mattino':slot.n===2?'pomeriggio':slot.igfMuscle!==undefined?'postWO':'sera';
-  const hdr=`<div class="inj-slot-hdr"><span class="slot-icon ${cls[slotType]}">${icons[slotType]||'·'}</span><span class="slot-lbl">${slot.label}</span><span class="slot-time">${slot.momento||''}</span></div>`;
-  const chips=slot.fields.map(f=>{
-    const fKey='inj_'+slot.n+'_'+f.replace(/[\s\-]/g,'_');
-    return `<span class="inj-chip" data-s="" data-id="${id}" data-f="${fKey}" onclick="cycleChip(this)"><span class="chip-icon">○</span><span>${f}</span><span class="chip-st"></span></span>`;
-  }).join('');
-  let muscle='';
-  if(slot.igfMuscle!==undefined){
-    const ms=['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'];
-    muscle=`<div style="margin-top:4px;display:flex;align-items:center;gap:5px"><span style="font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase">Distretto:</span><select data-id="${id}" data-f="inj_${slot.n}_distretto" style="font-size:11px;border:1px solid var(--border);border-radius:6px;padding:2px 6px;background:var(--surface2)">${ms.map(m=>`<option>${m}</option>`).join('')}</select></div>`;
-  }
-  return hdr+`<div class="inj-chips">${chips}</div>`+muscle;
-}
-
-function cycleChip(chip) {
-  const stati=['','fatto','skip'];
-  const next=stati[(stati.indexOf(chip.dataset.s||'')+1)%3];
-  chip.dataset.s=next;
-  const ic=chip.querySelector('.chip-icon'),st=chip.querySelector('.chip-st');
-  if(next==='fatto'){if(ic)ic.textContent='✓';if(st)st.textContent='fatto';}
-  else if(next==='skip'){if(ic)ic.textContent='✗';if(st)st.textContent='skip';}
-  else{if(ic)ic.textContent='○';if(st)st.textContent='';}
-  const{id,f}=chip.dataset;
-  if(id&&f){
-    let h=document.querySelector(`input[type="hidden"][data-id="${id}"][data-f="${f}"]`);
-    if(!h){h=document.createElement('input');h.type='hidden';h.dataset.id=id;h.dataset.f=f;chip.parentNode.appendChild(h);}
-    h.value=next;
-  }
-}
-
-function applyProto2Data() {
-  Object.entries(_lastData2||{}).forEach(([id,fields])=>{
-    Object.entries(fields).forEach(([f,v])=>{
-      if(!v) return;
-      const el=document.querySelector(`[data-id="${id}"][data-f="${f}"]`);
-      if(el){if(el.type==='checkbox')el.checked=!!v;else el.value=v;return;}
-      const chip=document.querySelector(`.inj-chip[data-id="${id}"][data-f="${f}"]`);
-      if(chip&&(v==='fatto'||v==='skip')){
-        chip.dataset.s=v;
-        const ic=chip.querySelector('.chip-icon'),st=chip.querySelector('.chip-st');
-        if(v==='fatto'){if(ic)ic.textContent='✓';if(st)st.textContent='fatto';}
-        else{if(ic)ic.textContent='✗';if(st)st.textContent='skip';}
-        let h=document.querySelector(`input[type="hidden"][data-id="${id}"][data-f="${f}"]`);
-        if(!h){h=document.createElement('input');h.type='hidden';h.dataset.id=id;h.dataset.f=f;chip.parentNode.appendChild(h);}
-        h.value=v;
-      }
-    });
-  });
-}
 </script>
 </body>
 </html>
