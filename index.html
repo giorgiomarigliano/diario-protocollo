@@ -1295,6 +1295,13 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 /* Pre-proto collasso */
 .pre-proto-body { display: none; }
 .pre-proto-body.open { display: block; padding-top: 8px; }
+
+/* Canvas dashboard — occupano tutta la card */
+.dash-chart { display: block; width: 100%; }
+.kpi-spark  { display: block; width: 100%; height: 32px; }
+.charts-card { box-sizing: border-box; }
+.dash-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 700px) { .dash-two-col { grid-template-columns: 1fr; } }
 </style>
 <!-- deploy 1781175570 -->
 </head>
@@ -3217,7 +3224,10 @@ function drawSparkline(canvasId, data, color) {
   if (!canvas) return;
   const vals = data.filter(d => d.value !== null).map(d => d.value);
   if (vals.length < 2) return;
-  const W = canvas.parentElement?.clientWidth || canvas.offsetWidth || 120; const H = 32;
+  let W = 0; let el = canvas.parentElement;
+  while (el && W === 0) { W = el.clientWidth || el.offsetWidth || 0; el = el.parentElement; }
+  if (W === 0) W = 120;
+  const H = 32;
   canvas.width = W * 2; canvas.height = H * 2;
   canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
   const ctx = canvas.getContext('2d');
@@ -3253,7 +3263,14 @@ function drawDashChart(canvasId, datasets, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  const W = (canvas.parentElement?.clientWidth || 300);
+  // Larghezza: cerca il primo .charts-card antenato, poi risali il DOM
+  let W = 0, el = canvas.parentElement;
+  while (el) {
+    if (el.classList && el.classList.contains('charts-card')) { W = el.clientWidth - 32; break; }
+    if ((el.clientWidth||0) > 100) { W = el.clientWidth - 16; break; }
+    el = el.parentElement;
+  }
+  if (!W || W < 80) W = Math.max(200, Math.floor((window.innerWidth||800)*0.42));
   const H = options.height || 80;
   canvas.width = W * dpr; canvas.height = H * dpr;
   canvas.style.width = W+'px'; canvas.style.height = H+'px';
