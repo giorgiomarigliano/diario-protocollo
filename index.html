@@ -1117,6 +1117,65 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .day-card.open .day-body.day-body-desktop { grid-template-columns: 440px 1fr; }
 }
 
+
+/* ── Pre-Protocollo toggle ───────────────────────────────── */
+.pre-proto-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 18px;
+  cursor: pointer;
+  margin-bottom: 0;
+  transition: background .12s;
+  user-select: none;
+}
+.pre-proto-toggle:hover { background: var(--surface2); }
+.pre-proto-toggle-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.pre-proto-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pre-proto-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pre-proto-sub {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pre-proto-chev {
+  font-size: 18px;
+  color: var(--faint);
+  flex-shrink: 0;
+  transition: transform .2s;
+  margin-left: auto;
+}
+.pre-proto-body {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height .4s ease;
+}
+@media (max-width: 600px) {
+  .pre-proto-sub { display: none; }
+  .pre-proto-title { font-size: 14px; }
+}
 </style>
 <!-- deploy 1781175570 -->
 </head>
@@ -1155,7 +1214,24 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 </div>
 <div class="nav-strip" id="nav-strip"></div>
 <div class="diary-view" id="diary-view">
-  <div class="container" id="container"></div>
+  <!-- SEZIONE 1: Pre-Protocollo collassabile (8-28 giu) -->
+  <div id="pre-proto-section">
+    <div class="container">
+      <div class="pre-proto-toggle" id="pre-proto-toggle" onclick="togglePreProto()">
+        <div class="pre-proto-toggle-left">
+          <span class="pre-proto-badge">PRE-PROTOCOLLO</span>
+          <span class="pre-proto-title">8 – 28 giugno 2026</span>
+          <span class="pre-proto-sub">Biometria baseline · allenamenti · parametri vitali</span>
+        </div>
+        <span class="pre-proto-chev" id="pre-proto-chev">›</span>
+      </div>
+      <div id="pre-proto-body" class="pre-proto-body">
+        <div id="container"></div>
+      </div>
+    </div>
+  </div>
+  <!-- SEZIONE 2: Protocollo v2 dal 29 giu -->
+  <div id="container2"></div>
 </div>
 <div class="dash-view" id="dash-view"></div>
 <div class="med-view" id="med-view"></div>
@@ -1936,81 +2012,96 @@ let _saving=false;
 let _lastData={};  // cache ultima applyAll per riepilogo
 
 async function saveData(){
-  if(_saving) return; // prevent concurrent saves
-  _saving=true;
+  if(_saving) return; _saving=true;
   const btn=document.getElementById('save-btn');
-  btn.disabled=true; btn.textContent='Salvataggio...';
+  if(btn){btn.disabled=true;btn.textContent='Salvataggio...';}
   setSyncStatus('—');
-  const data=collectAll();
-  const ts=Date.now();
-  try{localStorage.setItem(KEY,JSON.stringify({data,ts}));}catch(e){}
-  try{
-    const now=new Date();
-    const isoTs=new Date(ts).toISOString();
-    // Try PATCH first (update existing record)
-    let res=await fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID,{
+  const all=collectAll();
+  const ts=Date.now(),isoTs=new Date(ts).toISOString(),now=new Date();
+  // Separa dati v1 (day_N) da dati v2 (p2_day_N)
+  const dataV1={},dataV2={};
+  Object.entries(all).forEach(([id,f])=>{
+    if(id.startsWith('p2_day_')) dataV2[id]=f; else dataV1[id]=f;
+  });
+  try{localStorage.setItem(KEY,JSON.stringify({data:dataV1,ts}));_lastData=dataV1;}catch(e){}
+  try{localStorage.setItem(KEY2,JSON.stringify(dataV2));_lastData2=dataV2;}catch(e){}
+  async function upsert(userId,data){
+    const url=SB_URL+'/rest/v1/diary';
+    let r=await fetch(url+'?user_id=eq.'+userId,{
       method:'PATCH',
-      headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'},
+      headers:{'Content-Type':'application/json','apikey':SB_KEY,
+               'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'},
       body:JSON.stringify({data,updated_at:isoTs})
     });
-    // If no record exists (0 rows updated), do POST to insert
-    if(res.status===200){
-      const patched=await res.json();
-      if(!patched||patched.length===0){
-        res=await fetch(SB_URL+'/rest/v1/diary',{
-          method:'POST',
-          headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Prefer':'return=representation'},
-          body:JSON.stringify({user_id:USER_ID,data,updated_at:isoTs})
-        });
-        const inserted=await res.json();
-        if(inserted&&inserted[0]&&inserted[0].updated_at){
-          localStorage.setItem(KEY,JSON.stringify({data,ts:new Date(inserted[0].updated_at).getTime()}));
-        }
-      } else {
-        if(patched[0]&&patched[0].updated_at){
-          localStorage.setItem(KEY,JSON.stringify({data,ts:new Date(patched[0].updated_at).getTime()}));
-        }
+    if(r.status===200){
+      const p=await r.json();
+      if(!p||!p.length){
+        await fetch(url,{method:'POST',
+          headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY},
+          body:JSON.stringify({user_id:userId,data,updated_at:isoTs})});
       }
-      document.getElementById('last-saved').textContent='Salvato '+now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-      setSyncStatus('ok');
-    } else {
-      document.getElementById('last-saved').textContent='Salvato localmente · cloud err '+res.status;
-      setSyncStatus('err');
     }
+  }
+  try{
+    await upsert(USER_ID,dataV1);
+    upsert(USER_ID2,dataV2).catch(()=>{});
+    document.getElementById('last-saved').textContent='Salvato '+now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    setSyncStatus('ok');
   }catch(e){
-    document.getElementById('last-saved').textContent='Salvato localmente (offline)';
+    document.getElementById('last-saved').textContent='Salvato localmente';
     setSyncStatus('err');
   }
-  btn.disabled=false; btn.textContent='Salva dati';
-  _saving=false;
+  if(btn){btn.disabled=false;btn.textContent='Salva dati';} _saving=false;
 }
 
 async function loadFromCloud(){
   setSyncStatus('—');
   document.getElementById('last-saved').textContent='Sincronizzazione...';
   try{
-    const res=await fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID+'&select=data,updated_at&limit=1',
-      {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
-    if(res.ok){
-      const rows=await res.json();
-      if(rows&&rows.length>0&&rows[0].data){
+    const [r1,r2]=await Promise.all([
+      fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID+'&select=data,updated_at&limit=1',
+        {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}}),
+      fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+USER_ID2+'&select=data,updated_at&limit=1',
+        {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}})
+    ]);
+    let ts=null;
+    if(r1.ok){
+      const rows=await r1.json();
+      if(rows&&rows[0]&&rows[0].data){
         const cd=rows[0].data,ct=rows[0].updated_at;
-        const ctMs=new Date(ct).getTime();
-        // Always apply cloud data on explicit sync
+        ts=new Date(ct).getTime();
+        _lastData=cd;
         applyAll(cd);
-        localStorage.setItem(KEY,JSON.stringify({data:cd,ts:ctMs}));
-          document.getElementById('last-saved').textContent='Caricato dal cloud · '+new Date(ct).toLocaleString('it-IT');
-          setSyncStatus('ok');
-          setTimeout(refreshCharts,200);
-      } else {
-        document.getElementById('last-saved').textContent='Nessun dato nel cloud';
-        setSyncStatus('—');
+        localStorage.setItem(KEY,JSON.stringify({data:cd,ts}));
       }
-    } else throw new Error('HTTP '+res.status);
+    }
+    if(r2.ok){
+      const rows=await r2.json();
+      if(rows&&rows[0]&&rows[0].data){
+        const cd=rows[0].data,ct=rows[0].updated_at;
+        _lastData2=cd;
+        localStorage.setItem(KEY2,JSON.stringify(cd));
+        applyProto2Data();
+        const ts2=new Date(ct).getTime();
+        if(!ts||ts2>ts) ts=ts2;
+      }
+    }
+    if(ts){
+      document.getElementById('last-saved').textContent='Caricato · '+new Date(ts).toLocaleString('it-IT');
+      setSyncStatus('ok');
+    } else {
+      document.getElementById('last-saved').textContent='Nessun dato nel cloud';
+      setSyncStatus('—');
+    }
+    setTimeout(refreshCharts,200);
   }catch(e){
     const lr=localStorage.getItem(KEY);
-    if(lr){try{const p=JSON.parse(lr);applyAll(p.data||p);document.getElementById('last-saved').textContent='Locale (offline)';setSyncStatus('err');}catch(e2){}}
-    else{document.getElementById('last-saved').textContent='Errore connessione';setSyncStatus('err');}
+    if(lr){try{const p=JSON.parse(lr);_lastData=p.data||p;applyAll(_lastData);}catch(e2){}}
+    const lr2=localStorage.getItem(KEY2);
+    if(lr2){try{_lastData2=JSON.parse(lr2);applyProto2Data();}catch(e2){}}
+    document.getElementById('last-saved').textContent='Offline — dati locali';
+    setSyncStatus('err');
+    setTimeout(refreshCharts,200);
   }
   refreshWeekSummary();
 }
@@ -2391,6 +2482,8 @@ function switchView(view) {
     diary.classList.remove('hidden');
     navStrip.style.display = '';
     tabDiary.classList.add('on');
+    // Aggiorna KPI se presenti
+    if (typeof updateKpiStrip === 'function') updateKpiStrip();
   }
 }
 
@@ -3901,7 +3994,8 @@ function refreshDashCharts() {
 
 window.addEventListener('load',async()=>{
   buildNav();
-  buildDays();
+  buildDays();                          // popola #container (dentro pre-proto-body)
+  buildProtoV2();                       // popola #container2 (proto v2 dal 29 giu)
   document.getElementById('loading').style.display='none';
   const container=document.getElementById('container');
   buildCycleCard(container);
@@ -4175,10 +4269,10 @@ let   _lastData2  = {};
 
 function getPhase2(dayIdx) {
   const wk = Math.floor(dayIdx/7)+1;
-  if (wk<=4)  return {label:'Tesa + Fragment + Ipa',        badge:'p1'};
-  if (wk<=6)  return {label:'+ GHK-Cu',                     badge:'p2'};
-  if (wk<=12) return {label:'+ MOTS-C + IGF-1 DES',         badge:'p3'};
-  return             {label:'+ BPC-157 + TB-500',            badge:'p4b'};
+  if (wk<=4)  return {label:'Fragment · Tesa · Ipa · BPC-157 · TB-500',  badge:'p1'};
+  if (wk<=8)  return {label:'+ IGF-1 DES · WK5–8',                       badge:'p2'};
+  if (wk<=12) return {label:'+ IGF-1 DES · WK9–12',                      badge:'p3'};
+  return             {label:'Fase finale · WK13–16',                      badge:'p4b'};
 }
 
 function getNextEvent2(elapsed) {
@@ -5385,6 +5479,37 @@ function buildMedDash() {
   el.innerHTML = html;
 }
 
+
+// ── Pre-Protocollo toggle ─────────────────────────────────────
+let _preProtoOpen = false;
+
+function togglePreProto() {
+  _preProtoOpen = !_preProtoOpen;
+  const body  = document.getElementById('pre-proto-body');
+  const chev  = document.getElementById('pre-proto-chev');
+  const tog   = document.getElementById('pre-proto-toggle');
+  if (_preProtoOpen) {
+    // Apri
+    body.style.maxHeight = body.scrollHeight + 'px';
+    body.style.overflow  = 'visible';
+    if (chev) chev.style.transform = 'rotate(90deg)';
+    // Dopo la transizione rimuovi max-height per permettere l'espansione
+    setTimeout(() => {
+      body.style.maxHeight = 'none';
+    }, 420);
+  } else {
+    // Chiudi
+    body.style.maxHeight = body.scrollHeight + 'px';
+    body.style.overflow  = 'hidden';
+    body.getBoundingClientRect(); // force reflow
+    body.style.transition = 'max-height .35s ease';
+    body.style.maxHeight  = '0';
+    if (chev) chev.style.transform = '';
+  }
+}
+
+// ── loadFromCloud v1 + v2 ─────────────────────────────────────
+// Sovrascrive la versione originale per caricare anche USER_ID2
 </script>
 </body>
 </html>
