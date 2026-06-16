@@ -1172,10 +1172,13 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   max-height: 0;
   transition: max-height .4s ease;
 }
-/* Riduce spazio tra le due sezioni */
+/* Spazio tra le due sezioni */
 #pre-proto-section { margin-bottom: 0; }
 #pre-proto-section .container { padding-bottom: 20px; }
-#container2 > .container:first-child { padding-top: 12px; }
+/* Spazio tra toggle e primo elemento dentro pre-proto */
+#pre-proto-body { padding-top: 16px; }
+/* Spazio tra pre-proto e protocollo v2 */
+#container2.container { padding-top: 20px; }
 @media (max-width: 600px) {
   .pre-proto-sub { display: none; }
   .pre-proto-title { font-size: 14px; }
@@ -1203,6 +1206,60 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   border-color: var(--blue);
   background: var(--surface);
 }
+
+/* Soggettivo — riga compatta coerente con il design */
+.subj-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.subj-item {
+  flex: 1;
+  min-width: 80px;
+}
+.subj-lbl {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.subj-sel {
+  width: 100%;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 8px 6px;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .12s, background .12s;
+}
+.subj-sel:focus { border-color: var(--blue); background: var(--surface); }
+.subj-sel:hover { background: var(--surface3, #e8e8ed); }
+/* Pulsante Salva inline card */
+.proto2-save-btn {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 8px 20px;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .12s;
+}
+.proto2-save-btn:hover { background: var(--blue-hover, #0077ed); }
+/* Rimuovi override bio-box select (era troppo grande) */
+.bio-box select { font-size: 14px; font-weight: 600; }
 </style>
 <!-- deploy 1781175570 -->
 </head>
@@ -1527,33 +1584,57 @@ function buildNav(){
 
 function buildCycleCard(container){
   const today=new Date(); today.setHours(0,0,0,0);
-  const start=new Date(START); start.setHours(0,0,0,0);
-  const elapsed=Math.floor((today-start)/86400000);
-  if(elapsed<0||elapsed>=TOTAL_DAYS) return;
-  const pct=Math.min(100,Math.round((elapsed/TOTAL_DAYS)*100));
-  const wk=Math.floor(elapsed/7)+1;
-  const ph=getPhase(elapsed);
+  const startWU=new Date(START); startWU.setHours(0,0,0,0);
+  const startV2=new Date('2026-06-29'); startV2.setHours(0,0,0,0);
+  const elapsed=Math.floor((today-startWU)/86400000);
+  if(elapsed<0) return;
+
+  // Leggi ultimi dati biometrici disponibili
+  let lastPeso='—', lastHrv='—', lastRhr='—';
+  for(let i=elapsed;i>=0;i--){
+    const r=(_lastData||{})['day_'+i]||{};
+    if(lastPeso==='—'&&r.peso) lastPeso=r.peso;
+    if(lastHrv==='—' &&r.hrv)  lastHrv=r.hrv;
+    if(lastRhr==='—' &&r.rhr)  lastRhr=r.rhr;
+    if(lastPeso!=='—'&&lastHrv!=='—'&&lastRhr!=='—') break;
+  }
+
+  // Countdown a inizio protocollo v2
+  const daysToV2=Math.floor((startV2-today)/86400000);
+  const countdownHtml=daysToV2>0
+    ? `<div class="cycle-next">⟶ Protocollo v2 tra <b>${daysToV2} giorni</b> · 29 giu 2026</div>`
+    : daysToV2===0
+    ? `<div class="cycle-next" style="color:#34c759">⟶ Oggi inizia il Protocollo v2!</div>`
+    : `<div class="cycle-next" style="color:#0071e3">⟶ Protocollo v2 in corso · giorno ${Math.abs(daysToV2)}</div>`;
+
+  // % fase pre-protocollo completata (21 giorni totali)
+  const pct=Math.min(100,Math.round((elapsed/21)*100));
   const C=2*Math.PI*30;
   const offset=C*(1-pct/100);
-  const nextEv=getNextEvent(elapsed);
+
   const card=document.createElement('div');
   card.className='cycle-card';
   card.innerHTML=`
     <div class="cycle-ring">
       <svg width="72" height="72" viewBox="0 0 72 72">
         <circle cx="36" cy="36" r="30" fill="none" stroke="#e8e8ed" stroke-width="5"/>
-        <circle cx="36" cy="36" r="30" fill="none" stroke="#0071e3" stroke-width="5"
+        <circle cx="36" cy="36" r="30" fill="none" stroke="#6e6e73" stroke-width="5"
           stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" stroke-linecap="round"/>
       </svg>
       <div class="cycle-ring-label">
         <span class="cycle-ring-pct">${pct}%</span>
-        <span class="cycle-ring-sub">ciclo</span>
+        <span class="cycle-ring-sub" style="color:var(--muted)">pre</span>
       </div>
     </div>
-    <div class="cycle-info">
-      <h3>Settimana ${wk} · ${ph.label}</h3>
-      <p>Giorno ${elapsed+1} di ${TOTAL_DAYS} · ${TOTAL_DAYS-elapsed-1} giorni al termine</p>
-      <div class="cycle-next">⟶ ${nextEv}</div>
+    <div class="cycle-info" style="flex:1">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:4px">Fase pre-protocollo</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">8 – 28 giu 2026 · raccolta baseline</p>
+      <div style="display:flex;gap:20px;margin-bottom:6px">
+        <div><span style="font-size:17px;font-weight:600;letter-spacing:-.02em">${lastPeso}</span><span style="font-size:11px;color:var(--muted);margin-left:3px">kg</span></div>
+        <div><span style="font-size:17px;font-weight:600;letter-spacing:-.02em">${lastHrv}</span><span style="font-size:11px;color:var(--muted);margin-left:3px">HRV ms</span></div>
+        <div><span style="font-size:17px;font-weight:600;letter-spacing:-.02em">${lastRhr}</span><span style="font-size:11px;color:var(--muted);margin-left:3px">RHR</span></div>
+      </div>
+      ${countdownHtml}
     </div>`;
   container.insertBefore(card, container.firstChild);
 }
@@ -4708,37 +4789,41 @@ function buildProtoV2() {
         ` : ''}
 
         <div class="section-label" style="margin-top:14px">Soggettivo</div>
-        <div class="bio-grid">
-          <div class="bio-box">
-            <select data-id="${id}" data-f="energia">
-              <option value="">Energia</option>
-              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}${n===1?' – Esausto':n===5?' – Normale':n===10?' – Ottimo':''}</option>`).join('')}
-            </select><div class="bio-lbl">Energia /10</div>
-          </div>
-          <div class="bio-box">
-            <select data-id="${id}" data-f="recupero">
-              <option value="">Recupero</option>
+        <div class="subj-row">
+          <div class="subj-item">
+            <div class="subj-lbl">Energia /10</div>
+            <select class="subj-sel" data-id="${id}" data-f="energia">
+              <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
-            </select><div class="bio-lbl">Recupero /10</div>
+            </select>
           </div>
-          <div class="bio-box">
-            <select data-id="${id}" data-f="umore">
-              <option value="">Umore</option>
+          <div class="subj-item">
+            <div class="subj-lbl">Recupero /10</div>
+            <select class="subj-sel" data-id="${id}" data-f="recupero">
+              <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
-            </select><div class="bio-lbl">Umore /10</div>
+            </select>
           </div>
-          <div class="bio-box">
-            <select data-id="${id}" data-f="rpe">
-              <option value="">RPE</option>
-              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">RPE ${n}</option>`).join('')}
-            </select><div class="bio-lbl">RPE</div>
+          <div class="subj-item">
+            <div class="subj-lbl">Umore /10</div>
+            <select class="subj-sel" data-id="${id}" data-f="umore">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+          <div class="subj-item">
+            <div class="subj-lbl">RPE</div>
+            <select class="subj-sel" data-id="${id}" data-f="rpe">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
           </div>
         </div>
 
         <div class="section-label" style="margin-top:18px">Note del giorno</div>
         <textarea class="note-ta" data-id="${id}" data-f="note" placeholder="Sensazioni, variazioni, effetti peptidi, qualità sonno, osservazioni fisiche…" rows="3"></textarea>
 
-        <button class="save-btn" onclick="saveProto2Data()" style="margin-top:12px">Salva</button>
+        <button class="save-btn" onclick="saveProto2Data()" class="proto2-save-btn">Salva dati</button>
       </div>`;
 
     container.appendChild(card);
