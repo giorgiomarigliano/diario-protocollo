@@ -5172,7 +5172,6 @@ function buildStockView2() {
         const uiBox = document.createElement('div');
         uiBox.id = `ui-${c.id}-${v.n}`;
         uiBox.style.cssText = 'font-size:16px;font-weight:700;color:var(--text);line-height:1.2;padding-top:3px';
-        const isIgf = cid === 'igf' || c.id === 'igf';
         uiBox.textContent = `${rc.ui} UI`;
         if (c.id === 'igf') {
           const bilat = document.createElement('div');
