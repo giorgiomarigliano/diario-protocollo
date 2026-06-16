@@ -4403,10 +4403,12 @@ let   _lastData2  = {};
 
 function getPhase2(dayIdx) {
   const wk = Math.floor(dayIdx/7)+1;
-  if (wk<=4)  return {label:'Fragment · Tesa · Ipa · BPC-157 · TB-500',  badge:'p1'};
-  if (wk<=8)  return {label:'+ IGF-1 DES · WK5–8',                       badge:'p2'};
-  if (wk<=12) return {label:'+ IGF-1 DES · WK9–12',                      badge:'p3'};
-  return             {label:'Fase finale · WK13–16',                      badge:'p4b'};
+  // Stack base sempre: Fragment · Tesa · Ipa · BPC-157 · TB-500
+  // IGF-1 DES aggiunto dal WK5
+  if (wk<=4)  return {label:'Fragment · Tesa · Ipa · BPC-157 · TB-500',              badge:'p1'};
+  if (wk<=8)  return {label:'Fragment · Tesa · Ipa · BPC-157 · TB-500 · IGF-1 DES', badge:'p2'};
+  if (wk<=12) return {label:'Fragment · Tesa · Ipa · BPC-157 · TB-500 · IGF-1 DES', badge:'p3'};
+  return             {label:'Fragment · Tesa · Ipa · BPC-157 · TB-500 · IGF-1 DES', badge:'p4b'};
 }
 
 function getNextEvent2(elapsed) {
