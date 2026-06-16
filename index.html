@@ -3265,6 +3265,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
   const dpr = window.devicePixelRatio || 1;
   canvas.style.display = 'block';
   canvas.style.width = '100%';
+  canvas.width = 0; // reset per forzare ricalcolo layout
   const chartCard = canvas.closest('.charts-card') || canvas.parentElement;
   let W = (chartCard ? chartCard.clientWidth - 32 : 0) ||
     (canvas.parentElement?.offsetWidth || 0) ||
@@ -3926,33 +3927,28 @@ function buildDashboard() {
     <!-- ══ SEZ. BIOMETRIA ══════════════════════════════════════ -->
     <div class="dash-section">
       <div class="dash-section-title">Biometria · ultimi 60 giorni</div>
-      <div class="dash-two-col">
-        <div>
-          <div class="charts-card">
-            <div class="dash-card-title">Peso (kg) <span style="font-size:11px;color:var(--muted);font-weight:400">— target 66–68 · T0: 71.1</span></div>
-            <canvas class="dash-chart" id="dc-peso" height="110"></canvas>
-          </div>
-          <div class="charts-card" style="margin-top:10px">
-            <div class="dash-card-title">HRV (ms) <span style="font-size:11px;color:var(--muted);font-weight:400">— T0: 37ms</span></div>
-            <canvas class="dash-chart" id="dc-hrv" height="110"></canvas>
-          </div>
-        </div>
-        <div>
-          <div class="charts-card">
-            <div class="dash-card-title">RHR (bpm)</div>
-            <canvas class="dash-chart" id="dc-rhr" height="110"></canvas>
-          </div>
-          <div class="charts-card" style="margin-top:10px">
-            <div class="dash-card-title">Pressione arteriosa (mmHg)
-              <span style="margin-left:8px;font-size:10px">
-                <span style="color:#ff3b30">● Sistolica</span>
-                <span style="color:#0071e3;margin-left:6px">● Diastolica</span>
-              </span>
-            </div>
-            <canvas class="dash-chart" id="dc-bp" height="110"></canvas>
-          </div>
-        </div>
+      <div class="charts-card">
+        <div class="dash-card-title">Peso (kg) <span style="font-size:11px;color:var(--muted);font-weight:400">— target 66–68 · T0: 71.1</span></div>
+        <canvas class="dash-chart" id="dc-peso" height="110"></canvas>
       </div>
+      <div class="charts-card">
+        <div class="dash-card-title">HRV (ms) <span style="font-size:11px;color:var(--muted);font-weight:400">— T0: 37ms</span></div>
+        <canvas class="dash-chart" id="dc-hrv" height="110"></canvas>
+      </div>
+      <div class="charts-card">
+        <div class="dash-card-title">RHR (bpm)</div>
+        <canvas class="dash-chart" id="dc-rhr" height="110"></canvas>
+      </div>
+      <div class="charts-card">
+        <div class="dash-card-title">Pressione arteriosa (mmHg)
+          <span style="margin-left:8px;font-size:10px">
+            <span style="color:#ff3b30">● Sistolica</span>
+            <span style="color:#0071e3;margin-left:6px">● Diastolica</span>
+          </span>
+        </div>
+        <canvas class="dash-chart" id="dc-bp" height="110"></canvas>
+      </div>
+    </div>
     </div>
 
     <!-- ══ SEZ. SOGGETTIVO ════════════════════════════════════ -->
@@ -3973,19 +3969,13 @@ function buildDashboard() {
     <!-- ══ SEZ. ALLENAMENTO ═══════════════════════════════════ -->
     <div class="dash-section">
       <div class="dash-section-title">Allenamento · ultimi 60 giorni</div>
-      <div class="dash-two-col">
-        <div>
-          <div class="charts-card">
-            <div class="dash-card-title">Volume per sessione (tonnellate)</div>
-            <canvas class="dash-chart" id="dc-vol" height="120"></canvas>
-          </div>
-        </div>
-        <div>
-          <div class="charts-card">
-            <div class="dash-card-title">RPE sessioni</div>
-            <canvas class="dash-chart" id="dc-rpe" height="120"></canvas>
-          </div>
-        </div>
+      <div class="charts-card">
+        <div class="dash-card-title">Volume per sessione (tonnellate)</div>
+        <canvas class="dash-chart" id="dc-vol" height="120"></canvas>
+      </div>
+      <div class="charts-card">
+        <div class="dash-card-title">RPE sessioni</div>
+        <canvas class="dash-chart" id="dc-rpe" height="120"></canvas>
       </div>
 
       <!-- Sentinel lifts -->
