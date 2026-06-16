@@ -2595,7 +2595,7 @@ function switchView(view) {
     tabDash.classList.add('on');
     buildDashboard();
     // Ridisegna dopo che il DOM è visibile e i canvas hanno dimensioni reali
-    requestAnimationFrame(() => setTimeout(refreshDashCharts, 100));
+    requestAnimationFrame(() => requestAnimationFrame(refreshDashCharts));
   } else if (view === 'med') {
     med.classList.add('visible');
     tabMed.classList.add('on');
@@ -3263,14 +3263,14 @@ function drawDashChart(canvasId, datasets, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  // Larghezza: cerca il primo .charts-card antenato, poi risali il DOM
-  let W = 0, el = canvas.parentElement;
-  while (el) {
-    if (el.classList && el.classList.contains('charts-card')) { W = el.clientWidth - 32; break; }
-    if ((el.clientWidth||0) > 100) { W = el.clientWidth - 16; break; }
-    el = el.parentElement;
-  }
-  if (!W || W < 80) W = Math.max(200, Math.floor((window.innerWidth||800)*0.42));
+  // Forza layout reflow per ottenere larghezza reale
+  canvas.style.display = 'block';
+  canvas.style.width = '100%';
+  // Misura il container dopo il reflow
+  const chartCard = canvas.closest('.charts-card') || canvas.parentElement;
+  const W = Math.max(100, (chartCard ? chartCard.clientWidth - 32 : 0) || 
+    (canvas.parentElement?.offsetWidth || 0) ||
+    Math.floor((document.getElementById('dash-view')?.clientWidth || window.innerWidth) * 0.44));
   const H = options.height || 80;
   canvas.width = W * dpr; canvas.height = H * dpr;
   canvas.style.width = W+'px'; canvas.style.height = H+'px';
@@ -3283,8 +3283,14 @@ function drawDashChart(canvasId, datasets, options = {}) {
     ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2);
     return;
   }
-  const mn = Math.min(...allVals) * (options.minScale || 0.97);
-  const mx = Math.max(...allVals) * (options.maxScale || 1.03);
+  let mn = options.minVal !== undefined ? options.minVal : Math.min(...allVals);
+  let mx = options.maxVal !== undefined ? options.maxVal : Math.max(...allVals);
+  if (options.minScale) mn = mn * options.minScale;
+  if (options.maxScale) mx = mx * options.maxScale;
+  // Garantisce almeno 10 unità di range per evitare grafici piatti
+  if (mx - mn < 5) { const mid = (mx+mn)/2; mn = mid - 5; mx = mid + 5; }
+  // Padding verticale 5%
+  const rng5 = mx - mn; mn -= rng5 * 0.05; mx += rng5 * 0.05;
   const rng = mx - mn || 1;
   const n = datasets[0].data.length;
 
@@ -4018,7 +4024,8 @@ function buildDashboard() {
 
   </div>`;
 
-  setTimeout(refreshDashCharts, 350);
+  // Doppio rAF garantisce che il browser abbia calcolato il layout
+requestAnimationFrame(() => requestAnimationFrame(refreshDashCharts));
 }
 
 function refreshDashCharts() {
@@ -4090,10 +4097,11 @@ function refreshDashCharts() {
     }
 
     // HRV vs Volume scatter
-    const scatterPts=sessions.filter(s=>s.volume&&s.rpe).map(s=>{
-      const rHrv=getDayDataAll('hrv',60).find(p=>p.date&&p.date.toDateString()===s.date.toDateString());
-      return rHrv&&rHrv.value?{x:s.volume/1000,y:rHrv.value}:null;
-    }).filter(Boolean);
+    const hrv60s = getDayDataAll('hrv', 60);
+  const scatterPts = sessions.filter(s => s.volume).map(s => {
+    const found = hrv60s.find(p => p.date && p.date.toDateString() === s.date.toDateString());
+    return found?.value ? {x: parseFloat((s.volume/1000).toFixed(2)), y: found.value} : null;
+  }).filter(Boolean);
     if(scatterPts.length>=3) drawScatterChart('dc-scatter',scatterPts,{height:120,xLabel:'Vol (t)',yLabel:'HRV (ms)'});
   }
 
