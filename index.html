@@ -3265,12 +3265,15 @@ function drawDashChart(canvasId, datasets, options = {}) {
   const dpr = window.devicePixelRatio || 1;
   canvas.style.display = 'block';
   canvas.style.width = '100%';
-  canvas.width = 0; // reset per forzare ricalcolo layout
+  canvas.style.height = H + 'px';
+  // Misura la larghezza reale del container (non del canvas stesso)
   const chartCard = canvas.closest('.charts-card') || canvas.parentElement;
-  let W = (chartCard ? chartCard.clientWidth - 32 : 0) ||
-    (canvas.parentElement?.offsetWidth || 0) ||
-    Math.floor((document.getElementById('dash-view')?.clientWidth || window.innerWidth) * 0.44);
-  // Se la larghezza è ancora 0 (layout non stabilizzato), riprova al prossimo frame
+  let W = 0;
+  if (chartCard) {
+    const rect = chartCard.getBoundingClientRect();
+    W = Math.floor(rect.width) - 48; // padding 24px per lato
+  }
+  if (W <= 0) W = canvas.parentElement?.getBoundingClientRect()?.width || 0;
   if (W <= 0) {
     requestAnimationFrame(() => drawDashChart(canvasId, datasets, options));
     return;
@@ -3296,10 +3299,16 @@ function drawDashChart(canvasId, datasets, options = {}) {
   const rng5 = mx - mn; mn -= rng5 * 0.05; mx += rng5 * 0.05;
   const rng = mx - mn || 1;
 
-  // Calcola range temporale reale sui punti validi di tutti i dataset
+  // Range temporale basato sui soli punti validi + padding 1 giorno per lato
+  const DAY_MS = 86400000;
   const allDates = datasets.flatMap(ds => ds.data.filter(p => p.value !== null && p.date).map(p => p.date.getTime()));
-  const tMin = allDates.length ? Math.min(...allDates) : 0;
-  const tMax = allDates.length ? Math.max(...allDates) : 1;
+  if (!allDates.length) {
+    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2);
+    return;
+  }
+  const tMin = Math.min(...allDates) - DAY_MS;
+  const tMax = Math.max(...allDates) + DAY_MS;
   const tRange = tMax - tMin || 1;
 
   function xForDate(date) {
@@ -3495,13 +3504,16 @@ function drawBarChart(canvasId, bars, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  if (rect.width <= 0) { requestAnimationFrame(() => drawBarChart(canvasId, bars, options)); return; }
   const H = options.height || 110;
-  canvas.width = rect.width * dpr;
+  const chartCard = canvas.closest('.charts-card') || canvas.parentElement;
+  let W = 0;
+  if (chartCard) W = Math.floor(chartCard.getBoundingClientRect().width) - 48;
+  if (W <= 0) W = Math.floor((canvas.parentElement?.getBoundingClientRect()?.width || 0)) - 48;
+  if (W <= 0) { requestAnimationFrame(() => drawBarChart(canvasId, bars, options)); return; }
+  W = Math.max(100, W);
+  canvas.width = W * dpr;
   canvas.height = H * dpr;
   ctx.scale(dpr, dpr);
-  const W = rect.width;
 
   const vals = bars.map(b => b.value).filter(v => v != null && v > 0);
   if (vals.length < 1) {
