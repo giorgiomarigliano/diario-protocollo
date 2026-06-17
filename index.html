@@ -4133,23 +4133,46 @@ function refreshDashCharts() {
         </div>`).join('');
     }
 
-    // HRV vs Volume scatter — usa dayIdx dalla sessione (no date calc)
+    // HRV vs Volume scatter — usa dayIdx + legge hrv da DOM come fallback
     const scatterPts = [];
-    sessions.filter(s => s.volume && s.dayIdx !== undefined).forEach(s => {
+    sessions.filter(s => s.volume).forEach(s => {
+      const i = s.dayIdx;
+      if (i === undefined || i === null) return;
       let hrv = null;
       if (s.phase === 'wu') {
-        const rec = _lastData['day_'+s.dayIdx]||{};
+        const rec = _lastData['day_'+i]||{};
         hrv = parseFloat(rec.hrv)||null;
+        // Fallback: leggi dal DOM (carta potrebbero non essere state salvate)
         if (!hrv) {
-          const el = document.querySelector(`[data-id="day_${s.dayIdx}"][data-f="hrv"]`);
-          if (el && el.value) hrv = parseFloat(el.value)||null;
+          const el = document.querySelector(`[data-id="day_${i}"][data-f="hrv"]`);
+          if (el && el.value !== '') hrv = parseFloat(el.value)||null;
         }
       } else {
-        const rec = _lastData2['p2_day_'+s.dayIdx]||{};
+        const rec = _lastData2['p2_day_'+i]||{};
         hrv = parseFloat(rec.hrv)||null;
+        if (!hrv) {
+          const el = document.querySelector(`[data-id="p2_day_${i}"][data-f="hrv"]`);
+          if (el && el.value !== '') hrv = parseFloat(el.value)||null;
+        }
       }
-      if (hrv) scatterPts.push({x: parseFloat((s.volume/1000).toFixed(2)), y: hrv});
+      if (hrv && s.volume) scatterPts.push({
+        x: parseFloat((s.volume/1000).toFixed(2)), y: hrv,
+        label: s.type
+      });
     });
+    // Debug: mostra info nel canvas anche se vuoto
+    const scEl = document.getElementById('dc-scatter');
+    if (scEl) {
+      const noDataDiv = scEl.parentElement.querySelector('.scatter-nodata');
+      if (noDataDiv) noDataDiv.remove();
+      if (scatterPts.length < 2) {
+        const nd = document.createElement('div');
+        nd.className = 'scatter-nodata';
+        nd.style.cssText = 'font-size:10px;color:var(--muted);padding:8px;text-align:center';
+        nd.textContent = `Sessioni: ${sessions.filter(s=>s.volume).length} con vol, punti HRV trovati: ${scatterPts.length}`;
+        scEl.parentElement.insertBefore(nd, scEl);
+      }
+    }
     if(scatterPts.length>=2) drawScatterChart('dc-scatter',scatterPts,{height:120,xLabel:'Vol (t)',yLabel:'HRV (ms)'});
   }
 
