@@ -4440,6 +4440,16 @@ function importMotra(dayId) {
     res.className = 'motra-result err';
     res.textContent = 'Errore nel parsing: ' + e.message;
   }
+  // Aggiorna _lastData con i valori appena scritti nel DOM
+  // così i grafici della dashboard possono usare wo_volume
+  const allFields = document.querySelectorAll(`[data-id="${dayId}"][data-f]`);
+  if (!_lastData[dayId]) _lastData[dayId] = {};
+  allFields.forEach(el => {
+    if (el.value !== '' && el.value !== 'skip') {
+      if (el.type === 'checkbox') _lastData[dayId][el.dataset.f] = el.checked ? '1' : '';
+      else _lastData[dayId][el.dataset.f] = el.value;
+    }
+  });
 }
 
 
