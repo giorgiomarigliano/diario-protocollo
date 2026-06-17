@@ -4137,18 +4137,32 @@ function refreshDashCharts() {
         </div>`).join('');
     }
 
-    // HRV vs Volume scatter — legge direttamente da _lastData (no DOM)
+    // HRV vs Volume scatter — diagnostica visiva
     const scatterPts = [];
-    // Scansiona tutti i giorni WU con hrv E wo_volume in _lastData
+    let diagLines = [];
     for (let i = 0; i < TOTAL_DAYS; i++) {
       const rec = _lastData['day_'+i]||{};
       const hrv = parseFloat(rec.hrv);
       const vol = parseFloat(rec.wo_volume);
+      if (!isNaN(hrv) || !isNaN(vol)) {
+        diagLines.push(`day_${i}: hrv=${isNaN(hrv)?'—':hrv}, vol=${isNaN(vol)?'—':vol}`);
+      }
       if (!isNaN(hrv) && !isNaN(vol) && vol > 0) {
         scatterPts.push({x: parseFloat((vol/1000).toFixed(2)), y: hrv});
       }
     }
-    if(scatterPts.length>=2) drawScatterChart('dc-scatter',scatterPts,{height:120,xLabel:'Vol (t)',yLabel:'HRV (ms)'});
+    const scEl = document.getElementById('dc-scatter');
+    if (scEl) {
+      const diagEl = scEl.parentElement.querySelector('.scatter-diag');
+      if (diagEl) diagEl.remove();
+      const d = document.createElement('div');
+      d.className = 'scatter-diag';
+      d.style.cssText = 'font-size:10px;color:#666;padding:6px 8px;font-family:monospace;background:#f5f5f7;border-radius:6px;margin-bottom:6px;max-height:120px;overflow-y:auto';
+      d.innerHTML = `<b>_lastData giorni con dati (${Object.keys(_lastData).length} totali):</b><br>` +
+        (diagLines.length ? diagLines.join('<br>') : 'Nessun giorno con hrv o vol');
+      scEl.parentElement.insertBefore(d, scEl);
+    }
+    if(scatterPts.length>=2) drawScatterChart('dc-scatter',scatterPts,{height:80,xLabel:'Vol (t)',yLabel:'HRV (ms)'});
   }
 
   // ── Sentinel lifts (dati da DOM e _lastData/_lastData2) ────
