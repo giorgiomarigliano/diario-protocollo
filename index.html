@@ -4371,19 +4371,21 @@ function importMotra(dayId) {
     // Get session type to know which sentinels are expected
     for (const [sentinelId, keywords] of Object.entries(sentinelMap)) {
       // Find matching exercise in parsed data — try most specific keyword first
-      const match = data.exercises.find(ex => {
+      // Trova TUTTI gli esercizi che matchano, poi sceglie il best set tra tutti
+      const matches = data.exercises.filter(ex => {
         const name = ex.name.toLowerCase();
         return keywords.some(kw => name.includes(kw.toLowerCase()));
       });
-      if (!match || !match.sets.length) continue;
+      if (!matches.length) continue;
 
-      const workSets = match.sets.filter(s => s.label !== 'W');
-      if (!workSets.length) continue;
+      const allWorkSets = matches.flatMap(ex => ex.sets.filter(s => s.label !== 'W'));
+      if (!allWorkSets.length) continue;
 
-      // Best set = most reps at highest weight (work set logic)
-      const maxKg = Math.max(...workSets.map(s => parseFloat(s.kg)));
-      const topSets = workSets.filter(s => parseFloat(s.kg) >= maxKg * 0.97);
+      // Best set = set col kg più alto (tra tutti i match), a parità più reps
+      const maxKg = Math.max(...allWorkSets.map(s => parseFloat(s.kg)));
+      const topSets = allWorkSets.filter(s => parseFloat(s.kg) >= maxKg * 0.97);
       const best = topSets.reduce((a, b) => parseInt(b.reps) > parseInt(a.reps) ? b : a);
+      const workSets = allWorkSets; // per il conteggio serie
 
       const kgEl   = document.querySelector(`[data-id="${dayId}"][data-f="sl_${sentinelId}_kg"]`);
       const repsEl = document.querySelector(`[data-id="${dayId}"][data-f="sl_${sentinelId}_reps"]`);
