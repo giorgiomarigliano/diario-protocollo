@@ -4164,11 +4164,18 @@ function refreshDashCharts() {
   const rdlD      = sentData('rdl',     90);
   const milpressD = sentData('milpress',90);
 
-  // Sentinel: mostra anche con 1 solo punto (baseline come punto singolo)
-  drawDashChart('dc-bench',   [{data:benchD,   color:'#0071e3'}],{height:100,refLine:55,   minPts:1});
-  drawDashChart('dc-legpress',[{data:legpressD,color:'#ff9500'}],{height:100,refLine:117.5,minPts:1});
-  drawDashChart('dc-rdl',     [{data:rdlD,     color:'#34c759'}],{height:100,refLine:60,   minPts:1});
-  drawDashChart('dc-milpress',[{data:milpressD,color:'#af52de'}],{height:100,refLine:40,   minPts:1});
+  // Baseline T0 confermati (15/05/2026, pre-WU) come punto fisso iniziale
+  const T0date = new Date('2026-05-15'); T0date.setHours(0,0,0,0);
+  function withT0(data, baseKg) {
+    const t0pt = {date: new Date(T0date), value: baseKg};
+    const hasT0 = data.some(p => Math.abs(p.date - T0date) < 86400000);
+    return hasT0 ? data : [t0pt, ...data];
+  }
+
+  drawDashChart('dc-bench',   [{data:withT0(benchD,   55),    color:'#0071e3'}],{height:100,refLine:55,   minPts:1});
+  drawDashChart('dc-legpress',[{data:withT0(legpressD,117.5), color:'#ff9500'}],{height:100,refLine:117.5,minPts:1});
+  drawDashChart('dc-rdl',     [{data:withT0(rdlD,     60),    color:'#34c759'}],{height:100,refLine:60,   minPts:1});
+  drawDashChart('dc-milpress',[{data:withT0(milpressD,40),    color:'#af52de'}],{height:100,refLine:40,   minPts:1});
 
   // ── Compliance ring iniezioni ──────────────────────────────
   const compGrid=document.getElementById('comp-grid');
