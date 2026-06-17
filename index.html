@@ -4133,12 +4133,25 @@ function refreshDashCharts() {
         </div>`).join('');
     }
 
-    // HRV vs Volume scatter
-    const hrv60s = getDayDataAll('hrv', 60);
-  const scatterPts = sessions.filter(s => s.volume).map(s => {
-    const found = hrv60s.find(p => p.date && p.date.toDateString() === s.date.toDateString());
-    return found?.value ? {x: parseFloat((s.volume/1000).toFixed(2)), y: found.value} : null;
-  }).filter(Boolean);
+    // HRV vs Volume scatter — legge HRV direttamente da _lastData/_lastData2
+    const scatterPts = [];
+    sessions.filter(s => s.volume).forEach(s => {
+      let hrv = null;
+      if (s.phase === 'wu') {
+        const i = Math.floor((s.date - new Date(START)) / 86400000);
+        const rec = _lastData['day_'+i]||{};
+        hrv = parseFloat(rec.hrv)||null;
+        if (!hrv) {
+          const el = document.querySelector(`[data-id="day_${i}"][data-f="hrv"]`);
+          if (el && el.value) hrv = parseFloat(el.value)||null;
+        }
+      } else {
+        const i = Math.floor((s.date - new Date(START2)) / 86400000);
+        const rec = _lastData2['p2_day_'+i]||{};
+        hrv = parseFloat(rec.hrv)||null;
+      }
+      if (hrv) scatterPts.push({x: parseFloat((s.volume/1000).toFixed(2)), y: hrv});
+    });
     if(scatterPts.length>=2) drawScatterChart('dc-scatter',scatterPts,{height:120,xLabel:'Vol (t)',yLabel:'HRV (ms)'});
   }
 
