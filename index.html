@@ -1332,11 +1332,12 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="main-nav">
   <div class="main-nav-tab on" id="main-tab-diary" onclick="switchView('diary')">Diario</div>
   <div class="main-nav-tab" id="main-tab-dash" onclick="switchView('dash')">Dashboard</div>
-  <div class="main-nav-tab" id="main-tab-med" onclick="switchView('med')">🩸 Referti</div>
-  <div class="main-nav-tab" id="main-tab-meddash" onclick="switchView('meddash')">📊 Lab</div>
-  <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')">📦 Stock</div>
-  <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')">🧬 Proto v2</div>
-  <div class="main-nav-tab" id="main-tab-stock2" onclick="switchView('stock2')">📦 Stock v2</div>
+  <div class="main-nav-tab" id="main-tab-med" onclick="switchView('med')">Referti</div>
+  <div class="main-nav-tab" id="main-tab-meddash" onclick="switchView('meddash')">Lab</div>
+  <div class="main-nav-tab" id="main-tab-stock2" onclick="switchView('stock2')">Stock</div>
+  <!-- tab obsoleti nascosti -->
+  <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')" style="display:none">Stock v1</div>
+  <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')" style="display:none">Proto v2</div>
 </div>
 <div class="nav-strip" id="nav-strip"></div>
 <div class="diary-view" id="diary-view">
@@ -3226,7 +3227,7 @@ function drawSparkline(canvasId, data, color) {
   if (vals.length < 2) return;
   let W = 0; let el = canvas.parentElement;
   while (el && W === 0) { W = el.clientWidth || el.offsetWidth || 0; el = el.parentElement; }
-  if (W === 0) W = 120;
+  if (W === 0) { requestAnimationFrame(() => drawSparkline(canvasId, data, color)); return; }
   const H = 32;
   canvas.width = W * 2; canvas.height = H * 2;
   canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
@@ -3263,21 +3264,48 @@ function drawDashChart(canvasId, datasets, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  // Forza layout reflow per ottenere larghezza reale
-  canvas.style.display = 'block';
-  canvas.style.width = '100%';
-  // Misura il container dopo il reflow
-  const chartCard = canvas.closest('.charts-card') || canvas.parentElement;
-  const W = Math.max(100, (chartCard ? chartCard.clientWidth - 32 : 0) || 
-    (canvas.parentElement?.offsetWidth || 0) ||
-    Math.floor((document.getElementById('dash-view')?.clientWidth || window.innerWidth) * 0.44));
   const H = options.height || 80;
-  canvas.width = W * dpr; canvas.height = H * dpr;
-  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  // Misura dal parent diretto — unica fonte affidabile prima del layout
+  const parent = canvas.parentElement;
+  const W = parent ? Math.max(0, parent.offsetWidth - 48) : 0; // 48 = padding 24px * 2
+  if (W <= 10) {
+    requestAnimationFrame(() => drawDashChart(canvasId, datasets, options));
+    return;
+  }
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.display = 'block';
+  canvas.style.width   = '100%';
+  canvas.style.height  = H + 'px';
   ctx.scale(dpr, dpr);
 
   // Collect all valid values across datasets for scale
   const allVals = datasets.flatMap(ds => ds.data.map(p => p.value).filter(v => v !== null));
+  const minPts = options.minPts || 2;
+  if (allVals.length < 1) {
+    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2);
+    return;
+  }
+  // Con 1 solo punto mostra dot + label centrati (solo se minPts=1)
+  if (allVals.length < 2 && minPts <= 1) {
+    const v = allVals[0];
+    const color = datasets[0]?.color || '#888';
+    ctx.beginPath(); ctx.arc(W/2, H/2, 4, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+    if (options.refLine !== undefined) {
+      ctx.setLineDash([4,4]); ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.font = '500 11px -apple-system'; ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.fillText(v.toFixed(v % 1 === 0 ? 0 : 1) + ' kg', W/2, H/2 - 10);
+    ctx.fillStyle = '#aeaeb2'; ctx.font = '10px -apple-system';
+    ctx.fillText('1 rilevazione', W/2, H/2 + 16);
+    ctx.textAlign = 'left';
+    return;
+  }
   if (allVals.length < 2) {
     ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
     ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2);
@@ -3302,39 +3330,40 @@ function drawDashChart(canvasId, datasets, options = {}) {
   });
 
   datasets.forEach(ds => {
-    const pts = ds.data.map((p, i) => p.value !== null ? {
-      x: n > 1 ? i / (n - 1) * (W - 4) + 2 : W / 2,
+    // Filtra solo i punti con valore reale — li distribuisce su tutta la larghezza
+    const validPts = ds.data.filter(p => p.value !== null);
+    if (!validPts.length) return;
+    const nv = validPts.length;
+    const pts = validPts.map((p, i) => ({
+      x: nv > 1 ? i / (nv - 1) * (W - 4) + 2 : W / 2,
       y: H - ((p.value - mn) / rng) * (H - 16) - 4,
-      v: p.value, date: p.date
-    } : null);
+      v: p.value
+    }));
 
     // Fill area
+    const fp = pts[0], lp = pts[pts.length - 1];
     ctx.beginPath();
-    let st = false;
-    pts.forEach(p => { if (!p) return; if (!st) { ctx.moveTo(p.x, p.y); st = true; } else ctx.lineTo(p.x, p.y); });
-    const lp = pts.filter(Boolean).pop(), fp = pts.filter(Boolean)[0];
-    if (lp && fp) {
-      ctx.lineTo(lp.x, H); ctx.lineTo(fp.x, H); ctx.closePath();
-      const g = ctx.createLinearGradient(0, 0, 0, H);
-      g.addColorStop(0, ds.color + '22'); g.addColorStop(1, ds.color + '00');
-      ctx.fillStyle = g; ctx.fill();
-    }
+    ctx.moveTo(fp.x, fp.y);
+    pts.forEach(p => ctx.lineTo(p.x, p.y));
+    ctx.lineTo(lp.x, H); ctx.lineTo(fp.x, H); ctx.closePath();
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, ds.color + '22'); g.addColorStop(1, ds.color + '00');
+    ctx.fillStyle = g; ctx.fill();
 
     // Line
-    ctx.beginPath(); st = false;
-    pts.forEach(p => { if (!p) return; if (!st) { ctx.moveTo(p.x, p.y); st = true; } else ctx.lineTo(p.x, p.y); });
+    ctx.beginPath();
+    pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
     ctx.strokeStyle = ds.color; ctx.lineWidth = 1.8; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
 
-    // Dots + last value label
-    pts.forEach((p, i) => {
-      if (!p) return;
+    // Dots
+    pts.forEach(p => {
       ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
       ctx.fillStyle = ds.color; ctx.fill();
     });
-    if (lp) {
-      ctx.font = '500 10px -apple-system'; ctx.fillStyle = ds.color;
-      ctx.fillText(lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1), Math.min(lp.x, W - 32), lp.y - 6);
-    }
+
+    // Last value label
+    ctx.font = '500 10px -apple-system'; ctx.fillStyle = ds.color;
+    ctx.fillText(lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1), Math.min(lp.x, W - 32), Math.max(lp.y - 6, 10));
   });
 }
 
@@ -3473,6 +3502,7 @@ function drawBarChart(canvasId, bars, options = {}) {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
+  if (rect.width <= 0) { requestAnimationFrame(() => drawBarChart(canvasId, bars, options)); return; }
   const H = options.height || 110;
   canvas.width = rect.width * dpr;
   canvas.height = H * dpr;
@@ -3735,20 +3765,19 @@ function getDayDataAll(field, days) {
       if (i>=0 && i<TOTAL_DAYS2) {
         const rec = _lastData2['p2_day_'+i]||{};
         const fv = parseFloat(rec[field]);
-        if (!isNaN(fv)) v = fv;
+        if (!isNaN(fv)) v=fv;
       }
     } else if (d >= startWU) {
       const i = Math.floor((d-startWU)/86400000);
       if (i>=0 && i<TOTAL_DAYS) {
-        // Priorità: _lastData (dati salvati su cloud), poi DOM
+        // Legge prima da cache _lastData, poi DOM come fallback
         const rec = _lastData['day_'+i]||{};
-        const fv = parseFloat(rec[field]);
-        if (!isNaN(fv)) {
-          v = fv;
-        } else {
+        let fv = parseFloat(rec[field]);
+        if (isNaN(fv)) {
           const el = document.querySelector(`[data-id="day_${i}"][data-f="${field}"]`);
-          if (el && el.value) { const ev = parseFloat(el.value); if (!isNaN(ev)) v = ev; }
+          if (el) fv = parseFloat(el.value);
         }
+        if (!isNaN(fv)) v=fv;
       }
     }
     result.push({date:d, value:v});
@@ -3756,6 +3785,7 @@ function getDayDataAll(field, days) {
   return result;
 }
 
+// ── Sessioni allenamento da V2 ────────────────────────────────
 function getSessionsV2(days) {
   const today = new Date(); today.setHours(0,0,0,0);
   const start = new Date(START2); start.setHours(0,0,0,0);
@@ -3787,19 +3817,14 @@ function getSessionsAll(days) {
   const sessions = [];
   for (let offset=days-1; offset>=0; offset--) {
     const d = new Date(today); d.setDate(d.getDate()-offset); d.setHours(0,0,0,0);
+    if (d > today) continue; // non contare sessioni future
     let sess = null;
     if (d>=startV2) {
       const i=Math.floor((d-startV2)/86400000);
       if (i>=0&&i<TOTAL_DAYS2) {
         const wo=getWorkout2(i); if (wo.type==='Riposo') continue;
         const rec=_lastData2['p2_day_'+i]||{};
-        // Leggi volume: priorità _lastData2, poi DOM
-        let vol = parseFloat(rec.wo_volume)||NaN;
-        if (isNaN(vol)) {
-          const el = document.querySelector(`[data-id="p2_day_${i}"][data-f="wo_volume"]`);
-          if (el) vol = parseFloat(el.value)||NaN;
-        }
-        const rpe = parseFloat(rec.rpe)||NaN;
+        const vol=parseFloat(rec.wo_volume)||NaN, rpe=parseFloat(rec.rpe)||NaN;
         sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,phase:'v2'};
       }
     } else if (d>=startWU) {
@@ -3807,13 +3832,9 @@ function getSessionsAll(days) {
       if (i>=0&&i<TOTAL_DAYS) {
         const wo=getWorkout(i); if (wo.type==='Riposo') continue;
         const rec=_lastData['day_'+i]||{};
-        // Leggi volume: priorità _lastData, poi DOM
-        let vol = parseFloat(rec.wo_volume)||NaN;
-        if (isNaN(vol)) {
-          const el = document.querySelector(`[data-id="day_${i}"][data-f="wo_volume"]`);
-          if (el) vol = parseFloat(el.value)||NaN;
-        }
-        const rpe = parseFloat(rec.rpe||rec.wo_rpe)||NaN;
+        let rawVol=parseFloat(rec.wo_volume);
+        if (isNaN(rawVol)){const el=document.querySelector(`[data-id="day_${i}"][data-f="wo_volume"]`);if(el)rawVol=parseFloat(el.value);}
+        const vol=isNaN(rawVol)?NaN:rawVol, rpe=parseFloat(rec.wo_rpe)||NaN;
         sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,phase:'wu'};
       }
     }
@@ -3822,6 +3843,7 @@ function getSessionsAll(days) {
   return sessions;
 }
 
+// ── Compliance iniezioni V2 ────────────────────────────────────
 function getInjComplianceV2() {
   const today=new Date(); today.setHours(0,0,0,0);
   const start=new Date(START2); start.setHours(0,0,0,0);
@@ -3842,7 +3864,7 @@ function getInjComplianceV2() {
 
 function buildDashboard() {
   const dash = document.getElementById('dash-view');
-  if (dashBuilt) { setTimeout(refreshDashCharts, 100); return; }
+  if (dashBuilt) { requestAnimationFrame(()=>requestAnimationFrame(refreshDashCharts)); return; }
   dashBuilt = true;
 
   const today = new Date(); today.setHours(0,0,0,0);
@@ -3907,7 +3929,7 @@ function buildDashboard() {
         <div class="kpi-box">
           <span class="kpi-icon">🧬</span>
           <div class="kpi-val" style="font-size:${inV2?'18px':'14px'}">${inV2?`WK${wkV2}`:'Pre-ciclo'}</div>
-          <div class="kpi-lbl">${inV2?`Giorno ${elapsedV2+1}/112`:`Giorno ${elapsedWU+1}/21 baseline`}</div>
+          <div class="kpi-lbl">${inV2?`Giorno ${elapsedV2+1}/112`:`Giorno ${elapsedWU+1}/21 warm-up`}</div>
           ${inV2?`<div class="kpi-delta neutral">${112-elapsedV2-1} gg al termine</div>`:`<div class="kpi-delta neutral">Ciclo v2 tra ${Math.abs(elapsedV2)} gg</div>`}
           <div style="margin-top:8px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
             <div style="height:100%;width:${pctCiclo}%;background:#0071e3;border-radius:2px"></div>
@@ -4097,7 +4119,7 @@ function refreshDashCharts() {
 
     // Breakdown tipo
     const breakdown = {};
-    sessions.forEach(s=>{breakdown[s.type]=(breakdown[s.type]||0)+1;});
+    sessions.filter(s=>s.volume!==null).forEach(s=>{breakdown[s.type]=(breakdown[s.type]||0)+1;});
     const bdEl = document.getElementById('dc-breakdown');
     if(bdEl){
       const colors={Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'};
@@ -4112,12 +4134,9 @@ function refreshDashCharts() {
 
     // HRV vs Volume scatter
     const hrv60s = getDayDataAll('hrv', 60);
-  // Pre-calcola mappa HRV per data (dateString → value)
-  const hrvMap = {};
-  hrv60s.forEach(p => { if (p.date && p.value) hrvMap[p.date.toDateString()] = p.value; });
   const scatterPts = sessions.filter(s => s.volume).map(s => {
-    const h = hrvMap[s.date.toDateString()];
-    return h ? {x: parseFloat((s.volume/1000).toFixed(2)), y: h} : null;
+    const found = hrv60s.find(p => p.date && p.date.toDateString() === s.date.toDateString());
+    return found?.value ? {x: parseFloat((s.volume/1000).toFixed(2)), y: found.value} : null;
   }).filter(Boolean);
     if(scatterPts.length>=3) drawScatterChart('dc-scatter',scatterPts,{height:120,xLabel:'Vol (t)',yLabel:'HRV (ms)'});
   }
@@ -4147,10 +4166,18 @@ function refreshDashCharts() {
   const rdlD      = sentData('rdl',     90);
   const milpressD = sentData('milpress',90);
 
-  if(benchD.length>1)    drawDashChart('dc-bench',   [{data:benchD,   color:'#0071e3'}],{height:100,refLine:55});
-  if(legpressD.length>1) drawDashChart('dc-legpress',[{data:legpressD,color:'#ff9500'}],{height:100,refLine:117.5});
-  if(rdlD.length>1)      drawDashChart('dc-rdl',     [{data:rdlD,     color:'#34c759'}],{height:100,refLine:60});
-  if(milpressD.length>1) drawDashChart('dc-milpress',[{data:milpressD,color:'#af52de'}],{height:100,refLine:40});
+  // Baseline T0 confermati (15/05/2026, pre-WU) come punto fisso iniziale
+  const T0date = new Date('2026-05-15'); T0date.setHours(0,0,0,0);
+  function withT0(data, baseKg) {
+    const t0pt = {date: new Date(T0date), value: baseKg};
+    const hasT0 = data.some(p => Math.abs(p.date - T0date) < 86400000);
+    return hasT0 ? data : [t0pt, ...data];
+  }
+
+  drawDashChart('dc-bench',   [{data:withT0(benchD,   55),    color:'#0071e3'}],{height:100,refLine:55,   minPts:1});
+  drawDashChart('dc-legpress',[{data:withT0(legpressD,117.5), color:'#ff9500'}],{height:100,refLine:117.5,minPts:1});
+  drawDashChart('dc-rdl',     [{data:withT0(rdlD,     60),    color:'#34c759'}],{height:100,refLine:60,   minPts:1});
+  drawDashChart('dc-milpress',[{data:withT0(milpressD,40),    color:'#af52de'}],{height:100,refLine:40,   minPts:1});
 
   // ── Compliance ring iniezioni ──────────────────────────────
   const compGrid=document.getElementById('comp-grid');
