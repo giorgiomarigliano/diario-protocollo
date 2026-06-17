@@ -4051,8 +4051,8 @@ function buildDashboard() {
           <div id="dc-breakdown" style="padding-top:8px"></div>
         </div>
         <div class="charts-card">
-          <div class="dash-card-title">HRV vs Volume <span style="font-size:10px;color:var(--muted);font-weight:400">(correlazione recupero)</span></div>
-          <canvas class="dash-chart" id="dc-scatter" height="120"></canvas>
+          <div class="dash-card-title">Sessioni · Riepilogo</div>
+          <div id="dc-scatter-table" style="overflow-x:auto"></div>
         </div>
       </div>
     </div>
@@ -4137,29 +4137,45 @@ function refreshDashCharts() {
         </div>`).join('');
     }
 
-    // HRV vs Volume scatter
-    const scatterPts = [];
+    // Riepilogo sessioni: tabella HRV / Volume / RPE
+    const sessionRows = [];
     for (let i = 0; i < TOTAL_DAYS; i++) {
       const rec = _lastData['day_'+i]||{};
       const hrv = parseFloat(rec.hrv);
       const vol = parseFloat(rec.wo_volume);
-      if (!isNaN(hrv) && !isNaN(vol) && vol > 0) {
-        scatterPts.push({x: parseFloat((vol/1000).toFixed(2)), y: hrv});
+      const rpe = parseFloat(rec.wo_rpe||rec.rpe);
+      const wo  = getWorkout(i);
+      if (wo.type === 'Riposo') continue;
+      if (!isNaN(hrv) || !isNaN(vol)) {
+        const d = new Date(START); d.setDate(d.getDate()+i);
+        sessionRows.push({
+          date: d.toLocaleDateString('it-IT',{day:'2-digit',month:'short'}),
+          type: wo.type, hrv, vol, rpe
+        });
       }
     }
-    if (scatterPts.length >= 2) {
-      const scCanvas = document.getElementById('dc-scatter');
-      if (scCanvas) {
-        const scCard = scCanvas.closest('.charts-card');
-        const scW = scCard ? scCard.clientWidth - 32 : 400;
-        const dpr2 = window.devicePixelRatio || 1;
-        scCanvas.width  = scW * dpr2;
-        scCanvas.height = 120 * dpr2;
-        scCanvas.style.width  = scW + 'px';
-        scCanvas.style.height = '120px';
-        scCanvas.style.display = 'block';
-      }
-      drawScatterChart('dc-scatter', scatterPts, {height:120, xLabel:'Vol (t)', yLabel:'HRV (ms)'});
+    const tbl = document.getElementById('dc-scatter-table');
+    if (tbl && sessionRows.length) {
+      const colors = {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'};
+      tbl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="color:var(--muted);font-size:10px;text-transform:uppercase;border-bottom:1px solid var(--border)">
+          <th style="text-align:left;padding:4px 6px">Data</th>
+          <th style="text-align:left;padding:4px 6px">Tipo</th>
+          <th style="text-align:right;padding:4px 6px">Vol (t)</th>
+          <th style="text-align:right;padding:4px 6px">HRV</th>
+          <th style="text-align:right;padding:4px 6px">RPE</th>
+        </tr></thead>
+        <tbody>${sessionRows.map(r=>`<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:5px 6px;color:var(--muted)">${r.date}</td>
+          <td style="padding:5px 6px;font-weight:600;color:${colors[r.type]||'#6e6e73'}">${r.type}</td>
+          <td style="padding:5px 6px;text-align:right">${isNaN(r.vol)?'—':(r.vol/1000).toFixed(1)}</td>
+          <td style="padding:5px 6px;text-align:right">${isNaN(r.hrv)?'—':Math.round(r.hrv)}</td>
+          <td style="padding:5px 6px;text-align:right">${isNaN(r.rpe)?'—':r.rpe}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+    } else if (tbl) {
+      tbl.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:12px">Nessuna sessione registrata</div>';
+    }
     }
 
 
