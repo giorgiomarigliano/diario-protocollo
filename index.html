@@ -4162,7 +4162,14 @@ function refreshDashCharts() {
         (diagLines.length ? diagLines.join('<br>') : 'Nessun giorno con hrv o vol');
       scEl.parentElement.insertBefore(d, scEl);
     }
-    if(scatterPts.length>=2) drawScatterChart('dc-scatter',scatterPts,{height:80,xLabel:'Vol (t)',yLabel:'HRV (ms)'});
+    if(scatterPts.length>=2) {
+      const scCanvas = document.getElementById('dc-scatter');
+      if (scCanvas) {
+        const scCard = scCanvas.closest('.charts-card');
+        if (scCard) { scCanvas.style.width = (scCard.clientWidth-32)+'px'; }
+      }
+      drawScatterChart('dc-scatter',scatterPts,{height:80,xLabel:'Vol (t)',yLabel:'HRV (ms)'});
+    }
   }
 
   // ── Sentinel lifts (dati da DOM e _lastData/_lastData2) ────
