@@ -3263,21 +3263,19 @@ function drawDashChart(canvasId, datasets, options = {}) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
-  canvas.style.display = 'block';
-  canvas.style.width = '100%';
-  const chartCard = canvas.closest('.charts-card') || canvas.parentElement;
-  let W = (chartCard ? chartCard.clientWidth - 32 : 0) ||
-    (canvas.parentElement?.offsetWidth || 0) ||
-    Math.floor((document.getElementById('dash-view')?.clientWidth || window.innerWidth) * 0.44);
-  // Se la larghezza è ancora 0 (layout non stabilizzato), riprova al prossimo frame
-  if (W <= 0) {
+  const H = options.height || 80;
+  // Misura dal parent diretto — unica fonte affidabile prima del layout
+  const parent = canvas.parentElement;
+  const W = parent ? Math.max(0, parent.offsetWidth - 48) : 0; // 48 = padding 24px * 2
+  if (W <= 10) {
     requestAnimationFrame(() => drawDashChart(canvasId, datasets, options));
     return;
   }
-  W = Math.max(100, W);
-  const H = options.height || 80;
-  canvas.width = W * dpr; canvas.height = H * dpr;
-  canvas.style.width = W+'px'; canvas.style.height = H+'px';
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.display = 'block';
+  canvas.style.width   = '100%';
+  canvas.style.height  = H + 'px';
   ctx.scale(dpr, dpr);
 
   // Collect all valid values across datasets for scale
