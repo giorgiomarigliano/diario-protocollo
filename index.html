@@ -1332,11 +1332,12 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="main-nav">
   <div class="main-nav-tab on" id="main-tab-diary" onclick="switchView('diary')">Diario</div>
   <div class="main-nav-tab" id="main-tab-dash" onclick="switchView('dash')">Dashboard</div>
-  <div class="main-nav-tab" id="main-tab-med" onclick="switchView('med')">🩸 Referti</div>
-  <div class="main-nav-tab" id="main-tab-meddash" onclick="switchView('meddash')">📊 Lab</div>
-  <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')">📦 Stock</div>
-  <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')">🧬 Proto v2</div>
-  <div class="main-nav-tab" id="main-tab-stock2" onclick="switchView('stock2')">📦 Stock v2</div>
+  <div class="main-nav-tab" id="main-tab-med" onclick="switchView('med')">Referti</div>
+  <div class="main-nav-tab" id="main-tab-meddash" onclick="switchView('meddash')">Lab</div>
+  <div class="main-nav-tab" id="main-tab-stock2" onclick="switchView('stock2')">Stock</div>
+  <!-- tab obsoleti nascosti -->
+  <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')" style="display:none">Stock v1</div>
+  <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')" style="display:none">Proto v2</div>
 </div>
 <div class="nav-strip" id="nav-strip"></div>
 <div class="diary-view" id="diary-view">
