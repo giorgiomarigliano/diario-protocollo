@@ -3280,6 +3280,31 @@ function drawDashChart(canvasId, datasets, options = {}) {
 
   // Collect all valid values across datasets for scale
   const allVals = datasets.flatMap(ds => ds.data.map(p => p.value).filter(v => v !== null));
+  const minPts = options.minPts || 2;
+  if (allVals.length < 1) {
+    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2);
+    return;
+  }
+  // Con 1 solo punto mostra dot + label centrati (solo se minPts=1)
+  if (allVals.length < 2 && minPts <= 1) {
+    const v = allVals[0];
+    const color = datasets[0]?.color || '#888';
+    ctx.beginPath(); ctx.arc(W/2, H/2, 4, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+    if (options.refLine !== undefined) {
+      ctx.setLineDash([4,4]); ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.font = '500 11px -apple-system'; ctx.fillStyle = color;
+    ctx.textAlign = 'center';
+    ctx.fillText(v.toFixed(v % 1 === 0 ? 0 : 1) + ' kg', W/2, H/2 - 10);
+    ctx.fillStyle = '#aeaeb2'; ctx.font = '10px -apple-system';
+    ctx.fillText('1 rilevazione', W/2, H/2 + 16);
+    ctx.textAlign = 'left';
+    return;
+  }
   if (allVals.length < 2) {
     ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
     ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2);
@@ -4139,10 +4164,11 @@ function refreshDashCharts() {
   const rdlD      = sentData('rdl',     90);
   const milpressD = sentData('milpress',90);
 
-  if(benchD.length>1)    drawDashChart('dc-bench',   [{data:benchD,   color:'#0071e3'}],{height:100,refLine:55});
-  if(legpressD.length>1) drawDashChart('dc-legpress',[{data:legpressD,color:'#ff9500'}],{height:100,refLine:117.5});
-  if(rdlD.length>1)      drawDashChart('dc-rdl',     [{data:rdlD,     color:'#34c759'}],{height:100,refLine:60});
-  if(milpressD.length>1) drawDashChart('dc-milpress',[{data:milpressD,color:'#af52de'}],{height:100,refLine:40});
+  // Sentinel: mostra anche con 1 solo punto (baseline come punto singolo)
+  drawDashChart('dc-bench',   [{data:benchD,   color:'#0071e3'}],{height:100,refLine:55,   minPts:1});
+  drawDashChart('dc-legpress',[{data:legpressD,color:'#ff9500'}],{height:100,refLine:117.5,minPts:1});
+  drawDashChart('dc-rdl',     [{data:rdlD,     color:'#34c759'}],{height:100,refLine:60,   minPts:1});
+  drawDashChart('dc-milpress',[{data:milpressD,color:'#af52de'}],{height:100,refLine:40,   minPts:1});
 
   // ── Compliance ring iniezioni ──────────────────────────────
   const compGrid=document.getElementById('comp-grid');
