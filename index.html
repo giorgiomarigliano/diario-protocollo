@@ -3816,6 +3816,7 @@ function getSessionsAll(days) {
   const sessions = [];
   for (let offset=days-1; offset>=0; offset--) {
     const d = new Date(today); d.setDate(d.getDate()-offset); d.setHours(0,0,0,0);
+    if (d > today) continue; // non contare sessioni future
     let sess = null;
     if (d>=startV2) {
       const i=Math.floor((d-startV2)/86400000);
@@ -4117,7 +4118,7 @@ function refreshDashCharts() {
 
     // Breakdown tipo
     const breakdown = {};
-    sessions.forEach(s=>{breakdown[s.type]=(breakdown[s.type]||0)+1;});
+    sessions.filter(s=>s.volume!==null).forEach(s=>{breakdown[s.type]=(breakdown[s.type]||0)+1;});
     const bdEl = document.getElementById('dc-breakdown');
     if(bdEl){
       const colors={Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'};
