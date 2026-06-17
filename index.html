@@ -2190,6 +2190,10 @@ async function saveData(){
     setSyncStatus('err');
   }
   if(btn){btn.disabled=false;btn.textContent='Salva dati';} _saving=false;
+  // Aggiorna grafici dashboard se visibile
+  if(document.getElementById('dash-view')?.classList.contains('active')){
+    requestAnimationFrame(refreshDashCharts);
+  }
 }
 
 async function loadFromCloud(){
