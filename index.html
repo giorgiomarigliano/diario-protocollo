@@ -4138,7 +4138,7 @@ function refreshDashCharts() {
     const found = hrv60s.find(p => p.date && p.date.toDateString() === s.date.toDateString());
     return found?.value ? {x: parseFloat((s.volume/1000).toFixed(2)), y: found.value} : null;
   }).filter(Boolean);
-    if(scatterPts.length>=3) drawScatterChart('dc-scatter',scatterPts,{height:120,xLabel:'Vol (t)',yLabel:'HRV (ms)'});
+    if(scatterPts.length>=2) drawScatterChart('dc-scatter',scatterPts,{height:120,xLabel:'Vol (t)',yLabel:'HRV (ms)'});
   }
 
   // ── Sentinel lifts (dati da DOM e _lastData/_lastData2) ────
