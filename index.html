@@ -3826,7 +3826,7 @@ function getSessionsAll(days) {
         const wo=getWorkout2(i); if (wo.type==='Riposo') continue;
         const rec=_lastData2['p2_day_'+i]||{};
         const vol=parseFloat(rec.wo_volume)||NaN, rpe=parseFloat(rec.rpe)||NaN;
-        sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,phase:'v2'};
+        sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,phase:'v2',dayIdx:i};
       }
     } else if (d>=startWU) {
       const i=Math.floor((d-startWU)/86400000);
@@ -3836,7 +3836,7 @@ function getSessionsAll(days) {
         let rawVol=parseFloat(rec.wo_volume);
         if (isNaN(rawVol)){const el=document.querySelector(`[data-id="day_${i}"][data-f="wo_volume"]`);if(el)rawVol=parseFloat(el.value);}
         const vol=isNaN(rawVol)?NaN:rawVol, rpe=parseFloat(rec.wo_rpe)||NaN;
-        sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,phase:'wu'};
+        sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,phase:'wu',dayIdx:i};
       }
     }
     if (sess) sessions.push(sess);
@@ -4133,21 +4133,19 @@ function refreshDashCharts() {
         </div>`).join('');
     }
 
-    // HRV vs Volume scatter — legge HRV direttamente da _lastData/_lastData2
+    // HRV vs Volume scatter — usa dayIdx dalla sessione (no date calc)
     const scatterPts = [];
-    sessions.filter(s => s.volume).forEach(s => {
+    sessions.filter(s => s.volume && s.dayIdx !== undefined).forEach(s => {
       let hrv = null;
       if (s.phase === 'wu') {
-        const i = Math.floor((s.date - new Date(START)) / 86400000);
-        const rec = _lastData['day_'+i]||{};
+        const rec = _lastData['day_'+s.dayIdx]||{};
         hrv = parseFloat(rec.hrv)||null;
         if (!hrv) {
-          const el = document.querySelector(`[data-id="day_${i}"][data-f="hrv"]`);
+          const el = document.querySelector(`[data-id="day_${s.dayIdx}"][data-f="hrv"]`);
           if (el && el.value) hrv = parseFloat(el.value)||null;
         }
       } else {
-        const i = Math.floor((s.date - new Date(START2)) / 86400000);
-        const rec = _lastData2['p2_day_'+i]||{};
+        const rec = _lastData2['p2_day_'+s.dayIdx]||{};
         hrv = parseFloat(rec.hrv)||null;
       }
       if (hrv) scatterPts.push({x: parseFloat((s.volume/1000).toFixed(2)), y: hrv});
