@@ -4441,7 +4441,6 @@ function importMotra(dayId) {
     res.textContent = 'Errore nel parsing: ' + e.message;
   }
   // Aggiorna _lastData con i valori appena scritti nel DOM
-  // così i grafici della dashboard possono usare wo_volume
   const allFields = document.querySelectorAll(`[data-id="${dayId}"][data-f]`);
   if (!_lastData[dayId]) _lastData[dayId] = {};
   allFields.forEach(el => {
@@ -4450,6 +4449,8 @@ function importMotra(dayId) {
       else _lastData[dayId][el.dataset.f] = el.value;
     }
   });
+  // Auto-salva su Supabase dopo ogni import Motra
+  setTimeout(saveData, 300);
 }
 
 
