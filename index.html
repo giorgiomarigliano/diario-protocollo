@@ -1477,10 +1477,7 @@ const SESSION_EXERCISES = {
 
 function getPhase(dayIdx) {
   const wk = Math.floor(dayIdx/7)+1;
-  if (wk<=4)  return {label:'Tesamorelin 1mg',                  badge:'p1b', wk};
-  if (wk<=6)  return {label:'Tesa 2mg · GHK-Cu 1mg',           badge:'p2b', wk};
-  if (wk<=12) return {label:'Tesa 2mg · GHK-Cu · MOTS-C',     badge:'p3b', wk};
-  return             {label:'Tesa · GHK-Cu · MOTS-C · BPC-157', badge:'p4b', wk};
+  return {label:'Tesamorelin 1mg', badge:'p1b', wk};
 }
 
 function getWeekRange(wkIdx) {
