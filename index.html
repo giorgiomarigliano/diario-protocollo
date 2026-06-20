@@ -4991,6 +4991,71 @@ function applyProto2Data() {
 }
 
 
+const UC_PEPTIDES = [
+  { id:'tesa',     name:'Tesamorelin',       dose_mcg:2000, defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:'fragment', name:'Fragment 176-191',  dose_mcg:250,  defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:'ipa',      name:'Ipamorelin',        dose_mcg:100,  defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:'igf',      name:'IGF-1 DES',         dose_mcg:50,   defaultMg:1,  defaultBac:1.0, bilat:true  },
+  { id:'bpc',      name:'BPC-157',           dose_mcg:250,  defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:'tb500',    name:'TB-500',            dose_mcg:500,  defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:'custom',   name:'Personalizzato',    dose_mcg:250,  defaultMg:10, defaultBac:2.0, bilat:false },
+];
+
+function ucFillDefaults(id) {
+  const p = UC_PEPTIDES.find(x => x.id === id);
+  if (!p) return;
+  const mgEl = document.getElementById('uc-mg');
+  const bacEl = document.getElementById('uc-bac');
+  const targetEl = document.getElementById('uc-target');
+  if (mgEl) mgEl.value = p.defaultMg;
+  if (bacEl) bacEl.value = p.defaultBac;
+  if (id !== 'custom' && targetEl) targetEl.value = p.dose_mcg;
+  ucUpdate();
+}
+
+function ucUpdate() {
+  const mgEl = document.getElementById('uc-mg');
+  const bacEl = document.getElementById('uc-bac');
+  const targetEl = document.getElementById('uc-target');
+  const selEl = document.getElementById('uc-peptide');
+  if (!mgEl || !bacEl || !targetEl || !selEl) return;
+
+  const mg = parseFloat(mgEl.value) || 0;
+  const bac = parseFloat(bacEl.value) || 0;
+  const target = parseFloat(targetEl.value) || 0;
+  const p = UC_PEPTIDES.find(x => x.id === selEl.value);
+
+  const concEl = document.getElementById('uc-conc');
+  const drawEl = document.getElementById('uc-draw');
+  const dosesEl = document.getElementById('uc-doses');
+  const bilatEl = document.getElementById('uc-bilat');
+
+  if (bac <= 0) {
+    if (concEl) concEl.textContent = '—';
+    if (drawEl) drawEl.textContent = '—';
+    if (dosesEl) dosesEl.textContent = '—';
+    if (bilatEl) bilatEl.style.display = 'none';
+    return;
+  }
+
+  const concMcgMl = (mg * 1000) / bac; // mcg/ml
+  const drawUnits = concMcgMl > 0 ? (target / concMcgMl) * 100 : 0; // unità su siringa U-100
+  const dosesPerVial = target > 0 ? Math.floor((mg * 1000) / target) : 0;
+
+  if (concEl) concEl.textContent = concMcgMl.toFixed(0);
+  if (drawEl) drawEl.textContent = drawUnits.toFixed(1);
+  if (dosesEl) dosesEl.textContent = dosesPerVial;
+
+  if (bilatEl) {
+    if (p && p.bilat) {
+      bilatEl.style.display = 'block';
+      bilatEl.textContent = `→ ${(drawUnits/2).toFixed(1)} UI/lato (dose divisa bilaterale)`;
+    } else {
+      bilatEl.style.display = 'none';
+    }
+  }
+}
+
 function buildStockView2() {
   const el = document.getElementById('stock2-view');
   if (!el) return;
@@ -5059,9 +5124,56 @@ function buildStockView2() {
     return {text:dateStr+' ('+suffix+')', daysLeft:left};
   }
 
+  const ucOpts = UC_PEPTIDES.map(p => `<option value="${p.id}"${p.id==='bpc'?' selected':''}>${p.name}</option>`).join('');
+
   let html = `<div style="max-width:1100px;margin:0 auto;padding:16px 16px 80px">
     <div style="font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.02em;margin-bottom:4px">Stock peptidi · Ciclo 1</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px">29 giu – 18 set 2026 · 112 giorni</div>
+
+    <div style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);padding:16px;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">🧮 Unit Converter</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Volume di prelievo su siringa da insulina U-100</div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px">
+        <div>
+          <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Peptide</div>
+          <select id="uc-peptide" onchange="ucFillDefaults(this.value)" style="width:100%;font-size:12px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">${ucOpts}</select>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Quantità vial</div>
+          <div style="position:relative"><input type="number" id="uc-mg" value="10" step="0.1" min="0" oninput="ucUpdate()" style="width:100%;font-size:12px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 24px 7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted)">mg</span></div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Acqua BAC</div>
+          <div style="position:relative"><input type="number" id="uc-bac" value="2" step="0.1" min="0" oninput="ucUpdate()" style="width:100%;font-size:12px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 24px 7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted)">ml</span></div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Dose target</div>
+          <div style="position:relative"><input type="number" id="uc-target" value="250" step="1" min="0" oninput="ucUpdate()" style="width:100%;font-size:12px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 30px 7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted)">mcg</span></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:10px;align-items:stretch">
+        <div style="background:var(--surface2,#f5f5f7);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase">Concentrazione</div>
+          <div id="uc-conc" style="font-size:18px;font-weight:700;color:var(--text);margin:2px 0">—</div>
+          <div style="font-size:9px;color:var(--muted)">mcg/ml</div>
+        </div>
+        <div style="background:rgba(0,113,227,.08);border:1px solid rgba(0,113,227,.25);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:var(--blue);font-weight:600;text-transform:uppercase">Volume da prelevare</div>
+          <div id="uc-draw" style="font-size:22px;font-weight:800;color:var(--blue);margin:2px 0">—</div>
+          <div style="font-size:9px;color:var(--blue)">unità (UI)</div>
+        </div>
+        <div style="background:var(--surface2,#f5f5f7);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase">Dosi/vial</div>
+          <div id="uc-doses" style="font-size:18px;font-weight:700;color:var(--text);margin:2px 0">—</div>
+          <div style="font-size:9px;color:var(--muted)">dosi</div>
+        </div>
+      </div>
+      <div id="uc-bilat" style="display:none;font-size:11px;color:var(--blue);font-weight:600;text-align:center;margin-top:8px"></div>
+      <div style="font-size:9px;color:var(--muted);margin-top:10px;text-align:center">Solo conversione di unità · non sostituisce indicazione medica</div>
+    </div>
+
     <div style="background:rgba(255,59,48,.07);border:1px solid rgba(255,59,48,.2);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#7a2020">
       <b style="color:#c0392b">⚠️ Riordino necessario prima del 29 giu · </b>Fragment, Ipamorelin, IGF-1 DES, TB-500 non in stock · Tesa e BPC-157 parzialmente coperti
     </div>
@@ -5214,6 +5326,8 @@ function buildStockView2() {
   </div>`;
 
   el.innerHTML = html;
+  const ucSel = document.getElementById('uc-peptide');
+  if (ucSel) ucFillDefaults(ucSel.value);
 }
 
 function stockSaveNote(cid, vn, val) {
