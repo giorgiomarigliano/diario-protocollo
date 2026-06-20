@@ -1747,12 +1747,14 @@ function drawChart(id,data,color){
   ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.stroke();
   // Dots
   valid.forEach(p=>{ if(!p)return; ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,Math.PI*2); ctx.fillStyle=color; ctx.fill(); });
-  // Last value (flip below point if too close to top edge, to avoid clipping)
+  // Last value (flip below point if too close to top edge; clamp using real text width to avoid right-edge clipping)
   if(lp){
     ctx.font='500 11px -apple-system'; ctx.fillStyle=color;
-    const labelX=Math.min(lp.x,W-32);
+    const label=lp.v.toFixed(1);
+    const textW=ctx.measureText(label).width;
+    const labelX=Math.max(2,Math.min(lp.x,W-textW-3));
     const labelY=lp.y<18 ? lp.y+15 : lp.y-6;
-    ctx.fillText(lp.v.toFixed(1),labelX,labelY);
+    ctx.fillText(label,labelX,labelY);
   }
 }
 
