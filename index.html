@@ -1732,8 +1732,9 @@ function drawChart(id,data,color){
   const W=rect.width,H=64;
   const pts=data.filter(v=>v!==null);
   if(pts.length<2){ ctx.font='11px -apple-system'; ctx.fillStyle='#aeaeb2'; ctx.fillText('Dati insufficienti',8,32); return; }
+  const TOP_PAD=18, BOTTOM_PAD=10;
   const mn=Math.min(...pts)*0.995, mx=Math.max(...pts)*1.005, rng=mx-mn||1;
-  const valid=data.map((v,i)=>v!==null?{x:i/(data.length-1)*(W-4)+2, y:H-((v-mn)/rng)*(H-16)-6, v}:null);
+  const valid=data.map((v,i)=>v!==null?{x:i/(data.length-1)*(W-4)+2, y:H-BOTTOM_PAD-((v-mn)/rng)*(H-TOP_PAD-BOTTOM_PAD), v}:null);
   // Fill
   ctx.beginPath();
   let st=false;
@@ -1746,8 +1747,13 @@ function drawChart(id,data,color){
   ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.stroke();
   // Dots
   valid.forEach(p=>{ if(!p)return; ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,Math.PI*2); ctx.fillStyle=color; ctx.fill(); });
-  // Last value
-  if(lp){ ctx.font='500 11px -apple-system'; ctx.fillStyle=color; ctx.fillText(lp.v.toFixed(1),Math.min(lp.x,W-32),lp.y-6); }
+  // Last value (flip below point if too close to top edge, to avoid clipping)
+  if(lp){
+    ctx.font='500 11px -apple-system'; ctx.fillStyle=color;
+    const labelX=Math.min(lp.x,W-32);
+    const labelY=lp.y<18 ? lp.y+15 : lp.y-6;
+    ctx.fillText(lp.v.toFixed(1),labelX,labelY);
+  }
 }
 
 function refreshCharts(){
