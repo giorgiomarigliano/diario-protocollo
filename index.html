@@ -5105,6 +5105,19 @@ function buildStockView2() {
       stabilityDays:28, stabilityNote:'28 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
       vials:[], disponibile:0, mgFab:56, gap:'~6 vial × 10mg' },
+    // ─── Peptidi non inclusi nel Protocollo v2 ───
+    { id:'motsc',   name:'MOTS-C',             emoji:'🔋', color:'#8e8e93', bg:'rgba(142,142,147,.08)',
+      dose:'Non schedulato · v2',      dose_mcg:null, mgNeeded:null, fab_detail:'Non nel Protocollo v2',
+      stabilityDays:null, stabilityNote:'Polvere liofilizzata · frigo',
+      mgOptions:[5], bacOptions:[1.0], defaultMg:5, defaultBac:1.0,
+      vials:[{n:1,stato:'intatto'},{n:2,stato:'intatto'},{n:3,stato:'intatto'},{n:4,stato:'intatto'},{n:5,stato:'intatto'}],
+      disponibile:null, mgFab:null, gap:null, offProtocol:true, offLabel:'5 vial disponibili · non allocati al Ciclo 1' },
+    { id:'ghkcu',   name:'GHK-Cu',             emoji:'🔬', color:'#8e8e93', bg:'rgba(142,142,147,.08)',
+      dose:'Non schedulato · v2',      dose_mcg:null, mgNeeded:null, fab_detail:'Non nel Protocollo v2',
+      stabilityDays:null, stabilityNote:'Polvere liofilizzata · frigo',
+      mgOptions:[1,5], bacOptions:[0.5,1.0], defaultMg:1, defaultBac:1.0,
+      vials:[{n:1,stato:'intatto'}],
+      disponibile:null, mgFab:null, gap:null, offProtocol:true, offLabel:'1 vial disponibile · non allocato al Ciclo 1' },
   ];
 
   function stSty(s) {
@@ -5187,8 +5200,20 @@ function buildStockView2() {
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-bottom:16px">`;
 
+  let offProtocolSeparatorAdded = false;
   compounds.forEach(c => {
-    const pct = Math.min(100,Math.round((c.disponibile/c.mgNeeded)*100));
+    // Separatore visivo prima dei peptidi non-v2
+    if (c.offProtocol && !offProtocolSeparatorAdded) {
+      offProtocolSeparatorAdded = true;
+      html += `</div>
+      <div style="margin:20px 0 14px;display:flex;align-items:center;gap:10px">
+        <div style="flex:1;height:1px;background:var(--border,#e8e8ed)"></div>
+        <div style="font-size:11px;font-weight:700;color:#aeaeb2;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;padding:0 4px">Riserva · non allocati al Ciclo 1</div>
+        <div style="flex:1;height:1px;background:var(--border,#e8e8ed)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-bottom:16px">`;
+    }
+    const pct = c.offProtocol ? 0 : Math.min(100,Math.round((c.disponibile/c.mgNeeded)*100));
     const barC = pct>=100?'#34c759':pct>30?'#ff9500':'#ff3b30';
     const circ = (2*Math.PI*20).toFixed(1);
     const off  = (parseFloat(circ)*(1-pct/100)).toFixed(1);
@@ -5204,8 +5229,8 @@ function buildStockView2() {
         const st = stSty(stato);
         const mg  = parseFloat(sv.mg)  || c.defaultMg;
         const bac = parseFloat(sv.bac) || c.defaultBac;
-        const ui  = calcUI(mg, bac, c.dose_mcg);
-        const exp = calcExpiry(sv.reco, c.stabilityDays);
+        const ui  = c.dose_mcg ? calcUI(mg, bac, c.dose_mcg) : {conc:(mg/bac).toFixed(1), ui:'—'};
+        const exp = c.stabilityDays ? calcExpiry(sv.reco, c.stabilityDays) : {text:'Liofilizzato · stabile', daysLeft:null};
         const igfNote = c.id==='igf' ? `<span style="font-size:9px;color:var(--muted)"> → ${(parseFloat(ui.ui)/2).toFixed(1)} UI/lato</span>` : '';
 
         // Barra vita residua
@@ -5284,7 +5309,28 @@ function buildStockView2() {
       });
     }
 
-    html += `
+    if (c.offProtocol) {
+      // Card off-protocol: grigia, senza ring, senza progress bar
+      html += `
+      <div style="background:var(--surface,#fff);border-radius:14px;border:1px dashed #c7c7cc;box-shadow:none;overflow:hidden;opacity:.82">
+        <div style="padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px dashed #c7c7cc">
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(142,142,147,.10);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;filter:grayscale(1)">${c.emoji}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:14px;font-weight:700;color:#636366">${c.name}</span>
+              <span style="font-size:9px;font-weight:700;background:rgba(142,142,147,.15);color:#636366;border:1px solid #aeaeb2;padding:1px 7px;border-radius:10px;letter-spacing:.02em">NON V2</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px">${c.fab_detail}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px">🧊 ${c.stabilityNote}</div>
+          </div>
+        </div>
+        <div style="padding:7px 14px;background:rgba(142,142,147,.05);border-bottom:1px dashed #c7c7cc">
+          <span style="font-size:11px;color:#aeaeb2">${c.offLabel}</span>
+        </div>
+        <div style="padding:10px 14px">${vialsHtml}</div>
+      </div>`;
+    } else {
+      html += `
       <div style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);overflow:hidden">
         <div style="padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border,#e8e8ed)">
           <div style="width:38px;height:38px;border-radius:10px;background:${c.bg};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${c.emoji}</div>
@@ -5313,6 +5359,7 @@ function buildStockView2() {
         </div>
         <div style="padding:10px 14px">${vialsHtml}</div>
       </div>`;
+    }
   });
 
   html += `</div>
