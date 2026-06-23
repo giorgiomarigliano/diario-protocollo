@@ -2948,6 +2948,15 @@ function buildMedView() {
       { cat: 'Conclusione clinica', items: [
         { name:'Idoneità protocollo', val:'✅ ZERO controindicazioni', ref:'—', ok:true, note:'Baseline CV ottimo — via libera Tesamorelin' },
       ]},
+      { cat: 'Referto cardiologico firmato (23/06/2026 · Dr.ssa Bokor)', items: [
+        { name:'Cardiopatia', val:'Esclusa', ref:'—', ok:true, note:'Raccolta anamnestica + ECG: nessun reperto patologico' },
+        { name:'Compenso cardiocircolatorio', val:'Buono ✅', ref:'—', ok:true },
+        { name:'HDL', val:'Basso ma in miglioramento', ref:'≥40 (M)', ok:false, note:'⚠️ Persistente — trend positivo vs passato', sev:'warn' },
+        { name:'Creatinina', val:'Lievemente elevata', ref:'—', ok:false, note:'⚠️ Invariata rispetto ai controlli precedenti', sev:'warn' },
+        { name:'Anemia normocitica', val:'Lieve — persistente', ref:'—', ok:false, note:'⚠️ Invariata rispetto al passato', sev:'warn' },
+        { name:'Vitamina D 25OH', val:'22 µg/L', ref:'31–100', ok:false, note:'⚠️ Ancora insufficiente ma in netto miglioramento (9.5 → 22 dal 10/04/2026)', sev:'warn' },
+        { name:'Terapia consigliata', val:'Continuare integratori', ref:'—', ok:true, note:'Nessuna modifica alla terapia attuale' },
+      ]},
     ]
   };
 
