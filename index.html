@@ -4858,9 +4858,10 @@ function buildProtoV2() {
             ${s.fields.map(f => {
               const fkey = f.replace(/[\s\-]/g,'_');
               const isIgf = f.includes('IGF');
+              const isBpcOrTb = f.includes('BPC') || f.includes('TB-500');
               const scOpts = s.n === 1 || s.n === 2
-                ? ['Addome dx','Addome sx','Ombelico dx','Ombelico sx']
-                : ['Addome dx','Addome sx','Coscia dx','Coscia sx'];
+                ? (isBpcOrTb ? ['Addome dx','Addome sx','Ombelico dx','Ombelico sx','Gluteo dx','Gluteo sx'] : ['Addome dx','Addome sx','Ombelico dx','Ombelico sx'])
+                : (isBpcOrTb ? ['Addome dx','Addome sx','Coscia dx','Coscia sx','Gluteo dx','Gluteo sx'] : ['Addome dx','Addome sx','Coscia dx','Coscia sx']);
               const siteSelect = !isIgf ? `<select data-id="${id}" data-f="inj_${s.n}_${fkey}_sito" style="flex-shrink:0;width:100px;margin-left:6px">
                   <option value="">— sito</option>
                   ${scOpts.map(o=>`<option value="${o}">${o}</option>`).join('')}
