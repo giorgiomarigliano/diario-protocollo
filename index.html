@@ -5042,9 +5042,9 @@ function applyProto2Data() {
           qInj.classList.remove('empty');
           qInj.style.color = doneInj2 === totalInj2 ? '#34c759' : doneInj2 > 0 ? '#ff9500' : '';
         }
-        // Aderenza integratori — stima su 5 checkbox base (D3, B12, Omega, Creatina, Zinco)
-        const integrKeys = ['ck_d3','ck_b12','ck_omega','ck_creatina','ck_zinco'];
-        const doneIntegr = integrKeys.filter(k => fields[k] === '1' || fields[k] === true).length;
+        // Aderenza integratori — tutti i checkbox stack mattutino + serale
+        const integrKeys = ['ck_d3','ck_b12','ck_omega','ck_creat','ck_zinc','ck_norm','ck_mag','ck_gly','ck_melatonina'];
+        const doneIntegr = integrKeys.filter(k => fields[k] === true || fields[k] === '1' || fields[k] === 1).length;
         const qIntegr = document.getElementById('q-'+id+'-integr');
         if (qIntegr && doneIntegr > 0) {
           qIntegr.textContent = Math.round(doneIntegr/integrKeys.length*100)+'%';
