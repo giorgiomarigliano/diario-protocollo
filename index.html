@@ -4834,9 +4834,18 @@ function buildProtoV2() {
     const slotHTML = slots.map(s => {
       const muscleField = s.igfMuscle !== undefined ? `
         <div style="margin-top:8px">
-          <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare</div>
+          <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare (IM)</div>
           <select data-id="${id}" data-f="inj_${s.n}_distretto">
             ${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m=>`<option value="${m}" ${m===s.igfMuscle?'selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>` : '';
+      const scSites = { 1:['Addome dx','Addome sx','Ombelico dx','Ombelico sx'], 2:['Addome dx','Addome sx','Ombelico dx','Ombelico sx'], 3:['Addome dx','Addome sx','Coscia dx','Coscia sx'], 4:['Addome dx','Addome sx','Coscia dx','Coscia sx'] };
+      const scField = s.igfMuscle === undefined ? `
+        <div style="margin-top:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Sito SC</div>
+          <select data-id="${id}" data-f="inj_${s.n}_sito_sc" style="width:100%;box-sizing:border-box">
+            <option value="">— sito</option>
+            ${(scSites[s.n]||scSites[4]).map(m=>`<option value="${m}">${m}</option>`).join('')}
           </select>
         </div>` : '';
       const slotClass = s.n === 1 ? 'inj-card-mattino' : s.n === 2 ? 'inj-card-pomeriggio' : s.igfMuscle !== undefined ? 'inj-card-postWO' : 'inj-card-sera';
@@ -4864,7 +4873,7 @@ function buildProtoV2() {
               </select>
             </div>`).join('')}
           </div>
-          ${muscleField}
+          ${muscleField}${scField}
         </div>
       </div>`;
     }).join('');
@@ -4882,6 +4891,8 @@ function buildProtoV2() {
           <div class="dq"><div class="dq-v empty" id="q-${id}-peso">—</div><div class="dq-l">kg</div></div>
           <div class="dq"><div class="dq-v empty" id="q-${id}-hrv">—</div><div class="dq-l">HRV</div></div>
           <div class="dq"><div class="dq-v empty" id="q-${id}-ore_sonno">—</div><div class="dq-l">sonno</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-inj">—</div><div class="dq-l">inj</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-integr">—</div><div class="dq-l">integr%</div></div>
         </div>
         <span class="day-badge ${wo.badge}">${wo.label}</span>
         <span class="day-chev">▾</span>
@@ -5012,6 +5023,36 @@ function applyProto2Data() {
     if (qPeso  && fields.peso)     { qPeso.textContent  = fields.peso;     qPeso.classList.remove('empty'); }
     if (qHrv   && fields.hrv)      { qHrv.textContent   = fields.hrv;      qHrv.classList.remove('empty'); }
     if (qSonno && fields.ore_sonno){ qSonno.textContent = fields.ore_sonno; qSonno.classList.remove('empty'); }
+    // Iniezioni fatte vs totale
+    if (id.startsWith('p2_day_')) {
+      const dayIdx = parseInt(id.replace('p2_day_',''));
+      if (!isNaN(dayIdx)) {
+        const slots2 = getInjectionSlots2(dayIdx);
+        let doneInj2 = 0, totalInj2 = 0;
+        slots2.forEach(s => {
+          s.fields.forEach(f2 => {
+            totalInj2++;
+            const key = 'inj_'+s.n+'_'+f2.replace(/[\s\-]/g,'_');
+            if (fields[key] === 'fatto') doneInj2++;
+          });
+        });
+        const qInj = document.getElementById('q-'+id+'-inj');
+        if (qInj && totalInj2 > 0) {
+          qInj.textContent = doneInj2+'/'+totalInj2;
+          qInj.classList.remove('empty');
+          qInj.style.color = doneInj2 === totalInj2 ? '#34c759' : doneInj2 > 0 ? '#ff9500' : '';
+        }
+        // Aderenza integratori — stima su 5 checkbox base (D3, B12, Omega, Creatina, Zinco)
+        const integrKeys = ['ck_d3','ck_b12','ck_omega','ck_creatina','ck_zinco'];
+        const doneIntegr = integrKeys.filter(k => fields[k] === '1' || fields[k] === true).length;
+        const qIntegr = document.getElementById('q-'+id+'-integr');
+        if (qIntegr && doneIntegr > 0) {
+          qIntegr.textContent = Math.round(doneIntegr/integrKeys.length*100)+'%';
+          qIntegr.classList.remove('empty');
+          qIntegr.style.color = doneIntegr === integrKeys.length ? '#34c759' : '#ff9500';
+        }
+      }
+    }
   });
   colorInjSelects();
 }
