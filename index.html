@@ -4839,15 +4839,7 @@ function buildProtoV2() {
             ${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m=>`<option value="${m}" ${m===s.igfMuscle?'selected':''}>${m}</option>`).join('')}
           </select>
         </div>` : '';
-      const scSites = { 1:['Addome dx','Addome sx','Ombelico dx','Ombelico sx'], 2:['Addome dx','Addome sx','Ombelico dx','Ombelico sx'], 3:['Addome dx','Addome sx','Coscia dx','Coscia sx'], 4:['Addome dx','Addome sx','Coscia dx','Coscia sx'] };
-      const scField = s.igfMuscle === undefined ? `
-        <div style="margin-top:8px">
-          <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Sito SC</div>
-          <select data-id="${id}" data-f="inj_${s.n}_sito_sc" style="width:100%;box-sizing:border-box">
-            <option value="">— sito</option>
-            ${(scSites[s.n]||scSites[4]).map(m=>`<option value="${m}">${m}</option>`).join('')}
-          </select>
-        </div>` : '';
+      const scField = '';
       const slotClass = s.n === 1 ? 'inj-card-mattino' : s.n === 2 ? 'inj-card-pomeriggio' : s.igfMuscle !== undefined ? 'inj-card-postWO' : 'inj-card-sera';
       const slotIconMap = {
         1: '<i class="ti ti-sunrise" style="font-size:15px;color:#0071e3"></i>',
@@ -4863,15 +4855,27 @@ function buildProtoV2() {
           <div class="inj-title">${s.label}</div>
           <div class="inj-timing">${s.momento}</div>
           <div class="inj-fields" style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
-            ${s.fields.map(f => `
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface,#fff);border-radius:8px;padding:6px 10px">
+            ${s.fields.map(f => {
+              const fkey = f.replace(/[\s\-]/g,'_');
+              const isIgf = f.includes('IGF');
+              const scOpts = s.n === 1 || s.n === 2
+                ? ['Addome dx','Addome sx','Ombelico dx','Ombelico sx']
+                : ['Addome dx','Addome sx','Coscia dx','Coscia sx'];
+              const siteSelect = !isIgf ? `<select data-id="${id}" data-f="inj_${s.n}_${fkey}_sito" style="flex-shrink:0;width:100px;margin-left:6px">
+                  <option value="">— sito</option>
+                  ${scOpts.map(o=>`<option value="${o}">${o}</option>`).join('')}
+                </select>` : '';
+              return `
+            <div style="display:flex;align-items:center;gap:8px;background:var(--surface,#fff);border-radius:8px;padding:6px 10px">
               <span style="font-size:12px;font-weight:500;color:var(--text);flex:1">${f}</span>
-              <select data-id="${id}" data-f="inj_${s.n}_${f.replace(/[\s\-]/g,'_')}" style="flex-shrink:0;width:110px">
+              <select data-id="${id}" data-f="inj_${s.n}_${fkey}" style="flex-shrink:0;width:100px">
                 <option value="">— stato</option>
                 <option value="fatto">✅ Fatto</option>
                 <option value="skip">⏭ Skip</option>
               </select>
-            </div>`).join('')}
+              ${siteSelect}
+            </div>`;
+            }).join('')}
           </div>
           ${muscleField}${scField}
         </div>
