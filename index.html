@@ -1335,6 +1335,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   <div class="main-nav-tab" id="main-tab-med" onclick="switchView('med')">Referti</div>
   <div class="main-nav-tab" id="main-tab-meddash" onclick="switchView('meddash')">Lab</div>
   <div class="main-nav-tab" id="main-tab-stock2" onclick="switchView('stock2')">Stock</div>
+  <div class="main-nav-tab" id="main-tab-orari" onclick="switchView('orari')">Orari</div>
   <!-- tab obsoleti nascosti -->
   <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')" style="display:none">Stock v1</div>
   <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')" style="display:none">Proto v2</div>
@@ -1367,6 +1368,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="med-view" id="meddash-view"></div>
 <div class="med-view" id="stock-view"></div>
 <div class="med-view" id="stock2-view"></div>
+<div class="med-view" id="orari-view"></div>
 <div class="diary-view hidden" id="proto2-view">
   <div class="container" id="container2"></div>
 </div>
@@ -2591,16 +2593,19 @@ function switchView(view) {
   const tabProto2 = document.getElementById('main-tab-proto2');
   const stock2View = document.getElementById('stock2-view');
   const tabStock2 = document.getElementById('main-tab-stock2');
+  const orariView = document.getElementById('orari-view');
+  const tabOrari = document.getElementById('main-tab-orari');
   // Reset all
   diary.classList.add('hidden'); dash.classList.remove('active');
   med.classList.remove('visible'); meddash.classList.remove('visible');
   stockView.classList.remove('visible'); stock2View.classList.remove('visible');
+  orariView.classList.remove('visible');
   proto2View.classList.add('hidden');
   navStrip.style.display = 'none';
   tabDiary.classList.remove('on'); tabDash.classList.remove('on');
   tabMed.classList.remove('on'); tabMedDash.classList.remove('on');
   tabStock.classList.remove('on'); tabProto2.classList.remove('on');
-  tabStock2.classList.remove('on');
+  tabStock2.classList.remove('on'); tabOrari.classList.remove('on');
   if (view === 'dash') {
     dash.classList.add('active');
     tabDash.classList.add('on');
@@ -2627,6 +2632,10 @@ function switchView(view) {
     proto2View.classList.remove('hidden');
     tabProto2.classList.add('on');
     buildProtoV2();
+  } else if (view === 'orari') {
+    orariView.classList.add('visible');
+    tabOrari.classList.add('on');
+    buildOrariView();
   } else {
     diary.classList.remove('hidden');
     navStrip.style.display = '';
@@ -5819,6 +5828,187 @@ window.addEventListener('load',async()=>{
   }
 });
 </script>
+
+// ═══════════════════════════════════════════════════════════════════
+// TAB ORARI — Schema giornaliero protocollo v2
+// ═══════════════════════════════════════════════════════════════════
+function buildOrariView() {
+  const el = document.getElementById('orari-view');
+  if (el._built) return;
+  el._built = true;
+
+  const days = [
+    {
+      id: 'wo',
+      label: 'Allenamento',
+      sub: 'Mar · Mer · Ven',
+      color: '#0071e3',
+      badge: 'WO',
+      rows: [
+        { time:'06:00', icon:'💉', action:'Fragment 176-191 250mcg SC + BPC-157 250mcg SC', tag:'digiuno', tagColor:'#ff9500' },
+        { time:'06:05', icon:'☕', action:'Caffè macchiato (goccia Alpro cocco)', tag:'ok', tagColor:'#34c759' },
+        { time:'09:15', icon:'🍳', action:'Colazione — shaker proteico + bresaola', tag:'', tagColor:'' },
+        { time:'09:15', icon:'💊', action:'D3+K2 · Omega-3 ×1 · B12 · Creatina 5g', tag:'', tagColor:'' },
+        { time:'09:30', icon:'💊', action:'Zinco bisglicinato 15mg', tag:'', tagColor:'' },
+        { time:'11:00', icon:'🥩', action:'Spuntino — carne secca', tag:'', tagColor:'' },
+        { time:'13:00', icon:'🍽️', action:'Pranzo', tag:'', tagColor:'' },
+        { time:'13:00', icon:'💊', action:'Omega-3 ×2 · Normocis 400', tag:'', tagColor:'' },
+        { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'2h15 post-pranzo', tagColor:'#34c759' },
+        { time:'16:30', icon:'🍫', action:'Barretta proteica', tag:'post-Fragment', tagColor:'#34c759' },
+        { time:'19:00', icon:'🏋️', action:'Allenamento', tag:'', tagColor:'' },
+        { time:'20:30', icon:'💉', action:'IGF-1 DES 50mcg IM bilaterale (25mcg R + 25mcg L)', tag:'immediato post-WO', tagColor:'#af52de' },
+        { time:'20:45', icon:'🍳', action:'Pasto post-WO — proteine + verdure', tag:'NO carbs fino alle 22:30', tagColor:'#ff3b30' },
+        { time:'23:30', icon:'💉', action:'Tesamorelin 2mg + Ipamorelin 100mcg + BPC-157 250mcg + TB-500 500mcg SC', tag:'3h post-pasto ✅', tagColor:'#34c759' },
+        { time:'00:00', icon:'💊', action:'Mg bisglicinato + Glicina 3g + Melatonina 1mg', tag:'pre-sleep', tagColor:'#5ac8fa' },
+      ]
+    },
+    {
+      id: 'rest',
+      label: 'Rest Day',
+      sub: 'Lun · Gio',
+      color: '#aeaeb2',
+      badge: 'REST',
+      rows: [
+        { time:'06:00', icon:'💉', action:'Fragment 176-191 250mcg SC + BPC-157 250mcg SC', tag:'digiuno', tagColor:'#ff9500' },
+        { time:'06:05', icon:'☕', action:'Caffè macchiato (goccia Alpro cocco)', tag:'ok', tagColor:'#34c759' },
+        { time:'09:15', icon:'🍳', action:'Colazione — shaker proteico + bresaola', tag:'', tagColor:'' },
+        { time:'09:15', icon:'💊', action:'D3+K2 · Omega-3 ×1 · B12 · Creatina 5g', tag:'', tagColor:'' },
+        { time:'09:30', icon:'💊', action:'Zinco bisglicinato 15mg', tag:'', tagColor:'' },
+        { time:'11:00', icon:'🥩', action:'Spuntino — carne secca', tag:'', tagColor:'' },
+        { time:'13:00', icon:'🍽️', action:'Pranzo', tag:'', tagColor:'' },
+        { time:'13:00', icon:'💊', action:'Omega-3 ×2 · Normocis 400', tag:'', tagColor:'' },
+        { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'2h15 post-pranzo', tagColor:'#34c759' },
+        { time:'16:30', icon:'🍫', action:'Barretta proteica', tag:'post-Fragment', tagColor:'#34c759' },
+        { time:'19:30', icon:'🍽️', action:'Cena — pesce/carne magra + verdure + max 4-5 Wasa', tag:'low-fat · low-GI · no grassi aggiunti', tagColor:'#ff9500' },
+        { time:'22:30', icon:'💉', action:'Tesamorelin 2mg + Ipamorelin 100mcg + BPC-157 250mcg + TB-500 500mcg SC', tag:'3h post-cena ✅', tagColor:'#34c759' },
+        { time:'23:00', icon:'💊', action:'Mg bisglicinato + Glicina 3g + Melatonina 1mg', tag:'pre-sleep', tagColor:'#5ac8fa' },
+      ]
+    },
+    {
+      id: 'wknd',
+      label: 'Weekend',
+      sub: 'Sab · Dom (orari flessibili)',
+      color: '#af52de',
+      badge: 'WO',
+      rows: [
+        { time:'06:00', icon:'💉', action:'Fragment 176-191 250mcg SC + BPC-157 250mcg SC', tag:'digiuno', tagColor:'#ff9500' },
+        { time:'06:05', icon:'☕', action:'Caffè macchiato (goccia Alpro cocco)', tag:'ok', tagColor:'#34c759' },
+        { time:'08:00', icon:'🍳', action:'Colazione', tag:'orario flessibile', tagColor:'#5ac8fa' },
+        { time:'08:00', icon:'💊', action:'D3+K2 · Omega-3 ×1 · B12 · Creatina 5g · Zinco 15mg', tag:'', tagColor:'' },
+        { time:'10:00', icon:'🏋️', action:'Allenamento (mattina)', tag:'orario flessibile', tagColor:'#5ac8fa' },
+        { time:'11:30', icon:'💉', action:'IGF-1 DES 50mcg IM bilaterale (25mcg R + 25mcg L)', tag:'immediato post-WO', tagColor:'#af52de' },
+        { time:'11:45', icon:'🍳', action:'Pasto post-WO — proteine + verdure', tag:'NO carbs fino alle 13:30', tagColor:'#ff3b30' },
+        { time:'13:30', icon:'🍽️', action:'Pranzo', tag:'', tagColor:'' },
+        { time:'13:30', icon:'💊', action:'Omega-3 ×2 · Normocis 400', tag:'', tagColor:'' },
+        { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'2h+ post-pranzo', tagColor:'#34c759' },
+        { time:'16:30', icon:'🍫', action:'Barretta o spuntino proteico', tag:'post-Fragment', tagColor:'#34c759' },
+        { time:'20:00', icon:'🍽️', action:'Cena — pesce/carne magra + verdure + max 4-5 Wasa', tag:'low-fat · low-GI · no grassi aggiunti', tagColor:'#ff9500' },
+        { time:'23:00', icon:'💉', action:'Tesamorelin 2mg + Ipamorelin 100mcg + BPC-157 250mcg + TB-500 500mcg SC', tag:'3h post-cena ✅', tagColor:'#34c759' },
+        { time:'23:30', icon:'💊', action:'Mg bisglicinato + Glicina 3g + Melatonina 1mg', tag:'pre-sleep', tagColor:'#5ac8fa' },
+      ]
+    }
+  ];
+
+  const rules = [
+    { icon:'💉', title:'Fragment mattino', body:'A digiuno dalla sera precedente. Caffè nero/macchiato Alpro ok (impatto insulinico trascurabile).' },
+    { icon:'💉', title:'Fragment pomeridiano', body:'Almeno 1–2h dall'ultimo pasto. Inietti, poi mangi subito.' },
+    { icon:'💉', title:'IGF-1 DES post-WO', body:'Immediato post-allenamento, muscolo target. Nessun digiuno richiesto. Nei 2h successivi: zero carboidrati.' },
+    { icon:'💉', title:'Tesamorelin + Ipamorelin sera', body:'Finestra critica: minimo 2.5h, ideale 3h post-pasto. Il pasto pre-Tesa deve essere low-fat, low-GI. Zero grassi aggiunti, zero caffè con latte.' },
+  ];
+
+  let html = `<div class="view-wrap">
+  <div style="margin-bottom:24px">
+    <div class="t-page-title">Schema giornaliero</div>
+    <div class="t-page-sub">Protocollo v2 · 29 giu – 18 set 2026</div>
+  </div>`;
+
+  // Day type selector tabs
+  html += `<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">`;
+  days.forEach((d,i) => {
+    html += `<button onclick="orariShowDay('${d.id}')" id="orari-btn-${d.id}"
+      style="padding:8px 18px;border-radius:980px;border:1.5px solid ${d.color};
+      background:${i===0 ? d.color : 'transparent'};color:${i===0 ? '#fff' : d.color};
+      font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s">
+      ${d.label}
+    </button>`;
+  });
+  html += `</div>`;
+
+  // Day panels
+  days.forEach((d,di) => {
+    html += `<div id="orari-panel-${d.id}" style="display:${di===0?'block':'none'}">`;
+
+    // Header card
+    html += `<div style="background:var(--surface);border-radius:var(--radius);padding:16px 18px;
+      margin-bottom:16px;box-shadow:var(--shadow);border-left:4px solid ${d.color}">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="background:${d.color};color:#fff;font-size:11px;font-weight:600;
+          padding:3px 9px;border-radius:980px">${d.badge}</span>
+        <div>
+          <div style="font-size:15px;font-weight:600;color:var(--text)">${d.label}</div>
+          <div style="font-size:12px;color:var(--muted)">${d.sub}</div>
+        </div>
+      </div>
+    </div>`;
+
+    // Timeline rows
+    html += `<div style="background:var(--surface);border-radius:var(--radius);
+      box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px">`;
+
+    d.rows.forEach((r, ri) => {
+      const isInj = r.icon === '💉';
+      const border = ri < d.rows.length - 1 ? 'border-bottom:1px solid var(--border)' : '';
+      html += `<div style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;${border}">
+        <div style="min-width:44px;font-size:12px;font-weight:600;color:var(--muted);
+          padding-top:1px;letter-spacing:-0.3px">${r.time}</div>
+        <div style="font-size:18px;line-height:1.2;min-width:22px">${r.icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;color:var(--text);line-height:1.4;
+            font-weight:${isInj ? '600' : '400'}">${r.action}</div>
+          ${r.tag ? `<div style="display:inline-block;margin-top:4px;font-size:11px;
+            font-weight:500;color:${r.tagColor};background:${r.tagColor}18;
+            padding:2px 7px;border-radius:6px">${r.tag}</div>` : ''}
+        </div>
+      </div>`;
+    });
+
+    html += `</div></div>`; // close panel
+  });
+
+  // Rules section
+  html += `<div class="t-section-title" style="margin-top:4px;margin-bottom:12px">REGOLE CRITICHE</div>`;
+  html += `<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:40px">`;
+  rules.forEach(r => {
+    html += `<div style="background:var(--surface);border-radius:var(--radius-sm);
+      padding:14px 16px;box-shadow:var(--shadow);display:flex;gap:12px;align-items:flex-start">
+      <div style="font-size:20px">${r.icon}</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px">${r.title}</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5">${r.body}</div>
+      </div>
+    </div>`;
+  });
+  html += `</div></div>`;
+
+  el.innerHTML = html;
+
+  // Selector function
+  window.orariShowDay = function(id) {
+    const dayDefs = ['wo','rest','wknd'];
+    const colors = {'wo':'#0071e3','rest':'#aeaeb2','wknd':'#af52de'};
+    dayDefs.forEach(d => {
+      document.getElementById('orari-panel-' + d).style.display = (d === id) ? 'block' : 'none';
+      const btn = document.getElementById('orari-btn-' + d);
+      const c = colors[d];
+      if (d === id) {
+        btn.style.background = c; btn.style.color = '#fff';
+      } else {
+        btn.style.background = 'transparent'; btn.style.color = c;
+      }
+    });
+  };
+}
+
 </body>
 </html>
 
