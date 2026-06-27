@@ -1505,7 +1505,7 @@ const SESSION_EXERCISES = {
 
 function getPhase(dayIdx) {
   const wk = Math.floor(dayIdx/7)+1;
-  return {label:'Tesamorelin 1mg', badge:'p1b', wk};
+  return {label:'Warm-up', peptidi:'Tesamorelin 1mg', badge:'p1b', wk};
 }
 
 function getWeekRange(wkIdx) {
@@ -1860,7 +1860,7 @@ function buildDays(){
           <span class="week-phase ${ph.badge}">${ph.label}</span>
           <span class="week-range">${getWeekRange(wk-1)}</span>
         </div>
-        <div class="week-hdr-row2">Tesa · GHK-Cu · MOTS-C · BPC-157</div>`;
+        <div class="week-hdr-row2">${ph.peptidi}</div>`;
       container.appendChild(wh);
       const ws = buildWeekSummary(container, wk-1);
       if(ws) container.appendChild(ws);
@@ -4537,11 +4537,11 @@ let   _lastData2  = {};
 
 function getPhase2(dayIdx) {
   const wk = Math.floor(dayIdx/7)+1;
-  const base = 'Fragment · Tesa · Ipa · BPC-157 · TB-500 · IGF-1 DES';
-  if (wk<=4)  return {label: base, badge:'p1'};
-  if (wk<=8)  return {label: base + ' (BKK WK5–8)', badge:'p2'};
-  if (wk<=12) return {label: base, badge:'p3'};
-  return             {label: base, badge:'p4b'};
+  const peptidi = 'Fragment · Tesa · Ipa · BPC-157 · TB-500 · IGF-1 DES';
+  if (wk<=4)  return {label:'Fase 1',  peptidi, badge:'p1'};
+  if (wk<=8)  return {label:'Fase 2',  peptidi, badge:'p2', note:'BKK WK5–8'};
+  if (wk<=12) return {label:'Fase 3',  peptidi, badge:'p3'};
+  return             {label:'Fase 4',  peptidi, badge:'p4b'};
 }
 
 function getNextEvent2(elapsed) {
@@ -4866,7 +4866,7 @@ function buildProtoV2() {
           <span class="week-phase ${ph.badge}">${ph.label}</span>
           <span class="week-range">${getWeekRange2(wk-1)}</span>
         </div>
-        <div class="week-hdr-row2">Fragment · Tesa · Ipa · BPC-157 · TB-500 · IGF-1 DES</div>`;
+        <div class="week-hdr-row2">${ph.peptidi}${ph.note ? ' · <em>'+ph.note+'</em>' : ''}</div>`;
       container.appendChild(wh);
       // Week summary (solo settimana corrente)
       const ws2 = buildWeekSummary2(container, wk-1);
