@@ -246,22 +246,48 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 /* Week header */
 .week-hdr {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 4px;
   margin: 28px 0 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--border);
 }
 .week-hdr:first-of-type { margin-top: 0; }
-.week-hdr h2 { font-size: 19px; font-weight: 600; letter-spacing: -0.03em; color: var(--text); }
+.week-hdr-row1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+.week-hdr h2 {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 .week-phase {
   font-size: 11px;
   font-weight: 500;
   padding: 3px 10px;
   border-radius: 980px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
-.week-range { font-size: 12px; color: var(--muted); margin-left: auto; }
+.week-range {
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.week-hdr-row2 {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+  padding-left: 1px;
+}
 
 /* Day card */
 .day-card {
@@ -1485,8 +1511,12 @@ function getPhase(dayIdx) {
 function getWeekRange(wkIdx) {
   const s = new Date(START); s.setDate(s.getDate()+wkIdx*7);
   const e = new Date(s); e.setDate(e.getDate()+6);
-  const fmt = d => d.toLocaleDateString('it-IT',{day:'2-digit',month:'short'});
-  return fmt(s)+' – '+fmt(e);
+  const sDay = s.getDate();
+  const eDay = e.getDate();
+  const sMon = s.toLocaleDateString('it-IT',{month:'short'});
+  const eMon = e.toLocaleDateString('it-IT',{month:'short'});
+  if (sMon === eMon) return sDay + '–' + eDay + ' ' + sMon;
+  return sDay + ' ' + sMon + ' – ' + eDay + ' ' + eMon;
 }
 
 function isBKK(i){ return i>=61&&i<=74; }
@@ -1825,9 +1855,12 @@ function buildDays(){
       const wh=document.createElement('div');
       wh.id='week-'+wk; wh.className='week-hdr';
       wh.innerHTML=`
-        <h2>Settimana ${wk}</h2>
-        <span class="week-phase ${ph.badge}">${ph.label}</span>
-        <span class="week-range">${getWeekRange(wk-1)}</span>`;
+        <div class="week-hdr-row1">
+          <h2>Settimana ${wk}</h2>
+          <span class="week-phase ${ph.badge}">${ph.label}</span>
+          <span class="week-range">${getWeekRange(wk-1)}</span>
+        </div>
+        <div class="week-hdr-row2">Tesa · GHK-Cu · MOTS-C · BPC-157</div>`;
       container.appendChild(wh);
       const ws = buildWeekSummary(container, wk-1);
       if(ws) container.appendChild(ws);
@@ -4536,8 +4569,12 @@ function getDotColor2(type) {
 function getWeekRange2(wkIdx) {
   const s = new Date(START2); s.setDate(s.getDate()+wkIdx*7);
   const e = new Date(START2); e.setDate(e.getDate()+wkIdx*7+6);
-  const fmt = d => d.toLocaleDateString('it-IT',{day:'numeric',month:'short'});
-  return fmt(s)+' – '+fmt(e);
+  const sDay = s.getDate();
+  const eDay = e.getDate();
+  const sMon = s.toLocaleDateString('it-IT',{month:'short'});
+  const eMon = e.toLocaleDateString('it-IT',{month:'short'});
+  if (sMon === eMon) return sDay + '–' + eDay + ' ' + sMon;
+  return sDay + ' ' + sMon + ' – ' + eDay + ' ' + eMon;
 }
 
 function getInjectionSlots2(dayIdx) {
@@ -4823,7 +4860,13 @@ function buildProtoV2() {
       const ph = getPhase2((wk-1)*7);
       const wh = document.createElement('div');
       wh.id = 'proto2-week-'+wk; wh.className = 'week-hdr';
-      wh.innerHTML = `<h2>Settimana ${wk}</h2><span class="week-phase ${ph.badge}">${ph.label}</span><span class="week-range">${getWeekRange2(wk-1)}</span>`;
+      wh.innerHTML = `
+        <div class="week-hdr-row1">
+          <h2>Settimana ${wk}</h2>
+          <span class="week-phase ${ph.badge}">${ph.label}</span>
+          <span class="week-range">${getWeekRange2(wk-1)}</span>
+        </div>
+        <div class="week-hdr-row2">Fragment · Tesa · Ipa · BPC-157 · TB-500 · IGF-1 DES</div>`;
       container.appendChild(wh);
       // Week summary (solo settimana corrente)
       const ws2 = buildWeekSummary2(container, wk-1);
