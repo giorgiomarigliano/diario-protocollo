@@ -5185,13 +5185,13 @@ function buildStockView2() {
       dose:'2mg/sera · SC',           dose_mcg:2000, mgNeeded:224, fab_detail:'112gg × 2mg/die',
       stabilityDays:21, stabilityNote:'21 gg frigo · sensibile alla luce',
       mgOptions:[2,5,10], bacOptions:[0.5,1.0,2.0], defaultMg:10, defaultBac:2.0,
-      vials:[{n:1,stato:'intatto'},{n:2,stato:'intatto'},{n:3,stato:'intatto'},{n:4,stato:'intatto'}],
-      disponibile:40, mgFab:224, gap:'~184mg da riordinare (~19 vial)' },
+      vials:[{n:1,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:2,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:3,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:4,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:5,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:6,stato:'attesa',fonte:'new',arrivo:'lug-2026'}],
+      disponibile:40, mgFab:224, gap:'Limitless: 4 vial intatti (40mg) · Nuovo fornitore: 24 vial in arrivo (240mg)' },
     { id:'fragment',name:'Fragment 176-191', emoji:'🔥', color:'#ff3b30', bg:'rgba(255,59,48,.08)',
       dose:'250mcg × 2/die · SC',     dose_mcg:250,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
       stabilityDays:30, stabilityNote:'30 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
-      vials:[], disponibile:0, mgFab:56, gap:'56mg totali (~6 vial × 10mg)' },
+      vials:[{n:1,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:2,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:3,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:4,stato:'attesa',fonte:'new',arrivo:'lug-2026'}], disponibile:0, mgFab:56, gap:'56mg totali (~6 vial × 10mg)' },
     { id:'ipa',     name:'Ipamorelin',        emoji:'⚡', color:'#34c759', bg:'rgba(52,199,89,.08)',
       dose:'100mcg/sera · SC',        dose_mcg:100,  mgNeeded:11.2,fab_detail:'112gg × 100mcg/die',
       stabilityDays:30, stabilityNote:'30 gg frigo',
@@ -5200,7 +5200,7 @@ function buildStockView2() {
     { id:'igf',     name:'IGF-1 DES',         emoji:'💪', color:'#af52de', bg:'rgba(175,82,222,.08)',
       dose:'50mcg post-WO · IM bilat',dose_mcg:50,   mgNeeded:4,   fab_detail:'80gg WO × 50mcg/die',
       stabilityDays:7, stabilityNote:'⚡ 7 gg frigo · aliquotare subito',
-      mgOptions:[1,2,5], bacOptions:[0.5,1.0], defaultMg:1, defaultBac:1.0,
+      mgOptions:[2,5], bacOptions:[0.5,1.0], defaultMg:2, defaultBac:1.0,
       vials:[], disponibile:0, mgFab:4, gap:'~4 vial × 1mg' },
     { id:'bpc',     name:'BPC-157',            emoji:'🔧', color:'#ff9500', bg:'rgba(255,149,0,.08)',
       dose:'250mcg × 2/die · SC',     dose_mcg:250,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
@@ -5217,13 +5217,13 @@ function buildStockView2() {
       dose:'Non schedulato · v2',      dose_mcg:null, mgNeeded:null, fab_detail:'Non nel Protocollo v2',
       stabilityDays:null, stabilityNote:'Polvere liofilizzata · frigo',
       mgOptions:[5], bacOptions:[1.0], defaultMg:5, defaultBac:1.0,
-      vials:[{n:1,stato:'intatto'},{n:2,stato:'intatto'},{n:3,stato:'intatto'},{n:4,stato:'intatto'},{n:5,stato:'intatto'}],
+      vials:[{n:1,stato:'intatto',fonte:'limitless'},{n:2,stato:'intatto',fonte:'limitless'},{n:3,stato:'intatto',fonte:'limitless'},{n:4,stato:'intatto',fonte:'limitless'},{n:5,stato:'intatto',fonte:'limitless'}],
       disponibile:null, mgFab:null, gap:null, offProtocol:true, offLabel:'5 vial disponibili · non allocati al Ciclo 1' },
     { id:'ghkcu',   name:'GHK-Cu',             emoji:'🔬', color:'#8e8e93', bg:'rgba(142,142,147,.08)',
       dose:'Non schedulato · v2',      dose_mcg:null, mgNeeded:null, fab_detail:'Non nel Protocollo v2',
       stabilityDays:null, stabilityNote:'Polvere liofilizzata · frigo',
       mgOptions:[1,5], bacOptions:[0.5,1.0], defaultMg:1, defaultBac:1.0,
-      vials:[{n:1,stato:'intatto'}],
+      vials:[{n:1,stato:'intatto',fonte:'limitless'}],
       disponibile:null, mgFab:null, gap:null, offProtocol:true, offLabel:'1 vial disponibile · non allocato al Ciclo 1' },
   ];
 
@@ -5232,7 +5232,8 @@ function buildStockView2() {
       in_uso:{dot:'#0071e3',text:'In uso',bg:'rgba(0,113,227,.10)',c:'#0058b8'},
       esaurito:{dot:'#ff3b30',text:'Esaurito',bg:'rgba(255,59,48,.10)',c:'#c0392b'},
       perso:{dot:'#ff9500',text:'Perso',bg:'rgba(255,149,0,.10)',c:'#a05a00'},
-      congelato:{dot:'#5ac8fa',text:'Congelato',bg:'rgba(90,200,250,.10)',c:'#006fa6'} };
+      congelato:{dot:'#5ac8fa',text:'Congelato',bg:'rgba(90,200,250,.10)',c:'#006fa6'},
+      attesa:{dot:'#8e8e93',text:'In arrivo',bg:'rgba(142,142,147,.12)',c:'#636366'} };
     return M[s] || {dot:'#aeaeb2',text:s,bg:'#f5f5f7',c:'#6e6e73'};
   }
 
@@ -5377,6 +5378,7 @@ function buildStockView2() {
               <div style="width:8px;height:8px;border-radius:50%;background:${st.dot};flex-shrink:0"></div>
               <span style="font-size:13px;font-weight:700;color:var(--text)">Vial ${v.n}</span>
               <span style="font-size:10px;font-weight:600;background:${st.bg};color:${st.c};padding:2px 8px;border-radius:10px">${st.text}</span>
+              ${v.fonte==='limitless' ? '<span style="font-size:9px;font-weight:700;background:#fff3cd;color:#856404;padding:2px 7px;border-radius:8px;border:1px solid #ffc107">Limitless ✓</span>' : v.fonte==='new' ? '<span style="font-size:9px;font-weight:700;background:#e8f4f8;color:#0c5460;padding:2px 7px;border-radius:8px;border:1px solid #bee5eb">Nuovo · arr. ' + (v.arrivo||'lug-2026') + '</span>' : ''}
             </div>
             <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">${statoBtns}</div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
@@ -6197,6 +6199,7 @@ function buildOrariView() {
 
 </body>
 </html>
+
 
 
 
