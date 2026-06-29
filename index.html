@@ -3041,9 +3041,9 @@ function buildMedView() {
   // ── AZIONI CORRETTIVE ─────────────────────────────────────────────────────
   const azioni = [
     { col:'alert', label:'IGF-1 basso (94)', text:'Target principale Tesamorelin — attesa risalita IGF-1 entro fine ciclo 16 settimane' },
-    { col:'warn',  label:'HDL cronico basso (28→35)', text:'Omega-3 rTG 3g/die · Tesamorelin atteso migliorare profilo lipidico · da ricontrollare settimane 8–10' },
+    { col:'warn',  label:'HDL cronico basso (28→35)', text:'Omega-3 rTG 3g/die · Tesamorelin atteso migliorare profilo lipidico · da ricontrollare a sett. 8 (panel mid-ciclo)' },
     { col:'warn',  label:'Omocisteina (21.9→17.5)', text:'B12 1000µg + methylfolato + B6 ogni mattina · Normocis 400 a pranzo · target <13 entro fine ciclo' },
-    { col:'alert', label:'Vitamina D (9.5→22)', text:'D3+K2 4000UI+200mcg ogni mattina · già in corso · target >50 a mini-panel' },
+    { col:'alert', label:'Vitamina D (9.5→22)', text:'D3+K2 4000UI+200mcg ogni mattina · già in corso · target >50 a panel mid-ciclo sett. 8' },
     { col:'warn',  label:'Zinco basso (53→50)', text:'Zinc bisglicin. 15mg ore 9:00 avviato 21/05 · target 70–80 µg/dL' },
     { col:'warn',  label:'Folato basso (3.00)', text:'Jarrow B12+methylfolato ogni mattina · da ricontrollare a settimane 8–10' },
     { col:'warn',  label:'Emoglobina bassa (129→119)', text:'Ferritina ok (142) · Ferro borderline · nessuna integrazione ferro in corso · monitorare' },
@@ -3052,7 +3052,7 @@ function buildMedView() {
   ];
 
   // ── MINI-PANEL MID-CYCLE ──────────────────────────────────────────────────
-  const miniPanel = ['IGF-1','Glucosio / Insulina / HOMA','HDL','Omocisteina','Vitamina D','Testosterone libero / SHBG','CRP','Zinco','Folato / B12','Emoglobina / MCHC','eGFR / Creatinina'];
+  const miniPanel = ['IGF-1','Glucosio / Insulina (HOMA)','Emocromo','Testosterone totale','Testosterone libero','SHBG','HDL','LDL','Trigliceridi','Estradiolo (E2)','Creatinina','PCR'];
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   let html = `<div class="app-view-inner view-wrap">
@@ -3077,11 +3077,11 @@ function buildMedView() {
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(255,149,0,.08);border:2px dashed #ff9500">🩸</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#ff9500;font-weight:600">Prima dell'inizio v2 (13 o 20 lug) — DA PRENOTARE</div><div class="med-tl-title">Panel T0 pre-protocollo · Santagostino <span style="font-size:10px;background:rgba(255,149,0,.1);color:#ff9500;padding:1px 7px;border-radius:20px;font-weight:500">codice 01Q1RUWN</span></div><div class="med-tl-sub">IGF-1 · Glucosio / Insulina / HOMA · HDL · Omocisteina · Vitamina D · T libero / SHBG · CRP (~€116) · Costituisce il T0 ufficiale per il confronto mid-ciclo</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#ff9500;font-weight:600">Prima dell'inizio v2 (13 o 20 lug) — DA PRENOTARE</div><div class="med-tl-title">Panel T0 pre-protocollo · Santagostino <span style="font-size:10px;background:rgba(255,149,0,.1);color:#ff9500;padding:1px 7px;border-radius:20px;font-weight:500">codice 01Q1RUWN</span></div><div class="med-tl-sub">IGF-1 · Glucosio · Insulina · Emocromo · T totale · T libero · SHBG · HDL · LDL · Trigliceridi · E2 · Creatinina · PCR — €169.23 · Costituisce il T0 ufficiale per il confronto mid-ciclo</div></div>
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed #0071e3">🔬</div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sett. 8 dall'inizio v2 (13 lug → ~7 set · 20 lug → ~14 set) — PIANIFICATO</div><div class="med-tl-title">Panel mid-ciclo · Santagostino <span style="font-size:10px;background:rgba(0,113,227,.1);color:#0071e3;padding:1px 7px;border-radius:20px;font-weight:500">codice 01Q1RUWN</span></div><div class="med-tl-sub">IGF-1 · Glucosio / Insulina / HOMA · HDL · Omocisteina · Vitamina D · T libero / SHBG · CRP (~€116) · Confronto vs T0 Santagostino</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sett. 8 dall'inizio v2 (13 lug → ~7 set · 20 lug → ~14 set) — PIANIFICATO</div><div class="med-tl-title">Panel mid-ciclo · Santagostino <span style="font-size:10px;background:rgba(0,113,227,.1);color:#0071e3;padding:1px 7px;border-radius:20px;font-weight:500">codice 01Q1RUWN</span></div><div class="med-tl-sub">IGF-1 · Glucosio · Insulina · Emocromo · T totale · T libero · SHBG · HDL · LDL · Trigliceridi · E2 · Creatinina · PCR — €169.23 · Confronto vs T0 Santagostino</div></div>
       </div>
     </div>
 
