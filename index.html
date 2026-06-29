@@ -1362,6 +1362,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   <div class="main-nav-tab" id="main-tab-meddash" onclick="switchView('meddash')">Lab</div>
   <div class="main-nav-tab" id="main-tab-stock2" onclick="switchView('stock2')">Stock</div>
   <div class="main-nav-tab" id="main-tab-orari" onclick="switchView('orari')">Orari</div>
+  <div class="main-nav-tab" id="main-tab-timeline" onclick="switchView('timeline')">Timeline</div>
   <!-- tab obsoleti nascosti -->
   <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')" style="display:none">Stock v1</div>
   <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')" style="display:none">Proto v2</div>
@@ -1395,6 +1396,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="med-view" id="stock-view"></div>
 <div class="med-view" id="stock2-view"></div>
 <div class="med-view" id="orari-view"></div>
+<div class="med-view" id="timeline-view"></div>
 <div class="diary-view hidden" id="proto2-view">
   <div class="container" id="container2"></div>
 </div>
@@ -2691,18 +2693,21 @@ function switchView(view) {
   const stock2View = document.getElementById('stock2-view');
   const tabStock2 = document.getElementById('main-tab-stock2');
   const orariView = document.getElementById('orari-view');
+  const timelineView = document.getElementById('timeline-view');
   const tabOrari = document.getElementById('main-tab-orari');
   // Reset all
   diary.classList.add('hidden'); dash.classList.remove('active');
   med.classList.remove('visible'); meddash.classList.remove('visible');
   stockView.classList.remove('visible'); stock2View.classList.remove('visible');
   orariView.classList.remove('visible');
+  timelineView.classList.remove('visible');
   proto2View.classList.add('hidden');
   navStrip.style.display = 'none';
   tabDiary.classList.remove('on'); tabDash.classList.remove('on');
   tabMed.classList.remove('on'); tabMedDash.classList.remove('on');
   tabStock.classList.remove('on'); tabProto2.classList.remove('on');
   tabStock2.classList.remove('on'); tabOrari.classList.remove('on');
+  document.getElementById('main-tab-timeline').classList.remove('on');
   if (view === 'dash') {
     dash.classList.add('active');
     tabDash.classList.add('on');
@@ -2733,6 +2738,10 @@ function switchView(view) {
     orariView.classList.add('visible');
     tabOrari.classList.add('on');
     buildOrariView();
+  } else if (view === 'timeline') {
+    timelineView.classList.add('visible');
+    document.getElementById('main-tab-timeline').classList.add('on');
+    buildProtocolloTimeline();
   } else {
     diary.classList.remove('hidden');
     navStrip.style.display = '';
@@ -6312,6 +6321,297 @@ function buildOrariView() {
   };
 }
 </script>
+
+
+function buildProtocolloTimeline() {
+  const el = document.getElementById('timeline-view');
+  if (el.dataset.built) return;
+  el.dataset.built = '1';
+
+  const MOL_COLORS = {
+    fragment:'#3b82f6', tesa:'#8b5cf6', ipam:'#f59e0b',
+    igf1des:'#10b981', bpc:'#ef4444', tb500:'#6366f1'
+  };
+  const MOL_LABELS = {
+    fragment:'Fragment 176-191', tesa:'Tesamorelin', ipam:'Ipamorelin',
+    igf1des:'IGF-1 DES', bpc:'BPC-157', tb500:'TB-500'
+  };
+
+  const WEEKS = [
+    {
+      w:1, phase:'Adattamento', phaseColor:'#6366f1',
+      title:'Sett. 1 — Adattamento iniziale',
+      sub:'Giorni 1–7 · Fragment×2 + BPC×2 + Tesa + Ipam + TB-500 · Post-WO: IGF-1 DES',
+      mols:['fragment','tesa','ipam','igf1des','bpc','tb500'],
+      cats:[
+        {key:'corpo', label:'Corpo & composizione', color:'#3b82f6', items:['Peso stabile o lieve ritenzione idrica (+0.5–1kg)','Nessuna variazione visibile composizione corporea','Possibile lieve gonfiore sottocutaneo iniziale (GH-mediato)']},
+        {key:'energia', label:'Energia & prestazione', color:'#10b981', items:['Energia soggettiva invariata o lieve miglioramento','Recovery muscolare: prime sensazioni BPC-157 (riduzione DOMS)','Qualità del sonno in miglioramento (Ipam stimola GH pulsatile notturno)']},
+        {key:'lab', label:'Valori attesi', color:'#8b5cf6', items:['IGF-1: nessuna variazione rilevabile ancora','GH pulsatile aumentato (non misurabile direttamente)','Glucosio/insulina: stabili']},
+        {key:'side', label:'Effetti collaterali possibili', color:'#f59e0b', items:['Ritenzione idrica lieve (Tesa/GH-axis)','Flush cutaneo transitorio post-iniezione (raro)','Sonnolenza post-iniezione serale (Ipam → GH spike)','Lieve nausea possibile nei primi giorni (Tesa)','Sensazione di calore in sede SC (normale)']}
+      ],
+      trends:['Peso +0~+1kg','Ritenzione possibile','Sonno in miglioramento','DOMS ridotti'],
+      trendCls:['neut','neg','pos','pos'],
+      warn:null
+    },
+    {
+      w:2, phase:'Adattamento', phaseColor:'#6366f1',
+      title:'Sett. 2 — Consolidamento stack',
+      sub:'Giorni 8–14 · GH-axis in progressiva attivazione',
+      mols:['fragment','tesa','ipam','igf1des','bpc','tb500'],
+      cats:[
+        {key:'corpo', label:'Corpo & composizione', color:'#3b82f6', items:['Ritenzione idrica tende a stabilizzarsi','Fragment inizia uptake FFA da adipociti: processo lento','Nessun calo peso visibile ancora']},
+        {key:'energia', label:'Energia & prestazione', color:'#10b981', items:['Recovery nettamente migliore post-WO (BPC-157 + TB-500 sinergici)','IGF-1 DES: primo effetto ipertrofico locale (lento)','Sonno più profondo, fase 3 migliorata','Energia mattutina in aumento (GH notturno)']},
+        {key:'lab', label:'Valori attesi', color:'#8b5cf6', items:['IGF-1 sierica: possibile lieve aumento (+5–15 ng/mL)','GH pulse: nettamente aumentato (Tesa + Ipam sinergici)','PCR: possibile lieve calo (BPC-157 anti-infiammatorio)']},
+        {key:'side', label:'Effetti collaterali possibili', color:'#f59e0b', items:['Tunnel carpale lieve (ritenzione idrica GH-mediata)','Parestesie notturne mani/piedi (tipico GH-axis, transitorio)','Cefalea lieve possibile (vasodilatazione Tesa)','Ipoglicemia lieve post-iniezione IGF-1 DES (monitorare)']}
+      ],
+      trends:['Peso stabile','Lipolisi avviata','Sonno migliorato','Recovery +','IGF-1 lieve ↑'],
+      trendCls:['neut','pos','pos','pos','pos'],
+      warn:'Monitorare glicemia post IGF-1 DES: possibile ipoglicemia reattiva. Preferire WO nel pomeriggio/sera.'
+    },
+    {
+      w:3, phase:'Costruzione', phaseColor:'#3b82f6',
+      title:'Sett. 3–4 — Lipolisi e ipertrofia',
+      sub:'Giorni 15–28 · GH-axis pienamente attivo · Fragment in azione su FFA',
+      mols:['fragment','tesa','ipam','igf1des','bpc','tb500'],
+      cats:[
+        {key:'corpo', label:'Corpo & composizione', color:'#3b82f6', items:['Calo grasso viscerale: Fragment + Tesa sinergici su adipe addominale','Peso: −0.5–1.5kg (calo grasso, ritenzione parzialmente smaltita)','Definizione addominale inizialmente percepibile','Muscoli: pienezza e trofismo in aumento (IGF-1 DES locale)','Pelle: possibile miglioramento lassità (TB-500 + BPC-157 su collagene)']},
+        {key:'energia', label:'Energia & prestazione', color:'#10b981', items:['Forza: progressione sentinel lift più rapida del normale','Volumi di allenamento tollerabili più alti','Recovery: quasi azzerati i DOMS gravi','Libido: possibile miglioramento (IGF-1 + GH → asse T)','Focus e chiarezza mentale (BPC-157 neurotrofico)']},
+        {key:'lab', label:'Valori attesi', color:'#8b5cf6', items:['IGF-1: +20–40 ng/mL vs T0 (atteso 110–140 ng/mL)','HDL: lieve miglioramento (Tesa lipolitica)','TG: in calo (lipolisi attiva)','Glucosio/HOMA: invariati o lieve miglioramento','Emoglobina: possibile lieve rialzo (GH su eritropoiesi)']},
+        {key:'side', label:'Effetti collaterali possibili', color:'#f59e0b', items:['Ritenzione idrica: picco e inizio calo (sett. 4)','Tunnel carpale se presente: tende a ridursi a fine sett. 4','Acne lieve possibile (GH-axis su sebo)','Glicemia: monitorare post IGF-1 DES']}
+      ],
+      trends:['Peso −0.5/−1.5kg','Grasso viscerale ↓','Forza ↑','Libido ↑','Focus ↑'],
+      trendCls:['pos','pos','pos','pos','pos'],
+      warn:null
+    },
+    {
+      w:5, phase:'Costruzione', phaseColor:'#3b82f6',
+      title:'Sett. 5–6 — Accelerazione composizione corporea',
+      sub:'Giorni 29–42 · Effetti su composizione corporea nettamente visibili',
+      mols:['fragment','tesa','igf1des','bpc','tb500'],
+      cats:[
+        {key:'corpo', label:'Corpo & composizione', color:'#3b82f6', items:['Calo grasso viscerale: −5–10 cm² VAT stimato (Tesa clinicamente documentato)','BF%: −1–2% percepibile a specchio','Lean mass: mantenuta o in lieve aumento (IGF-1 DES + training)','Addome: definizione netta in miglioramento','Pelle: elasticità migliorata (TB-500 + collagene)']},
+        {key:'energia', label:'Energia & prestazione', color:'#10b981', items:['Picco di performance: fase più produttiva del ciclo','Sentinel lifts: progressioni concrete (BBBench +5–10kg atteso)','Recupero articolare: TB-500 su tendini/fascia in piena azione','Qualità del sonno: ottimale']},
+        {key:'lab', label:'Valori attesi', color:'#8b5cf6', items:['IGF-1: 120–160 ng/mL (picco atteso sett. 6–8)','HDL: +3–7 mg/dL vs T0','TG: −10–20 mg/dL vs T0','PCR: possibile normalizzazione (<1.0)','Creatinina: invariata o lieve calo']},
+        {key:'side', label:'Effetti collaterali possibili', color:'#f59e0b', items:['Ritenzione idrica: quasi risolta','Acne lieve: se persiste valutare antisettico topico','Ipoglicemia post IGF-1 DES: ridurre se sintomatica']}
+      ],
+      trends:['Peso −2/−3kg','BF −1/−2%','Forza ↑↑','HDL ↑','TG ↓','Ritenzione risolta'],
+      trendCls:['pos','pos','pos','pos','pos','pos'],
+      warn:null
+    },
+    {
+      w:7, phase:'Peak', phaseColor:'#10b981',
+      title:'Sett. 7–8 — Peak: composizione e valori al picco',
+      sub:'Giorni 43–56 · Panel mid-ciclo Santagostino entro fine sett. 8',
+      mols:['fragment','tesa','ipam','igf1des','bpc','tb500'],
+      cats:[
+        {key:'corpo', label:'Corpo & composizione', color:'#3b82f6', items:['Composizione corporea: miglioramento massimo atteso del ciclo','VAT: −8–15 cm² vs DEXA T0 (72 cm² → 57–64 cm²)','BF%: −2–3% vs T0 (18.2% → 15–16%)','Lean mass: +0.5–1kg vs T0','Peso: −2–4kg vs T0 (71.1kg → 67–69kg)']},
+        {key:'energia', label:'Energia & prestazione', color:'#10b981', items:['Energie: picco soggettivo del ciclo','IGF-1 DES: massimo effetto ipertrofico locale','Recupero tendineo (TB-500): completamento rimodellamento fascia','BPC-157: effetto neurotrofico e GI consolidato']},
+        {key:'lab', label:'Valori panel mid-ciclo attesi', color:'#8b5cf6', items:['IGF-1: 94 → 130–170 ng/mL (+40–80%)','T libero: 15.60 → 18–25 ng/L','SHBG: 75.10 → 60–70 nmol/L','HDL: 35 → 38–45 mg/dL','TG: 77 → 55–70 mg/dL','Emoglobina: 119 → 125–135 g/L','PCR: 2.7 → <1.5 mg/L']},
+        {key:'side', label:'Effetti collaterali possibili', color:'#f59e0b', items:['SHBG alto residuo → T libero ancora sotto range (monitorare)','Acne: se non risolta, segnalare a Dr. Seregni','Sensazione di calore persistente (GH pulsatile elevato)']}
+      ],
+      trends:['Peso −2/−4kg','BF 15–16%','IGF-1 130–170','HDL ↑','SHBG ↓','Panel mid-ciclo'],
+      trendCls:['pos','pos','pos','pos','pos','neut'],
+      warn:'Sett. 8: eseguire panel Santagostino (€169.23, codice 01Q1RUWN). A digiuno, mattina. Stessa condizione T0.'
+    },
+    {
+      w:9, phase:'Mantenimento', phaseColor:'#f59e0b',
+      title:'Sett. 9–12 — Mantenimento e consolidamento',
+      sub:'Giorni 57–84 · Bangkok sett. 10–12 (7–21 ago) · Protocollo adattato',
+      mols:['fragment','tesa','ipam','igf1des','bpc','tb500'],
+      cats:[
+        {key:'corpo', label:'Corpo & composizione', color:'#3b82f6', items:['Composizione: consolidamento dei guadagni','Peso: stabile nel nuovo set-point (67–69kg)','Lipolisi mantenuta ma a ritmo ridotto vs fasi precedenti','Lean mass: mantenimento con training continuo','Bangkok: heat stress → maggiore sudorazione, monitora idratazione']},
+        {key:'energia', label:'Energia & prestazione', color:'#10b981', items:['Performance: plateau fisiologico, ma sopra baseline pre-ciclo','Recovery: eccellente, BPC-157 + TB-500 in piena azione rimodellamento','Bangkok: caldo → ridurre intensità WO, priorità LISS mattutino','Sonno: attenzione jet-lag sett. 10 (Fragment mattino stabile)']},
+        {key:'lab', label:'Valori attesi', color:'#8b5cf6', items:['IGF-1: 120–150 ng/mL (lieve calo da picco sett. 8)','SHBG: plateau intorno a 60–68 nmol/L','T libero: miglioramento residuo mantenuto','PCR: <1.5 mg/L (anti-infiammatorio consolidato)']},
+        {key:'side', label:'Effetti collaterali possibili', color:'#f59e0b', items:['Bangkok: attenzione storage peptidi (frigorifero hotel 2–8°C)','Caldo → aumenta assorbimento SC, possibile variazione picco','Jet lag sett. 10: spike GH alterato, monitorare sonno']}
+      ],
+      trends:['Peso stabile 67–69kg','Bangkok: idratazione!','Performance plateau','Jet-lag sett. 10'],
+      trendCls:['pos','neut','pos','neut'],
+      warn:'Bangkok 7–21 ago: storage peptidi in frigorifero hotel (2–8°C). Non lasciare in valigia. Portare 130–140 siringhe.'
+    },
+    {
+      w:13, phase:'Fine ciclo', phaseColor:'#ef4444',
+      title:'Sett. 13–16 — Fase finale e preparazione T1',
+      sub:'Giorni 85–112 · Consolidamento · DEXA T1 sabato fine ciclo',
+      mols:['fragment','tesa','ipam','igf1des','bpc','tb500'],
+      cats:[
+        {key:'corpo', label:'Corpo & composizione', color:'#3b82f6', items:['Composizione: mantenimento gains, leggero plateau lipolisi','Obiettivo: 66–68kg, BF 14–16%, VAT ≤62 cm²','Lean mass: ≥55kg (mantenimento baseline)','Possibile lieve rebound idrico a fine ciclo (riduzione GH)','Pelle: elasticità consolidata']},
+        {key:'energia', label:'Energia & prestazione', color:'#10b981', items:['Progressioni forza: consolidamento definitivo sentinel lifts','Recovery: ancora eccellente fino a fine ciclo','BPC-157 + TB-500: completamento rimodellamento tessuto connettivo','Sett. 16: prepararsi mentalmente a calo GH post-ciclo']},
+        {key:'lab', label:'Valori attesi fine ciclo (vs T0)', color:'#8b5cf6', items:['IGF-1: 110–145 ng/mL (nel range fisiologico)','T libero: 18–28 ng/L (vs 15.60)','SHBG: 58–68 nmol/L (vs 75.10)','HDL: 38–46 mg/dL (vs 35)','TG: 55–70 mg/dL (vs 77)','Emoglobina: 128–138 g/L (vs 119)','PCR: <1.0 mg/L (vs 2.7)','Creatinina: 1.10–1.25 mg/dL (vs 1.29)']},
+        {key:'side', label:'Post-ciclo: atteso', color:'#f59e0b', items:['Calo GH → possibile lieve ritenzione idrica scomparsa (−0.5kg)','Energia soggettiva: lieve calo nella prima settimana post-ciclo','IGF-1: rientro graduale a pre-ciclo in 4–6 sett.','Guadagni composizione corporea: mantenuti 60–70% se training continuo']}
+      ],
+      trends:['Target 66–68kg','BF target 14–16%','VAT target ≤62cm²','DEXA T1 da prenotare'],
+      trendCls:['pos','pos','pos','neut'],
+      warn:'DEXA T1: prenotare stesso slot mattutino del sabato, stesse condizioni DEXA T0 (9 mag 2026). Confronto diretto.'
+    }
+  ];
+
+  const PHASE_SEGS = [
+    {label:'Adattamento', n:2, color:'#6366f1'},
+    {label:'Costruzione', n:4, color:'#3b82f6'},
+    {label:'Peak', n:2, color:'#10b981'},
+    {label:'Mantenimento', n:4, color:'#f59e0b'},
+    {label:'Fine ciclo', n:4, color:'#ef4444'}
+  ];
+
+  let activeMol = 'all';
+  let activeWk = 0;
+
+  function renderTL() {
+    const d = WEEKS[activeWk];
+    const molsVisible = activeMol === 'all' ? d.mols : d.mols.filter(m => m === activeMol);
+    const body = document.getElementById('tl-body');
+    body.innerHTML = '';
+
+    if (!molsVisible.length) {
+      body.innerHTML = '<p style="font-size:13px;color:var(--text-muted);padding:2rem;text-align:center">Molecola non attiva in questa fase.</p>';
+      return;
+    }
+
+    // Active mol chips
+    const chipRow = document.createElement('div');
+    chipRow.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;align-items:center';
+    chipRow.innerHTML = '<span style="font-size:11px;color:var(--text-muted)">Attive:</span>';
+    molsVisible.forEach(m => {
+      const c = document.createElement('span');
+      c.style.cssText = `font-size:10px;padding:2px 8px;border-radius:10px;border:0.5px solid ${MOL_COLORS[m]};color:${MOL_COLORS[m]}`;
+      c.textContent = MOL_LABELS[m];
+      chipRow.appendChild(c);
+    });
+    body.appendChild(chipRow);
+
+    // Phase badge
+    const pb = document.createElement('div');
+    pb.style.marginBottom = '10px';
+    pb.innerHTML = `<span style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:10px;background:${d.phaseColor}18;color:${d.phaseColor};border:0.5px solid ${d.phaseColor}40">${d.phase}</span>`;
+    body.appendChild(pb);
+
+    // Card
+    const card = document.createElement('div');
+    card.style.cssText = 'background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1.25rem';
+
+    // Header
+    card.innerHTML = `<div style="font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:4px">${d.title}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">${d.sub}</div>`;
+
+    // Trend pills
+    const trendRow = document.createElement('div');
+    trendRow.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px';
+    const trendStyles = {
+      pos:'background:#e8f8ed;color:#1a7a3a',
+      neg:'background:#feeeec;color:#cc2200',
+      neut:'background:var(--surface-1);color:var(--text-muted)'
+    };
+    d.trends.forEach((t,i) => {
+      const pill = document.createElement('span');
+      pill.style.cssText = `font-size:11px;padding:3px 10px;border-radius:20px;${trendStyles[d.trendCls[i]]}`;
+      pill.textContent = t;
+      trendRow.appendChild(pill);
+    });
+    card.appendChild(trendRow);
+
+    // Cat filter
+    const catFilter = activeMol === 'all' ? null : {
+      fragment:['corpo','energia'], tesa:['corpo','lab'],
+      ipam:['energia','lab'], igf1des:['corpo','energia','lab'],
+      bpc:['energia','side'], tb500:['energia','corpo','side']
+    }[activeMol];
+    const cats = catFilter ? d.cats.filter(c => catFilter.includes(c.key)) : d.cats;
+
+    // Cat grid
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px';
+    cats.forEach(cat => {
+      const box = document.createElement('div');
+      box.style.cssText = `background:var(--surface-1);border-radius:8px;padding:10px 12px;border-left:3px solid ${cat.color}`;
+      box.innerHTML = `<div style="font-size:11px;font-weight:500;color:${cat.color};margin-bottom:6px">${cat.label}</div>
+        <ul style="list-style:none;padding:0">
+          ${cat.items.map(i=>`<li style="font-size:12px;color:var(--text-secondary);padding:2px 0;display:flex;gap:5px"><span style="color:var(--text-muted)">·</span>${i}</li>`).join('')}
+        </ul>`;
+      grid.appendChild(box);
+    });
+    card.appendChild(grid);
+
+    // Warning box
+    if (d.warn) {
+      const w = document.createElement('div');
+      w.style.cssText = 'margin-top:10px;background:var(--bg-warning);border:0.5px solid var(--border-warning);border-radius:8px;padding:8px 12px';
+      w.innerHTML = `<p style="font-size:12px;color:var(--text-warning)"><strong>Nota:</strong> ${d.warn}</p>`;
+      card.appendChild(w);
+    }
+
+    // Panel mid-ciclo highlight
+    if (activeWk === 4) {
+      const p = document.createElement('div');
+      p.style.marginTop = '10px';
+      p.innerHTML = `<span style="font-size:12px;font-weight:500;color:var(--text-accent);background:var(--bg-accent);padding:2px 8px;border-radius:6px">Panel mid-ciclo sett. 8 · Santagostino · €169.23 · codice 01Q1RUWN</span>`;
+      card.appendChild(p);
+    }
+
+    body.appendChild(card);
+  }
+
+  // Build HTML structure
+  el.innerHTML = `
+    <div style="max-width:700px;margin:0 auto;padding:1.5rem 1rem">
+      <div class="week-hdr" style="margin-bottom:1.5rem">
+        <h2>Timeline protocollo v2</h2>
+        <span class="week-range">Effetti attesi · 16 settimane · 6 molecole</span>
+      </div>
+
+      <!-- Molecule filter -->
+      <div style="margin-bottom:14px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <span style="font-size:12px;color:var(--text-muted)">Molecola:</span>
+        ${['all','fragment','tesa','ipam','igf1des','bpc','tb500'].map(m => {
+          const lbl = m === 'all' ? 'Tutte' : MOL_LABELS[m];
+          const col = m === 'all' ? '#636366' : MOL_COLORS[m];
+          return `<button data-tlmol="${m}" style="font-size:11px;padding:3px 10px;border-radius:20px;border:0.5px solid ${col};background:${m==='all'?col:'transparent'};color:${m==='all'?'#fff':col};cursor:pointer" onclick="tlMolClick(this,'${m}')">${lbl}</button>`;
+        }).join('')}
+      </div>
+
+      <!-- Phase bar -->
+      <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px;margin-bottom:14px">
+        ${PHASE_SEGS.map(p => `<div style="flex:${p.n};background:${p.color}" title="${p.label} (${p.n} sett.)"></div>`).join('')}
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1rem">
+        ${PHASE_SEGS.map(p=>`<span style="font-size:10px;display:flex;align-items:center;gap:4px;color:var(--text-muted)"><span style="width:8px;height:8px;border-radius:50%;background:${p.color};display:inline-block"></span>${p.label}</span>`).join('')}
+      </div>
+
+      <!-- Week nav -->
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:1.25rem" id="tl-wknav">
+        ${WEEKS.map((w,i) => {
+          const isMS = i === 4;
+          return `<button data-tlwk="${i}" onclick="tlWkClick(this,${i})" style="font-size:11px;min-width:48px;padding:4px 8px;border-radius:6px;border:0.5px solid ${isMS?'#10b981':w.phaseColor};background:${i===0?w.phaseColor:'transparent'};color:${i===0?'#fff':w.phaseColor};cursor:pointer">S${w.w}</button>`;
+        }).join('')}
+      </div>
+
+      <!-- Body -->
+      <div id="tl-body"></div>
+    </div>`;
+
+  // Expose click handlers scoped
+  window.tlMolClick = function(btn, mol) {
+    activeMol = mol;
+    document.querySelectorAll('[data-tlmol]').forEach(b => {
+      const m = b.dataset.tlmol;
+      const col = m === 'all' ? '#636366' : MOL_COLORS[m];
+      b.style.background = m === mol ? col : 'transparent';
+      b.style.color = m === mol ? '#fff' : col;
+    });
+    renderTL();
+  };
+  window.tlWkClick = function(btn, idx) {
+    activeWk = idx;
+    document.querySelectorAll('[data-tlwk]').forEach(b => {
+      const i = parseInt(b.dataset.tlwk);
+      const w = WEEKS[i];
+      b.style.background = i === idx ? w.phaseColor : 'transparent';
+      b.style.color = i === idx ? '#fff' : w.phaseColor;
+    });
+    renderTL();
+  };
+
+  renderTL();
+}
 
 </body>
 </html>
