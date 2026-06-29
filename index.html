@@ -5336,7 +5336,7 @@ function buildStockView2() {
 
   const ucOpts = UC_PEPTIDES.map(p => `<option value="${p.id}"${p.id==='bpc'?' selected':''}>${p.name}</option>`).join('');
 
-  let html = `<div style="max-width:1100px;margin:0 auto;padding:16px 16px 80px">
+  let html = `<div class="app-view-inner view-wrap">
     <div style="font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.02em;margin-bottom:4px">Stock peptidi · Ciclo 1</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px">6 lug – 25 set 2026 (provv.) · 112 giorni</div>
 
@@ -6219,7 +6219,7 @@ function buildProtocolloTimeline() {
   });
   wnav += '</div>';
 
-  el.innerHTML = `<div style="max-width:700px;margin:0 auto;padding:1.5rem 1rem">
+  el.innerHTML = `<div class="app-view-inner view-wrap">
     <div class="week-hdr" style="margin-bottom:1.5rem"><h2>Timeline protocollo v2</h2><span class="week-range">Effetti attesi · 16 settimane · 6 molecole</span></div>
     ${mfilter}${pbar}${legend}${wnav}
     <div id="tl-body"></div>
