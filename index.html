@@ -6177,11 +6177,11 @@ function buildProtocolloTimeline() {
     // Cats
     const cf = aMol === 'all' ? null : {fragment:['corpo','energia'],tesa:['corpo','lab'],ipam:['energia','lab'],igf1des:['corpo','energia','lab'],bpc:['energia','side'],tb500:['energia','corpo','side']}[aMol];
     const cats = cf ? d.cats.filter(c => cf.includes(c.k)) : d.cats;
-    card += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">';
+    card += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:4px">';
     cats.forEach(cat => {
-      card += `<div style="background:var(--surface-1);border-radius:8px;padding:10px 12px;border-left:3px solid ${cat.c}">`;
-      card += `<div style="font-size:11px;font-weight:500;color:${cat.c};margin-bottom:6px">${cat.lb}</div><ul style="list-style:none;padding:0">`;
-      cat.it.forEach(i => { card += `<li style="font-size:12px;color:var(--text-secondary);padding:2px 0;display:flex;gap:5px"><span style="color:var(--text-muted)">·</span>${i}</li>`; });
+      card += `<div style="background:var(--surface-1);border-radius:8px;padding:12px 14px;border-left:3px solid ${cat.c}">`;
+      card += `<div style="font-size:12px;font-weight:500;color:${cat.c};margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">${cat.lb}</div><ul style="list-style:none;padding:0">`;
+      cat.it.forEach(i => { card += `<li style="font-size:13px;color:var(--text-secondary);padding:3px 0;display:flex;gap:6px;line-height:1.5"><span style="color:var(--text-muted);flex-shrink:0">·</span>${i}</li>`; });
       card += '</ul></div>';
     });
     card += '</div>';
