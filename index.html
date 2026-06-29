@@ -2312,17 +2312,23 @@ function updateNavHighlight(){
 
 
 // ── LAB & DEXA MILESTONE DATA ──
+// Panel peptide-specifico T0 (Santagostino, pre-v2)
+// prev = valore storico più recente disponibile pre-T0 (per confronto)
 const LAB_BASELINE = {
-  igf1: {val:'94', ref:'115–220', label:'IGF-1', unit:'ng/mL'},
-  shbg: {val:'75.10', ref:'18–54', label:'SHBG', unit:'nmol/L'},
-  vit_d: {val:'22', ref:'30–100', label:'Vit D', unit:'ng/mL'},
-  zinc: {val:'50.30', ref:'60–106', label:'Zinco', unit:'µg/dL'},
-  hdl: {val:'35', ref:'>40', label:'HDL', unit:'mg/dL'},
-  crp: {val:'2.7', ref:'<1.0', label:'CRP', unit:'mg/L'},
-  omocist: {val:'17.5', ref:'<15', label:'Omocisteina', unit:'µmol/L'},
-  fsh: {val:'25.7', ref:'1.5–12.4', label:'FSH', unit:'mUI/mL'},
-  lh: {val:'13.8', ref:'1.7–8.6', label:'LH', unit:'mUI/mL'},
-  dheas: {val:'78', ref:'80–560', label:'DHEA-S', unit:'µg/dL'},
+  igf1:     {val:'94',    ref:'115–220',  label:'IGF-1',         unit:'ng/mL',   prev:'94',    prev_label:'20 mag 2026', better:'up'},
+  gluc:     {val:'87',    ref:'70–99',    label:'Glucosio',       unit:'mg/dL',   prev:'88',    prev_label:'10 apr 2026', better:'down'},
+  insulina: {val:'5.3',   ref:'2.6–24.9', label:'Insulina',       unit:'µUI/mL',  prev:'3.6',   prev_label:'10 apr 2026', better:'down'},
+  homa:     {val:'1.1',   ref:'<2.5',     label:'HOMA Index',     unit:'',        prev:'0.8',   prev_label:'10 apr 2026', better:'down'},
+  t_tot:    {val:'—',     ref:'249–836',  label:'T Totale',       unit:'ng/dL',   prev:null,    prev_label:null,           better:'up'},
+  t_lib:    {val:'15.60', ref:'9.57–40.60',label:'T Libero',      unit:'ng/L',    prev:'15.60', prev_label:'10 apr 2026', better:'up'},
+  shbg:     {val:'75.10', ref:'18–54',    label:'SHBG',           unit:'nmol/L',  prev:'75.10', prev_label:'10 apr 2026', better:'down'},
+  hdl:      {val:'35',    ref:'>40',      label:'HDL',            unit:'mg/dL',   prev:'28',    prev_label:'10 apr 2026', better:'up'},
+  ldl:      {val:'57',    ref:'<115',     label:'LDL',            unit:'mg/dL',   prev:'60',    prev_label:'10 apr 2026', better:'down'},
+  tg:       {val:'77',    ref:'<150',     label:'Trigliceridi',   unit:'mg/dL',   prev:'65',    prev_label:'10 apr 2026', better:'down'},
+  e2:       {val:'30.68', ref:'7.6–42.6', label:'Estradiolo E2',  unit:'pg/mL',   prev:null,    prev_label:null,           better:'neutral'},
+  creat:    {val:'1.29',  ref:'0.7–1.2',  label:'Creatinina',     unit:'mg/dL',   prev:'1.29',  prev_label:'10 apr 2026', better:'down'},
+  crp:      {val:'2.7',   ref:'<1.0',     label:'PCR',            unit:'mg/L',    prev:'2.7',   prev_label:'10 apr 2026', better:'down'},
+  hb:       {val:'119',   ref:'133–179',  label:'Emoglobina',     unit:'g/L',     prev:'129',   prev_label:'10 apr 2026', better:'up'},
 };
 
 const DEXA_T0 = {
@@ -2332,7 +2338,7 @@ const DEXA_T0 = {
 };
 
 const LAB_MILESTONES = [
-  {id:'lab_baseline', label:'Baseline · 20 mag 2026', badge:'p1b', locked:true},
+  {id:'lab_baseline', label:'T0 · 20 mag 2026 (pre-v2)', badge:'p1b', locked:true},
   {id:'lab_wk8',      label:'Panel mid-ciclo · Sett. 8 da inizio v2', badge:'p3b', locked:false},
   {id:'lab_final',    label:'Panel finale · Fine ciclo', badge:'p4b', locked:false},
 ];
@@ -2368,7 +2374,25 @@ function buildLabSection(container) {
     const fields = Object.entries(LAB_BASELINE);
     const rows = fields.map(([k, f]) => {
       const isBaseline = m.locked;
-      const baseVal = isBaseline ? f.val : '';
+      // Delta pill vs precedente (solo su baseline locked)
+      let prevHtml = '';
+      if (isBaseline && f.prev) {
+        const curr = parseFloat(f.val);
+        const prev = parseFloat(f.prev);
+        if (!isNaN(curr) && !isNaN(prev) && curr !== prev) {
+          const diff = (curr - prev).toFixed(2).replace(/\.?0+$/,'');
+          const sign = diff > 0 ? '+' : '';
+          const isGood = f.better === 'up' ? diff > 0 : f.better === 'down' ? diff < 0 : null;
+          const col = isGood === true ? '#1a7a3a' : isGood === false ? '#cc2200' : '#636366';
+          const bg  = isGood === true ? '#e8f8ed'  : isGood === false ? '#feeeec'  : '#f2f2f7';
+          prevHtml = `<div style="margin-top:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+            <span style="font-size:10px;color:var(--muted)">vs ${f.prev_label}: ${f.prev}</span>
+            <span style="font-size:10px;font-weight:600;background:${bg};color:${col};padding:1px 6px;border-radius:10px">${sign}${diff}</span>
+          </div>`;
+        } else if (isBaseline && f.prev && parseFloat(f.val) === parseFloat(f.prev)) {
+          prevHtml = `<div style="margin-top:3px;font-size:10px;color:var(--muted)">vs ${f.prev_label}: invariato</div>`;
+        }
+      }
       return `
         <div class="lab-box">
           <label>${f.label} <span style="color:var(--faint);font-weight:400">${f.unit}</span></label>
@@ -2376,6 +2400,7 @@ function buildLabSection(container) {
             data-id="${m.id}" data-f="lab_${k}"
             ${isBaseline ? `value="${f.val}"` : ''}>
           <div class="lab-ref">Ref: ${f.ref}</div>
+          ${prevHtml}
         </div>`;
     }).join('');
 
