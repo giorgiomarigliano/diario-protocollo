@@ -2141,7 +2141,7 @@ function collectAll(){
 
 function renderMotraFromLog(dayId, jsonStr) {
   try {
-    const data = JSON.parse(jsonStr);
+    const data = typeof jsonStr === 'string' ? JSON.parse(jsonStr) : jsonStr;
     if (!data || !data.exercises || !data.exercises.length) return;
     const parsed = document.getElementById('motra-parsed-' + dayId);
     const res = document.getElementById('motra-res-' + dayId);
@@ -2177,12 +2177,17 @@ function applyAll(data){
         if(el.type==='checkbox'){el.checked=(v==='1');return;}
         // Non sovrascrivere con stringa vuota i select che hanno già un default preimpostato
         if(v===''&&el.tagName==='SELECT'&&el.value!==''){return;}
+        // motra_log: Supabase restituisce oggetto JS, non stringa — gestire entrambi i casi
+        if(f==='motra_log'){
+          el.value = v ? (typeof v === 'string' ? v : JSON.stringify(v)) : '';
+          if(v) renderMotraFromLog(id, v);
+          return;
+        }
         el.value=v;
         if(f==='peso')onInput(el,id,'peso');
         if(f==='hrv')onInput(el,id,'hrv');
         if(f==='ore_sonno')onInput(el,id,'ore_sonno');
         if(f==='qualita_sonno')onInput(el,id,'sonno');
-        if(f==='motra_log'&&v) renderMotraFromLog(id, v);
       }
     });
   });
