@@ -4712,42 +4712,44 @@ function importMotra(dayId) {
     // Each entry: sentinelId → [keywords to match in exercise name]
     // More specific keywords first to avoid false matches
     const sentinelMap = {
-      // PETTO — compound (bench/incline/chest press, NOT pec dec/fly)
-      'bench':      ['incline bench press','bench press','chest press','panca inclinata','panca piana','db bench','db incline','incline press'],
-      // PETTO — isolamento (pec dec, fly, crossover — NOT bench)
-      'pecdec':     ['pec dec','pec-dec','machine fly','cable fly','crossover','croci','chest fly','pectoral'],
-      // SPALLE — press (military, shoulder press, overhead)
-      'milpress':   ['military press','shoulder press','overhead press','lento avanti','ohp','db shoulder press','machine shoulder press','smith shoulder'],
-      // SPALLE — laterale
-      'lateraise':  ['lateral raise','alzate laterali','lat raise','side raise','laterali'],
-      // SPALLE — rear/face pull
-      'facepull':   ['face pull','rear delt','alzate posteriori','tirate al viso','tirate alla corda','rear fly','reverse fly'],
-      // SPALLE — frontale/upright
-      'frontrise':  ['front raise','alzate frontali','upright row','tirate al mento','frontal raise'],
-      // TRICIPITI — pushdown/estensione bassa
-      'tridown':    ['tricep pushdown','tricep extension','pushdown','tricep push','corda tricipite','rope pushdown','bar pushdown','tricep rope'],
-      // TRICIPITI — overhead/estensione alta
-      'triover':    ['overhead tricep','tricep overhead','estensione sopra','french press','overhead ext','high cable tri','dip machine','dip alla macchina'],
-      // DORSO — lat machine (pulldown)
-      'lat':        ['lat pulldown','lat machine','pulley alto','gran dorsale','pulldown','pull down'],
-      // DORSO — rematore/row
-      'row':        ['barbell row','seated row','cable row','t-bar row','t bar row','machine row','db row','pulley row','rematore','vogatore','pulley basso','bent row','cable upright row','upright row'],
-      // BICIPITI — curl standard
-      'curl':       ['incline curl','ez bar curl','ez curl','bb curl','barbell curl','cable curl','cable bar curl','cable bicep','preacher curl','curl bilanciere','curl manubri','db curl','dumbbell curl','bicep curl'],
-      // BICIPITI — martello
-      'hammercurl': ['hammer curl','curl martello','neutral curl','hammer'],
-      // GAMBE — leg extension
-      'legext':     ['leg extension','estensione gambe','quadricipiti macchina'],
-      // GAMBE — leg press
-      'legpress':   ['leg press','pressa','hack squat'],
-      // GAMBE — leg curl
-      'legcurl':    ['hamstring curl','leg / hamstring','curl prone','leg curl','curl femoral','femoral','curl gambe','lying curl','seated curl','prone curl'],
-      // GAMBE — hip thrust
-      'hipthrust':  ['hip thrust','hip-thrust','glute bridge','glutei macchina'],
-      // GAMBE — calf
-      'calf':       ['calf','polpacci','seated calf','standing calf','gastrocnemio'],
-      // GAMBE — RDL/stacco
-      'rdl':        ['romanian deadlift','rdl','stacco rumeno','stiff','stiff leg','romanian','sumo deadlift','deadlift','stacco'],
+      // PETTO — BB Bench Press (bilanciere, panca piana)
+      'bench':      ['barbell bench press','bb bench press','panca piana bilanciere'],
+      // PETTO — Machine Incline Bench Press
+      'incbench':   ['machine incline bench press','incline bench press machine','incline bench press'],
+      // PETTO — Pec Fly / Pec Dec
+      'pecfly':     ['machine fly','pec dec','pec-dec','cable fly','crossover','chest fly','pectoral'],
+      // DORSO — Lat Machine Wide-Grip
+      'lat':        ['lat pull down wide','lat pulldown wide','wide grip pulldown','wide-grip pulldown','wide grip lat','machine lat pull down wide'],
+      // DORSO — T-Bar Row
+      'tbar':       ['t-bar row','t bar row','machine t-bar','tbar row'],
+      // DORSO — BB Bent Over Row
+      'bbrow':      ['barbell bent over row','barbell row','bb bent over row','bent over row barbell'],
+      // SPALLE — BB OHP in piedi (bilanciere)
+      'bbohp':      ['barbell overhead press','barbell military press','overhead press / military press','barbell ohp','bb overhead press'],
+      // SPALLE — DB Shoulder Press seduto
+      'dbpress':    ['dumbbell shoulder press','db shoulder press','dumbbell press seated','db press shoulder'],
+      // SPALLE — DB Lateral Raise
+      'dblateral':  ['dumbbell lateral raise','db lateral raise','lateral raise dumbbell'],
+      // BICIPITI — DB Curl (manubri, NON cavi)
+      'dbcurl':     ['dumbbell bicep curl','db bicep curl','dumbbell curl','db curl'],
+      // BICIPITI — DB Hammer Curl
+      'hammercurl': ['dumbbell hammer curl','db hammer curl','hammer curl','curl martello manubri'],
+      // TRICIPITI — Rope Pushdown
+      'tridown':    ['rope tricep pushdown','cable rope tricep pushdown','rope pushdown','tricep pushdown rope'],
+      // TRICIPITI — Rope Overhead
+      'triover':    ['rope overhead tricep','cable rope overhead tricep','overhead tricep extension high','overhead tricep rope'],
+      // GAMBE — Leg Extension
+      'legext':     ['machine leg extension','leg extension','estensione gambe'],
+      // GAMBE — Leg Press (macchina fissa, NON moving chair)
+      'legpress':   ['machine leg press','leg press'],
+      // GAMBE — RDL
+      'rdl':        ['barbell romanian deadlift','romanian deadlift','rdl','stacco rumeno'],
+      // GAMBE — Calf Raise seduto
+      'calf':       ['machine seated calf raise','seated calf raise','calf raise seated'],
+      // GAMBE — Hip Thrust
+      'hipthrust':  ['machine hip thrust','hip thrust','glute bridge','hip-thrust'],
+      // GAMBE — Leg Curl
+      'legcurl':    ['machine leg / hamstring curl prone','hamstring curl prone','leg curl prone','leg / hamstring curl'],
     };
 
     // Get session type to know which sentinels are expected
