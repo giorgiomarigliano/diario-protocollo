@@ -6513,6 +6513,12 @@ function buildFoodTab() {
     {id:'wasa',         name:'Wasa Fibra',                  cat:'carbo',   unit:'g',  ref:60,   kcal100:310, p100:9,    c100:55,  g100:3,    note:'4 gallette ~60g · pre-Tesa ok'},
     {id:'gallette',     name:'Gallette di riso/mais',       cat:'carbo',   unit:'g',  ref:30,   kcal100:385, p100:7,    c100:83,  g100:1,    note:'3-4 gallette ~30g · alto GI'},
     {id:'patate',       name:'Patate (bollite)',             cat:'carbo',   unit:'g',  ref:200,  kcal100:77,  p100:2,    c100:17,  g100:0.1,  note:'GI medio · raffreddare abbassa GI'},
+    {id:'pane',         name:'Pane bianco (ref. 100g)',      cat:'carbo',   unit:'g',  ref:100,  kcal100:275, p100:9,    c100:56,  g100:1.3,  note:'GI alto · riferimento comparativo'},
+    // FRUTTA
+    {id:'fragole',      name:'Fragole',                      cat:'frutta',  unit:'g',  ref:250,  kcal100:32,  p100:0.7,  c100:7,   g100:0.3,  note:'GI basso · antiossidanti · post-WO ok'},
+    {id:'ananas',       name:'Ananas',                       cat:'frutta',  unit:'g',  ref:250,  kcal100:50,  p100:0.5,  c100:12,  g100:0.1,  note:'GI medio · enzimi digestivi (bromelina)'},
+    {id:'banana',       name:'Banana (1 media ~120g polpa)', cat:'frutta',  unit:'g',  ref:120,  kcal100:89,  p100:1.1,  c100:23,  g100:0.3,  note:'GI medio-alto · potassio · buona pre-WO'},
+    {id:'mela',         name:'Mela (1 media ~150g polpa)',   cat:'frutta',  unit:'g',  ref:150,  kcal100:52,  p100:0.3,  c100:14,  g100:0.2,  note:'GI basso · fibra · saziante'},
 
     // ── VERDURE ──
     {id:'carciofi',     name:'Carciofi',                    cat:'verdure', unit:'g',  ref:200,  kcal100:47,  p100:3,    c100:5,   g100:0.2,  note:'Alto contenuto di fibra'},
@@ -6528,6 +6534,7 @@ function buildFoodTab() {
     snack:   {label:'Snack',        color:'#f97316'},
     carbo:   {label:'Carboidrati',  color:'#06b6d4'},
     verdure: {label:'Verdure',      color:'#84cc16'},
+    frutta:  {label:'Frutta',       color:'#f43f5e'},
   };
 
   // Stato builder pasto
