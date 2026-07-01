@@ -3948,7 +3948,7 @@ const SENTINEL_GROUPS = {
   back:     { ids:['lat','tbar','bbrow'],            colors:['#34c759','#30d158','#00b341'],              labels:['Lat Wide-Grip','T-Bar Row','BB Bent Row'] },
   shoulder: { ids:['bbohp','dbpress','dblateral'],   colors:['#ff9500','#ff6b00','#ffcc02'],              labels:['BB OHP','DB Press','DB Lateral'] },
   bicep:    { ids:['dbcurl','hammercurl'],            colors:['#ff9500','#ff3b30'],                        labels:['DB Curl','Hammer Curl'] },
-  tricep:   { ids:['tridown','triover'],              colors:['#af52de','#bf5af2'],                        labels:['Rope Pushdown','Rope Overhead'] },
+  tricep:   { ids:['tridown','triover'],              colors:['#af52de','#ff9f0a'],                        labels:['Rope Pushdown','Rope Overhead'] },
   legs:     { ids:['legext','legpress','rdl','hipthrust','calf','legcurl'], colors:['#ff3b30','#ff6b6b','#0071e3','#ffcc02','#34c759','#ff9500'], labels:['Leg Ext','Leg Press','RDL','Hip Thrust','Calf','Leg Curl'] },
 };
 
@@ -4330,7 +4330,7 @@ function buildDashboard() {
             <div class="dash-card-title">Tricipiti</div>
             <div style="display:flex;gap:12px;margin-bottom:6px;flex-wrap:wrap">
               <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted)"><span style="width:20px;height:2px;background:#af52de;border-radius:2px;display:inline-block"></span>Rope Pushdown</span>
-              <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted)"><span style="width:20px;height:2px;background:#bf5af2;border-radius:2px;display:inline-block"></span>Rope Overhead</span>
+              <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted)"><span style="width:20px;height:2px;background:#ff9f0a;border-radius:2px;display:inline-block"></span>Rope Overhead</span>
             </div>
             <canvas class="dash-chart" id="dc-tricep" height="90"></canvas>
           </div>
@@ -4551,7 +4551,7 @@ function refreshDashCharts() {
 
   // BRACCIA
   dc2('dc-bicep',  'dbcurl',   'hammercurl', '#ff9500','#ff3b30', null, null);
-  dc2('dc-tricep', 'tridown',  'triover',    '#af52de','#bf5af2', 50,   35);
+  dc2('dc-tricep', 'tridown',  'triover',    '#af52de','#ff9f0a', 50,   35);
 
   // GAMBE
   dc('dc-legext',   'legext',   '#ff3b30', 80);
