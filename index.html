@@ -6494,16 +6494,16 @@ function buildFoodTab() {
     {id:'tonno',        name:"Tonno in olio d'oliva sgocciolato", cat:'pesce', unit:'g', ref:110, kcal100:170, p100:25, c100:0, g100:8, note:'~110g sgocciolato da scatoletta 160g · ben scolato'},
     {id:'salmone_aff',  name:'Salmone affumicato',          cat:'pesce',   unit:'g',  ref:150,  kcal100:142, p100:18,   c100:0,   g100:4.5,  note:'Alto sodio · ricco omega-3'},
     {id:'salmone_cot',  name:'Salmone cotto (friggitrice)', cat:'pesce',   unit:'g',  ref:300,  kcal100:156, p100:20,   c100:0,   g100:7,    note:'Ricco omega-3'},
-    {id:'frittata',     name:'Frittata (2 uova + 250ml albumi)', cat:'uova', unit:'porz', ref:1, kcal100:220, p100:32,   c100:2,   g100:7,    note:'Post-WO · cotta al micro'},
+    {id:'frittata', name:'Frittata (2 uova + 250ml albumi)', cat:'uova', unit:'porz', ref:1, kcal100:220, p100:32, c100:2, g100:7, fixed:{kcal:220, p:32, c:2, g:7}, note:'Post-WO · cotta al micro · ~220kcal · 32g P'},
     {id:'albumi',       name:'Albumi liquidi',               cat:'uova',   unit:'g',  ref:250,  kcal100:50,  p100:10.5, c100:0.7, g100:0,    note:'Post-WO serale'},
 
     // ── LATTICINI / DAIRY ──
     {id:'yogurt',       name:'Yogurt greco 0% Esselunga',   cat:'dairy',   unit:'g',  ref:150,  kcal100:55,  p100:10,   c100:3.5, g100:0.1,  note:'Low-GI · colazione ok'},
 
     // ── INTEGRATORI ──
-    {id:'shaker',       name:'Shaker VB Whey + 200ml Alpro cocco', cat:'integ', unit:'porz', ref:1, kcal100:150, p100:25, c100:5, g100:2, note:'~1 scoop 34g + Alpro 20kcal/100ml'},
-    {id:'vbbar',        name:'VB Bar 25 Net Integratori',   cat:'integ',   unit:'barr', ref:1,  kcal100:167, p100:25,   c100:6,   g100:3.5,  note:'50g · 0.3g zuccheri · post-Fragment ok'},
-    {id:'scoop',        name:'Scoop proteine (1 misurino)', cat:'integ',   unit:'g',  ref:34,   kcal100:380, p100:88,   c100:3,   g100:3,    note:'VB Whey 104 · da aggiungere ad altro'},
+    {id:'shaker', name:'Shaker VB Whey + 200ml Alpro cocco', cat:'integ', unit:'porz', ref:1, kcal100:150, p100:25, c100:5, g100:2, fixed:{kcal:150, p:25, c:5, g:2}, note:'1 scoop 34g + Alpro 200ml · ~150kcal · 25g P'},
+    {id:'vbbar', name:'VB Bar 25 Net Integratori', cat:'integ', unit:'barr', ref:1, kcal100:353, p100:50, c100:28, g100:11.1, fixed:{kcal:176, p:25, c:14, g:5.6}, note:'1 barretta 50g · 176kcal · 25g P · da etichetta'},
+    {id:'scoop', name:'Scoop VB Whey (1 misurino 34g)', cat:'integ', unit:'g', ref:34, kcal100:353, p100:88, c100:2.7, g100:2.6, note:'VB Whey 104 · 34g = ~120kcal · 30g P · da aggiungere ad altro'},
 
     // ── SNACK / SECCHI ──
     {id:'mandorle',     name:'Mandorle',                    cat:'snack',   unit:'g',  ref:25,   kcal100:579, p100:21,   c100:5,   g100:50,   note:'Low-GI · ottimo grassi sani'},
@@ -6535,6 +6535,16 @@ function buildFoodTab() {
   let filterCat = 'all';
 
   function macroFor(food, grams) {
+    // Per alimenti con valori fissi (barrette, porzioni preconfezionate)
+    if (food.fixed) {
+      const mult = grams; // grams = numero di unità
+      return {
+        kcal: Math.round(food.fixed.kcal * mult),
+        p:    Math.round(food.fixed.p * mult * 10) / 10,
+        c:    Math.round(food.fixed.c * mult * 10) / 10,
+        g:    Math.round(food.fixed.g * mult * 10) / 10,
+      };
+    }
     const r = grams / 100;
     return {
       kcal: Math.round(food.kcal100 * r),
