@@ -3416,13 +3416,21 @@ function drawDashChart(canvasId, datasets, options = {}) {
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
   const H = options.height || 80;
-  // Misura dal parent diretto — unica fonte affidabile prima del layout
   const parent = canvas.parentElement;
-  const W = parent ? Math.max(0, parent.offsetWidth - 48) : 0; // 48 = padding 24px * 2
+  const W = parent ? Math.max(0, parent.offsetWidth - 48) : 0;
   if (W <= 10) {
     requestAnimationFrame(() => drawDashChart(canvasId, datasets, options));
     return;
   }
+
+  // Margins per assi
+  const ML = 34; // left margin per asse Y
+  const MB = 18; // bottom margin per asse X
+  const MR = 8;
+  const MT = 8;
+  const CW = W - ML - MR;  // chart width
+  const CH = H - MB - MT;  // chart height
+
   canvas.width  = W * dpr;
   canvas.height = H * dpr;
   canvas.style.display = 'block';
@@ -3430,65 +3438,147 @@ function drawDashChart(canvasId, datasets, options = {}) {
   canvas.style.height  = H + 'px';
   ctx.scale(dpr, dpr);
 
-  // Collect all valid values across datasets for scale
+  // Colori tema
+  const isDark = document.documentElement.classList.contains('dark') ||
+    (window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches);
+  const axisColor  = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.13)';
+  const labelColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.38)';
+  const gridColor  = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
   const allVals = datasets.flatMap(ds => ds.data.map(p => p.value).filter(v => v !== null));
-  const minPts = options.minPts || 2;
+  const allPts  = datasets.flatMap(ds => ds.data.filter(p => p.value !== null));
+  const minPts  = options.minPts || 2;
+
+  // Empty state
   if (allVals.length < 1) {
     ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
-    ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2);
+    ctx.fillText('Dati insufficienti — continua a compilare il diario', ML + 4, H/2);
     return;
   }
-  // Con 1 solo punto mostra dot + label centrati (solo se minPts=1)
+
+  // Single point
   if (allVals.length < 2 && minPts <= 1) {
     const v = allVals[0];
     const color = datasets[0]?.color || '#888';
-    ctx.beginPath(); ctx.arc(W/2, H/2, 4, 0, Math.PI*2);
+    const pt = allPts[0];
+    ctx.beginPath(); ctx.arc(ML + CW/2, MT + CH/2, 4, 0, Math.PI*2);
     ctx.fillStyle = color; ctx.fill();
-    if (options.refLine !== undefined) {
-      ctx.setLineDash([4,4]); ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(0, H/2); ctx.lineTo(W, H/2); ctx.stroke();
-      ctx.setLineDash([]);
-    }
     ctx.font = '500 11px -apple-system'; ctx.fillStyle = color;
     ctx.textAlign = 'center';
-    ctx.fillText(v.toFixed(v % 1 === 0 ? 0 : 1) + ' kg', W/2, H/2 - 10);
+    ctx.fillText(v.toFixed(v % 1 === 0 ? 0 : 1) + ' kg', ML + CW/2, MT + CH/2 - 10);
+    if (pt && pt.date) {
+      const d = pt.date;
+      const dateStr = d.getDate() + '/' + (d.getMonth()+1);
+      ctx.font = '9px -apple-system'; ctx.fillStyle = labelColor;
+      ctx.fillText(dateStr, ML + CW/2, H - 3);
+    }
     ctx.fillStyle = '#aeaeb2'; ctx.font = '10px -apple-system';
-    ctx.fillText('1 rilevazione', W/2, H/2 + 16);
+    ctx.fillText('1 rilevazione', ML + CW/2, MT + CH/2 + 16);
     ctx.textAlign = 'left';
     return;
   }
   if (allVals.length < 2) {
     ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
-    ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2);
+    ctx.fillText('Dati insufficienti — continua a compilare il diario', ML + 4, H/2);
     return;
   }
+
+  // Scale Y
   let mn = options.minVal !== undefined ? options.minVal : Math.min(...allVals);
   let mx = options.maxVal !== undefined ? options.maxVal : Math.max(...allVals);
   if (options.minScale) mn = mn * options.minScale;
   if (options.maxScale) mx = mx * options.maxScale;
-  // Garantisce almeno 10 unità di range per evitare grafici piatti
   if (mx - mn < 5) { const mid = (mx+mn)/2; mn = mid - 5; mx = mid + 5; }
-  // Padding verticale 5%
-  const rng5 = mx - mn; mn -= rng5 * 0.05; mx += rng5 * 0.05;
+  const rng5 = mx - mn; mn -= rng5 * 0.08; mx += rng5 * 0.08;
   const rng = mx - mn || 1;
-  const n = datasets[0].data.length;
 
-  // Grid lines
-  ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1;
-  [0.25, 0.5, 0.75].forEach(r => {
-    const y = H - r * (H - 16) - 4;
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  // Y axis ticks — 3 valori puliti
+  function niceStep(range) {
+    const rough = range / 3;
+    const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+    const norm = rough / mag;
+    let nice = norm < 1.5 ? 1 : norm < 3 ? 2.5 : norm < 7 ? 5 : 10;
+    return nice * mag;
+  }
+  const yStep = niceStep(mx - mn);
+  const yStart = Math.ceil(mn / yStep) * yStep;
+  const yTicks = [];
+  for (let v = yStart; v <= mx; v += yStep) yTicks.push(Math.round(v * 10)/10);
+
+  // Asse Y — linea
+  ctx.strokeStyle = axisColor; ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(ML, MT); ctx.lineTo(ML, MT + CH); ctx.stroke();
+
+  // Asse X — linea
+  ctx.beginPath(); ctx.moveTo(ML, MT + CH); ctx.lineTo(ML + CW, MT + CH); ctx.stroke();
+
+  // Grid lines + Y labels
+  ctx.font = '9px -apple-system'; ctx.fillStyle = labelColor; ctx.textAlign = 'right';
+  yTicks.forEach(v => {
+    const y = MT + CH - ((v - mn) / rng) * CH;
+    if (y < MT || y > MT + CH) return;
+    // grid
+    ctx.strokeStyle = gridColor; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(ML + 1, y); ctx.lineTo(ML + CW, y); ctx.stroke();
+    // tick
+    ctx.strokeStyle = axisColor; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(ML - 3, y); ctx.lineTo(ML, y); ctx.stroke();
+    // label
+    ctx.fillStyle = labelColor;
+    ctx.fillText(v % 1 === 0 ? v : v.toFixed(1), ML - 5, y + 3);
   });
+  ctx.textAlign = 'left';
 
+  // X ticks — mostra date distribuite (max ~4 label sull'asse X)
+  const allValidPts = datasets[0].data.filter(p => p.value !== null);
+  const nv = allValidPts.length;
+  if (nv >= 2) {
+    const maxXLabels = Math.min(nv, CW > 200 ? 5 : 3);
+    const step = Math.max(1, Math.floor((nv - 1) / (maxXLabels - 1)));
+    const xIdxs = new Set();
+    for (let i = 0; i < nv; i += step) xIdxs.add(i);
+    xIdxs.add(nv - 1);
+
+    ctx.font = '9px -apple-system'; ctx.fillStyle = labelColor; ctx.textAlign = 'center';
+    [...xIdxs].forEach(i => {
+      const pt = allValidPts[i];
+      if (!pt || !pt.date) return;
+      const x = ML + (nv > 1 ? i / (nv - 1) * CW : CW / 2);
+      // tick
+      ctx.strokeStyle = axisColor; ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(x, MT + CH); ctx.lineTo(x, MT + CH + 3); ctx.stroke();
+      // label
+      const d = pt.date;
+      const lbl = d.getDate() + '/' + (d.getMonth()+1);
+      ctx.fillStyle = labelColor;
+      ctx.fillText(lbl, Math.max(ML + 10, Math.min(x, ML + CW - 10)), H - 3);
+    });
+    ctx.textAlign = 'left';
+  }
+
+  // refLine (baseline T0) — tratteggiata
+  if (options.refLine !== undefined) {
+    const ry = MT + CH - ((options.refLine - mn) / rng) * CH;
+    if (ry >= MT && ry <= MT + CH) {
+      ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(ML, ry); ctx.lineTo(ML + CW, ry); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = '8px -apple-system'; ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.textAlign = 'left';
+      ctx.fillText('T0', ML + 2, ry - 2);
+      ctx.textAlign = 'left';
+    }
+  }
+
+  // Draw datasets
   datasets.forEach(ds => {
-    // Filtra solo i punti con valore reale — li distribuisce su tutta la larghezza
     const validPts = ds.data.filter(p => p.value !== null);
     if (!validPts.length) return;
     const nv = validPts.length;
     const pts = validPts.map((p, i) => ({
-      x: nv > 1 ? i / (nv - 1) * (W - 4) + 2 : W / 2,
-      y: H - ((p.value - mn) / rng) * (H - 16) - 4,
-      v: p.value
+      x: ML + (nv > 1 ? i / (nv - 1) * CW : CW / 2),
+      y: MT + CH - ((p.value - mn) / rng) * CH,
+      v: p.value,
+      date: p.date
     }));
 
     // Fill area
@@ -3496,8 +3586,8 @@ function drawDashChart(canvasId, datasets, options = {}) {
     ctx.beginPath();
     ctx.moveTo(fp.x, fp.y);
     pts.forEach(p => ctx.lineTo(p.x, p.y));
-    ctx.lineTo(lp.x, H); ctx.lineTo(fp.x, H); ctx.closePath();
-    const g = ctx.createLinearGradient(0, 0, 0, H);
+    ctx.lineTo(lp.x, MT + CH); ctx.lineTo(fp.x, MT + CH); ctx.closePath();
+    const g = ctx.createLinearGradient(0, MT, 0, MT + CH);
     g.addColorStop(0, ds.color + '22'); g.addColorStop(1, ds.color + '00');
     ctx.fillStyle = g; ctx.fill();
 
@@ -3509,12 +3599,17 @@ function drawDashChart(canvasId, datasets, options = {}) {
     // Dots
     pts.forEach(p => {
       ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
-      ctx.fillStyle = ds.color; ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+      ctx.strokeStyle = ds.color; ctx.lineWidth = 1.5; ctx.stroke();
     });
 
     // Last value label
-    ctx.font = '500 10px -apple-system'; ctx.fillStyle = ds.color;
-    ctx.fillText(lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1), Math.min(lp.x, W - 32), Math.max(lp.y - 6, 10));
+    ctx.font = '500 10px -apple-system'; ctx.fillStyle = ds.color; ctx.textAlign = 'left';
+    const lastX = Math.min(lp.x + 3, ML + CW - 24);
+    const lastY = Math.max(lp.y - 5, MT + 10);
+    ctx.fillText(lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1), lastX, lastY);
+    ctx.textAlign = 'left';
   });
 }
 
