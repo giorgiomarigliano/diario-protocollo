@@ -974,6 +974,9 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .dash-inner{padding:24px 20px 120px;margin:0 auto}
 .app-view-inner{width:100%;box-sizing:border-box;padding:24px 20px 120px;margin:0 auto}
 .dash-two-col{display:grid;grid-template-columns:1fr;gap:0}
+.dash-three-col{display:grid;grid-template-columns:1fr;gap:10px}
+.dash-section-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 6px}
+@media(min-width:768px){.dash-three-col{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:1024px){
   .dash-two-col{grid-template-columns:1fr 1fr;gap:24px;align-items:start}
 }
@@ -1425,39 +1428,39 @@ const SPLIT = {
 };
 
 const SENTINELS = [
-  // PETTO
-  {id:'bench',      name:'Petto compound',        group:'chest',   baseline:'55kg · 4×8'},
-  {id:'pecdec',     name:'Petto isolamento',       group:'chest',   baseline:'55kg · 4×10'},
-  // SPALLE
-  {id:'milpress',   name:'Shoulder Press',         group:'shoulder',baseline:'40kg · 4×5-6'},
-  {id:'lateraise',  name:'Lateral Raise',          group:'shoulder',baseline:'12kg · 4×12'},
-  {id:'facepull',   name:'Face Pull / Rear Delt',  group:'shoulder',baseline:'—'},
-  {id:'frontraise', name:'Front Raise / Upright Row', group:'shoulder', baseline:'—'},
-  // TRICIPITI
-  {id:'tridown',    name:'Tricep Pushdown',        group:'tricep',  baseline:'50kg · 4×10'},
-  {id:'triover',    name:'Overhead Tricep Ext',    group:'tricep',  baseline:'35kg · 4×10'},
-  // DORSO
-  {id:'lat',        name:'Lat Machine',            group:'back',    baseline:'—'},
-  {id:'row',        name:'Rematore / Row',         group:'back',    baseline:'—'},
-  // BICIPITI
-  {id:'curl',       name:'Curl',                   group:'bicep',   baseline:'—'},
-  {id:'hammercurl', name:'Hammer Curl',            group:'bicep',   baseline:'—'},
-  // GAMBE
-  {id:'legext',     name:'Leg Extension',          group:'legs',    baseline:'80kg · 4×10'},
-  {id:'legpress',   name:'Leg Press',              group:'legs',    baseline:'117.5kg · 4×12'},
-  {id:'legcurl',    name:'Leg Curl',               group:'legs',    baseline:'—'},
-  {id:'hipthrust',  name:'Hip Thrust Machine',     group:'legs',    baseline:'45kg · 4×10'},
-  {id:'calf',       name:'Calf Seduto',            group:'legs',    baseline:'—'},
-  {id:'rdl',        name:'RDL / Stacco Rumeno',    group:'legs',    baseline:'60kg · 4×10'},
+  // PETTO — esercizi master
+  {id:'bench',      name:'BB Bench Press',             group:'chest',    baseline:'55kg · 4×8',   motra:'Barbell Bench Press'},
+  {id:'incbench',   name:'Mac Incline Bench Press',    group:'chest',    baseline:'—',             motra:'Machine Incline Bench Press'},
+  // DORSO — esercizi master
+  {id:'lat',        name:'Lat Machine Wide-Grip',      group:'back',     baseline:'—',             motra:'Machine Lat Pull Down Wide-Grip'},
+  {id:'tbar',       name:'T-Bar Row',                  group:'back',     baseline:'—',             motra:'Machine T-Bar Row'},
+  {id:'bbrow',      name:'BB Bent Over Row',           group:'back',     baseline:'—',             motra:'Barbell Bent Over Row'},
+  // SPALLE — esercizi master
+  {id:'bbohp',      name:'BB OHP in piedi',            group:'shoulder', baseline:'40kg · 4×5-6',  motra:'Barbell Overhead Press / Military Press'},
+  {id:'dbpress',    name:'DB Shoulder Press seduto',   group:'shoulder', baseline:'—',             motra:'Dumbbell Shoulder Press'},
+  {id:'dblateral',  name:'DB Lateral Raise',           group:'shoulder', baseline:'12kg · 4×12',   motra:'Dumbbell Lateral Raise'},
+  // BICIPITI — esercizi master
+  {id:'dbcurl',     name:'DB Bicep Curl',              group:'bicep',    baseline:'—',             motra:'Dumbbell Bicep Curl'},
+  {id:'hammercurl', name:'DB Hammer Curl',             group:'bicep',    baseline:'—',             motra:'Dumbbell Hammer Curl'},
+  // TRICIPITI — esercizi master
+  {id:'tridown',    name:'Rope Pushdown',              group:'tricep',   baseline:'50kg · 4×10',   motra:'Cable Rope Tricep Pushdown / Extension'},
+  {id:'triover',    name:'Rope Overhead Ext',          group:'tricep',   baseline:'35kg · 4×10',   motra:'Cable Rope Overhead Tricep Extension High'},
+  // GAMBE — esercizi master
+  {id:'legext',     name:'Leg Extension',              group:'legs',     baseline:'80kg · 4×10',   motra:'Machine Leg Extension'},
+  {id:'legpress',   name:'Leg Press (macchina fissa)', group:'legs',     baseline:'117.5kg · 4×12',motra:'Machine Leg Press'},
+  {id:'rdl',        name:'RDL / Stacco Rumeno',        group:'legs',     baseline:'60kg · 4×10',   motra:'Barbell Romanian Deadlift'},
+  {id:'calf',       name:'Calf Raise seduto',          group:'legs',     baseline:'—',             motra:'Machine Seated Calf Raise'},
+  {id:'hipthrust',  name:'Hip Thrust Machine',         group:'legs',     baseline:'45kg · 4×10',   motra:'Machine Hip Thrust (Glute Bridge)'},
+  {id:'legcurl',    name:'Leg Curl Prone',             group:'legs',     baseline:'—',             motra:'Machine Leg / Hamstring Curl Prone'},
 ];
 
 const SESSION_SENTINELS = {
-  'Push':         ['bench','pecdec','milpress','lateraise','tridown','triover'],
-  'Pull':         ['lat','row','curl','hammercurl','facepull'],
-  'Legs':         ['legext','legpress','legcurl','hipthrust','calf','rdl'],
-  'Upper Sab':    ['milpress','lateraise','facepull','curl','hammercurl','tridown','triover'],
-  'Upper Dom':    ['bench','pecdec','lat','row','milpress','lateraise'],
-  'Upper Body':   ['bench','pecdec','milpress','lateraise','tridown','triover'],
+  'Push':       ['bench','incbench','bbohp','dbpress','dblateral','tridown','triover'],
+  'Pull':       ['lat','tbar','bbrow','dbcurl','hammercurl'],
+  'Legs':       ['legext','legpress','rdl','calf','hipthrust','legcurl'],
+  'Upper Sab':  ['bbohp','dbpress','dblateral','dbcurl','hammercurl','tridown','triover'],
+  'Upper Dom':  ['bench','incbench','lat','tbar','bbrow','bbohp','dblateral'],
+  'Upper Body': ['bench','incbench','bbohp','dblateral','tridown','triover'],
 };
 
 const SESSION_EXERCISES = {
@@ -3843,14 +3846,14 @@ function drawScatterChart(canvasId, points, options = {}) {
 }
 
 
-// Sentinel lift group definitions for dashboard tabs
+// Sentinel lift group definitions for dashboard tabs — esercizi master
 const SENTINEL_GROUPS = {
-  chest:    { ids:['bench','pecdec'],         colors:['#0071e3','#5ac8fa'],  labels:['Compound','Isolamento'] },
-  shoulder: { ids:['milpress','lateraise','facepull','frontrise'], colors:['#ff9500','#ffcc02','#ff6b6b','#ff3b30'], labels:['Press','Lateral','Face Pull','Front/Upright'] },
-  tricep:   { ids:['tridown','triover'],       colors:['#af52de','#bf5af2'],  labels:['Pushdown','Overhead'] },
-  back:     { ids:['lat','row'],               colors:['#34c759','#30d158'],  labels:['Lat Machine','Rematore'] },
-  bicep:    { ids:['curl','hammercurl'],        colors:['#ff9500','#ff6b00'],  labels:['Curl','Hammer'] },
-  legs:     { ids:['legext','legpress','legcurl','hipthrust','calf','rdl'], colors:['#ff3b30','#ff6b6b','#ff9500','#ffcc02','#34c759','#0071e3'], labels:['Leg Ext','Leg Press','Leg Curl','Hip Thrust','Calf','RDL'] },
+  chest:    { ids:['bench','incbench'],              colors:['#0071e3','#5ac8fa'],                        labels:['BB Bench Press','Mac Incline'] },
+  back:     { ids:['lat','tbar','bbrow'],            colors:['#34c759','#30d158','#00b341'],              labels:['Lat Wide-Grip','T-Bar Row','BB Bent Row'] },
+  shoulder: { ids:['bbohp','dbpress','dblateral'],   colors:['#ff9500','#ff6b00','#ffcc02'],              labels:['BB OHP','DB Press','DB Lateral'] },
+  bicep:    { ids:['dbcurl','hammercurl'],            colors:['#ff9500','#ff3b30'],                        labels:['DB Curl','Hammer Curl'] },
+  tricep:   { ids:['tridown','triover'],              colors:['#af52de','#bf5af2'],                        labels:['Rope Pushdown','Rope Overhead'] },
+  legs:     { ids:['legext','legpress','rdl','hipthrust','calf','legcurl'], colors:['#ff3b30','#ff6b6b','#0071e3','#ffcc02','#34c759','#ff9500'], labels:['Leg Ext','Leg Press','RDL','Hip Thrust','Calf','Leg Curl'] },
 };
 
 let _currentSentinelGroup = 'chest';
@@ -4161,27 +4164,98 @@ function buildDashboard() {
         </div>
       </div>
 
-      <!-- Sentinel lifts -->
+      <!-- Sentinel lifts per gruppo muscolare -->
       <div style="margin-top:10px">
-        <div class="dash-section-title" style="margin-top:16px">Sentinel lifts · trend</div>
+        <div class="dash-section-title" style="margin-top:16px">Sentinel lifts · per gruppo muscolare</div>
+
+        <!-- PETTO -->
+        <div class="dash-section-label">🫁 Petto</div>
         <div class="dash-two-col">
           <div class="charts-card">
-            <div class="dash-card-title">Petto compound (kg)</div>
-            <canvas class="dash-chart" id="dc-bench" height="100"></canvas>
+            <div class="dash-card-title">BB Bench Press (kg)</div>
+            <canvas class="dash-chart" id="dc-bench" height="90"></canvas>
+          </div>
+          <div class="charts-card">
+            <div class="dash-card-title">Mac Incline Bench (kg)</div>
+            <canvas class="dash-chart" id="dc-incbench" height="90"></canvas>
+          </div>
+        </div>
+
+        <!-- DORSO -->
+        <div class="dash-section-label" style="margin-top:14px">🔙 Dorso</div>
+        <div class="dash-three-col">
+          <div class="charts-card">
+            <div class="dash-card-title">Lat Machine Wide-Grip (kg)</div>
+            <canvas class="dash-chart" id="dc-lat" height="90"></canvas>
+          </div>
+          <div class="charts-card">
+            <div class="dash-card-title">T-Bar Row (kg)</div>
+            <canvas class="dash-chart" id="dc-tbar" height="90"></canvas>
+          </div>
+          <div class="charts-card">
+            <div class="dash-card-title">BB Bent Over Row (kg)</div>
+            <canvas class="dash-chart" id="dc-bbrow" height="90"></canvas>
+          </div>
+        </div>
+
+        <!-- SPALLE -->
+        <div class="dash-section-label" style="margin-top:14px">💪 Spalle</div>
+        <div class="dash-three-col">
+          <div class="charts-card">
+            <div class="dash-card-title">BB OHP in piedi (kg)</div>
+            <canvas class="dash-chart" id="dc-bbohp" height="90"></canvas>
+          </div>
+          <div class="charts-card">
+            <div class="dash-card-title">DB Shoulder Press seduto (kg)</div>
+            <canvas class="dash-chart" id="dc-dbpress" height="90"></canvas>
+          </div>
+          <div class="charts-card">
+            <div class="dash-card-title">DB Lateral Raise (kg)</div>
+            <canvas class="dash-chart" id="dc-dblateral" height="90"></canvas>
+          </div>
+        </div>
+
+        <!-- BICIPITI + TRICIPITI -->
+        <div class="dash-section-label" style="margin-top:14px">💪 Braccia</div>
+        <div class="dash-two-col">
+          <div class="charts-card">
+            <div class="dash-card-title">DB Curl (kg) &amp; Hammer Curl (kg)</div>
+            <canvas class="dash-chart" id="dc-bicep" height="90"></canvas>
+          </div>
+          <div class="charts-card">
+            <div class="dash-card-title">Rope Pushdown (kg) &amp; Overhead (kg)</div>
+            <canvas class="dash-chart" id="dc-tricep" height="90"></canvas>
+          </div>
+        </div>
+
+        <!-- GAMBE -->
+        <div class="dash-section-label" style="margin-top:14px">🦵 Gambe</div>
+        <div class="dash-three-col">
+          <div class="charts-card">
+            <div class="dash-card-title">Leg Extension (kg)</div>
+            <canvas class="dash-chart" id="dc-legext" height="90"></canvas>
           </div>
           <div class="charts-card">
             <div class="dash-card-title">Leg Press (kg)</div>
-            <canvas class="dash-chart" id="dc-legpress" height="100"></canvas>
+            <canvas class="dash-chart" id="dc-legpress" height="90"></canvas>
           </div>
-        </div>
-        <div class="dash-two-col" style="margin-top:10px">
           <div class="charts-card">
             <div class="dash-card-title">RDL (kg)</div>
-            <canvas class="dash-chart" id="dc-rdl" height="100"></canvas>
+            <canvas class="dash-chart" id="dc-rdl" height="90"></canvas>
+          </div>
+        </div>
+        <div class="dash-three-col" style="margin-top:10px">
+          <div class="charts-card">
+            <div class="dash-card-title">Hip Thrust (kg)</div>
+            <canvas class="dash-chart" id="dc-hipthrust" height="90"></canvas>
           </div>
           <div class="charts-card">
-            <div class="dash-card-title">Military Press (kg)</div>
-            <canvas class="dash-chart" id="dc-milpress" height="100"></canvas>
+            <div class="dash-card-title">Calf Raise seduto (kg)</div>
+            <canvas class="dash-chart" id="dc-calf" height="90"></canvas>
+          </div>
+          <div class="charts-card">
+            <div class="dash-card-title">Leg Curl (kg)</div>
+            <canvas class="dash-chart" id="dc-legcurl" height="90"></canvas>
           </div>
         </div>
       </div>
@@ -4331,23 +4405,52 @@ function refreshDashCharts() {
     }
     return result;
   }
-  const benchD    = sentData('bench',   90);
-  const legpressD = sentData('legpress',90);
-  const rdlD      = sentData('rdl',     90);
-  const milpressD = sentData('milpress',90);
-
-  // Baseline T0 confermati (15/05/2026, pre-WU) come punto fisso iniziale
+  // Baseline T0 (15/05/2026, pre-WU)
   const T0date = new Date('2026-05-15'); T0date.setHours(0,0,0,0);
   function withT0(data, baseKg) {
+    if (!baseKg) return data;
     const t0pt = {date: new Date(T0date), value: baseKg};
     const hasT0 = data.some(p => Math.abs(p.date - T0date) < 86400000);
     return hasT0 ? data : [t0pt, ...data];
   }
+  function dc(id, fieldId, color, base) {
+    const d = sentData(fieldId, 120);
+    const ds = [{data: withT0(d, base), color}];
+    drawDashChart(id, ds, {height:90, refLine:base||null, minPts:1});
+  }
+  function dc2(id, fA, fB, cA, cB, bA, bB) {
+    const dA = sentData(fA, 120), dB = sentData(fB, 120);
+    drawDashChart(id, [
+      {data:withT0(dA,bA),color:cA},
+      {data:withT0(dB,bB),color:cB}
+    ], {height:90, minPts:1});
+  }
 
-  drawDashChart('dc-bench',   [{data:withT0(benchD,   55),    color:'#0071e3'}],{height:100,refLine:55,   minPts:1});
-  drawDashChart('dc-legpress',[{data:withT0(legpressD,117.5), color:'#ff9500'}],{height:100,refLine:117.5,minPts:1});
-  drawDashChart('dc-rdl',     [{data:withT0(rdlD,     60),    color:'#34c759'}],{height:100,refLine:60,   minPts:1});
-  drawDashChart('dc-milpress',[{data:withT0(milpressD,40),    color:'#af52de'}],{height:100,refLine:40,   minPts:1});
+  // PETTO
+  dc('dc-bench',    'bench',    '#0071e3', 55);
+  dc('dc-incbench', 'incbench', '#5ac8fa', null);
+
+  // DORSO
+  dc('dc-lat',   'lat',   '#34c759', null);
+  dc('dc-tbar',  'tbar',  '#30d158', null);
+  dc('dc-bbrow', 'bbrow', '#00b341', null);
+
+  // SPALLE
+  dc('dc-bbohp',    'bbohp',    '#ff9500', 40);
+  dc('dc-dbpress',  'dbpress',  '#ff6b00', null);
+  dc('dc-dblateral','dblateral','#ffcc02', 12);
+
+  // BRACCIA
+  dc2('dc-bicep',  'dbcurl',   'hammercurl', '#ff9500','#ff3b30', null, null);
+  dc2('dc-tricep', 'tridown',  'triover',    '#af52de','#bf5af2', 50,   35);
+
+  // GAMBE
+  dc('dc-legext',   'legext',   '#ff3b30', 80);
+  dc('dc-legpress', 'legpress', '#ff6b6b', 117.5);
+  dc('dc-rdl',      'rdl',      '#0071e3', 60);
+  dc('dc-hipthrust','hipthrust','#ffcc02', 45);
+  dc('dc-calf',     'calf',     '#34c759', null);
+  dc('dc-legcurl',  'legcurl',  '#ff9500', null);
 
   // ── Compliance ring iniezioni ──────────────────────────────
   const compGrid=document.getElementById('comp-grid');
