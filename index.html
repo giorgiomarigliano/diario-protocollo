@@ -1431,6 +1431,7 @@ const SENTINELS = [
   // PETTO — esercizi master
   {id:'bench',      name:'BB Bench Press',             group:'chest',    baseline:'55kg · 4×8',   motra:'Barbell Bench Press'},
   {id:'incbench',   name:'Mac Incline Bench Press',    group:'chest',    baseline:'—',             motra:'Machine Incline Bench Press'},
+  {id:'pecfly',     name:'Pec Fly (Pec Dec)',           group:'chest',    baseline:'—',             motra:'Machine Fly (Pec Dec)'},
   // DORSO — esercizi master
   {id:'lat',        name:'Lat Machine Wide-Grip',      group:'back',     baseline:'—',             motra:'Machine Lat Pull Down Wide-Grip'},
   {id:'tbar',       name:'T-Bar Row',                  group:'back',     baseline:'—',             motra:'Machine T-Bar Row'},
@@ -1455,12 +1456,12 @@ const SENTINELS = [
 ];
 
 const SESSION_SENTINELS = {
-  'Push':       ['bench','incbench','bbohp','dbpress','dblateral','tridown','triover'],
+  'Push':       ['bench','incbench','pecfly','bbohp','dbpress','dblateral','tridown','triover'],
   'Pull':       ['lat','tbar','bbrow','dbcurl','hammercurl'],
   'Legs':       ['legext','legpress','rdl','calf','hipthrust','legcurl'],
   'Upper Sab':  ['bbohp','dbpress','dblateral','dbcurl','hammercurl','tridown','triover'],
-  'Upper Dom':  ['bench','incbench','lat','tbar','bbrow','bbohp','dblateral'],
-  'Upper Body': ['bench','incbench','bbohp','dblateral','tridown','triover'],
+  'Upper Dom':  ['bench','incbench','pecfly','lat','tbar','bbrow','bbohp','dblateral'],
+  'Upper Body': ['bench','incbench','pecfly','bbohp','dblateral','tridown','triover'],
 };
 
 const SESSION_EXERCISES = {
@@ -3848,7 +3849,7 @@ function drawScatterChart(canvasId, points, options = {}) {
 
 // Sentinel lift group definitions for dashboard tabs — esercizi master
 const SENTINEL_GROUPS = {
-  chest:    { ids:['bench','incbench'],              colors:['#0071e3','#5ac8fa'],                        labels:['BB Bench Press','Mac Incline'] },
+  chest:    { ids:['bench','incbench','pecfly'],      colors:['#0071e3','#5ac8fa','#34aadc'],              labels:['BB Bench Press','Mac Incline','Pec Fly'] },
   back:     { ids:['lat','tbar','bbrow'],            colors:['#34c759','#30d158','#00b341'],              labels:['Lat Wide-Grip','T-Bar Row','BB Bent Row'] },
   shoulder: { ids:['bbohp','dbpress','dblateral'],   colors:['#ff9500','#ff6b00','#ffcc02'],              labels:['BB OHP','DB Press','DB Lateral'] },
   bicep:    { ids:['dbcurl','hammercurl'],            colors:['#ff9500','#ff3b30'],                        labels:['DB Curl','Hammer Curl'] },
@@ -4170,7 +4171,7 @@ function buildDashboard() {
 
         <!-- PETTO -->
         <div class="dash-section-label">🫁 Petto</div>
-        <div class="dash-two-col">
+        <div class="dash-three-col">
           <div class="charts-card">
             <div class="dash-card-title">BB Bench Press (kg)</div>
             <canvas class="dash-chart" id="dc-bench" height="90"></canvas>
@@ -4178,6 +4179,10 @@ function buildDashboard() {
           <div class="charts-card">
             <div class="dash-card-title">Mac Incline Bench (kg)</div>
             <canvas class="dash-chart" id="dc-incbench" height="90"></canvas>
+          </div>
+          <div class="charts-card">
+            <div class="dash-card-title">Pec Fly / Pec Dec (kg)</div>
+            <canvas class="dash-chart" id="dc-pecfly" height="90"></canvas>
           </div>
         </div>
 
@@ -4429,6 +4434,7 @@ function refreshDashCharts() {
   // PETTO
   dc('dc-bench',    'bench',    '#0071e3', 55);
   dc('dc-incbench', 'incbench', '#5ac8fa', null);
+  dc('dc-pecfly',   'pecfly',   '#34aadc', null);
 
   // DORSO
   dc('dc-lat',   'lat',   '#34c759', null);
