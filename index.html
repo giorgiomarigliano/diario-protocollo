@@ -6481,7 +6481,7 @@ function buildProtocolloTimeline() {
 // ── TAB ALIMENTI ──────────────────────────────────────────────────────────────
 function buildFoodTab() {
   const el = document.getElementById('food-view');
-  if (el.dataset.built) return;
+  el.innerHTML = '';
   el.dataset.built = '1';
 
   // Database alimenti — valori per 100g (tranne dove indicato come unità fissa)
@@ -6638,7 +6638,7 @@ function buildFoodTab() {
     items.forEach(({food, grams}) => {
       const ci = CATS[food.cat];
       const m = macroFor(food, grams);
-      const unitLabel = food.unit === 'porz' ? 'porz' : food.unit === 'barr' ? 'barr' : 'g';
+      const unitLabel = food.unit === 'porz' ? 'porzione' : food.unit === 'barr' ? 'barr × 50g' : 'g';
       html += `<div style="border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:3px solid ${ci.color}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
           <span style="font-size:13px;font-weight:500;flex:1;color:var(--text-primary)">${food.name}</span>
