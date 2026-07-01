@@ -1366,6 +1366,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   <div class="main-nav-tab" id="main-tab-stock2" onclick="switchView('stock2')">Stock</div>
   <div class="main-nav-tab" id="main-tab-orari" onclick="switchView('orari')">Orari</div>
   <div class="main-nav-tab" id="main-tab-timeline" onclick="switchView('timeline')">Timeline</div>
+  <div class="main-nav-tab" id="main-tab-food" onclick="switchView('food')">Alimenti</div>
   <!-- tab obsoleti nascosti -->
   <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')" style="display:none">Stock v1</div>
   <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')" style="display:none">Proto v2</div>
@@ -1400,6 +1401,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="med-view" id="stock2-view"></div>
 <div class="med-view" id="orari-view"></div>
 <div class="med-view" id="timeline-view"></div>
+<div class="med-view" id="food-view"></div>
 <div class="diary-view hidden" id="proto2-view">
   <div class="container" id="container2"></div>
 </div>
@@ -2703,6 +2705,7 @@ function switchView(view) {
   const tabStock2 = document.getElementById('main-tab-stock2');
   const orariView = document.getElementById('orari-view');
   const timelineView = document.getElementById('timeline-view');
+  const foodView = document.getElementById('food-view');
   const tabOrari = document.getElementById('main-tab-orari');
   // Reset all
   diary.classList.add('hidden'); dash.classList.remove('active');
@@ -2710,6 +2713,7 @@ function switchView(view) {
   stockView.classList.remove('visible'); stock2View.classList.remove('visible');
   orariView.classList.remove('visible');
   if(timelineView) timelineView.classList.remove('visible');
+  if(foodView) foodView.classList.remove('visible');
   proto2View.classList.add('hidden');
   navStrip.style.display = 'none';
   tabDiary.classList.remove('on'); tabDash.classList.remove('on');
@@ -2717,6 +2721,7 @@ function switchView(view) {
   tabStock.classList.remove('on'); tabProto2.classList.remove('on');
   tabStock2.classList.remove('on'); tabOrari.classList.remove('on');
   const _tlTab=document.getElementById('main-tab-timeline'); if(_tlTab) _tlTab.classList.remove('on');
+  const _fdTab=document.getElementById('main-tab-food'); if(_fdTab) _fdTab.classList.remove('on');
   if (view === 'dash') {
     dash.classList.add('active');
     tabDash.classList.add('on');
@@ -2751,6 +2756,10 @@ function switchView(view) {
     timelineView.classList.add('visible');
     if(_tlTab) _tlTab.classList.add('on');
     buildProtocolloTimeline();
+  } else if (view === 'food') {
+    foodView.classList.add('visible');
+    if(_fdTab) _fdTab.classList.add('on');
+    buildFoodTab();
   } else {
     diary.classList.remove('hidden');
     navStrip.style.display = '';
@@ -6467,6 +6476,276 @@ function buildProtocolloTimeline() {
   };
 
   renderTL();
+}
+
+// ── TAB ALIMENTI ──────────────────────────────────────────────────────────────
+function buildFoodTab() {
+  const el = document.getElementById('food-view');
+  if (el.dataset.built) return;
+  el.dataset.built = '1';
+
+  // Database alimenti — valori per 100g (tranne dove indicato come unità fissa)
+  // {name, cat, unit, ref (g per porzione tipica), kcal100, p100, c100, g100, note}
+  const FOODS = [
+    // ── PROTEINE ANIMALI ──
+    {id:'bresaola',     name:'Bresaola',                     cat:'carne',   unit:'g',  ref:80,   kcal100:112, p100:20.5, c100:0,   g100:1.2,  note:'Alto sodio · pre-Tesa ok'},
+    {id:'biltong',      name:'Ember Biltong',                cat:'carne',   unit:'g',  ref:40,   kcal100:244, p100:50,   c100:2.1, g100:4.3,  note:'No zuccheri · keto-friendly'},
+    {id:'pollo',        name:'Petto di pollo (friggitrice)', cat:'carne',   unit:'g',  ref:150,  kcal100:110, p100:23,   c100:0,   g100:1.5,  note:'Cotto senza olio'},
+    {id:'tonno',        name:'Tonno sgocciolato',            cat:'pesce',   unit:'g',  ref:80,   kcal100:100, p100:23,   c100:0,   g100:0.5,  note:'Naturale o in acqua'},
+    {id:'salmone_aff',  name:'Salmone affumicato',          cat:'pesce',   unit:'g',  ref:80,   kcal100:142, p100:18,   c100:0,   g100:4.5,  note:'Alto sodio · ricco omega-3'},
+    {id:'salmone_cot',  name:'Salmone cotto (friggitrice)', cat:'pesce',   unit:'g',  ref:150,  kcal100:156, p100:20,   c100:0,   g100:7,    note:'Ricco omega-3'},
+    {id:'frittata',     name:'Frittata (2 uova + 250ml albumi)', cat:'uova', unit:'porz', ref:1, kcal100:220, p100:32,   c100:2,   g100:7,    note:'Post-WO · cotta al micro'},
+    {id:'albumi',       name:'Albumi liquidi',               cat:'uova',   unit:'g',  ref:250,  kcal100:50,  p100:10.5, c100:0.7, g100:0,    note:'Post-WO serale'},
+
+    // ── LATTICINI / DAIRY ──
+    {id:'yogurt',       name:'Yogurt greco 0% Esselunga',   cat:'dairy',   unit:'g',  ref:170,  kcal100:55,  p100:10,   c100:3.5, g100:0.1,  note:'Low-GI · colazione ok'},
+
+    // ── INTEGRATORI ──
+    {id:'shaker',       name:'Shaker VB Whey + 200ml Alpro cocco', cat:'integ', unit:'porz', ref:1, kcal100:150, p100:25, c100:5, g100:2, note:'~1 scoop 34g + Alpro 20kcal/100ml'},
+    {id:'vbbar',        name:'VB Bar 25 Net Integratori',   cat:'integ',   unit:'barr', ref:1,  kcal100:167, p100:25,   c100:6,   g100:3.5,  note:'50g · 0.3g zuccheri · post-Fragment ok'},
+    {id:'scoop',        name:'Scoop proteine (1 misurino)', cat:'integ',   unit:'g',  ref:34,   kcal100:380, p100:88,   c100:3,   g100:3,    note:'VB Whey 104 · da aggiungere ad altro'},
+
+    // ── SNACK / SECCHI ──
+    {id:'mandorle',     name:'Mandorle',                    cat:'snack',   unit:'g',  ref:25,   kcal100:579, p100:21,   c100:5,   g100:50,   note:'Low-GI · ottimo grassi sani'},
+
+    // ── CARBOIDRATI ──
+    {id:'wasa',         name:'Wasa Fibra',                  cat:'carbo',   unit:'g',  ref:60,   kcal100:310, p100:9,    c100:55,  g100:3,    note:'4 gallette ~60g · pre-Tesa ok'},
+    {id:'gallette',     name:'Gallette di riso/mais',       cat:'carbo',   unit:'g',  ref:30,   kcal100:385, p100:7,    c100:83,  g100:1,    note:'3-4 gallette ~30g · alto GI'},
+    {id:'patate',       name:'Patate (bollite)',             cat:'carbo',   unit:'g',  ref:200,  kcal100:77,  p100:2,    c100:17,  g100:0.1,  note:'GI medio · raffreddare abbassa GI'},
+
+    // ── VERDURE ──
+    {id:'carciofi',     name:'Carciofi',                    cat:'verdure', unit:'g',  ref:200,  kcal100:47,  p100:3,    c100:5,   g100:0.2,  note:'Alto contenuto di fibra'},
+    {id:'avocado',      name:'Avocado',                     cat:'verdure', unit:'g',  ref:80,   kcal100:160, p100:2,    c100:2,   g100:15,   note:'Grassi monoinsaturi · saziante'},
+  ];
+
+  const CATS = {
+    carne:   {label:'Carne',        color:'#ef4444'},
+    pesce:   {label:'Pesce',        color:'#3b82f6'},
+    uova:    {label:'Uova & albumi',color:'#f59e0b'},
+    dairy:   {label:'Latticini',    color:'#8b5cf6'},
+    integ:   {label:'Integratori',  color:'#10b981'},
+    snack:   {label:'Snack',        color:'#f97316'},
+    carbo:   {label:'Carboidrati',  color:'#06b6d4'},
+    verdure: {label:'Verdure',      color:'#84cc16'},
+  };
+
+  // Stato builder pasto
+  let meal = {}; // id → {food, grams}
+  let searchQ = '';
+  let filterCat = 'all';
+
+  function macroFor(food, grams) {
+    const r = grams / 100;
+    return {
+      kcal: Math.round(food.kcal100 * r),
+      p:    Math.round(food.p100 * r * 10) / 10,
+      c:    Math.round(food.c100 * r * 10) / 10,
+      g:    Math.round(food.g100 * r * 10) / 10,
+    };
+  }
+
+  function mealTotals() {
+    let tk=0,tp=0,tc=0,tg=0;
+    Object.values(meal).forEach(({food, grams}) => {
+      const m = macroFor(food, grams);
+      tk+=m.kcal; tp+=m.p; tc+=m.c; tg+=m.g;
+    });
+    return {kcal:Math.round(tk), p:Math.round(tp*10)/10, c:Math.round(tc*10)/10, g:Math.round(tg*10)/10};
+  }
+
+  function renderAll() {
+    renderList();
+    renderMeal();
+  }
+
+  function renderList() {
+    const container = document.getElementById('fd-list');
+    if (!container) return;
+    const filtered = FOODS.filter(f => {
+      const matchCat = filterCat === 'all' || f.cat === filterCat;
+      const matchQ = !searchQ || f.name.toLowerCase().includes(searchQ);
+      return matchCat && matchQ;
+    });
+
+    if (!filtered.length) {
+      container.innerHTML = '<p style="font-size:13px;color:var(--text-muted);padding:1rem">Nessun alimento trovato.</p>';
+      return;
+    }
+
+    // Raggruppa per categoria
+    const byCat = {};
+    filtered.forEach(f => { (byCat[f.cat] = byCat[f.cat]||[]).push(f); });
+
+    let html = '';
+    Object.entries(byCat).forEach(([cat, foods]) => {
+      const ci = CATS[cat];
+      html += `<div style="margin-bottom:4px">
+        <div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:${ci.color};padding:8px 0 4px">${ci.label}</div>`;
+      foods.forEach(f => {
+        const inMeal = !!meal[f.id];
+        const por = inMeal ? meal[f.id].grams : f.ref;
+        const m = macroFor(f, por);
+        const unitLabel = f.unit === 'porz' ? 'porz' : f.unit === 'barr' ? 'barr' : 'g';
+        html += `<div class="fd-row ${inMeal?'fd-in-meal':''}" data-id="${f.id}" style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;border:0.5px solid ${inMeal?ci.color:'transparent'};background:${inMeal?ci.color+'10':'transparent'};transition:background .12s;margin-bottom:2px" onclick="fdToggle('${f.id}')">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;color:var(--text-primary)">${f.name}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${f.ref}${unitLabel} · ${f.note}</div>
+          </div>
+          <div style="display:flex;gap:12px;flex-shrink:0;text-align:right">
+            <div><span style="font-size:12px;font-weight:500;color:var(--text-primary)">${m.kcal}</span><span style="font-size:10px;color:var(--text-muted);display:block">kcal</span></div>
+            <div><span style="font-size:12px;font-weight:500;color:#1a7a3a">${m.p}g</span><span style="font-size:10px;color:var(--text-muted);display:block">prot</span></div>
+            <div><span style="font-size:12px;font-weight:500;color:#185fa5">${m.c}g</span><span style="font-size:10px;color:var(--text-muted);display:block">carb</span></div>
+            <div><span style="font-size:12px;font-weight:500;color:#854f0b">${m.g}g</span><span style="font-size:10px;color:var(--text-muted);display:block">gras</span></div>
+          </div>
+          <div style="font-size:18px;color:${inMeal?ci.color:'var(--border-strong)'};flex-shrink:0;width:20px;text-align:center">${inMeal?'✓':'+'}</div>
+        </div>`;
+      });
+      html += '</div>';
+    });
+    container.innerHTML = html;
+  }
+
+  function renderMeal() {
+    const container = document.getElementById('fd-meal');
+    const totEl = document.getElementById('fd-totals');
+    if (!container) return;
+
+    const items = Object.values(meal);
+    if (!items.length) {
+      container.innerHTML = '<p style="font-size:13px;color:var(--text-muted);padding:1rem 0">Aggiungi alimenti dalla lista a sinistra.</p>';
+      totEl.style.display = 'none';
+      return;
+    }
+
+    totEl.style.display = '';
+    const tot = mealTotals();
+    document.getElementById('fd-tot-kcal').textContent = tot.kcal;
+    document.getElementById('fd-tot-p').textContent = tot.p + 'g';
+    document.getElementById('fd-tot-c').textContent = tot.c + 'g';
+    document.getElementById('fd-tot-g').textContent = tot.g + 'g';
+
+    let html = '';
+    items.forEach(({food, grams}) => {
+      const ci = CATS[food.cat];
+      const m = macroFor(food, grams);
+      const unitLabel = food.unit === 'porz' ? 'porz' : food.unit === 'barr' ? 'barr' : 'g';
+      html += `<div style="border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:3px solid ${ci.color}">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:500;flex:1;color:var(--text-primary)">${food.name}</span>
+          <button onclick="fdRemove('${food.id}')" style="font-size:11px;padding:2px 8px;border-radius:10px;border:0.5px solid var(--border);background:var(--surface-1);color:var(--text-muted);cursor:pointer">rimuovi</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" value="${grams}" min="1" max="1000" step="${food.unit==='g'?10:1}"
+            style="width:64px;font-size:13px;padding:4px 8px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--surface-1);color:var(--text-primary);text-align:center"
+            onchange="fdUpdate('${food.id}', this.value)">
+          <span style="font-size:11px;color:var(--text-muted)">${unitLabel}</span>
+          <div style="flex:1;display:flex;gap:10px;justify-content:flex-end">
+            <span style="font-size:12px;font-weight:500;color:var(--text-primary)">${m.kcal} kcal</span>
+            <span style="font-size:12px;font-weight:500;color:#1a7a3a">${m.p}g P</span>
+            <span style="font-size:12px;font-weight:500;color:#185fa5">${m.c}g C</span>
+            <span style="font-size:12px;font-weight:500;color:#854f0b">${m.g}g G</span>
+          </div>
+        </div>
+      </div>`;
+    });
+    container.innerHTML = html;
+  }
+
+  window.fdToggle = function(id) {
+    if (meal[id]) { delete meal[id]; }
+    else {
+      const f = FOODS.find(x => x.id === id);
+      if (f) meal[id] = {food: f, grams: f.ref};
+    }
+    renderAll();
+  };
+  window.fdRemove = function(id) { delete meal[id]; renderAll(); };
+  window.fdUpdate = function(id, val) {
+    if (meal[id]) { meal[id].grams = parseFloat(val)||1; renderMeal(); }
+  };
+
+  // CSS
+  const style = document.createElement('style');
+  style.textContent = '.fd-row:hover{background:var(--surface-1)!important}';
+  document.head.appendChild(style);
+
+  // HTML struttura
+  el.innerHTML = `<div class="app-view-inner view-wrap">
+    <div class="week-hdr" style="margin-bottom:1.25rem">
+      <h2>Leggenda alimenti</h2>
+      <span class="week-range">Macro di riferimento + costruttore pasto</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start">
+
+      <!-- Colonna sinistra: lista alimenti -->
+      <div>
+        <!-- Search + filtri -->
+        <div style="margin-bottom:10px;display:flex;gap:8px">
+          <input type="text" id="fd-search" placeholder="Cerca alimento..."
+            style="flex:1;font-size:13px;padding:7px 12px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--surface-1);color:var(--text-primary)"
+            oninput="fdSearch(this.value)">
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px" id="fd-cat-filters">
+          <button class="fd-cat-btn fd-cat-on" data-cat="all" onclick="fdCat('all',this)"
+            style="font-size:11px;padding:3px 10px;border-radius:20px;border:0.5px solid var(--border);background:var(--text-primary);color:var(--surface-2);cursor:pointer">Tutti</button>
+          ${Object.entries(CATS).map(([cat,ci]) =>
+            `<button class="fd-cat-btn" data-cat="${cat}" onclick="fdCat('${cat}',this)"
+              style="font-size:11px;padding:3px 10px;border-radius:20px;border:0.5px solid ${ci.color};color:${ci.color};background:transparent;cursor:pointer">${ci.label}</button>`
+          ).join('')}
+        </div>
+        <!-- Intestazione colonne -->
+        <div style="display:flex;align-items:center;padding:0 10px 6px;border-bottom:0.5px solid var(--border);margin-bottom:4px">
+          <div style="flex:1;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Alimento · porzione di riferimento</div>
+          <div style="display:flex;gap:12px;flex-shrink:0;text-align:right">
+            <div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);width:32px">kcal</div>
+            <div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:#1a7a3a;width:32px">prot</div>
+            <div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:#185fa5;width:32px">carb</div>
+            <div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:#854f0b;width:32px">gras</div>
+          </div>
+          <div style="width:28px"></div>
+        </div>
+        <div id="fd-list"></div>
+      </div>
+
+      <!-- Colonna destra: builder pasto -->
+      <div style="position:sticky;top:80px">
+        <div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <div style="font-size:13px;font-weight:500;color:var(--text-primary)">Costruttore pasto</div>
+            <button onclick="fdClear()" style="font-size:11px;padding:2px 8px;border-radius:10px;border:0.5px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer">Svuota</button>
+          </div>
+          <div id="fd-meal"></div>
+          <!-- Totali -->
+          <div id="fd-totals" style="display:none;margin-top:10px;background:var(--surface-1);border-radius:var(--radius);padding:10px 12px">
+            <div style="font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px">Totale pasto</div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center">
+              <div><div style="font-size:18px;font-weight:500;color:var(--text-primary)" id="fd-tot-kcal">0</div><div style="font-size:10px;color:var(--text-muted)">kcal</div></div>
+              <div><div style="font-size:18px;font-weight:500;color:#1a7a3a" id="fd-tot-p">0g</div><div style="font-size:10px;color:var(--text-muted)">proteine</div></div>
+              <div><div style="font-size:18px;font-weight:500;color:#185fa5" id="fd-tot-c">0g</div><div style="font-size:10px;color:var(--text-muted)">carb</div></div>
+              <div><div style="font-size:18px;font-weight:500;color:#854f0b" id="fd-tot-g">0g</div><div style="font-size:10px;color:var(--text-muted)">grassi</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  window.fdSearch = function(q) { searchQ = q.toLowerCase(); renderList(); };
+  window.fdCat = function(cat, btn) {
+    filterCat = cat;
+    document.querySelectorAll('.fd-cat-btn').forEach(b => {
+      const bc = b.dataset.cat;
+      const ci = CATS[bc];
+      b.style.background = bc === cat ? (ci ? ci.color : 'var(--text-primary)') : 'transparent';
+      b.style.color = bc === cat ? 'var(--surface-2)' : (ci ? ci.color : 'var(--text-primary)');
+      b.style.borderColor = ci ? ci.color : 'var(--border)';
+    });
+    renderList();
+  };
+  window.fdClear = function() { meal = {}; renderAll(); };
+
+  renderAll();
 }
 
 function buildOrariView() {
