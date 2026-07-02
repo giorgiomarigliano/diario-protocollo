@@ -6944,14 +6944,40 @@ function buildHistoryTab() {
       }
       weeks.push(week);
     }
+    const DOW_LABELS = ['L','M','M','G','V','S','D'];
+    // Etichette mese: mostra il nome mese sopra la prima settimana in cui inizia quel mese
+    const monthLabels = weeks.map((week, wi) => {
+      const first = week[0].date;
+      const prevWeek = weeks[wi-1];
+      const isNewMonth = wi === 0 || (prevWeek && prevWeek[0].date.getMonth() !== first.getMonth());
+      return isNewMonth ? first.toLocaleDateString('it-IT',{month:'short'}) : '';
+    });
+
+    const monthRow = `<div style="display:flex;gap:3px;margin-left:16px;margin-bottom:3px">${
+      weeks.map(() => '').map((_, wi) => `<div style="width:11px;font-size:8px;color:var(--text-muted);text-align:left;white-space:nowrap">${monthLabels[wi]}</div>`).join('')
+    }</div>`;
+
+    const dowCol = `<div style="display:flex;flex-direction:column;gap:3px;margin-right:4px">${
+      DOW_LABELS.map(l => `<div style="width:11px;height:11px;font-size:8px;color:var(--text-muted);line-height:11px">${l}</div>`).join('')
+    }</div>`;
+
     const cellsHtml = weeks.map(week =>
       `<div style="display:flex;flex-direction:column;gap:3px">${week.map(d => {
-        const bg = d.future ? 'transparent' : (d.active ? '#34c759' : 'var(--surface-1)');
-        const border = d.future ? '0.5px dashed var(--border)' : 'none';
-        return `<div title="${d.date.toLocaleDateString('it-IT')}" style="width:11px;height:11px;border-radius:2px;background:${bg};border:${border}"></div>`;
+        let bg, border;
+        if (d.future) { bg = 'transparent'; border = '1px dashed var(--border)'; }
+        else if (d.active) { bg = '#34c759'; border = '1px solid #2ba84a'; }
+        else { bg = 'var(--surface-0, #eceff1)'; border = '1px solid var(--border)'; }
+        return `<div title="${d.date.toLocaleDateString('it-IT')}${d.active?' · allenamento':''}" style="width:11px;height:11px;border-radius:2px;background:${bg};border:${border};box-sizing:border-box"></div>`;
       }).join('')}</div>`
     ).join('');
-    return `<div style="display:flex;gap:3px;overflow-x:auto;padding:4px 0">${cellsHtml}</div>`;
+
+    return `<div>
+      ${monthRow}
+      <div style="display:flex">
+        ${dowCol}
+        <div style="display:flex;gap:3px;overflow-x:auto">${cellsHtml}</div>
+      </div>
+    </div>`;
   }
 
   function renderReadyFlags() {
@@ -6987,7 +7013,7 @@ function buildHistoryTab() {
           <div class="dash-card-title">Aderenza · ultime 12 settimane</div>
           <div style="margin-top:10px">${renderHeatmap()}</div>
           <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;color:var(--text-muted)">
-            <div style="width:10px;height:10px;border-radius:2px;background:var(--surface-1)"></div>Riposo
+            <div style="width:10px;height:10px;border-radius:2px;background:var(--surface-0, #eceff1);border:1px solid var(--border);box-sizing:border-box"></div>Riposo
             <div style="width:10px;height:10px;border-radius:2px;background:#34c759;margin-left:8px"></div>Allenamento
           </div>
         </div>
