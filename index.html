@@ -1772,9 +1772,9 @@ function drawChart(id,data,color){
   const W=rect.width,H=64;
   const pts=data.filter(v=>v!==null);
   if(pts.length<2){ ctx.font='11px -apple-system'; ctx.fillStyle='#aeaeb2'; ctx.fillText('Dati insufficienti',8,32); return; }
-  const TOP_PAD=18, BOTTOM_PAD=10;
+  const TOP_PAD=18, BOTTOM_PAD=10, RIGHT_PAD=28;
   const mn=Math.min(...pts)*0.995, mx=Math.max(...pts)*1.005, rng=mx-mn||1;
-  const valid=data.map((v,i)=>v!==null?{x:i/(data.length-1)*(W-4)+2, y:H-BOTTOM_PAD-((v-mn)/rng)*(H-TOP_PAD-BOTTOM_PAD), v}:null);
+  const valid=data.map((v,i)=>v!==null?{x:i/(data.length-1)*(W-RIGHT_PAD-4)+2, y:H-BOTTOM_PAD-((v-mn)/rng)*(H-TOP_PAD-BOTTOM_PAD), v}:null);
   // Fill
   ctx.beginPath();
   let st=false;
@@ -1787,14 +1787,21 @@ function drawChart(id,data,color){
   ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.stroke();
   // Dots
   valid.forEach(p=>{ if(!p)return; ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,Math.PI*2); ctx.fillStyle=color; ctx.fill(); });
-  // Last value (flip below point if too close to top edge; clamp using real text width to avoid right-edge clipping)
+  // Last value — posizionamento adattivo: misura testo, sceglie quadrante libero
   if(lp){
     ctx.font='500 11px -apple-system'; ctx.fillStyle=color;
     const label=lp.v.toFixed(1);
-    const textW=ctx.measureText(label).width;
-    const labelX=Math.max(2,Math.min(lp.x,W-textW-3));
-    const labelY=lp.y<18 ? lp.y+15 : lp.y-6;
-    ctx.fillText(label,labelX,labelY);
+    const tw=ctx.measureText(label).width;
+    const th=11; // altezza font approx
+    // X: preferisce a sinistra del punto se vicino al bordo destro
+    let lx = lp.x + 4;
+    if (lx + tw > W - 2) lx = lp.x - tw - 4;
+    lx = Math.max(2, Math.min(lx, W - tw - 2));
+    // Y: sopra se c'è spazio, sotto se vicino al top, dentro area se nel mezzo
+    let ly = lp.y - 6;
+    if (ly - th < TOP_PAD) ly = lp.y + th + 2;
+    if (ly > H - 4) ly = H - 4;
+    ctx.fillText(label, lx, ly);
   }
 }
 
@@ -3624,11 +3631,20 @@ function drawDashChart(canvasId, datasets, options = {}) {
       ctx.strokeStyle = ds.color; ctx.lineWidth = 1.5; ctx.stroke();
     });
 
-    // Last value label
-    ctx.font = '500 10px -apple-system'; ctx.fillStyle = ds.color; ctx.textAlign = 'left';
-    const lastX = Math.min(lp.x + 3, ML + CW - 24);
-    const lastY = Math.max(lp.y - 5, MT + 10);
-    ctx.fillText(lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1), lastX, lastY);
+    // Last value label — adattivo: misura testo, evita bordi e asse Y
+    ctx.font = '500 10px -apple-system'; ctx.fillStyle = ds.color;
+    const lbl = lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1);
+    const tw = ctx.measureText(lbl).width;
+    // X: a destra del punto, se esce dal chart area va a sinistra
+    let lx = lp.x + 4;
+    if (lx + tw > ML + CW) lx = lp.x - tw - 4;
+    lx = Math.max(ML + 2, Math.min(lx, ML + CW - tw - 1));
+    // Y: sopra il punto; se esce dal top va sotto; clamp sempre dentro area
+    let ly = lp.y - 5;
+    if (ly < MT + 8) ly = lp.y + 12;
+    if (ly > MT + CH - 2) ly = MT + CH - 2;
+    ctx.textAlign = 'left';
+    ctx.fillText(lbl, lx, ly);
     ctx.textAlign = 'left';
   });
 }
@@ -4412,6 +4428,28 @@ function buildDashboard() {
   // Doppio rAF garantisce che il browser abbia calcolato il layout
 requestAnimationFrame(() => requestAnimationFrame(refreshDashCharts));
 }
+
+// ResizeObserver globale: ridisegna i chart al cambio dimensione finestra/layout
+(function() {
+  let _roTimer = null;
+  function _scheduleRefresh() {
+    clearTimeout(_roTimer);
+    _roTimer = setTimeout(function() {
+      if (document.getElementById('dash-view') && document.getElementById('dash-view').classList.contains('visible')) {
+        refreshDashCharts();
+      }
+    }, 150);
+  }
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(_scheduleRefresh);
+    const tryObserve = function() {
+      const el = document.getElementById('dash-view');
+      if (el) { ro.observe(el); } else { setTimeout(tryObserve, 500); }
+    };
+    tryObserve();
+  }
+  window.addEventListener('resize', _scheduleRefresh, {passive: true});
+})();
 
 function refreshDashCharts() {
   // ── Biometria (60gg unificata WU+V2) ──────────────────────
