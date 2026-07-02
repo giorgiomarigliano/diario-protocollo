@@ -4552,6 +4552,7 @@ function refreshDashCharts() {
     const today=new Date(); today.setHours(0,0,0,0);
     const startWU=new Date(START); startWU.setHours(0,0,0,0);
     const startV2=new Date(START2); startV2.setHours(0,0,0,0);
+    const hist = (_lastData && _lastData.history_sentinels) || {};
     for(let offset=days-1;offset>=0;offset--){
       const d=new Date(today);d.setDate(d.getDate()-offset);d.setHours(0,0,0,0);
       let v=null;
@@ -4561,6 +4562,11 @@ function refreshDashCharts() {
       } else if(d>=startWU){
         const i=Math.floor((d-startWU)/86400000);
         if(i>=0&&i<TOTAL_DAYS){const rec=_lastData['day_'+i]||{};const fv=parseFloat(rec['sl_'+fieldId+'_kg'])||parseFloat(rec['sent_'+fieldId]);if(!isNaN(fv))v=fv;}
+      } else {
+        // Dati storici pre-warm-up (sessioni Motra importate, keyed by data reale YYYY-MM-DD)
+        const dstr = d.toISOString().slice(0,10);
+        const rec = hist[dstr];
+        if(rec){ const fv=parseFloat(rec['sl_'+fieldId+'_kg']); if(!isNaN(fv)) v=fv; }
       }
       if(v!==null) result.push({date:d,value:v});
     }
