@@ -3453,9 +3453,9 @@ function drawDashChart(canvasId, datasets, options = {}) {
   // Margins per assi
   const ML = 34; // left margin per asse Y
   const MB = 18; // bottom margin per asse X
-  const MR = 8;
-  const MT = 8;
-  const CW = W - ML - MR;  // chart width
+  const MR = 36; // right margin — spazio per label ultimo valore
+  const MT = 10;
+  const CW = W - ML - MR;  // chart width (esclude spazio label dx)
   const CH = H - MB - MT;  // chart height
 
   canvas.width  = W * dpr;
@@ -3591,7 +3591,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
       ctx.beginPath(); ctx.moveTo(ML, ry); ctx.lineTo(ML + CW, ry); ctx.stroke();
       ctx.setLineDash([]);
       ctx.font = '8px -apple-system'; ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.textAlign = 'left';
-      ctx.fillText('T0', ML + 2, ry - 2);
+      ctx.fillText('T0', ML + CW + 5, ry + 3);
       ctx.textAlign = 'left';
     }
   }
@@ -3631,18 +3631,13 @@ function drawDashChart(canvasId, datasets, options = {}) {
       ctx.strokeStyle = ds.color; ctx.lineWidth = 1.5; ctx.stroke();
     });
 
-    // Last value label — adattivo: misura testo, evita bordi e asse Y
+    // Last value label — nel margine destro (MR), allineato al punto Y
     ctx.font = '500 10px -apple-system'; ctx.fillStyle = ds.color;
     const lbl = lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1);
-    const tw = ctx.measureText(lbl).width;
-    // X: a destra del punto, se esce dal chart area va a sinistra
-    let lx = lp.x + 4;
-    if (lx + tw > ML + CW) lx = lp.x - tw - 4;
-    lx = Math.max(ML + 2, Math.min(lx, ML + CW - tw - 1));
-    // Y: sopra il punto; se esce dal top va sotto; clamp sempre dentro area
-    let ly = lp.y - 5;
-    if (ly < MT + 8) ly = lp.y + 12;
-    if (ly > MT + CH - 2) ly = MT + CH - 2;
+    const lx = ML + CW + 5; // sempre nel margine destro, fuori dal plot
+    let ly = lp.y;
+    // clamp verticale: non uscire dal canvas
+    ly = Math.max(MT + 8, Math.min(ly + 4, H - MB - 2));
     ctx.textAlign = 'left';
     ctx.fillText(lbl, lx, ly);
     ctx.textAlign = 'left';
