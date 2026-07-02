@@ -1367,6 +1367,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   <div class="main-nav-tab" id="main-tab-orari" onclick="switchView('orari')">Orari</div>
   <div class="main-nav-tab" id="main-tab-timeline" onclick="switchView('timeline')">Timeline</div>
   <div class="main-nav-tab" id="main-tab-food" onclick="switchView('food')">Alimenti</div>
+  <div class="main-nav-tab" id="main-tab-history" onclick="switchView('history')">Storico</div>
   <!-- tab obsoleti nascosti -->
   <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')" style="display:none">Stock v1</div>
   <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')" style="display:none">Proto v2</div>
@@ -1402,6 +1403,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="med-view" id="orari-view"></div>
 <div class="med-view" id="timeline-view"></div>
 <div class="med-view" id="food-view"></div>
+<div class="med-view" id="history-view"></div>
 <div class="diary-view hidden" id="proto2-view">
   <div class="container" id="container2"></div>
 </div>
@@ -2713,6 +2715,7 @@ function switchView(view) {
   const orariView = document.getElementById('orari-view');
   const timelineView = document.getElementById('timeline-view');
   const foodView = document.getElementById('food-view');
+  const historyView = document.getElementById('history-view');
   const tabOrari = document.getElementById('main-tab-orari');
   // Reset all
   diary.classList.add('hidden'); dash.classList.remove('active');
@@ -2721,6 +2724,7 @@ function switchView(view) {
   orariView.classList.remove('visible');
   if(timelineView) timelineView.classList.remove('visible');
   if(foodView) foodView.classList.remove('visible');
+  if(historyView) historyView.classList.remove('visible');
   proto2View.classList.add('hidden');
   navStrip.style.display = 'none';
   tabDiary.classList.remove('on'); tabDash.classList.remove('on');
@@ -2729,6 +2733,7 @@ function switchView(view) {
   tabStock2.classList.remove('on'); tabOrari.classList.remove('on');
   const _tlTab=document.getElementById('main-tab-timeline'); if(_tlTab) _tlTab.classList.remove('on');
   const _fdTab=document.getElementById('main-tab-food'); if(_fdTab) _fdTab.classList.remove('on');
+  const _hsTab=document.getElementById('main-tab-history'); if(_hsTab) _hsTab.classList.remove('on');
   if (view === 'dash') {
     dash.classList.add('active');
     tabDash.classList.add('on');
@@ -2767,6 +2772,10 @@ function switchView(view) {
     foodView.classList.add('visible');
     if(_fdTab) _fdTab.classList.add('on');
     buildFoodTab();
+  } else if (view === 'history') {
+    historyView.classList.add('visible');
+    if(_hsTab) _hsTab.classList.add('on');
+    buildHistoryTab();
   } else {
     diary.classList.remove('hidden');
     navStrip.style.display = '';
@@ -4294,6 +4303,7 @@ function buildDashboard() {
       <!-- Sentinel lifts per gruppo muscolare -->
       <div style="margin-top:10px">
         <div class="dash-section-title" style="margin-top:16px">Sentinel lifts · per gruppo muscolare</div>
+        <div id="dash-ready-flags"></div>
 
         <!-- PETTO -->
         <div class="dash-section-label">🫁 Petto</div>
@@ -4447,6 +4457,16 @@ requestAnimationFrame(() => requestAnimationFrame(refreshDashCharts));
 })();
 
 function refreshDashCharts() {
+  // ── Badge "pronti per aumentare il carico" ──────────────────
+  const _readyEl = document.getElementById('dash-ready-flags');
+  if (_readyEl) {
+    const flags = (_lastData && _lastData.ready_to_progress) || [];
+    _readyEl.innerHTML = flags.length ? `<div style="background:rgba(52,199,89,.08);border:0.5px solid rgba(52,199,89,.3);border-radius:10px;padding:10px 14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:#1a7a3a;margin-bottom:4px">💪 Pronti per aumentare il carico</div>
+      <div style="font-size:12px;color:var(--text-secondary)">${flags.map(f=>`<strong style="color:var(--text-primary)">${f.label}</strong> ${f.weight}kg`).join(' · ')}</div>
+    </div>` : '';
+  }
+
   // ── Biometria (60gg unificata WU+V2) ──────────────────────
   const peso60 = getDayDataAll('peso', 60);
   const hrv60  = getDayDataAll('hrv',  60);
@@ -6815,6 +6835,177 @@ function buildFoodTab() {
   window.fdClear = function() { meal = {}; renderAll(); };
 
   renderAll();
+}
+
+// ── TAB STORICO ALLENAMENTI ────────────────────────────────────────────────
+function buildHistoryTab() {
+  const el = document.getElementById('history-view');
+  el.innerHTML = '<div class="app-view-inner view-wrap"><p style="color:var(--text-muted);padding:2rem 0">Caricamento storico...</p></div>';
+
+  const sessions = (_lastData && _lastData.history_sessions) || [];
+  const muscleVol = (_lastData && _lastData.muscle_volume_summary) || [];
+
+  const TYPE_COLOR = {
+    Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#0071e3'
+  };
+  function guessType(title) {
+    const t = title.toLowerCase();
+    if (t.includes('gambe') || t.includes('glute')) return 'Legs';
+    if (t.includes('dorso') && (t.includes('bicip') || t.includes('spall'))) return 'Pull';
+    if (t.includes('petto') && t.includes('tricip')) return 'Push';
+    if (t.includes('mattina') && (t.includes('spalle') || t.includes('parte superiore'))) return 'Upper Dom';
+    if (t.includes('sabato')) return 'Upper Sab';
+    return 'Altro';
+  }
+
+  let searchQ = '';
+  let expandedIdx = null;
+
+  function renderSessionList() {
+    const filtered = sessions.filter(s =>
+      !searchQ || s.title.toLowerCase().includes(searchQ) ||
+      s.exercises.some(e => e.name.toLowerCase().includes(searchQ))
+    ).slice().reverse(); // più recenti prima
+
+    if (!filtered.length) return '<p style="font-size:13px;color:var(--text-muted);padding:1rem 0">Nessuna sessione trovata.</p>';
+
+    return filtered.map((s) => {
+      const realIdx = sessions.indexOf(s);
+      const type = guessType(s.title);
+      const color = TYPE_COLOR[type] || '#8e8e93';
+      const isOpen = expandedIdx === realIdx;
+      const dateObj = new Date(s.date + 'T00:00:00');
+      const dateLabel = dateObj.toLocaleDateString('it-IT', {weekday:'short', day:'2-digit', month:'short'});
+      return `<div style="border:0.5px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden">
+        <div onclick="hsToggle(${realIdx})" style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;background:var(--surface-2)">
+          <div style="width:4px;height:32px;border-radius:2px;background:${color};flex-shrink:0"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.title}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${dateLabel} · ${s.time}</div>
+          </div>
+          <div style="display:flex;gap:10px;flex-shrink:0;text-align:right">
+            <div><span style="font-size:12px;font-weight:500;color:var(--text-primary)">${s.duration_min}'</span></div>
+            <div><span style="font-size:12px;font-weight:500;color:var(--text-primary)">${((s.volume_kg||0)/1000).toFixed(1)}t</span></div>
+            <div><span style="font-size:12px;font-weight:500;color:var(--text-primary)">${s.kcal||'—'}</span><span style="font-size:9px;color:var(--text-muted)"> kcal</span></div>
+          </div>
+          <div style="font-size:14px;color:var(--text-muted);transform:rotate(${isOpen?'90':'0'}deg);transition:transform .15s">›</div>
+        </div>
+        ${isOpen ? `<div style="padding:10px 12px;background:var(--surface-1)">
+          ${s.exercises.map(ex => {
+            const setsStr = ex.sets.map(st => `${st.kg||'—'}×${st.reps||'—'}`).join('  ·  ');
+            return `<div style="padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px">
+              <span style="font-weight:500;color:var(--text-primary)">${ex.name}</span>
+              <span style="color:var(--text-muted);float:right">${setsStr}</span>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  function renderMuscleChart() {
+    if (!muscleVol.length) return '';
+    const max = Math.max(...muscleVol.map(m => m.volume_kg));
+    const LABELS_IT = {shoulders:'Spalle', lats:'Dorso (lat)', chest:'Petto', triceps:'Tricipiti',
+      quads:'Quadricipiti', glutes:'Glutei', traps:'Trapezi', biceps:'Bicipiti',
+      hamstrings:'Femorali', calves:'Polpacci', lowerBack:'Lombari', unknown:'Altro'};
+    const COLORS = {shoulders:'#0071e3', lats:'#34c759', chest:'#ff3b30', triceps:'#af52de',
+      quads:'#ff9500', glutes:'#ff2d55', traps:'#5ac8fa', biceps:'#ffcc00',
+      hamstrings:'#34aadc', calves:'#8e8e93', lowerBack:'#a2845e', unknown:'#c7c7cc'};
+    return muscleVol.map(m => {
+      const pct = (m.volume_kg / max * 100).toFixed(0);
+      const label = LABELS_IT[m.muscle] || m.muscle;
+      const color = COLORS[m.muscle] || '#8e8e93';
+      return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="width:90px;font-size:11px;color:var(--text-secondary);flex-shrink:0;text-align:right">${label}</div>
+        <div style="flex:1;height:16px;background:var(--surface-1);border-radius:4px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${color};border-radius:4px"></div>
+        </div>
+        <div style="width:60px;font-size:11px;font-weight:500;color:var(--text-primary);flex-shrink:0">${(m.volume_kg/1000).toFixed(1)}t</div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderHeatmap() {
+    if (!sessions.length) return '';
+    const dates = new Set(sessions.map(s => s.date));
+    // Ultimi 84 giorni (12 settimane) fino ad oggi
+    const today = new Date(); today.setHours(0,0,0,0);
+    const weeks = [];
+    let cur = new Date(today); cur.setDate(cur.getDate() - 83);
+    // Allinea a lunedì
+    const dow = (cur.getDay()+6)%7; cur.setDate(cur.getDate()-dow);
+    for (let w=0; w<13; w++) {
+      const week = [];
+      for (let d=0; d<7; d++) {
+        const dstr = cur.toISOString().slice(0,10);
+        week.push({date: new Date(cur), active: dates.has(dstr), future: cur > today});
+        cur.setDate(cur.getDate()+1);
+      }
+      weeks.push(week);
+    }
+    const cellsHtml = weeks.map(week =>
+      `<div style="display:flex;flex-direction:column;gap:3px">${week.map(d => {
+        const bg = d.future ? 'transparent' : (d.active ? '#34c759' : 'var(--surface-1)');
+        const border = d.future ? '0.5px dashed var(--border)' : 'none';
+        return `<div title="${d.date.toLocaleDateString('it-IT')}" style="width:11px;height:11px;border-radius:2px;background:${bg};border:${border}"></div>`;
+      }).join('')}</div>`
+    ).join('');
+    return `<div style="display:flex;gap:3px;overflow-x:auto;padding:4px 0">${cellsHtml}</div>`;
+  }
+
+  function renderReadyFlags() {
+    const flags = (_lastData && _lastData.ready_to_progress) || [];
+    if (!flags.length) return '';
+    return `<div style="background:rgba(52,199,89,.08);border:0.5px solid rgba(52,199,89,.3);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:12px;font-weight:600;color:#1a7a3a;margin-bottom:8px">💪 Pronti per aumentare il carico</div>
+      ${flags.map(f => `<div style="font-size:12px;color:var(--text-secondary);padding:2px 0">
+        <strong style="color:var(--text-primary)">${f.label}</strong> — ${f.weight}kg, min ${f.min_reps} reps su tutte le serie da ${f.sessions_at_weight} sessioni
+      </div>`).join('')}
+    </div>`;
+  }
+
+  function render() {
+    const totalSessions = sessions.length;
+    const totalVol = sessions.reduce((a,s)=>a+(s.volume_kg||0),0);
+    const avgDur = sessions.length ? Math.round(sessions.reduce((a,s)=>a+(s.duration_min||0),0)/sessions.length) : 0;
+
+    el.innerHTML = `<div class="app-view-inner view-wrap">
+      <div class="week-hdr" style="margin-bottom:1.25rem">
+        <h2>Storico allenamenti</h2>
+        <span class="week-range">${totalSessions} sessioni · ${(totalVol/1000).toFixed(1)}t volume totale · ${avgDur}' durata media</span>
+      </div>
+
+      ${renderReadyFlags()}
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <div class="charts-card">
+          <div class="dash-card-title">Volume per gruppo muscolare</div>
+          <div style="margin-top:10px">${renderMuscleChart()}</div>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">Aderenza · ultime 12 settimane</div>
+          <div style="margin-top:10px">${renderHeatmap()}</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;color:var(--text-muted)">
+            <div style="width:10px;height:10px;border-radius:2px;background:var(--surface-1)"></div>Riposo
+            <div style="width:10px;height:10px;border-radius:2px;background:#34c759;margin-left:8px"></div>Allenamento
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;display:flex;gap:8px">
+        <input type="text" id="hs-search" placeholder="Cerca per titolo o esercizio..."
+          style="flex:1;font-size:13px;padding:7px 12px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--surface-1);color:var(--text-primary)"
+          oninput="hsSearch(this.value)">
+      </div>
+      <div id="hs-list">${renderSessionList()}</div>
+    </div>`;
+  }
+
+  window.hsSearch = function(q) { searchQ = q.toLowerCase(); document.getElementById('hs-list').innerHTML = renderSessionList(); };
+  window.hsToggle = function(idx) { expandedIdx = (expandedIdx === idx) ? null : idx; document.getElementById('hs-list').innerHTML = renderSessionList(); };
+
+  render();
 }
 
 function buildOrariView() {
