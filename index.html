@@ -2234,6 +2234,11 @@ async function saveData(){
   Object.entries(all).forEach(([id,f])=>{
     if(id.startsWith('p2_day_')) dataV2[id]=f; else dataV1[id]=f;
   });
+  // Preserva chiavi top-level non editabili da form (history_sessions, muscle_volume_summary,
+  // ready_to_progress, history_sentinels, dexa_t0/t1, lab_*) — collectAll() le ignora perché non
+  // hanno un campo [data-id][data-f] nel DOM, quindi vanno riportate esplicitamente o si perdono.
+  Object.entries(_lastData||{}).forEach(([k,v])=>{ if(!k.startsWith('day_')&&!(k in dataV1)) dataV1[k]=v; });
+  Object.entries(_lastData2||{}).forEach(([k,v])=>{ if(!k.startsWith('p2_day_')&&!(k in dataV2)) dataV2[k]=v; });
   try{localStorage.setItem(KEY,JSON.stringify({data:dataV1,ts}));_lastData=dataV1;}catch(e){}
   try{localStorage.setItem(KEY2,JSON.stringify(dataV2));_lastData2=dataV2;}catch(e){}
   async function upsert(userId,data){
@@ -6844,109 +6849,17 @@ function buildFoodTab() {
   renderAll();
 }
 
-// ── COMPUTO STORICO DA motra_log (day_N / p2_day_N) ────────────────────────
-// I campi history_sessions / muscle_volume_summary NON esistono nei dati salvati:
-// vanno derivati qui da ogni motra_log presente in _lastData / _lastData2.
-const MUSCLE_RULES = [
-  ['hamstrings', ['leg curl','hamstring curl','romanian deadlift','stiff leg deadlift','stacco rumeno']],
-  ['quads',      ['leg press','leg extension','squat','affondi','lunge','hack squat','estensione gambe']],
-  ['glutes',     ['hip thrust','glute bridge','glute kickback']],
-  ['calves',     ['calf raise','polpacci']],
-  ['lowerBack',  ['deadlift','back extension','hyperextension','good morning','stacco']],
-  ['traps',      ['shrug','upright row','trapezi']],
-  ['lats',       ['row','pulldown','pull down','lat pull','t-bar','dorso']],
-  ['shoulders',  ['shoulder press','overhead press','military press','lateral raise','front raise','rear delt','face pull','spalle']],
-  ['triceps',    ['tricep','triceps','pushdown','skull crusher','dip','tricipiti']],
-  ['biceps',     ['curl','bicipiti']],
-  ['chest',      ['bench press','pec dec','pec-dec','chest fly','fly','crossover','chest press','incline press','petto']]
-];
-function classifyMuscle(name) {
-  const n = (name || '').toLowerCase();
-  for (const [muscle, keywords] of MUSCLE_RULES) {
-    if (keywords.some(kw => n.includes(kw))) return muscle;
-  }
-  return 'unknown';
-}
-function parseDurationToMin(str) {
-  if (!str) return 0;
-  const hm = str.match(/(\d+)\s*h\s*(\d+)\s*m/i);
-  if (hm) return parseInt(hm[1]) * 60 + parseInt(hm[2]);
-  const m = str.match(/(\d+)\s*m/i);
-  if (m) return parseInt(m[1]);
-  return 0;
-}
-function parseVolumeToKg(str) {
-  if (!str) return 0;
-  const vMatch = str.match(/([\d,\.]+)\s*([Kk])?/);
-  if (!vMatch) return 0;
-  let val = parseFloat(vMatch[1].replace(',', '.'));
-  if (vMatch[2]) val *= 1000;
-  return Math.round(val) || 0;
-}
-function extractTimeFromMotraDate(dateStr) {
-  if (!dateStr) return '';
-  const m = dateStr.match(/,\s*(\d{1,2}:\d{2})/);
-  return m ? m[1] : '';
-}
-function computeHistoryData() {
-  const sessions = [];
-  const src = [
-    { obj: (_lastData || {}), prefix: 'day_', start: START },
-    { obj: (_lastData2 || {}), prefix: 'p2_day_', start: START2 }
-  ];
-  src.forEach(({ obj, prefix, start }) => {
-    Object.entries(obj).forEach(([id, fields]) => {
-      if (!id.startsWith(prefix) || !fields || !fields.motra_log) return;
-      let log;
-      try { log = typeof fields.motra_log === 'string' ? JSON.parse(fields.motra_log) : fields.motra_log; }
-      catch (e) { return; }
-      if (!log || !log.exercises || !log.exercises.length) return;
-
-      const dayNum = parseInt(id.slice(prefix.length), 10);
-      if (isNaN(dayNum)) return;
-      const d = new Date(start); d.setDate(d.getDate() + dayNum);
-
-      const durationMin = parseInt(fields.wo_durata) || parseDurationToMin(log.durata);
-      const volumeKg = parseFloat(fields.wo_volume) || parseVolumeToKg(log.volume);
-      const kcal = fields.wo_kcal || (log.calorie ? log.calorie.replace(/\s*cal/i, '').trim() : '');
-      const time = extractTimeFromMotraDate(log.date);
-
-      sessions.push({
-        id,
-        title: log.title || 'Allenamento',
-        date: localDateStr(d),
-        time,
-        duration_min: durationMin,
-        volume_kg: volumeKg,
-        kcal,
-        exercises: log.exercises
-      });
-    });
-  });
-  sessions.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
-
-  const muscleTotals = {};
-  sessions.forEach(s => {
-    s.exercises.forEach(ex => {
-      const muscle = classifyMuscle(ex.name);
-      const vol = (ex.sets || []).reduce((sum, st) => sum + (parseFloat(st.kg) || 0) * (parseInt(st.reps) || 0), 0);
-      muscleTotals[muscle] = (muscleTotals[muscle] || 0) + vol;
-    });
-  });
-  const muscleVol = Object.entries(muscleTotals)
-    .filter(([m]) => m !== 'unknown')
-    .map(([muscle, volume_kg]) => ({ muscle, volume_kg }))
-    .sort((a, b) => b.volume_kg - a.volume_kg);
-
-  return { sessions, muscleVol };
-}
-
 // ── TAB STORICO ALLENAMENTI ────────────────────────────────────────────────
+// history_sessions / muscle_volume_summary / ready_to_progress sono precalcolati
+// e salvati come chiavi top-level nel JSONB "data" (sorelle di day_N), NON derivati
+// qui — coprono anche lo storico pre-app (da maggio 2026) con tag muscolo multipli.
+// Vedi anche saveData(): deve preservare queste chiavi ad ogni "Salva".
 function buildHistoryTab() {
   const el = document.getElementById('history-view');
   el.innerHTML = '<div class="app-view-inner view-wrap"><p style="color:var(--text-muted);padding:2rem 0">Caricamento storico...</p></div>';
 
-  const { sessions, muscleVol } = computeHistoryData();
+  const sessions = (_lastData && _lastData.history_sessions) || [];
+  const muscleVol = (_lastData && _lastData.muscle_volume_summary) || [];
 
   const TYPE_COLOR = {
     Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#0071e3'
