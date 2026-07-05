@@ -1331,6 +1331,38 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 .charts-card { box-sizing: border-box; }
 .dash-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 700px) { .dash-two-col { grid-template-columns: 1fr; } }
+
+/* Aderenza — ring + week-card (sostituisce la heatmap grezza a 84 celle) */
+.adh-top { display:flex; align-items:center; gap:14px; margin-bottom:14px; }
+.adh-ring { position:relative; width:60px; height:60px; flex:0 0 auto; }
+.adh-ring svg { width:100%; height:100%; transform:rotate(-90deg); }
+.adh-ring-num { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:var(--fw-semi); color:var(--text); }
+.adh-ring-label { font-size:9px; color:var(--muted); text-align:center; margin-top:2px; }
+.adh-stats { display:flex; gap:14px; flex:1; }
+.adh-stat { display:flex; flex-direction:column; }
+.adh-stat b { font-size:15px; font-weight:var(--fw-semi); color:var(--text); line-height:1.1; }
+.adh-stat span { font-size:9px; color:var(--muted); margin-top:2px; }
+.adh-weeks { display:flex; flex-direction:column; gap:5px; }
+.adh-week { display:flex; align-items:center; gap:7px; padding:5px 7px; border-radius:var(--radius-xs); background:var(--surface2); }
+.adh-week.current { background:rgba(255,149,0,.10); border:1px solid rgba(255,149,0,.35); padding:4px 6px; }
+.adh-week-range { width:38px; font-size:9px; color:var(--muted); flex:0 0 auto; }
+.adh-week.current .adh-week-range { color:var(--orange); font-weight:var(--fw-med); }
+.adh-week-days { display:flex; gap:3px; flex:1; }
+.adh-day { position:relative; width:16px; height:18px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:var(--fw-med); color:var(--faint); background:#eceff1; border:1px solid var(--border); box-sizing:border-box; }
+.adh-day.on { background:var(--green); color:#fff; border-color:#2ba84a; }
+.adh-day.future { background:transparent; border:1px dashed var(--border); color:transparent; }
+.adh-day.sched-rest::after { content:''; position:absolute; bottom:1.5px; left:50%; transform:translateX(-50%); width:2.5px; height:2.5px; border-radius:50%; background:var(--orange); opacity:.75; }
+.adh-day.on.sched-rest::after { background:#fff; opacity:.9; }
+.adh-day.future.sched-rest::after { display:none; }
+.adh-week-ratio { width:24px; text-align:right; font-size:10px; font-weight:var(--fw-semi); color:var(--text); flex:0 0 auto; }
+.adh-week-ratio.bonus { color:var(--orange); }
+.adh-legend { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; font-size:9px; color:var(--muted); }
+.adh-legend-item { display:flex; align-items:center; gap:4px; }
+.adh-legend-sw { position:relative; width:14px; height:16px; border-radius:4px; background:#eceff1; border:1px solid var(--border); box-sizing:border-box; flex:0 0 auto; }
+.adh-legend-sw.on { background:var(--green); border-color:#2ba84a; }
+.adh-legend-sw.rest::after { content:''; position:absolute; bottom:1.5px; left:50%; transform:translateX(-50%); width:2.5px; height:2.5px; border-radius:50%; background:var(--orange); }
+.adh-legend-sw.on.rest::after { background:#fff; }
+.adh-more { display:block; text-align:center; font-size:10px; color:var(--muted); margin-top:6px; padding:5px; border-radius:var(--radius-xs); background:var(--surface2); cursor:pointer; }
 </style>
 <!-- deploy 1781175570 -->
 </head>
@@ -6942,59 +6974,135 @@ function buildHistoryTab() {
     }).join('');
   }
 
-  function renderHeatmap() {
-    if (!sessions.length) return '';
+  // Riposo pianificato: Lun/Gio (dow 0/3 in indicizzazione Lun-based). NON blocca più
+  // il tracking — è solo un'indicazione informativa (puntino), la cella resta
+  // allenabile come le altre (utile per BKK e trasferte dove si può allenarsi 7/7).
+  const SCHED_REST_DOW = [0, 3];
+  let adherenceExpanded = false;
+
+  function computeAdherence() {
     const dates = new Set(sessions.map(s => s.date));
-    // Ultimi 84 giorni (12 settimane) fino ad oggi
     const today = new Date(); today.setHours(0,0,0,0);
+
+    // Streak record: cerca la sequenza più lunga di giorni consecutivi allenati
+    // su TUTTO lo storico disponibile (non solo le 12 settimane mostrate).
+    const sortedDates = sessions.map(s => s.date).sort();
+    let recordStreak = 0, run = 0, prevD = null;
+    sortedDates.forEach(dstr => {
+      const d = new Date(dstr + 'T00:00:00');
+      if (prevD) {
+        const diffDays = Math.round((d - prevD) / 86400000);
+        run = (diffDays === 1) ? run + 1 : 1;
+      } else { run = 1; }
+      recordStreak = Math.max(recordStreak, run);
+      prevD = d;
+    });
+
+    // Streak attuale: parte da oggi (o da ieri se oggi non ancora allenato) e
+    // conta all'indietro finché trova giorni consecutivi allenati.
+    let cursor = new Date(today);
+    if (!dates.has(localDateStr(cursor))) cursor.setDate(cursor.getDate() - 1);
+    let currentStreak = 0;
+    while (dates.has(localDateStr(cursor))) { currentStreak++; cursor.setDate(cursor.getDate() - 1); }
+
+    // 12 settimane, allineate a lunedì
     const weeks = [];
     let cur = new Date(today); cur.setDate(cur.getDate() - 83);
-    // Allinea a lunedì
-    const dow = (cur.getDay()+6)%7; cur.setDate(cur.getDate()-dow);
-    for (let w=0; w<13; w++) {
+    const dowOffset = (cur.getDay() + 6) % 7; cur.setDate(cur.getDate() - dowOffset);
+    for (let w = 0; w < 13; w++) {
       const week = [];
-      for (let d=0; d<7; d++) {
+      for (let d = 0; d < 7; d++) {
         const dstr = localDateStr(cur);
-        week.push({date: new Date(cur), active: dates.has(dstr), future: cur > today});
-        cur.setDate(cur.getDate()+1);
+        week.push({
+          date: new Date(cur),
+          active: dates.has(dstr),
+          future: cur > today,
+          schedRest: SCHED_REST_DOW.includes(d)
+        });
+        cur.setDate(cur.getDate() + 1);
       }
       weeks.push(week);
     }
+
+    const nonFutureCells = weeks.flat().filter(d => !d.future);
+    const activeCells = nonFutureCells.filter(d => d.active);
+    const pct = nonFutureCells.length ? Math.round(activeCells.length / nonFutureCells.length * 100) : 0;
+    const avgPerWeek = (activeCells.length / weeks.length);
+
+    return { weeks, pct, currentStreak, recordStreak, avgPerWeek };
+  }
+
+  function renderAdherenceCard() {
+    if (!sessions.length) return '';
+    const { weeks, pct, currentStreak, recordStreak, avgPerWeek } = computeAdherence();
     const DOW_LABELS = ['L','M','M','G','V','S','D'];
-    // Etichette mese: mostra il nome mese sopra la prima settimana in cui inizia quel mese
-    const monthLabels = weeks.map((week, wi) => {
-      const first = week[0].date;
-      const prevWeek = weeks[wi-1];
-      const isNewMonth = wi === 0 || (prevWeek && prevWeek[0].date.getMonth() !== first.getMonth());
-      return isNewMonth ? first.toLocaleDateString('it-IT',{month:'short'}) : '';
-    });
 
-    const monthRow = `<div style="display:flex;gap:3px;margin-left:16px;margin-bottom:3px">${
-      weeks.map(() => '').map((_, wi) => `<div style="width:11px;font-size:8px;color:var(--text-muted);text-align:left;white-space:nowrap">${monthLabels[wi]}</div>`).join('')
-    }</div>`;
+    const circumference = 2 * Math.PI * 24;
+    const dashOffset = circumference * (1 - pct / 100);
 
-    const dowCol = `<div style="display:flex;flex-direction:column;gap:3px;margin-right:4px">${
-      DOW_LABELS.map(l => `<div style="width:11px;height:11px;font-size:8px;color:var(--text-muted);line-height:11px">${l}</div>`).join('')
-    }</div>`;
+    const ringHtml = `<div class="adh-ring">
+        <svg viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="24" fill="none" stroke="var(--surface2)" stroke-width="6"/>
+          <circle cx="30" cy="30" r="24" fill="none" stroke="var(--green)" stroke-width="6"
+            stroke-dasharray="${circumference.toFixed(1)}" stroke-dashoffset="${dashOffset.toFixed(1)}" stroke-linecap="round"/>
+        </svg>
+        <div class="adh-ring-num">${pct}%</div>
+      </div>`;
 
-    const cellsHtml = weeks.map(week =>
-      `<div style="display:flex;flex-direction:column;gap:3px">${week.map(d => {
-        let bg, border;
-        if (d.future) { bg = 'transparent'; border = '1px dashed var(--border)'; }
-        else if (d.active) { bg = '#34c759'; border = '1px solid #2ba84a'; }
-        else { bg = 'var(--surface-0, #eceff1)'; border = '1px solid var(--border)'; }
-        return `<div title="${d.date.toLocaleDateString('it-IT')}${d.active?' · allenamento':''}" style="width:11px;height:11px;border-radius:2px;background:${bg};border:${border};box-sizing:border-box"></div>`;
-      }).join('')}</div>`
-    ).join('');
+    const statsHtml = `<div class="adh-stats">
+        <div class="adh-stat"><b>${currentStreak}</b><span>streak attuale</span></div>
+        <div class="adh-stat"><b>${recordStreak}</b><span>streak record</span></div>
+        <div class="adh-stat"><b>${avgPerWeek.toFixed(1)}</b><span>media/sett.</span></div>
+      </div>`;
+
+    const allWeeksDesc = weeks.slice().reverse(); // più recente prima
+    const visibleWeeks = adherenceExpanded ? allWeeksDesc : allWeeksDesc.slice(0, 6);
+
+    const weekRows = visibleWeeks.map((week, idx) => {
+      const isCurrent = idx === 0;
+      const activeCount = week.filter(d => d.active).length;
+      const nonFutureCount = week.filter(d => !d.future).length;
+      const isBonus = activeCount > 5; // ha allenato anche su almeno un rest-day pianificato
+      const rangeLabel = week[0].date.toLocaleDateString('it-IT', {day:'2-digit', month:'short'});
+
+      const daysHtml = week.map((d, di) => {
+        const cls = ['adh-day'];
+        if (d.future) cls.push('future');
+        else if (d.active) cls.push('on');
+        if (d.schedRest) cls.push('sched-rest');
+        const label = d.future ? '' : DOW_LABELS[di];
+        const titleAttr = `${d.date.toLocaleDateString('it-IT')}${d.active?' · allenamento':''}${d.schedRest?' · riposo pianificato':''}`;
+        return `<div class="${cls.join(' ')}" title="${titleAttr}">${label}</div>`;
+      }).join('');
+
+      return `<div class="adh-week${isCurrent?' current':''}">
+          <span class="adh-week-range">${rangeLabel}</span>
+          <div class="adh-week-days">${daysHtml}</div>
+          <span class="adh-week-ratio${isBonus?' bonus':''}">${activeCount}/${nonFutureCount}</span>
+        </div>`;
+    }).join('');
+
+    const moreLink = allWeeksDesc.length > 6
+      ? `<div class="adh-more" onclick="adhToggleExpand()">${adherenceExpanded ? 'Mostra solo le recenti' : `Mostra tutte le ${allWeeksDesc.length} settimane`}</div>`
+      : '';
 
     return `<div>
-      ${monthRow}
-      <div style="display:flex">
-        ${dowCol}
-        <div style="display:flex;gap:3px;overflow-x:auto">${cellsHtml}</div>
-      </div>
-    </div>`;
+        <div class="adh-top">${ringHtml}${statsHtml}</div>
+        <div class="adh-weeks">${weekRows}</div>
+        ${moreLink}
+        <div class="adh-legend">
+          <div class="adh-legend-item"><span class="adh-legend-sw on"></span>allenato</div>
+          <div class="adh-legend-item"><span class="adh-legend-sw"></span>non allenato</div>
+          <div class="adh-legend-item"><span class="adh-legend-sw rest"></span>riposo pianificato</div>
+        </div>
+      </div>`;
   }
+
+  window.adhToggleExpand = function() {
+    adherenceExpanded = !adherenceExpanded;
+    const card = document.querySelector('#adh-card-slot');
+    if (card) card.innerHTML = renderAdherenceCard();
+  };
 
   function renderReadyFlags() {
     const flags = (_lastData && _lastData.ready_to_progress) || [];
@@ -7027,11 +7135,7 @@ function buildHistoryTab() {
         </div>
         <div class="charts-card">
           <div class="dash-card-title">Aderenza · ultime 12 settimane</div>
-          <div style="margin-top:10px">${renderHeatmap()}</div>
-          <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;color:var(--text-muted)">
-            <div style="width:10px;height:10px;border-radius:2px;background:var(--surface-0, #eceff1);border:1px solid var(--border);box-sizing:border-box"></div>Riposo
-            <div style="width:10px;height:10px;border-radius:2px;background:#34c759;margin-left:8px"></div>Allenamento
-          </div>
+          <div id="adh-card-slot" style="margin-top:10px">${renderAdherenceCard()}</div>
         </div>
       </div>
 
