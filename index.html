@@ -6985,7 +6985,7 @@ function buildHistoryTab() {
     const today = new Date(); today.setHours(0,0,0,0);
 
     // Streak record: cerca la sequenza più lunga di giorni consecutivi allenati
-    // su TUTTO lo storico disponibile (non solo le 12 settimane mostrate).
+    // su TUTTO lo storico disponibile (non solo le settimane mostrate).
     const sortedDates = sessions.map(s => s.date).sort();
     let recordStreak = 0, run = 0, prevD = null;
     sortedDates.forEach(dstr => {
@@ -7005,21 +7005,38 @@ function buildHistoryTab() {
     let currentStreak = 0;
     while (dates.has(localDateStr(cursor))) { currentStreak++; cursor.setDate(cursor.getDate() - 1); }
 
-    // 12 settimane, allineate a lunedì
+    // Lunedì della settimana corrente (contiene "oggi") — è sempre l'ultima
+    // settimana mostrata, mai una settimana futura non ancora iniziata.
+    const dowOffsetToday = (today.getDay() + 6) % 7;
+    const currentMonday = new Date(today); currentMonday.setDate(currentMonday.getDate() - dowOffsetToday);
+
+    // Non si torna indietro oltre l'inizio reale del tracciamento (primo
+    // giorno presente in history_sessions): altrimenti le settimane precedenti
+    // all'uso dell'app risulterebbero "0/7" e falserebbero % e media, quando
+    // in realtà l'app semplicemente non esisteva ancora.
+    let earliestMonday = currentMonday;
+    if (sortedDates.length) {
+      const firstD = new Date(sortedDates[0] + 'T00:00:00');
+      const dowOffsetFirst = (firstD.getDay() + 6) % 7;
+      earliestMonday = new Date(firstD); earliestMonday.setDate(earliestMonday.getDate() - dowOffsetFirst);
+    }
+    const weeksAvailable = Math.round((currentMonday - earliestMonday) / (7 * 86400000)) + 1;
+    const weeksToShow = Math.max(1, Math.min(12, weeksAvailable));
+
     const weeks = [];
-    let cur = new Date(today); cur.setDate(cur.getDate() - 83);
-    const dowOffset = (cur.getDay() + 6) % 7; cur.setDate(cur.getDate() - dowOffset);
-    for (let w = 0; w < 13; w++) {
+    for (let w = 0; w < weeksToShow; w++) {
+      const weekStart = new Date(currentMonday);
+      weekStart.setDate(weekStart.getDate() - 7 * (weeksToShow - 1 - w));
       const week = [];
       for (let d = 0; d < 7; d++) {
-        const dstr = localDateStr(cur);
+        const dayDate = new Date(weekStart); dayDate.setDate(dayDate.getDate() + d);
+        const dstr = localDateStr(dayDate);
         week.push({
-          date: new Date(cur),
+          date: dayDate,
           active: dates.has(dstr),
-          future: cur > today,
+          future: dayDate > today,
           schedRest: SCHED_REST_DOW.includes(d)
         });
-        cur.setDate(cur.getDate() + 1);
       }
       weeks.push(week);
     }
@@ -7027,14 +7044,14 @@ function buildHistoryTab() {
     const nonFutureCells = weeks.flat().filter(d => !d.future);
     const activeCells = nonFutureCells.filter(d => d.active);
     const pct = nonFutureCells.length ? Math.round(activeCells.length / nonFutureCells.length * 100) : 0;
-    const avgPerWeek = (activeCells.length / weeks.length);
+    const avgPerWeek = weeks.length ? (activeCells.length / weeks.length) : 0;
 
-    return { weeks, pct, currentStreak, recordStreak, avgPerWeek };
+    return { weeks, pct, currentStreak, recordStreak, avgPerWeek, weeksToShow };
   }
 
   function renderAdherenceCard() {
     if (!sessions.length) return '';
-    const { weeks, pct, currentStreak, recordStreak, avgPerWeek } = computeAdherence();
+    const { weeks, pct, currentStreak, recordStreak, avgPerWeek, weeksToShow } = computeAdherence();
     const DOW_LABELS = ['L','M','M','G','V','S','D'];
 
     const circumference = 2 * Math.PI * 24;
@@ -7086,7 +7103,7 @@ function buildHistoryTab() {
       ? `<div class="adh-more" onclick="adhToggleExpand()">${adherenceExpanded ? 'Mostra solo le recenti' : `Mostra tutte le ${allWeeksDesc.length} settimane`}</div>`
       : '';
 
-    return `<div>
+    return `<div data-weeks="${weeksToShow}">
         <div class="adh-top">${ringHtml}${statsHtml}</div>
         <div class="adh-weeks">${weekRows}</div>
         ${moreLink}
@@ -7134,7 +7151,7 @@ function buildHistoryTab() {
           <div style="margin-top:10px">${renderMuscleChart()}</div>
         </div>
         <div class="charts-card">
-          <div class="dash-card-title">Aderenza · ultime 12 settimane</div>
+          <div class="dash-card-title">Aderenza · ultime ${sessions.length ? computeAdherence().weeksToShow : 12} settimane</div>
           <div id="adh-card-slot" style="margin-top:10px">${renderAdherenceCard()}</div>
         </div>
       </div>
