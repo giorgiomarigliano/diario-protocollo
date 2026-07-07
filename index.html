@@ -2453,19 +2453,19 @@ function getRangeStatus(valStr, refStr) {
   const v = parseFloat(valStr);
   if (isNaN(v) || !refStr) return 'neutral';
   const r = refStr.trim();
-  // Range: "70–99" o "70-99"
-  const rangeM = r.match(/^([\d.]+)[–\-]([\d.]+)$/);
+  // Range: "70–99", "~115–300", "11.8–39.8 (M)" — tollera prefissi/suffissi non numerici
+  const rangeM = r.match(/([\d.]+)\s*[–\-]\s*([\d.]+)/);
   if (rangeM) {
     const lo = parseFloat(rangeM[1]), hi = parseFloat(rangeM[2]);
     if (v < lo) return 'low';
     if (v > hi) return 'high';
     return 'ok';
   }
-  // "> X" o "≥ X"
-  const gtM = r.match(/^[>≥]\s*([\d.]+)$/);
+  // "> X" o "≥ X" (anche con testo dopo, es. "≥40 (M)")
+  const gtM = r.match(/[>≥]\s*([\d.]+)/);
   if (gtM) return v >= parseFloat(gtM[1]) ? 'ok' : 'low';
-  // "< X" o "≤ X"
-  const ltM = r.match(/^[<≤]\s*([\d.]+)$/);
+  // "< X" o "≤ X" (anche con testo dopo)
+  const ltM = r.match(/[<≤]\s*([\d.]+)/);
   if (ltM) return v <= parseFloat(ltM[1]) ? 'ok' : 'high';
   return 'neutral';
 }
