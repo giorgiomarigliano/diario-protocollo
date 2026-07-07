@@ -6459,26 +6459,43 @@ function buildMedDash() {
   // ══════════════════════════════════════════════
   let html = `<div class="app-view-inner view-wrap">
 
-  <!-- KPI GRID -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:28px">
-    ${kpiCard('IGF-1', DATA.igf1, 'µg/L', 115, 300, 'target 150–180+ (post Tesa)', '#af52de')}
-    ${kpiCard('HDL', DATA.hdl, 'mg/dL', 40, undefined, 'target ≥40', '#ff9500')}
-    ${kpiCard('Vitamina D', DATA.vitd, 'µg/L', 50, undefined, 'target ≥50', '#34c759')}
-    ${kpiCard('Omocisteina', DATA.omocist, 'µmol/L', undefined, 13, 'target ≤13', '#0071e3')}
-    ${kpiCard('Emoglobina', DATA.emoglobina, 'g/L', 133, undefined, 'target ≥133', '#ff3b30')}
-    ${kpiCard('Zinco', DATA.zinco, 'µg/dL', 60, 106, 'target 60–106', '#8e44ad')}
-    ${kpiCard('Testosterone lib.', DATA.testLibero, 'ng/L', 15, 40, 'target >15 (efficace)', '#0071e3')}
-    ${kpiCard('VES', DATA.ves, 'mm/h', undefined, 15, 'target ≤15', '#ff9500')}
-    ${kpiCard('PSA', DATA.psa, 'µg/L', undefined, 4, 'target ≤4', '#34c759')}
+  <!-- KPI GRID — organizzata per categoria clinica -->
+  <div class="section-label" style="margin-top:0">🩺 Asse renale</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
     ${kpiCard('Creatinina', DATA.creatinina, 'mg/dL', undefined, 1.2, 'target ≤1.20', '#8e8e93')}
     ${kpiCard('eGFR', DATA.egfr, 'mL/min', 90, undefined, 'target ≥90', '#5856d6')}
+    ${kpiCard('ACR urinario', DATA.acr, 'mg/g cre', undefined, 30, 'target <30 (normoalbuminuria)', '#34c759')}
+  </div>
+
+  <div class="section-label">⚖️ Asse gonadico</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
+    ${kpiCard('Testosterone tot.', DATA.testTotale, 'µg/L', 1.87, 6.84, 'range 1.87–6.84', '#0071e3')}
+    ${kpiCard('Testosterone lib.', DATA.testLibero, 'ng/L', 15, 40, 'target >15 (efficace)', '#0071e3')}
+    ${kpiCard('SHBG', DATA.shbg, 'nmol/L', undefined, 80.50, 'target ≤80.50', '#8e44ad')}
     ${kpiCard('FSH', DATA.fsh, 'mU/mL', undefined, 18.1, 'target ≤18.1', '#ff3b30')}
     ${kpiCard('LH', DATA.lh, 'UI/L', undefined, 9.3, 'target ≤9.3', '#ff3b30')}
-    ${kpiCard('Testosterone tot.', DATA.testTotale, 'µg/L', 1.87, 6.84, 'range 1.87–6.84', '#0071e3')}
-    ${kpiCard('SHBG', DATA.shbg, 'nmol/L', undefined, 80.50, 'target ≤80.50', '#8e44ad')}
-    ${kpiCard('ACR urinario', DATA.acr, 'mg/g cre', undefined, 30, 'target <30 (normoalbuminuria)', '#34c759')}
-    ${kpiCard('Ferritina', DATA.ferritina, 'µg/L', 22, 322, 'target 22–322', '#ff9500')}
+  </div>
+
+  <div class="section-label">🫀 Lipidi</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
+    ${kpiCard('HDL', DATA.hdl, 'mg/dL', 40, undefined, 'target ≥40', '#ff9500')}
+  </div>
+
+  <div class="section-label">🔥 Infiammazione</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
+    ${kpiCard('Omocisteina', DATA.omocist, 'µmol/L', undefined, 13, 'target ≤13', '#0071e3')}
+    ${kpiCard('VES', DATA.ves, 'mm/h', undefined, 15, 'target ≤15', '#ff9500')}
     ${kpiCard('PCR', DATA.crp, 'mg/L', undefined, 3.3, 'target ≤3.3', '#8e8e93')}
+  </div>
+
+  <div class="section-label">🧬 Altro / quadro generale</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:28px">
+    ${kpiCard('IGF-1', DATA.igf1, 'µg/L', 115, 300, 'target 150–180+ (post Tesa)', '#af52de')}
+    ${kpiCard('Vitamina D', DATA.vitd, 'µg/L', 50, undefined, 'target ≥50', '#34c759')}
+    ${kpiCard('Emoglobina', DATA.emoglobina, 'g/L', 133, undefined, 'target ≥133', '#ff3b30')}
+    ${kpiCard('Zinco', DATA.zinco, 'µg/dL', 60, 106, 'target 60–106', '#8e44ad')}
+    ${kpiCard('PSA', DATA.psa, 'µg/L', undefined, 4, 'target ≤4', '#34c759')}
+    ${kpiCard('Ferritina', DATA.ferritina, 'µg/L', 22, 322, 'target 22–322', '#ff9500')}
   </div>
 
   <!-- OBIETTIVI PROTOCOLLO -->
