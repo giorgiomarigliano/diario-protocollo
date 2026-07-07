@@ -2382,14 +2382,14 @@ function updateNavHighlight(){
 // ── LAB & DEXA MILESTONE DATA ──
 // Panel peptide-specifico T0 (Santagostino, pre-v2)
 // prev = valore storico più recente disponibile pre-T0 (per confronto)
-const LAB_BASELINE = {
+const LAB_CDI_QUADRO = {
   igf1:     {val:'94',    ref:'115–220',  label:'IGF-1',         unit:'ng/mL',   prev:'94',    prev_label:'20 mag 2026', better:'up'},
   gluc:     {val:'87',    ref:'70–99',    label:'Glucosio',       unit:'mg/dL',   prev:'88',    prev_label:'10 apr 2026', better:'down'},
   insulina: {val:'5.3',   ref:'2.6–24.9', label:'Insulina',       unit:'µUI/mL',  prev:'3.6',   prev_label:'10 apr 2026', better:'down'},
   homa:     {val:'1.1',   ref:'<2.5',     label:'HOMA Index',     unit:'',        prev:'0.8',   prev_label:'10 apr 2026', better:'down'},
   t_tot:    {val:'—',     ref:'249–836',  label:'T Totale',       unit:'ng/dL',   prev:null,    prev_label:null,           better:'up'},
   t_lib:    {val:'15.60', ref:'9.57–40.60',label:'T Libero',      unit:'ng/L',    prev:'15.60', prev_label:'10 apr 2026', better:'up'},
-  shbg:     {val:'75.10', ref:'18–54',    label:'SHBG',           unit:'nmol/L',  prev:'75.10', prev_label:'10 apr 2026', better:'down'},
+  shbg:     {val:'75.10', ref:'16.00–80.50', label:'SHBG',        unit:'nmol/L',  prev:'75.10', prev_label:'10 apr 2026', better:'down'},
   hdl:      {val:'35',    ref:'>40',      label:'HDL',            unit:'mg/dL',   prev:'28',    prev_label:'10 apr 2026', better:'up'},
   ldl:      {val:'57',    ref:'<115',     label:'LDL',            unit:'mg/dL',   prev:'60',    prev_label:'10 apr 2026', better:'down'},
   tg:       {val:'77',    ref:'<150',     label:'Trigliceridi',   unit:'mg/dL',   prev:'65',    prev_label:'10 apr 2026', better:'down'},
@@ -2399,6 +2399,32 @@ const LAB_BASELINE = {
   hb:       {val:'119',   ref:'133–179',  label:'Emoglobina',     unit:'g/L',     prev:'129',   prev_label:'10 apr 2026', better:'up'},
   lh:       {val:'13.8',  ref:'1.5–9.3',  label:'LH',             unit:'UI/L',    prev:null,    prev_label:null,           better:'down'},
   fsh:      {val:'25.7',  ref:'1.5–12.4', label:'FSH',            unit:'mU/mL',   prev:null,    prev_label:null,           better:'down'},
+  vitd:     {val:'22.0',  ref:'31–100',   label:'Vitamina D',     unit:'µg/L',    prev:'9.5',   prev_label:'10 apr 2026', better:'up'},
+  zinco:    {val:'50.30', ref:'60–106',   label:'Zinco',          unit:'µg/dL',   prev:'53.30', prev_label:'10 apr 2026', better:'up'},
+  folato:   {val:'23.70', ref:'≥5.38',    label:'Folato',         unit:'µg/L',    prev:'3.00',  prev_label:'10 apr 2026', better:'up'},
+  omocist:  {val:'17.5',  ref:'3.0–18.0', label:'Omocisteina',    unit:'µmol/L',  prev:'21.9',  prev_label:'10 apr 2026', better:'down'},
+  ves:      {val:'25',    ref:'1–15',     label:'VES',            unit:'mm/h',    prev:'17',    prev_label:'10 apr 2026', better:'down'},
+  ferritina:{val:'161',   ref:'22–322',   label:'Ferritina',      unit:'µg/L',    prev:'142',   prev_label:'10 apr 2026', better:'neutral'},
+};
+
+// Template Sant'Agostino — stessi 16 marker per T0/T1/T2, vuoti finché non arrivano i referti
+const LAB_SANTAGOSTINO = {
+  igf1:     {val:'—', ref:'115–220',     label:'IGF-1',         unit:'ng/mL'},
+  gluc:     {val:'—', ref:'70–99',       label:'Glucosio',       unit:'mg/dL'},
+  insulina: {val:'—', ref:'2.6–24.9',    label:'Insulina',       unit:'µUI/mL'},
+  homa:     {val:'—', ref:'<2.5',        label:'HOMA Index',     unit:''},
+  hb:       {val:'—', ref:'133–179',     label:'Emoglobina',     unit:'g/L'},
+  t_tot:    {val:'—', ref:'249–836',     label:'T Totale',       unit:'ng/dL'},
+  t_lib:    {val:'—', ref:'9.57–40.60',  label:'T Libero',       unit:'ng/L'},
+  shbg:     {val:'—', ref:'16.00–80.50', label:'SHBG',           unit:'nmol/L'},
+  hdl:      {val:'—', ref:'>40',         label:'HDL',            unit:'mg/dL'},
+  ldl:      {val:'—', ref:'<115',        label:'LDL',            unit:'mg/dL'},
+  tg:       {val:'—', ref:'<150',        label:'Trigliceridi',   unit:'mg/dL'},
+  e2:       {val:'—', ref:'7.6–42.6',    label:'Estradiolo E2',  unit:'pg/mL'},
+  creat:    {val:'—', ref:'0.7–1.2',     label:'Creatinina',     unit:'mg/dL'},
+  crp:      {val:'—', ref:'<1.0',        label:'PCR',            unit:'mg/L'},
+  lh:       {val:'—', ref:'1.5–9.3',     label:'LH',             unit:'UI/L'},
+  fsh:      {val:'—', ref:'1.5–12.4',    label:'FSH',            unit:'mU/mL'},
 };
 
 const DEXA_T0 = {
@@ -2407,10 +2433,14 @@ const DEXA_T0 = {
   vat_cm2: '72', vat_g: '299', bmd: '1.314'
 };
 
+// Card 1: quadro generale pre-protocollo (CDI) — sempre completata, riferimento storico
+const LAB_CDI_CARD = {id:'lab_cdi_quadro', label:'Quadro generale pre-protocollo · CDI', badge:'p1b', locked:true, sub:'Ultimo panel CDI (20 mag 2026) — riferimento storico, non è il T0 ufficiale'};
+
+// Card 2-4: T0/T1/T2 — SOLO marker Sant'Agostino (panel dedicato, codice 00K24KC2), vuote finché non fatte
 const LAB_MILESTONES = [
-  {id:'lab_baseline', label:'T0 · 20 mag 2026 (pre-v2)', badge:'p1b', locked:true},
-  {id:'lab_wk8',      label:'Panel mid-ciclo · Sett. 8 da inizio v2', badge:'p3b', locked:false},
-  {id:'lab_final',    label:'Panel finale · Fine ciclo', badge:'p4b', locked:false},
+  {id:'lab_t0',   label:'T0 · Sant\u2019Agostino (pre-v2)',        badge:'p1b', locked:false},
+  {id:'lab_wk8',  label:'T1 · Sant\u2019Agostino (sett. 8 da v2)', badge:'p3b', locked:false},
+  {id:'lab_final',label:'T2 · Sant\u2019Agostino (fine ciclo)',    badge:'p4b', locked:false},
 ];
 
 const DEXA_MILESTONES = [
@@ -2465,12 +2495,12 @@ function buildLabSection(container) {
   labTitle.textContent = 'Ematici';
   wrap.appendChild(labTitle);
 
-  LAB_MILESTONES.forEach(m => {
+  function renderLabCard(m, fieldsObj, subOverride) {
     const card = document.createElement('div');
     card.className = 'milestone-card' + (m.locked ? ' open' : '');
     card.id = 'card-' + m.id;
 
-    const fields = Object.entries(LAB_BASELINE);
+    const fields = Object.entries(fieldsObj);
     const rows = fields.map(([k, f]) => {
       const isBaseline = m.locked;
       // Delta pill vs precedente (solo su baseline locked)
@@ -2513,11 +2543,12 @@ function buildLabSection(container) {
         </div>`;
     }).join('');
 
+    const subText = subOverride || (m.locked ? 'Valori baseline CDI' : 'Da compilare');
     card.innerHTML = `
       <div class="milestone-head" onclick="toggleDay('${m.id}')">
         <div style="flex:1">
           <div style="font-size:15px;font-weight:500">${m.label}</div>
-          ${m.locked ? '<div style="font-size:12px;color:var(--muted);margin-top:2px">Valori baseline CDI</div>' : '<div style="font-size:12px;color:var(--muted);margin-top:2px">Da compilare</div>'}
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${subText}</div>
         </div>
         <span class="milestone-badge ${m.badge}">${m.locked ? 'Completato' : 'In attesa'}</span>
         <span class="day-chev">▾</span>
@@ -2531,7 +2562,22 @@ function buildLabSection(container) {
           </div>
         </div>` : ''}
       </div>`;
-    wrap.appendChild(card);
+    return card;
+  }
+
+  // Card 1: quadro generale pre-protocollo (CDI)
+  wrap.appendChild(renderLabCard(LAB_CDI_CARD, LAB_CDI_QUADRO, LAB_CDI_CARD.sub));
+
+  // Divisore visivo
+  const santDivider = document.createElement('div');
+  santDivider.className = 'section-label';
+  santDivider.style.cssText = 'margin-top:20px';
+  santDivider.textContent = "Sant'Agostino T0 · T1 · T2 (codice 00K24KC2)";
+  wrap.appendChild(santDivider);
+
+  // Card 2-4: T0/T1/T2 Sant'Agostino
+  LAB_MILESTONES.forEach(m => {
+    wrap.appendChild(renderLabCard(m, LAB_SANTAGOSTINO));
   });
 
   // DEXA panels
