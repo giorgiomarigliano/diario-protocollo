@@ -2383,7 +2383,7 @@ function updateNavHighlight(){
 // Panel peptide-specifico T0 (Santagostino, pre-v2)
 // prev = valore storico più recente disponibile pre-T0 (per confronto)
 const LAB_CDI_QUADRO = {
-  igf1:     {val:'94',    ref:'115–220',  label:'IGF-1',         unit:'ng/mL',   prev:'94',    prev_label:'20 mag 2026', better:'up'},
+  igf1:     {val:'94',    ref:'~115–300', label:'IGF-1',         unit:'ng/mL',   prev:'94',    prev_label:'20 mag 2026', better:'up'},
   gluc:     {val:'87',    ref:'70–99',    label:'Glucosio',       unit:'mg/dL',   prev:'88',    prev_label:'10 apr 2026', better:'down'},
   insulina: {val:'5.3',   ref:'2.6–24.9', label:'Insulina',       unit:'µUI/mL',  prev:'3.6',   prev_label:'10 apr 2026', better:'down'},
   homa:     {val:'1.1',   ref:'<2.5',     label:'HOMA Index',     unit:'',        prev:'0.8',   prev_label:'10 apr 2026', better:'down'},
@@ -2393,12 +2393,12 @@ const LAB_CDI_QUADRO = {
   hdl:      {val:'35',    ref:'>40',      label:'HDL',            unit:'mg/dL',   prev:'28',    prev_label:'10 apr 2026', better:'up'},
   ldl:      {val:'57',    ref:'<115',     label:'LDL',            unit:'mg/dL',   prev:'60',    prev_label:'10 apr 2026', better:'down'},
   tg:       {val:'77',    ref:'<150',     label:'Trigliceridi',   unit:'mg/dL',   prev:'65',    prev_label:'10 apr 2026', better:'down'},
-  e2:       {val:'30.68', ref:'7.6–42.6', label:'Estradiolo E2',  unit:'pg/mL',   prev:null,    prev_label:null,           better:'neutral'},
-  creat:    {val:'1.29',  ref:'0.7–1.2',  label:'Creatinina',     unit:'mg/dL',   prev:'1.29',  prev_label:'10 apr 2026', better:'down'},
-  crp:      {val:'2.7',   ref:'<1.0',     label:'PCR',            unit:'mg/L',    prev:'2.7',   prev_label:'10 apr 2026', better:'down'},
+  e2:       {val:'30.68', ref:'11.8–39.8 (M)', label:'Estradiolo E2', unit:'ng/L', prev:null,    prev_label:null,           better:'neutral'},
+  creat:    {val:'1.29',  ref:'0.73–1.20',label:'Creatinina',     unit:'mg/dL',   prev:'1.29',  prev_label:'10 apr 2026', better:'down'},
+  crp:      {val:'2.7',   ref:'≤3.3',     label:'PCR',            unit:'mg/L',    prev:'2.7',   prev_label:'10 apr 2026', better:'down'},
   hb:       {val:'119',   ref:'133–179',  label:'Emoglobina',     unit:'g/L',     prev:'129',   prev_label:'10 apr 2026', better:'up'},
   lh:       {val:'13.8',  ref:'1.5–9.3',  label:'LH',             unit:'UI/L',    prev:null,    prev_label:null,           better:'down'},
-  fsh:      {val:'25.7',  ref:'1.5–12.4', label:'FSH',            unit:'mU/mL',   prev:null,    prev_label:null,           better:'down'},
+  fsh:      {val:'25.7',  ref:'1.4–18.1', label:'FSH',            unit:'mU/mL',   prev:null,    prev_label:null,           better:'down'},
   vitd:     {val:'22.0',  ref:'31–100',   label:'Vitamina D',     unit:'µg/L',    prev:'9.5',   prev_label:'10 apr 2026', better:'up'},
   zinco:    {val:'50.30', ref:'60–106',   label:'Zinco',          unit:'µg/dL',   prev:'53.30', prev_label:'10 apr 2026', better:'up'},
   folato:   {val:'23.70', ref:'≥5.38',    label:'Folato',         unit:'µg/L',    prev:'3.00',  prev_label:'10 apr 2026', better:'up'},
@@ -2409,7 +2409,7 @@ const LAB_CDI_QUADRO = {
 
 // Template Sant'Agostino — stessi 16 marker per T0/T1/T2, vuoti finché non arrivano i referti
 const LAB_SANTAGOSTINO = {
-  igf1:     {val:'—', ref:'115–220',     label:'IGF-1',         unit:'ng/mL'},
+  igf1:     {val:'—', ref:'~115–300',    label:'IGF-1',         unit:'ng/mL'},
   gluc:     {val:'—', ref:'70–99',       label:'Glucosio',       unit:'mg/dL'},
   insulina: {val:'—', ref:'2.6–24.9',    label:'Insulina',       unit:'µUI/mL'},
   homa:     {val:'—', ref:'<2.5',        label:'HOMA Index',     unit:''},
@@ -2420,11 +2420,11 @@ const LAB_SANTAGOSTINO = {
   hdl:      {val:'—', ref:'>40',         label:'HDL',            unit:'mg/dL'},
   ldl:      {val:'—', ref:'<115',        label:'LDL',            unit:'mg/dL'},
   tg:       {val:'—', ref:'<150',        label:'Trigliceridi',   unit:'mg/dL'},
-  e2:       {val:'—', ref:'7.6–42.6',    label:'Estradiolo E2',  unit:'pg/mL'},
-  creat:    {val:'—', ref:'0.7–1.2',     label:'Creatinina',     unit:'mg/dL'},
-  crp:      {val:'—', ref:'<1.0',        label:'PCR',            unit:'mg/L'},
+  e2:       {val:'—', ref:'11.8–39.8 (M)', label:'Estradiolo E2', unit:'ng/L'},
+  creat:    {val:'—', ref:'0.73–1.20',   label:'Creatinina',     unit:'mg/dL'},
+  crp:      {val:'—', ref:'≤3.3',        label:'PCR',            unit:'mg/L'},
   lh:       {val:'—', ref:'1.5–9.3',     label:'LH',             unit:'UI/L'},
-  fsh:      {val:'—', ref:'1.5–12.4',    label:'FSH',            unit:'mU/mL'},
+  fsh:      {val:'—', ref:'1.4–18.1',    label:'FSH',            unit:'mU/mL'},
 };
 
 const DEXA_T0 = {
@@ -2981,8 +2981,8 @@ function buildMedView() {
       { cat: 'Asse ormonale', items: [
         { name:'Testosterone totale', val:'5.99 nmol/L', ref:'8.64–29.0', ok:false, note:'⚠️ Basso range (conv. ~1.73 ng/mL)' },
         { name:'Testosterone libero', val:'—', ref:'—', ok:true },
-        { name:'FSH', val:'12.6 mU/mL', ref:'1.5–12.4', ok:false, note:'⚠️ Lievemente elevato — segnale ipogonadismo' },
-        { name:'LH', val:'6.9 mU/mL', ref:'1.7–8.6', ok:true },
+        { name:'FSH', val:'12.6 mU/mL', ref:'1.4–18.1', ok:true, note:'Nella norma (range CDI uomo 14-70a)' },
+        { name:'LH', val:'6.9 mU/mL', ref:'1.5–9.3', ok:true },
         { name:'Estradiolo (E2)', val:'24.50 pg/mL', ref:'—', ok:true },
         { name:'Prolattina', val:'10.1 ng/mL', ref:'4.0–15.2', ok:true },
         { name:'PSA totale', val:'0.54 µg/L', ref:'≤4.00', ok:true },
@@ -3031,39 +3031,71 @@ function buildMedView() {
   };
 
   const p_may2026 = {
-    date: '20 maggio 2026', label: 'Panel CDI Bicocca — T0 ufficiale ciclo',
-    note: 'Baseline pre-protocollo peptidico · 19 giorni prima dell\'inizio',
+    date: '20 maggio 2026', label: 'Panel CDI Bicocca — quadro pre-protocollo',
+    note: 'Prelievo ore 08:09 · 19 giorni prima dell\'inizio v2 (non è il T0 ufficiale — quello sarà il prelievo dedicato Sant\'Agostino)',
     cats: [
       { cat: 'Metabolismo glucidico', items: [
-        { name:'Glucosio', ok:true, val:'nd', ref:'—' },
-        { name:'Insulina', ok:true, val:'nd', ref:'—' },
-        { name:'HOMA Index', ok:true, val:'nd', ref:'—' },
+        { name:'Glucosio', val:'87 mg/dL', ref:'60–100', ok:true },
+        { name:'Insulina', val:'5.3 mU/L', ref:'3.0–25.0', ok:true },
+        { name:'HOMA Index', val:'1.1', ref:'≤2.5', ok:true },
+      ]},
+      { cat: 'Funzionalità renale', items: [
+        { name:'Creatinina', val:'1.29 mg/dL', ref:'0.73–1.20', ok:false, note:'⚠️ Sopra range — confermata anche il 21/05 (clearance 109mL/min nella norma)' },
+        { name:'Urea', val:'59.0 mg/dL', ref:'20.0–50.0', ok:false, note:'⚠️ Sopra range' },
+        { name:'Magnesio', val:'2.03 mg/dL', ref:'1.58–2.60', ok:true },
+      ]},
+      { cat: 'Funzionalità epatica', items: [
+        { name:'AST/GOT', val:'28 U/L', ref:'8–34', ok:true },
+        { name:'ALT/GPT', val:'27 U/L', ref:'9–59', ok:true },
+        { name:'GGT', val:'13 U/L', ref:'12–67', ok:true },
+        { name:'Bilirubina tot.', val:'1.02 mg/dL', ref:'0.30–1.20', ok:true },
+        { name:'Bilirubina diretta', val:'0.45 mg/dL', ref:'≤0.30', ok:false, note:'Lievemente sopra range' },
       ]},
       { cat: 'Lipidi', items: [
-        { name:'Colesterolo tot.', val:'—', ref:'—', ok:true },
-        { name:'HDL', val:'35 mg/dL', ref:'≥40 (M)', ok:false, note:'⚠️ Basso ma in leggero rialzo vs apr 2026' },
-        { name:'LDL', val:'—', ref:'—', ok:true },
+        { name:'Colesterolo tot.', val:'107 mg/dL', ref:'≤190', ok:true },
+        { name:'HDL', val:'35 mg/dL', ref:'≥40 (M)', ok:false, note:'⚠️ Basso ma in leggero rialzo vs apr 2026 (28→35)' },
+        { name:'LDL (calc.)', val:'57 mg/dL', ref:'≤115', ok:true },
+        { name:'Trigliceridi', val:'77 mg/dL', ref:'≤150', ok:true },
+        { name:'Non-HDL', val:'72 mg/dL', ref:'≤145', ok:true },
+      ]},
+      { cat: 'Infiammazione & metaboliti', items: [
+        { name:'PCR', val:'2.7 mg/L', ref:'≤3.3', ok:true },
+        { name:'Omocisteina', val:'17.5 µmol/L', ref:'3.0–18.0', ok:true, note:'✅ Migliorata vs apr 2026 (21.9→17.5) con supplementazione' },
+        { name:'Acido urico', val:'4.50 mg/dL', ref:'≤7.00', ok:true },
       ]},
       { cat: 'Ferro & vitamine', items: [
-        { name:'Vitamina D (25OH)', val:'22 µg/L', ref:'31–100 ottimale', ok:false, note:'⚠️ Insufficiente — D3 4000UI già avviato post apr 2026' },
-        { name:'Folato', val:'—', ref:'—', ok:true },
+        { name:'Ferro', val:'113 µg/dL', ref:'65–175', ok:true, note:'Migliorato vs apr 2026 (62→113)' },
+        { name:'Transferrina', val:'2.8 g/L', ref:'2.15–3.65', ok:true },
+        { name:'Ferritina', val:'161 µg/L', ref:'22–322', ok:true },
+        { name:'Vitamina D (25OH)', val:'22 µg/L', ref:'31–100 ottimale', ok:false, note:'⚠️ Insufficiente ma in netto miglioramento (9.5→22) — D3 4000UI già avviato' },
+        { name:'Folato', val:'23.70 µg/L', ref:'≥5.38', ok:true, note:'✅ Normalizzato vs apr 2026 (3.00→23.70) con supplementazione' },
+        { name:'Vitamina B12', val:'410 ng/L', ref:'211–911', ok:true },
         { name:'Zinco', val:'50.30 µg/dL', ref:'60–106', ok:false, note:'⚠️ Basso — zinc bisglicin. 15mg avviato 21/05' },
       ]},
       { cat: 'Asse ormonale', items: [
-        { name:'IGF-1', val:'94 µg/L', ref:'~115–300 (adulto)', ok:false, note:'🔴 Basso — principale target Tesamorelin', sev:'alert' },
-        { name:'FSH', val:'elevato', ref:'1.5–12.4', ok:false, note:'⚠️ Compatibile ipogonadismo ipergonadotropo' },
-        { name:'LH', val:'elevato', ref:'1.7–8.6', ok:false, note:'⚠️ Elevato' },
-        { name:'SHBG', val:'75.10 nmol/L', ref:'16–80.50', ok:false, note:'Alta-normale — riduce T libero efficace' },
-        { name:'Testosterone libero (eff.)', val:'basso-efficace', ref:'—', ok:false, note:'⚠️ SHBG alto comprime T biodisponibile' },
+        { name:'TSH', val:'1.91 mU/L', ref:'0.55–4.80', ok:true },
+        { name:'Cortisolo mattino', val:'14.60 µg/dL', ref:'5.27–22.40', ok:true },
+        { name:'DHEA-S', val:'78 µg/dL', ref:'49–351', ok:true },
+        { name:'Estradiolo (E2)', val:'30.68 ng/L', ref:'11.8–39.8 (M >14a)', ok:true },
+        { name:'IGF-1', val:'94.01 µg/L', ref:'~115–300 (adulto)', ok:false, note:'🔴 Basso — principale target Tesamorelin', sev:'alert' },
+        { name:'FSH', val:'25.7 mU/L', ref:'1.4–18.1 (M 14-70a)', ok:false, note:'⚠️ Compatibile ipogonadismo ipergonadotropo' },
+        { name:'LH', val:'13.8 UI/L', ref:'1.5–9.3 (M 20-70a)', ok:false, note:'⚠️ Elevato' },
+        { name:'SHBG', val:'75.10 nmol/L', ref:'16.00–80.50', ok:false, note:'Alta-normale — riduce T libero efficace' },
+        { name:'ACTH', val:'44.20 ng/L', ref:'7.20–63.50', ok:true },
+        { name:'PSA (reflex)', val:'0.63 µg/L', ref:'≤4.00', ok:true },
       ]},
       { cat: 'Emocromo', items: [
-        { name:'Emoglobina', val:'119 g/L', ref:'133–179', ok:false, note:'🔴 Bassa — peggiorata vs apr 2026', sev:'alert' },
-        { name:'MCHC', val:'bassa', ref:'319–369', ok:false },
-      ]},
-      { cat: 'Infiammazione', items: [
-        { name:'Omocisteina', val:'17.5 µmol/L', ref:'3.0–18.0', ok:false, note:'⚠️ Alta-normale (21.9 ad apr → 17.5 a mag con supp.)' },
-        { name:'VES', val:'25 mm/h', ref:'1–15', ok:false, note:'⚠️ Elevata — correlata varicocele gr.3' },
-        { name:'HDL (come marker)', val:'35 mg/dL', ref:'≥40', ok:false },
+        { name:'Globuli Bianchi', val:'8.30 ×10⁹/L', ref:'4.10–12.10', ok:true },
+        { name:'Globuli Rossi', val:'3.97 ×10¹²/L', ref:'4.18–6.25', ok:false, note:'Lievemente sotto range' },
+        { name:'Emoglobina', val:'119 g/L', ref:'133–179', ok:false, note:'🔴 Bassa — peggiorata vs apr 2026 (129→119)', sev:'alert' },
+        { name:'Ematocrito', val:'37.2%', ref:'35.4–52.1', ok:true },
+        { name:'MCV', val:'93.7 fL', ref:'78.0–101.0', ok:true },
+        { name:'MCH', val:'30.0 pg', ref:'24.9–35.3', ok:true },
+        { name:'MCHC', val:'320 g/L', ref:'319–369', ok:true },
+        { name:'Piastrine', val:'235 ×10⁹/L', ref:'150–450', ok:true },
+        { name:'VES', val:'25 mm/h', ref:'1–15', ok:false, note:'⚠️ Elevata — correlata varicocele gr.3', sev:'warn' },
+        { name:'Emoglobina Glicata', val:'20 mmol/mol', ref:'20–42', ok:true },
+        { name:'Fibrinogeno', val:'3.0 g/L', ref:'2.0–4.0', ok:true },
       ]},
       { cat: 'Nota clinica T0', items: [
         { name:'Quadro complessivo', val:'Ipogonadismo ipergonadotropo', ref:'—', ok:false, note:'FSH/LH elevati + IGF-1 basso + SHBG alto + varicocele gr.3 sx · Chirurgia varicocele non raccomandata (Dr.ssa Maccagnano)' },
@@ -3229,7 +3261,7 @@ function buildMedView() {
         { name:'eGFR', val:'62 mL/min/1.73mq', ref:'≥90', ok:false, note:'⚠️ In calo da 75 (10/4) — coerente coi follow-up già attivi (eco-doppler 13/07)', sev:'warn' },
       ]},
       { cat: 'Asse gonadico', items: [
-        { name:'FSH', val:'21.2 mU/L', ref:'1.5–12.4', ok:false, note:'⚠️ Elevato ma in miglioramento (era 25.7 il 20/5)', sev:'warn' },
+        { name:'FSH', val:'21.2 mU/L', ref:'1.4–18.1', ok:false, note:'⚠️ Elevato ma in miglioramento (era 25.7 il 20/5)', sev:'warn' },
         { name:'LH', val:'10.9 UI/L', ref:'1.5–9.3', ok:false, note:'⚠️ Elevato ma in miglioramento (era 13.8 il 20/5)', sev:'warn' },
         { name:'Testosterone totale', val:'6.85 µg/L', ref:'1.87–6.84', ok:false, note:'⚠️ Lievemente sopra range — primo dato disponibile, nessuno storico', sev:'warn' },
         { name:'SHBG', val:'72.80 nmol/L', ref:'16.00–80.50', ok:true, note:'Stabile (era 75.10 il 10/4)' },
@@ -3289,7 +3321,15 @@ function buildMedView() {
       {d:'Ott 2020',v:109},{d:'Nov 2022',v:120},{d:'Gen 2024',v:89},
       {d:'Feb 2025',v:102},{d:'Apr 2026',v:101},{d:'20 mag 2026',v:107},{d:'9 giu 2026 Bionics',v:118}
     ]},
-    { marker:'FSH (mU/mL)', target:'1.5–12.4', ok: v=>v<=12.4, pts:[
+    { marker:'LDL (mg/dL)', target:'≤115', ok: v=>v<=115, pts:[
+      {d:'Ott 2020',v:62},{d:'Nov 2022',v:66},{d:'Gen 2024',v:52},
+      {d:'Feb 2025',v:62},{d:'Apr 2026',v:60},{d:'20 mag 2026',v:57},{d:'9 giu 2026 Bionics',v:64}
+    ]},
+    { marker:'Trigliceridi (mg/dL)', target:'≤150', ok: v=>v<=150, pts:[
+      {d:'Ott 2020',v:69},{d:'Nov 2022',v:83},{d:'Gen 2024',v:64},
+      {d:'Feb 2025',v:67},{d:'Apr 2026',v:65},{d:'20 mag 2026',v:77},{d:'9 giu 2026 Bionics',v:108}
+    ]},
+    { marker:'FSH (mU/mL)', target:'1.4–18.1', ok: v=>v<=18.1, pts:[
       {d:'Nov 2022',v:12.6},{d:'20 mag 2026',v:25.7},{d:'3 lug 2026',v:21.2}
     ]},
     { marker:'LH (UI/L)', target:'1.5–9.3', ok: v=>v<=9.3, pts:[
@@ -3298,11 +3338,20 @@ function buildMedView() {
     { marker:'Testosterone totale (µg/L)', target:'1.87–6.84', ok: v=>v>=1.87&&v<=6.84, pts:[
       {d:'3 lug 2026',v:6.85}
     ]},
+    { marker:'SHBG (nmol/L)', target:'16.00–80.50', ok: v=>v<=80.50, pts:[
+      {d:'10 apr 2026',v:75.10},{d:'20 mag 2026',v:75.10},{d:'3 lug 2026',v:72.80}
+    ]},
     { marker:'Creatinina (mg/dL)', target:'0.73–1.20', ok: v=>v<=1.20, pts:[
       {d:'10 apr 2026',v:1.13},{d:'20 mag 2026',v:1.29},{d:'21 mag 2026',v:1.29},{d:'3 lug 2026',v:1.32}
     ]},
     { marker:'eGFR (mL/min/1.73mq)', target:'≥90', ok: v=>v>=90, pts:[
       {d:'10 apr 2026',v:75},{d:'3 lug 2026',v:62}
+    ]},
+    { marker:'PCR (mg/L)', target:'≤3.3', ok: v=>v<=3.3, pts:[
+      {d:'10 apr 2026',v:2.7},{d:'20 mag 2026',v:2.7}
+    ]},
+    { marker:'Ferritina (µg/L)', target:'22–322', ok: v=>v>=22&&v<=322, pts:[
+      {d:'10 apr 2026',v:142},{d:'20 mag 2026',v:161}
     ]},
   ];
 
@@ -6238,11 +6287,17 @@ function buildMedDash() {
     testTotale: [
       {d:'3 lug 2026',v:6.85,t:'2026-07'}
     ],
+    shbg: [
+      {d:'10 apr 2026',v:75.10,t:'2026-04'},{d:'20 mag 2026',v:75.10,t:'2026-05'},{d:'3 lug 2026',v:72.80,t:'2026-07'}
+    ],
     acr: [
       {d:'6 lug 2026',v:5,t:'2026-07'}
     ],
     ferritina: [
       {d:'Apr 2026',v:142,t:'2026-04'},{d:'Mag 2026',v:161,t:'2026-05'}
+    ],
+    crp: [
+      {d:'Apr 2026',v:2.7,t:'2026-04'},{d:'Mag 2026',v:2.7,t:'2026-05'}
     ],
   };
 
@@ -6417,11 +6472,13 @@ function buildMedDash() {
     ${kpiCard('PSA', DATA.psa, 'µg/L', undefined, 4, 'target ≤4', '#34c759')}
     ${kpiCard('Creatinina', DATA.creatinina, 'mg/dL', undefined, 1.2, 'target ≤1.20', '#8e8e93')}
     ${kpiCard('eGFR', DATA.egfr, 'mL/min', 90, undefined, 'target ≥90', '#5856d6')}
-    ${kpiCard('FSH', DATA.fsh, 'mU/mL', undefined, 12.4, 'target ≤12.4', '#ff3b30')}
+    ${kpiCard('FSH', DATA.fsh, 'mU/mL', undefined, 18.1, 'target ≤18.1', '#ff3b30')}
     ${kpiCard('LH', DATA.lh, 'UI/L', undefined, 9.3, 'target ≤9.3', '#ff3b30')}
     ${kpiCard('Testosterone tot.', DATA.testTotale, 'µg/L', 1.87, 6.84, 'range 1.87–6.84', '#0071e3')}
+    ${kpiCard('SHBG', DATA.shbg, 'nmol/L', undefined, 80.50, 'target ≤80.50', '#8e44ad')}
     ${kpiCard('ACR urinario', DATA.acr, 'mg/g cre', undefined, 30, 'target <30 (normoalbuminuria)', '#34c759')}
     ${kpiCard('Ferritina', DATA.ferritina, 'µg/L', 22, 322, 'target 22–322', '#ff9500')}
+    ${kpiCard('PCR', DATA.crp, 'mg/L', undefined, 3.3, 'target ≤3.3', '#8e8e93')}
   </div>
 
   <!-- OBIETTIVI PROTOCOLLO -->
@@ -6494,7 +6551,7 @@ function buildMedDash() {
         ${lineChart([{label:'eGFR',pts:DATA.egfr,color:'#5856d6',refMin:90}], 400, 120)}
       </div>
       <div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
-        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">FSH + LH <span style="color:var(--muted);font-weight:400">asse gonadico · target FSH ≤12.4 · LH ≤9.3</span></div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">FSH + LH <span style="color:var(--muted);font-weight:400">asse gonadico · target FSH ≤18.1 · LH ≤9.3</span></div>
         ${lineChart([{label:'FSH',pts:DATA.fsh,color:'#ff3b30',refMax:12.4},{label:'LH',pts:DATA.lh,color:'#ff9500',refMax:9.3}], 400, 120)}
       </div>
     </div>
