@@ -3131,8 +3131,8 @@ function buildMedView() {
       ]},
       { cat: 'Visita cardiologica', items: [
         { name:'Compenso cardiaco', val:'Normale', ref:'—', ok:true },
-        { name:'LDL', val:'54 mg/dL', ref:'≤115', ok:true },
-        { name:'Colesterolo tot.', val:'89 mg/dL', ref:'≤190', ok:true },
+        { name:'LDL', val:'64 mg/dL', ref:'≤115', ok:true, note:'Da Lab Bionics stesso giorno' },
+        { name:'Colesterolo tot.', val:'118 mg/dL', ref:'≤190', ok:true, note:'Da Lab Bionics stesso giorno' },
       ]},
       { cat: 'Ecografia addome & visita urologica', items: [
         { name:'Ecografia addome', val:'Normale', ref:'—', ok:true },
@@ -3156,6 +3156,61 @@ function buildMedView() {
   };
 
   // ── TRENDS ────────────────────────────────────────────────────────────────
+  const p_may21_2026 = {
+    date: '21 maggio 2026', label: 'Clearance Creatinina · CDI Bicocca',
+    note: 'Prelievo ore 08:53 · Test dedicato su urine 24h + sangue',
+    cats: [
+      { cat: 'Funzionalità renale', items: [
+        { name:'Creatinina sierica', val:'1.29 mg/dL', ref:'0.73–1.20', ok:false, note:'⚠️ Confermata elevata (stesso valore del 20/05)' },
+        { name:'Creatinina urine', val:'71 mg/dL', ref:'—', ok:true },
+        { name:'Clearance Creatinina', val:'109 mL/min', ref:'70–180', ok:true, note:'✅ Nella norma — buona filtrazione nonostante creatinina sierica alta' },
+      ]},
+      { cat: 'Nota clinica', items: [
+        { name:'Interpretazione', val:'Clearance normale', ref:'—', ok:true, note:'Supporta ipotesi non-renale per creatinina alta (massa muscolare/dieta) più che danno da filtrazione' },
+      ]},
+    ]
+  };
+
+  const p_jul2026 = {
+    date: '3 luglio 2026', label: 'Panel ormonale + renale · CDI Bicocca',
+    note: 'Prelievo ore 08:32 · Referto firmato 07/07/2026',
+    cats: [
+      { cat: 'Funzionalità renale', items: [
+        { name:'Glucosio', val:'92 mg/dL', ref:'60–100', ok:true },
+        { name:'Creatinina', val:'1.32 mg/dL', ref:'0.73–1.20', ok:false, note:'🔴 Trend in peggioramento: 1.13(10/4)→1.29(20-21/5)→1.32(3/7)', sev:'alert' },
+        { name:'eGFR', val:'62 mL/min/1.73mq', ref:'≥90', ok:false, note:'⚠️ In calo da 75 (10/4) — coerente coi follow-up già attivi (eco-doppler 13/07)', sev:'warn' },
+      ]},
+      { cat: 'Asse gonadico', items: [
+        { name:'FSH', val:'21.2 mU/L', ref:'1.5–12.4', ok:false, note:'⚠️ Elevato ma in miglioramento (era 25.7 il 20/5)', sev:'warn' },
+        { name:'LH', val:'10.9 UI/L', ref:'1.5–9.3', ok:false, note:'⚠️ Elevato ma in miglioramento (era 13.8 il 20/5)', sev:'warn' },
+        { name:'Testosterone totale', val:'6.85 µg/L', ref:'1.87–6.84', ok:false, note:'⚠️ Lievemente sopra range — primo dato disponibile, nessuno storico', sev:'warn' },
+        { name:'SHBG', val:'72.80 nmol/L', ref:'16.00–80.50', ok:true, note:'Stabile (era 75.10 il 10/4)' },
+      ]},
+      { cat: 'Altri marker', items: [
+        { name:'Prolattina', val:'9.5 µg/L', ref:'2.1–17.7 (M >22a)', ok:true },
+        { name:'ACTH', val:'32.80 ng/L', ref:'7.20–63.50', ok:true, note:'In calo da 44.20 (20/5)' },
+      ]},
+      { cat: 'Nota clinica', items: [
+        { name:'Quadro renale', val:'Da monitorare', ref:'—', ok:false, note:'Creatinina/eGFR in trend negativo — ACR urinario (6/7) normale esclude danno glomerulare · attenzione a eco-doppler 13/07', sev:'warn' },
+        { name:'Quadro gonadico', val:'In miglioramento', ref:'—', ok:true, note:'FSH e LH entrambi in calo rispetto al 20/5, ancora prima del via ufficiale a v2' },
+      ]},
+    ]
+  };
+
+  const p_jul6_2026 = {
+    date: '6 luglio 2026', label: 'Esame urine — ACR · CDI Bicocca',
+    note: 'Prelievo ore 08:17 · Referto firmato 06/07/2026',
+    cats: [
+      { cat: 'Chimica Clinica (urine)', items: [
+        { name:'Rapporto Albumina/Creatinina (ACR)', val:'5 mg/g cre', ref:'<30 (normoalbuminuria)', ok:true, note:'✅ Ben al di sotto soglia — nessun segno di danno glomerulare' },
+        { name:'Creatinina urine spot', val:'55 mg/dL', ref:'—', ok:true },
+      ]},
+      { cat: 'Nota clinica', items: [
+        { name:'Interpretazione', val:'Funzionalità glomerulare nella norma', ref:'—', ok:true, note:'Rassicurante nel contesto della creatinina sierica elevata — pattern compatibile con causa extra-renale piuttosto che danno strutturale · complementare (non sostitutivo) a eco-doppler 13/07' },
+      ]},
+    ]
+  };
+
   const trends = [
     { marker:'HDL (mg/dL)', target:'≥40', ok: v=>v>=40, pts:[
       {d:'Ott 2020',v:33},{d:'Nov 2022',v:37},{d:'Gen 2024',v:24},
@@ -3331,8 +3386,11 @@ function buildMedView() {
 
   <!-- Indice panel -->
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px">
+    <a href="#panel-jul6-2026" style="background:rgba(52,199,89,.12);color:#34c759;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🧪 Urine ACR 6 lug 2026</a>
+    <a href="#panel-jul2026" style="background:rgba(255,149,0,.12);color:#ff9500;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🩸 Ormonale+renale 3 lug 2026</a>
     <a href="#panel-bionics-jun2026" style="background:rgba(0,113,227,.12);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🧪 Lab Bionics 9 giu 2026</a>
     <a href="#panel-jun2026" style="background:rgba(52,199,89,.12);color:#34c759;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">✅ Check-up 9 giu 2026</a>
+    <a href="#panel-may21-2026" style="background:rgba(0,0,0,.06);color:var(--text);padding:5px 12px;border-radius:20px;font-size:12px;text-decoration:none">Clearance 21 mag 2026</a>
     <a href="#panel-may2026" style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🎯 T0 Mag 2026</a>
     <a href="#panel-apr2026" style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">Apr 2026</a>
     <a href="#panel-feb2025" style="background:rgba(0,0,0,.06);color:var(--text);padding:5px 12px;border-radius:20px;font-size:12px;text-decoration:none">Feb 2025</a>
@@ -3343,8 +3401,11 @@ function buildMedView() {
 
   // Panel più recente prima
   const panelOrder = [
+    { id:'panel-jul6-2026', p: p_jul6_2026 },
+    { id:'panel-jul2026', p: p_jul2026 },
     { id:'panel-bionics-jun2026', p: p_bionics_jun2026 },
     { id:'panel-jun2026', p: p_checkup_jun2026 },
+    { id:'panel-may21-2026', p: p_may21_2026 },
     { id:'panel-may2026', p: p_may2026 },
     { id:'panel-apr2026', p: p_apr2026 },
     { id:'panel-feb2025', p: p_feb2025 },
