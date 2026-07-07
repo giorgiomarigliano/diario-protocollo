@@ -3187,7 +3187,19 @@ function buildMedView() {
       {d:'Feb 2025',v:102},{d:'Apr 2026',v:101},{d:'20 mag 2026',v:107},{d:'9 giu 2026 Bionics',v:118}
     ]},
     { marker:'FSH (mU/mL)', target:'1.5–12.4', ok: v=>v<=12.4, pts:[
-      {d:'Nov 2022',v:12.6}
+      {d:'Nov 2022',v:12.6},{d:'20 mag 2026',v:25.7},{d:'3 lug 2026',v:21.2}
+    ]},
+    { marker:'LH (UI/L)', target:'1.5–9.3', ok: v=>v<=9.3, pts:[
+      {d:'Gen 2023',v:6.9},{d:'20 mag 2026',v:13.8},{d:'3 lug 2026',v:10.9}
+    ]},
+    { marker:'Testosterone totale (µg/L)', target:'1.87–6.84', ok: v=>v>=1.87&&v<=6.84, pts:[
+      {d:'3 lug 2026',v:6.85}
+    ]},
+    { marker:'Creatinina (mg/dL)', target:'0.73–1.20', ok: v=>v<=1.20, pts:[
+      {d:'10 apr 2026',v:1.13},{d:'20 mag 2026',v:1.29},{d:'21 mag 2026',v:1.29},{d:'3 lug 2026',v:1.32}
+    ]},
+    { marker:'eGFR (mL/min/1.73mq)', target:'≥90', ok: v=>v>=90, pts:[
+      {d:'10 apr 2026',v:75},{d:'3 lug 2026',v:62}
     ]},
   ];
 
@@ -3202,6 +3214,8 @@ function buildMedView() {
     { col:'warn',  label:'Emoglobina bassa (129→119)', text:'Ferritina ok (142) · Ferro borderline · nessuna integrazione ferro in corso · monitorare' },
     { col:'warn',  label:'SHBG alto (75.10)', text:'Tesamorelin + miglioramento composizione corporea attesi abbassare SHBG · monitorare T libero efficace' },
     { col:'ok',    label:'Baseline CV (9/6/2026)', text:'FE 63% · ECG sforzo negativo · LDL 64 (Lab Bionics 9/6) · Nessuna controindicazione protocollo ✅' },
+    { col:'warn',  label:'Creatinina in aumento (1.13→1.29→1.32) · eGFR in calo (75→62)', text:'ACR urinario 5 (normale, 6/7) esclude danno glomerulare · Follow-up già attivi: eco-color-doppler renale 13/07 · monitorare, non integrare creatina nel frattempo' },
+    { col:'ok',    label:'FSH/LH in miglioramento (25.7→21.2 · 13.8→10.9)', text:'Ipogonadismo ipergonadotropo ancora presente ma trend positivo · T totale 6.85 lievemente sopra range, T libero da monitorare a mid-ciclo' },
   ];
 
   // ── MINI-PANEL MID-CYCLE ──────────────────────────────────────────────────
@@ -3264,6 +3278,13 @@ function buildMedView() {
         <div class="med-tl-content"><div class="med-tl-date">6 lug 2026</div><div class="med-tl-title">Esame urine — Rapporto Albumina/Creatinina (ACR) · CDI Bicocca</div><div class="med-tl-sub">Referto firmato 06/07/2026 15:52 · Episodio 175067365<br>
 <strong>Risultati:</strong> ACR 5 mg/g cre (Normoalbuminuria &lt;30 ✅ — ben al di sotto soglia) · Creatinina urinaria spot 55 mg/dL<br>
 <strong>Nota:</strong> funzionalità renale su marker urinario nella norma, in linea con l'imminente eco-color-doppler arterie renali del 13/07</div></div>
+      </div>
+      <div class="med-tl-item">
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(255,149,0,.15)">🩸</div><div class="med-tl-connector"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date">3 lug 2026</div><div class="med-tl-title">Panel ormonale + renale · CDI Bicocca</div><div class="med-tl-sub">Referto firmato 07/07/2026 09:32 · Episodio 175067266<br>
+<strong>Renale:</strong> Creatinina 1.32↑ (era 1.29 il 20-21/05) · eGFR 62↓ (era 75 il 10/04) — trend in progressivo peggioramento, coerente coi follow-up già attivati (eco-doppler 13/07, nefrologia)<br>
+<strong>Asse gonadico:</strong> FSH 21.2↑ (era 25.7 il 20/05, in miglioramento) · LH 10.9↑ (era 13.8, in miglioramento) · Testosterone totale 6.85↑ (lievemente sopra range 1.87–6.84, primo dato disponibile) · SHBG 72.80 (era 75.10, stabile-lieve calo)<br>
+<strong>Altro:</strong> Prolattina 9.5 (nella norma) · ACTH 32.80 (nella norma, era 44.20) · Glucosio 92 (nella norma)</div></div>
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(255,149,0,.12);border:2px solid #ff9500">🩺</div><div class="med-tl-connector"></div></div>
