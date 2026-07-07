@@ -3309,7 +3309,7 @@ function buildMedView() {
       {d:'Gen 2024',v:16.53},{d:'Apr 2026',v:15.60}
     ]},
     { marker:'Emoglobina (g/L)', target:'133–179', ok: v=>v>=133, pts:[
-      {d:'Ott 2022',v:141},{d:'Apr 2026',v:129},{d:'Mag 2026 T0',v:119}
+      {d:'Ott 2020',v:141},{d:'Apr 2026',v:129},{d:'Mag 2026 T0',v:119}
     ]},
     { marker:'IGF-1 (µg/L)', target:'~115–300', ok: v=>v>=115, pts:[
       {d:'Mag 2026 T0',v:94}
@@ -3358,13 +3358,13 @@ function buildMedView() {
   // ── AZIONI CORRETTIVE ─────────────────────────────────────────────────────
   const azioni = [
     { col:'alert', label:'IGF-1 basso (94)', text:'Target principale Tesamorelin — attesa risalita IGF-1 entro fine ciclo 16 settimane' },
-    { col:'warn',  label:'HDL cronico basso (28→35)', text:'Omega-3 rTG 3g/die · Tesamorelin atteso migliorare profilo lipidico · da ricontrollare a sett. 8 (panel mid-ciclo)' },
+    { col:'warn',  label:'HDL cronico basso (28→35→32)', text:'Omega-3 rTG 3g/die · Tesamorelin atteso migliorare profilo lipidico · da ricontrollare a sett. 8 (panel mid-ciclo)' },
     { col:'warn',  label:'Omocisteina (21.9→17.5)', text:'B12 1000µg + methylfolato + B6 ogni mattina · Normocis 400 a pranzo · target <13 entro fine ciclo' },
     { col:'alert', label:'Vitamina D (9.5→22)', text:'D3+K2 4000UI+200mcg ogni mattina · già in corso · target >50 a panel mid-ciclo sett. 8' },
     { col:'warn',  label:'Zinco basso (53→50)', text:'Zinc bisglicin. 15mg ore 9:00 avviato 21/05 · target 70–80 µg/dL' },
-    { col:'warn',  label:'Folato basso (3.00)', text:'Jarrow B12+methylfolato ogni mattina · da ricontrollare a settimane 8–10' },
+    { col:'ok',    label:'Folato normalizzato (3.00→23.70)', text:'Jarrow B12+methylfolato ogni mattina · risolto, continuare a mantenimento' },
     { col:'warn',  label:'Emoglobina bassa (129→119)', text:'Ferritina ok (142) · Ferro borderline · nessuna integrazione ferro in corso · monitorare' },
-    { col:'warn',  label:'SHBG alto (75.10)', text:'Tesamorelin + miglioramento composizione corporea attesi abbassare SHBG · monitorare T libero efficace' },
+    { col:'warn',  label:'SHBG alto (75.10→72.80)', text:'Lieve calo ma ancora alto-normale · Tesamorelin + miglioramento composizione corporea attesi abbassarlo ulteriormente · monitorare T libero efficace' },
     { col:'ok',    label:'Baseline CV (9/6/2026)', text:'FE 63% · ECG sforzo negativo · LDL 64 (Lab Bionics 9/6) · Nessuna controindicazione protocollo ✅' },
     { col:'warn',  label:'Creatinina in aumento (1.13→1.29→1.32) · eGFR in calo (75→62)', text:'ACR urinario 5 (normale, 6/7) esclude danno glomerulare · Follow-up già attivi: eco-color-doppler renale 13/07 · monitorare, non integrare creatina nel frattempo' },
     { col:'ok',    label:'FSH/LH in miglioramento (25.7→21.2 · 13.8→10.9)', text:'Ipogonadismo ipergonadotropo ancora presente ma trend positivo · T totale 6.85 lievemente sopra range, T libero da monitorare a mid-ciclo' },
@@ -3392,7 +3392,7 @@ function buildMedView() {
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.12);border:2px solid #0071e3">🩺</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">14 lug 2026 · 09:00 — CONFERMATO</div><div class="med-tl-title">Visita endocrinologica · Dr. Seregni Ettore · CDI Bicocca</div><div class="med-tl-sub">Portare: referto urologico 01/07 · panel ematochimici 20/05 · eco scrotale 27/05 · referti CDI 09/06 · biometriche warm-up · <strong>esami MMG in attesa</strong><br>Agenda: creatinina 1.29 (per scrupolo) · creatina/proteine · avvio Protocollo v2<br><em>Panel Santagostino (00K24KC2, T0/T1/T2 + LH/FSH) riservato come T0 ufficiale pre-v2 — non anticipare</em></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">14 lug 2026 · 09:00 — CONFERMATO</div><div class="med-tl-title">Visita endocrinologica · Dr. Seregni Ettore · CDI Bicocca</div><div class="med-tl-sub">Portare: referto urologico 01/07 · panel ematochimici 20/05 · eco scrotale 27/05 · referti CDI 09/06 · panel ormonale+renale 03/07 · esame urine ACR 06/07 · biometriche warm-up · <strong>esami MMG in attesa</strong><br>Agenda: creatinina in trend (1.13→1.29→1.32) ed eGFR in calo (75→62, ACR normale) · creatina/proteine · avvio Protocollo v2<br><em>Panel Santagostino (00K24KC2, T0/T1/T2 + LH/FSH) riservato come T0 ufficiale pre-v2 — non anticipare</em></div></div>
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(142,142,147,.08);border:2px dashed #8e8e93">🩺</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
@@ -6253,7 +6253,7 @@ function buildMedDash() {
       {d:'Apr 2026',v:53.30,t:'2026-04'},{d:'Mag 2026',v:50.30,t:'2026-05'}
     ],
     emoglobina: [
-      {d:'Ott 2022',v:141,t:'2022-11'},{d:'Apr 2026',v:129,t:'2026-04'},
+      {d:'Ott 2020',v:141,t:'2020-10'},{d:'Apr 2026',v:129,t:'2026-04'},
       {d:'Mag 2026',v:119,t:'2026-05'}
     ],
     igf1: [
