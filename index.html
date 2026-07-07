@@ -3274,7 +3274,7 @@ function buildMedView() {
   ];
 
   // ── MINI-PANEL MID-CYCLE ──────────────────────────────────────────────────
-  const miniPanel = ['IGF-1','Glucosio / Insulina (HOMA)','Emocromo','Testosterone totale','Testosterone libero','SHBG','HDL','LDL','Trigliceridi','Estradiolo (E2)','Creatinina','PCR'];
+  const miniPanel = ['IGF-1','Glucosio / Insulina (HOMA)','Emocromo','Testosterone totale','Testosterone libero','SHBG','HDL','LDL','Trigliceridi','Estradiolo (E2)','Creatinina','PCR','LH','FSH'];
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   let html = `<div class="app-view-inner view-wrap">
@@ -3295,7 +3295,7 @@ function buildMedView() {
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.12);border:2px solid #0071e3">🩺</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">14 lug 2026 · 09:00 — CONFERMATO</div><div class="med-tl-title">Visita endocrinologica · Dr. Seregni Ettore · CDI Bicocca</div><div class="med-tl-sub">Portare: referto urologico 01/07 · panel ematochimici 20/05 · eco scrotale 27/05 · referti CDI 09/06 · biometriche warm-up · <strong>esami MMG in attesa</strong><br>Agenda: creatinina 1.29 (per scrupolo) · creatina/proteine · avvio Protocollo v2<br><em>Panel Santagostino (01Q1RUWN) riservato come T0 ufficiale pre-v2 — non anticipare</em></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">14 lug 2026 · 09:00 — CONFERMATO</div><div class="med-tl-title">Visita endocrinologica · Dr. Seregni Ettore · CDI Bicocca</div><div class="med-tl-sub">Portare: referto urologico 01/07 · panel ematochimici 20/05 · eco scrotale 27/05 · referti CDI 09/06 · biometriche warm-up · <strong>esami MMG in attesa</strong><br>Agenda: creatinina 1.29 (per scrupolo) · creatina/proteine · avvio Protocollo v2<br><em>Panel Santagostino (00K24KC2, T0/T1/T2 + LH/FSH) riservato come T0 ufficiale pre-v2 — non anticipare</em></div></div>
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(142,142,147,.08);border:2px dashed #8e8e93">🩺</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
@@ -3311,11 +3311,15 @@ function buildMedView() {
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed #0071e3">🩸</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Subito prima dell'inizio v2 — T0 UFFICIALE PROTOCOLLO</div><div class="med-tl-title">Panel T0 pre-protocollo · Santagostino <span style="font-size:10px;background:rgba(255,149,0,.1);color:#ff9500;padding:1px 7px;border-radius:20px;font-weight:500">codice 01Q1RUWN</span></div><div class="med-tl-sub">IGF-1 · Glucosio · Insulina · Emocromo · T totale · T libero · SHBG · HDL · LDL · Trigliceridi · E2 · Creatinina · PCR — €169.23 · Costituisce il T0 ufficiale per il confronto mid-ciclo</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Subito prima dell'inizio v2 — T0 UFFICIALE PROTOCOLLO</div><div class="med-tl-title">Panel T0 pre-protocollo · Santagostino <span style="font-size:10px;background:rgba(255,149,0,.1);color:#ff9500;padding:1px 7px;border-radius:20px;font-weight:500">codice 00K24KC2</span></div><div class="med-tl-sub">IGF-1 · Glucosio · Insulina · Emocromo · T totale · T libero · SHBG · HDL · LDL · Trigliceridi · E2 · Creatinina · PCR · <strong>LH · FSH</strong> — €197.03 · Costituisce il T0 ufficiale per il confronto T1/T2</div></div>
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed #0071e3">🔬</div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sett. 8 dall'inizio v2 (13 lug → ~7 set) — PIANIFICATO</div><div class="med-tl-title">Panel mid-ciclo · Santagostino <span style="font-size:10px;background:rgba(0,113,227,.1);color:#0071e3;padding:1px 7px;border-radius:20px;font-weight:500">codice 01Q1RUWN</span></div><div class="med-tl-sub">IGF-1 · Glucosio · Insulina · Emocromo · T totale · T libero · SHBG · HDL · LDL · Trigliceridi · E2 · Creatinina · PCR — €169.23 · Confronto vs T0 Santagostino</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sett. 8 dall'inizio v2 (13 lug → ~7 set) — PIANIFICATO</div><div class="med-tl-title">Panel T1 mid-ciclo · Santagostino <span style="font-size:10px;background:rgba(0,113,227,.1);color:#0071e3;padding:1px 7px;border-radius:20px;font-weight:500">codice 00K24KC2</span></div><div class="med-tl-sub">IGF-1 · Glucosio · Insulina · Emocromo · T totale · T libero · SHBG · HDL · LDL · Trigliceridi · E2 · Creatinina · PCR · <strong>LH · FSH</strong> — €197.03 · Confronto vs T0 Santagostino</div></div>
+      </div>
+      <div class="med-tl-item">
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed #0071e3">🔬</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Fine ott / inizio nov 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T2 fine ciclo · Santagostino <span style="font-size:10px;background:rgba(0,113,227,.1);color:#0071e3;padding:1px 7px;border-radius:20px;font-weight:500">codice 00K24KC2</span></div><div class="med-tl-sub">IGF-1 · Glucosio · Insulina · Emocromo · T totale · T libero · SHBG · HDL · LDL · Trigliceridi · E2 · Creatinina · PCR · LH · FSH — €197.03 · Stesso giorno di DEXA T1 · Confronto finale vs T0/T1</div></div>
       </div>
     </div>
 
@@ -3464,7 +3468,7 @@ function buildMedView() {
   html += `<div class="med-panel" style="margin-bottom:40px">
     <div class="med-panel-hdr"><div>
       <div class="med-panel-title">🔬 Mini-panel Mid-cycle previsto (settimane 8–10)</div>
-      <div class="med-panel-sub">Dopo fine ciclo v2 (nov 2026) · Da concordare con Dr. Seregni</div>
+      <div class="med-panel-sub">T0 · T1 (sett. 8) · T2 (fine ciclo) · Santagostino · Da concordare con Dr. Seregni</div>
     </div></div>
     <div style="display:flex;flex-wrap:wrap;gap:7px">
       ${miniPanel.map(m=>`<span style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px">${m}</span>`).join('')}
@@ -6582,7 +6586,7 @@ function buildProtocolloTimeline() {
      ],
      tr:['Peso -2/-4 kg','BF 15–16%','IGF-1 130–170','HDL aumento','SHBG calo','Panel mid-ciclo'],
      tc:['p','p','p','p','p','n'],
-     warn:'Sett. 8: eseguire panel Santagostino — 169.23 EUR, codice 01Q1RUWN. A digiuno, mattina. Stesse condizioni T0.'},
+     warn:'Sett. 8: eseguire panel Santagostino — 197.03 EUR, codice 00K24KC2 (incl. LH/FSH). A digiuno, mattina. Stesse condizioni T0.'},
     {w:'9–12',ph:'Mantenimento',pc:'#f59e0b',title:'Sett. 9–12 — Mantenimento e consolidamento',
      sub:'Giorni 57–84 · Bangkok sett. 10–12 (7–21 ago) · Protocollo adattato',
      mols:['fragment','tesa','ipam','igf1des','bpc','tb500'],
@@ -6653,7 +6657,7 @@ function buildProtocolloTimeline() {
     });
     card += '</div>';
     if (d.warn) card += `<div style="margin-top:10px;background:var(--bg-warning);border:0.5px solid var(--border-warning);border-radius:8px;padding:8px 12px"><p style="font-size:12px;color:var(--text-warning)"><strong>Nota:</strong> ${d.warn}</p></div>`;
-    if (aWk === 4) card += `<div style="margin-top:10px"><span style="font-size:12px;font-weight:500;color:var(--text-accent);background:var(--bg-accent);padding:2px 8px;border-radius:6px">Panel mid-ciclo sett. 8 · Santagostino · 169.23 EUR · codice 01Q1RUWN</span></div>`;
+    if (aWk === 4) card += `<div style="margin-top:10px"><span style="font-size:12px;font-weight:500;color:var(--text-accent);background:var(--bg-accent);padding:2px 8px;border-radius:6px">Panel T1 mid-ciclo sett. 8 · Santagostino · 197.03 EUR · codice 00K24KC2 (+LH/FSH)</span></div>`;
     card += '</div>';
     body.innerHTML += card;
   }
