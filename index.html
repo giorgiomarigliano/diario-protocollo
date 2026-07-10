@@ -1378,7 +1378,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="header">
   <div class="h-left">
     <h1>Diario Protocollo</h1>
-    <p class="h-subtitle">8 GIU – 25 SET 2026 · 16 settimane · 112 giorni</p>
+    <p class="h-subtitle">20 LUG – 8 NOV 2026 (stimato) · 16 settimane · 112 giorni</p>
   </div>
   <div class="h-right">
     <div class="sync-indicator">
@@ -1414,7 +1414,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
       <div class="pre-proto-toggle" id="pre-proto-toggle" onclick="togglePreProto()">
         <div class="pre-proto-toggle-left">
           <span class="pre-proto-badge">PRE-PROTOCOLLO</span>
-          <span class="pre-proto-title">8 giu – 12 lug 2026</span>
+          <span class="pre-proto-title">8 giu – 19 lug 2026 (stimato)</span>
           <span class="pre-proto-sub">Biometria baseline · allenamenti · parametri vitali</span>
         </div>
         <span class="pre-proto-chev" id="pre-proto-chev">›</span>
@@ -1710,7 +1710,7 @@ function buildNav(){
 function buildCycleCard(container){
   const today=new Date(); today.setHours(0,0,0,0);
   const startWU=new Date(START); startWU.setHours(0,0,0,0);
-  const startV2=new Date('2026-07-13'); startV2.setHours(0,0,0,0);
+  const startV2=new Date('2026-07-20'); startV2.setHours(0,0,0,0); // STIMA PROVVISORIA — data reale dipende da arrivo composti, da confermare
   const elapsed=Math.floor((today-startWU)/86400000);
   if(elapsed<0) return;
 
@@ -1727,7 +1727,7 @@ function buildCycleCard(container){
   // Countdown a inizio protocollo v2
   const daysToV2=Math.floor((startV2-today)/86400000);
   const countdownHtml=daysToV2>0
-    ? `<div class="cycle-next">⟶ Protocollo v2 tra <b>${daysToV2} giorni</b> · 13 lug 2026</div>`
+    ? `<div class="cycle-next">⟶ Protocollo v2 tra <b>${daysToV2} giorni</b> · 20 lug 2026 (stimato, da confermare)</div>`
     : daysToV2===0
     ? `<div class="cycle-next" style="color:#34c759">⟶ Oggi inizia il Protocollo v2!</div>`
     : `<div class="cycle-next" style="color:#0071e3">⟶ Protocollo v2 in corso · giorno ${Math.abs(daysToV2)}</div>`;
@@ -5150,7 +5150,7 @@ function importMotra(dayId) {
 
 
 // ── PROTO V2 ─────────────────────────────────────────────────────────────────
-const START2      = new Date('2026-07-13');
+const START2      = new Date('2026-07-20'); // STIMA PROVVISORIA — data reale dipende da arrivo composti
 const TOTAL_DAYS2 = 112;
 const KEY2        = 'diary_proto2_v1';
 const USER_ID2    = 'giorgio_proto2_2026';
@@ -5237,12 +5237,12 @@ function buildCycleCard2(container) {
     ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
       <circle cx="36" cy="36" r="30" fill="none" stroke="#e8e8ed" stroke-width="5"/>
     </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">—</span><span class="cycle-ring-sub">ciclo</span></div>`;
-    infoHtml = `<h3>Protocollo peptidico · Ciclo 1</h3><p>Inizio tra <b>${daysTo}</b> giorni · 13 lug 2026</p><div class="cycle-next">⟶ Preparazione in corso</div>`;
+    infoHtml = `<h3>Protocollo peptidico · Ciclo 1</h3><p>Inizio tra <b>${daysTo}</b> giorni · 20 lug 2026 (stimato, da confermare)</p><div class="cycle-next">⟶ In attesa arrivo composti</div>`;
   } else if (elapsed >= TOTAL_DAYS2) {
     ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
       <circle cx="36" cy="36" r="30" fill="none" stroke="#34c759" stroke-width="5"/>
     </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">✓</span><span class="cycle-ring-sub">fine</span></div>`;
-    infoHtml = `<h3>Ciclo 1 completato</h3><p>112 giorni · 13 lug – 1 nov 2026</p>`;
+    infoHtml = `<h3>Ciclo 1 completato</h3><p>112 giorni · 20 lug – 8 nov 2026 (stimato)</p>`;
   } else {
     pct = Math.min(100, Math.round((elapsed/TOTAL_DAYS2)*100));
     wk  = Math.floor(elapsed/7)+1;
@@ -5312,7 +5312,7 @@ function buildProtoHeader2(container) {
   div.innerHTML = `
     <div style="background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;box-shadow:var(--shadow);border:none">
       <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Protocollo peptidico · Ciclo 1</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">13 lug – 1 nov 2026 · 16 settimane</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">20 lug – 8 nov 2026 (stimato) · 16 settimane</div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
           <i class="ti ti-sunrise" style="font-size:17px;color:#0071e3;flex-shrink:0;margin-top:1px"></i>
@@ -5878,7 +5878,7 @@ function buildStockView2() {
 
   let html = `<div class="app-view-inner view-wrap">
     <div style="font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.02em;margin-bottom:4px">Stock peptidi · Ciclo 1</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">13 lug – 1 nov 2026 · 112 giorni</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">20 lug – 8 nov 2026 (stimato) · 112 giorni</div>
 
     <div style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);padding:16px;margin-bottom:16px">
       <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">🧮 Unit Converter</div>
@@ -6820,7 +6820,7 @@ function buildProtocolloTimeline() {
   wnav += '</div>';
 
   el.innerHTML = `<div class="app-view-inner view-wrap">
-    <div class="week-hdr" style="margin-bottom:1.5rem"><h2>Timeline protocollo v2</h2><span class="week-range">Effetti attesi · 16 settimane · 6 molecole · dal 13 lug 2026</span></div>
+    <div class="week-hdr" style="margin-bottom:1.5rem"><h2>Timeline protocollo v2</h2><span class="week-range">Effetti attesi · 16 settimane · 6 molecole · dal 20 lug 2026 (stimato — in attesa arrivo composti)</span></div>
     ${mfilter}${pbar}${legend}${wnav}
     <div id="tl-body"></div>
   </div>`;
@@ -7605,7 +7605,7 @@ function buildOrariView() {
   let html = `<div class="view-wrap">
   <div style="margin-bottom:24px">
     <div class="t-page-title">Schema giornaliero</div>
-    <div class="t-page-sub">Protocollo v2 · 13 lug – 1 nov 2026</div>
+    <div class="t-page-sub">Protocollo v2 · 20 lug – 8 nov 2026 (stimato)</div>
   </div>`;
 
   // Day type selector tabs
