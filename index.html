@@ -3357,6 +3357,9 @@ function buildMedView() {
     { marker:'Ferritina (µg/L)', target:'22–322', ok: v=>v>=22&&v<=322, pts:[
       {d:'10 apr 2026',v:142},{d:'20 mag 2026',v:161}
     ]},
+    { marker:'Cortisolo urinario 24h (µg/24h)', target:'4.2–60.0', ok: v=>v>=4.2&&v<=60.0, pts:[
+      {d:'6 lug 2026',v:58.45}
+    ]},
   ];
 
   // ── AZIONI CORRETTIVE ─────────────────────────────────────────────────────
@@ -6297,6 +6300,9 @@ function buildMedDash() {
     acr: [
       {d:'6 lug 2026',v:5,t:'2026-07'}
     ],
+    cortisolUrin: [
+      {d:'6 lug 2026',v:58.45,t:'2026-07'}
+    ],
     ferritina: [
       {d:'Apr 2026',v:142,t:'2026-04'},{d:'Mag 2026',v:161,t:'2026-05'}
     ],
@@ -6500,6 +6506,7 @@ function buildMedDash() {
     ${kpiCard('Zinco', DATA.zinco, 'µg/dL', 60, 106, 'target 60–106', '#8e44ad')}
     ${kpiCard('PSA', DATA.psa, 'µg/L', undefined, 4, 'target ≤4', '#34c759')}
     ${kpiCard('Ferritina', DATA.ferritina, 'µg/L', 22, 322, 'target 22–322', '#ff9500')}
+    ${kpiCard('Cortisolo urinario 24h', DATA.cortisolUrin, 'µg/24h', 4.2, 60.0, 'range 4.2–60.0', '#ff9500')}
   </div>
 
   <!-- OBIETTIVI PROTOCOLLO -->
