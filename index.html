@@ -2344,6 +2344,7 @@ async function loadFromCloud(){
       setSyncStatus('—');
     }
     setTimeout(refreshCharts,200);
+    setTimeout(refreshDashChartsIfBuilt,200);
   }catch(e){
     const lr=localStorage.getItem(KEY);
     if(lr){try{const p=JSON.parse(lr);_lastData=p.data||p;applyAll(_lastData);}catch(e2){}}
@@ -2352,8 +2353,19 @@ async function loadFromCloud(){
     document.getElementById('last-saved').textContent='Offline — dati locali';
     setSyncStatus('err');
     setTimeout(refreshCharts,200);
+    setTimeout(refreshDashChartsIfBuilt,200);
   }
   refreshWeekSummary();
+}
+
+// Aggiorna i grafici del tab Dashboard SOLO se sono già stati costruiti
+// (garantisce che ogni sync — anche mentre l'utente è già sul tab Dashboard —
+// li ridisegni con i dati appena arrivati dal cloud, invece di lasciarli
+// fermi ai dati con cui erano stati costruiti l'ultima volta)
+function refreshDashChartsIfBuilt(){
+  if (typeof dashBuilt !== 'undefined' && dashBuilt && typeof refreshDashCharts === 'function') {
+    refreshDashCharts();
+  }
 }
 
 function jumpToday(){
@@ -6641,6 +6653,7 @@ window.addEventListener('load',async()=>{
     const lr2=localStorage.getItem(KEY2);
     if(lr2){try{_lastData2=JSON.parse(lr2);applyAll(_lastData2);applyProto2Data();}catch(e2){}}
     setTimeout(refreshCharts,200);
+    setTimeout(refreshDashChartsIfBuilt,200);
   }
 });
 </script>
