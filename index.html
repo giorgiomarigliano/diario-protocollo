@@ -3825,29 +3825,40 @@ function drawDashChart(canvasId, datasets, options = {}) {
   });
   ctx.textAlign = 'left';
 
-  // X ticks — mostra date distribuite (max ~4 label sull'asse X)
+  // X ticks — mostra date distribuite, con spaziatura minima garantita per evitare sovrapposizioni
   const allValidPts = datasets[0].data.filter(p => p.value !== null);
   const nv = allValidPts.length;
   if (nv >= 2) {
     const maxXLabels = Math.min(nv, CW > 200 ? 5 : 3);
-    const step = Math.max(1, Math.floor((nv - 1) / (maxXLabels - 1)));
-    const xIdxs = new Set();
-    for (let i = 0; i < nv; i += step) xIdxs.add(i);
-    xIdxs.add(nv - 1);
+    const pxPerPt = CW / (nv - 1);
+    const minLabelPx = 26; // larghezza minima "dd/mm" + margine, per non sovrapporsi
+    const minIdxGap = Math.max(1, Math.ceil(minLabelPx / pxPerPt));
+    const step = Math.max(minIdxGap, Math.floor((nv - 1) / (maxXLabels - 1)));
+    const xIdxs = [];
+    for (let i = 0; i < nv; i += step) xIdxs.push(i);
+    const lastIdx = nv - 1;
+    if (xIdxs[xIdxs.length - 1] !== lastIdx) {
+      if (lastIdx - xIdxs[xIdxs.length - 1] < minIdxGap) xIdxs[xIdxs.length - 1] = lastIdx;
+      else xIdxs.push(lastIdx);
+    }
 
     ctx.font = '9px -apple-system'; ctx.fillStyle = labelColor; ctx.textAlign = 'center';
-    [...xIdxs].forEach(i => {
+    let lastLabelX = -Infinity;
+    xIdxs.forEach(i => {
       const pt = allValidPts[i];
       if (!pt || !pt.date) return;
       const x = ML + (nv > 1 ? i / (nv - 1) * CW : CW / 2);
       // tick
       ctx.strokeStyle = axisColor; ctx.lineWidth = 0.5;
       ctx.beginPath(); ctx.moveTo(x, MT + CH); ctx.lineTo(x, MT + CH + 3); ctx.stroke();
-      // label
+      // label — salta se troppo vicina all'etichetta precedente già disegnata
+      const clampedX = Math.max(ML + 10, Math.min(x, ML + CW - 10));
+      if (clampedX - lastLabelX < minLabelPx) return;
       const d = pt.date;
       const lbl = d.getDate() + '/' + (d.getMonth()+1);
       ctx.fillStyle = labelColor;
-      ctx.fillText(lbl, Math.max(ML + 10, Math.min(x, ML + CW - 10)), H - 3);
+      ctx.fillText(lbl, clampedX, H - 3);
+      lastLabelX = clampedX;
     });
     ctx.textAlign = 'left';
   }
@@ -4102,12 +4113,17 @@ function drawBarChart(canvasId, bars, options = {}) {
       ctx.textAlign = 'left';
     }
 
-    // Label below
+    // Label below — diradate se le barre sono troppo strette per starci tutte
     if (b.label) {
-      ctx.font = '9px -apple-system'; ctx.fillStyle = '#aeaeb2';
-      ctx.textAlign = 'center';
-      ctx.fillText(b.label, x + bw/2, H - 1);
-      ctx.textAlign = 'left';
+      const minLabelPx = 22; // larghezza minima "dd/mm"
+      const labelStep = Math.max(1, Math.ceil(minLabelPx / (bw + gap)));
+      const isLast = i === bars.length - 1;
+      if (i % labelStep === 0 || isLast) {
+        ctx.font = '9px -apple-system'; ctx.fillStyle = '#aeaeb2';
+        ctx.textAlign = 'center';
+        ctx.fillText(b.label, x + bw/2, H - 1);
+        ctx.textAlign = 'left';
+      }
     }
   });
 }
@@ -4547,6 +4563,13 @@ function buildDashboard() {
         <div>
           <div class="charts-card">
             <div class="dash-card-title">Volume per sessione (tonnellate)</div>
+            <div class="chart-legend">
+              <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#ff3b30"></span>Push</span>
+              <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#34c759"></span>Pull</span>
+              <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#ff9500"></span>Legs</span>
+              <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#af52de"></span>Upper Sab</span>
+              <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#0071e3"></span>Upper Dom</span>
+            </div>
             <canvas class="dash-chart" id="dc-vol" height="120"></canvas>
           </div>
         </div>
