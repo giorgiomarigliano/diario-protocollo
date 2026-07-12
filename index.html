@@ -3863,20 +3863,21 @@ function drawDashChart(canvasId, datasets, options = {}) {
     ctx.textAlign = 'left';
   }
 
-  // refLine (baseline T0) — tratteggiata
+  // refLine (baseline T0) — tratteggiata (l'etichetta "T0" viene disegnata dopo i dataset,
+  // per poterla spostare se coincide con l'etichetta del valore attuale)
+  let refLineY = null;
   if (options.refLine !== undefined) {
     const ry = MT + CH - ((options.refLine - mn) / rng) * CH;
     if (ry >= MT && ry <= MT + CH) {
+      refLineY = ry;
       ctx.setLineDash([3, 3]); ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 0.8;
       ctx.beginPath(); ctx.moveTo(ML, ry); ctx.lineTo(ML + CW, ry); ctx.stroke();
       ctx.setLineDash([]);
-      ctx.font = '8px -apple-system'; ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.textAlign = 'left';
-      ctx.fillText('T0', ML + CW + 5, ry + 3);
-      ctx.textAlign = 'left';
     }
   }
 
   // Draw datasets
+  const lastValueLabelYs = [];
   datasets.forEach(ds => {
     const validPts = ds.data.filter(p => p.value !== null);
     if (!validPts.length) return;
@@ -3921,7 +3922,20 @@ function drawDashChart(canvasId, datasets, options = {}) {
     ctx.textAlign = 'left';
     ctx.fillText(lbl, lx, ly);
     ctx.textAlign = 'left';
+    lastValueLabelYs.push(ly);
   });
+
+  // Etichetta "T0" — disegnata per ultima, spostata se coinciderebbe con un valore attuale
+  if (refLineY !== null) {
+    const lx = ML + CW + 5;
+    let ty = Math.max(MT + 8, Math.min(refLineY + 3, H - MB - 2));
+    const minGap = 9;
+    // se troppo vicina a un'etichetta di valore già disegnata, spostala di lato (sopra la linea)
+    while (lastValueLabelYs.some(y => Math.abs(y - ty) < minGap)) ty -= minGap;
+    ctx.font = '8px -apple-system'; ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.textAlign = 'left';
+    ctx.fillText('T0', lx, ty);
+    ctx.textAlign = 'left';
+  }
 }
 
 function drawComplianceRing(canvasId, pct, color) {
@@ -4947,7 +4961,7 @@ function refreshDashCharts() {
       const ctx=canvas.getContext('2d');
       const C=2*Math.PI*22,off=C*(1-item.pct/100);
       ctx.clearRect(0,0,60,60);
-      ctx.beginPath();ctx.arc(30,30,22,0,Math.PI*2);ctx.strokeStyle='var(--surface2)';ctx.lineWidth=5;ctx.stroke();
+      ctx.beginPath();ctx.arc(30,30,22,0,Math.PI*2);ctx.strokeStyle='#f5f5f7';ctx.lineWidth=5;ctx.stroke();
       ctx.beginPath();ctx.arc(30,30,22,-Math.PI/2,-Math.PI/2+C*(item.pct/100),false);
       ctx.strokeStyle=item.color;ctx.lineWidth=5;ctx.lineCap='round';ctx.stroke();
     });
