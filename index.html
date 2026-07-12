@@ -1003,6 +1003,12 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .dash-card{background:var(--surface);border-radius:var(--radius-sm);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:10px}
 .dash-card-title{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:14px}
 
+/* Legenda grafici — riga separata dal titolo, mai inline/compressa, va sempre a capo su mobile */
+.chart-legend{display:flex;flex-wrap:wrap;gap:12px 16px;margin:-6px 0 12px}
+.chart-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:var(--text-secondary,var(--muted));text-transform:none;letter-spacing:normal;white-space:nowrap;line-height:1.2}
+.chart-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
+.chart-legend-line{width:16px;height:3px;border-radius:2px;flex-shrink:0;display:inline-block}
+
 /* KPI row */
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
 .kpi-box{background:var(--surface);border-radius:var(--radius-sm);padding:14px 16px;box-shadow:var(--shadow);text-align:center;position:relative;overflow:hidden}
@@ -4509,11 +4515,10 @@ function buildDashboard() {
             <canvas class="dash-chart" id="dc-rhr" height="110"></canvas>
           </div>
           <div class="charts-card" style="margin-top:10px">
-            <div class="dash-card-title">Pressione arteriosa (mmHg)
-              <span style="margin-left:8px;font-size:10px">
-                <span style="color:#ff3b30">● Sistolica</span>
-                <span style="color:#0071e3;margin-left:6px">● Diastolica</span>
-              </span>
+            <div class="dash-card-title">Pressione arteriosa (mmHg)</div>
+            <div class="chart-legend">
+              <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#ff3b30"></span>Sistolica</span>
+              <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#0071e3"></span>Diastolica</span>
             </div>
             <canvas class="dash-chart" id="dc-bp" height="110"></canvas>
           </div>
@@ -4525,12 +4530,11 @@ function buildDashboard() {
     <div class="dash-section">
       <div class="dash-section-title">Soggettivo · ultimi 30 giorni</div>
       <div class="charts-card">
-        <div class="dash-card-title">Energia / Recupero / Umore (1–10)
-          <span style="margin-left:8px;font-size:10px">
-            <span style="color:#0071e3">● Energia</span>
-            <span style="color:#34c759;margin-left:6px">● Recupero</span>
-            <span style="color:#af52de;margin-left:6px">● Umore</span>
-          </span>
+        <div class="dash-card-title">Energia / Recupero / Umore (1–10)</div>
+        <div class="chart-legend">
+          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#0071e3"></span>Energia</span>
+          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#34c759"></span>Recupero</span>
+          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#af52de"></span>Umore</span>
         </div>
         <canvas class="dash-chart" id="dc-subj" height="100"></canvas>
       </div>
@@ -4615,17 +4619,17 @@ function buildDashboard() {
         <div class="dash-two-col">
           <div class="charts-card">
             <div class="dash-card-title">Bicipiti</div>
-            <div style="display:flex;gap:12px;margin-bottom:6px;flex-wrap:wrap">
-              <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted)"><span style="width:20px;height:2px;background:#ff9500;border-radius:2px;display:inline-block"></span>DB Curl</span>
-              <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted)"><span style="width:20px;height:2px;background:#ff3b30;border-radius:2px;display:inline-block"></span>Hammer Curl</span>
+            <div class="chart-legend">
+              <span class="chart-legend-item"><span class="chart-legend-line" style="background:#ff9500"></span>DB Curl</span>
+              <span class="chart-legend-item"><span class="chart-legend-line" style="background:#ff3b30"></span>Hammer Curl</span>
             </div>
             <canvas class="dash-chart" id="dc-bicep" height="90"></canvas>
           </div>
           <div class="charts-card">
             <div class="dash-card-title">Tricipiti</div>
-            <div style="display:flex;gap:12px;margin-bottom:6px;flex-wrap:wrap">
-              <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted)"><span style="width:20px;height:2px;background:#af52de;border-radius:2px;display:inline-block"></span>Rope Pushdown</span>
-              <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted)"><span style="width:20px;height:2px;background:#ff9f0a;border-radius:2px;display:inline-block"></span>Rope Overhead</span>
+            <div class="chart-legend">
+              <span class="chart-legend-item"><span class="chart-legend-line" style="background:#af52de"></span>Rope Pushdown</span>
+              <span class="chart-legend-item"><span class="chart-legend-line" style="background:#ff9f0a"></span>Rope Overhead</span>
             </div>
             <canvas class="dash-chart" id="dc-tricep" height="90"></canvas>
           </div>
