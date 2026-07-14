@@ -3203,6 +3203,51 @@ function buildMedView() {
     ]
   };
 
+  const p_visita_seregni = {
+    date: '14 luglio 2026', label: 'Visita endocrinologica · Dr. Seregni CDI',
+    note: 'Rif. Amministrativo 2-400216-26 · Ore 09:23:22',
+    cats: [
+      { cat: 'Biometria & vitali', items: [
+        { name:'Peso', val:'72 kg', ref:'—', ok:true, note:'Incremento +0.9 kg vs DEXA T0 (09/05/2026 · 71.1kg)' },
+        { name:'Altezza', val:'170 cm', ref:'—', ok:true },
+        { name:'BMI', val:'24.91', ref:'20–24 (M)', ok:false, note:'Lievemente sopra range normale' },
+        { name:'Frequenza cardiaca', val:'66 bpm', ref:'60–100', ok:true, note:'Ottimale — a riposo' },
+        { name:'PA Sistolica', val:'120 mmHg', ref:'<130', ok:true },
+        { name:'PA Diastolica', val:'80 mmHg', ref:'<85', ok:true },
+        { name:'Scala VAS dolore', val:'0', ref:'Assente', ok:true },
+      ]},
+      { cat: 'Anamnesi patologica attuale', items: [
+        { name:'Sintomo principale', val:'Astenia', ref:'—', ok:false, note:'Stanchezza non ristoratore' },
+        { name:'Sonno', val:'Non ristoratore', ref:'—', ok:false, note:'⚠️ Qualità sub-ottimale' },
+        { name:'Alvo', val:'Tendenzialmente diarroico', ref:'Normale', ok:false, note:'Gestibile con alimentazione' },
+        { name:'Fumo', val:'Non fumatore', ref:'—', ok:true },
+        { name:'Potus', val:'Occasionale', ref:'—', ok:true },
+        { name:'Idratazione', val:'~3 L/die', ref:'—', ok:true, note:'Acqua prevalente, caffè, coca zero' },
+      ]},
+      { cat: 'Attività & fattori di rischio', items: [
+        { name:'Lavorativa', val:'Sedentaria · stress++', ref:'—', ok:false, note:'Elevata pressione psicologica' },
+        { name:'Fisica', val:'Palestra regolare', ref:'—', ok:true, note:'Pratica costante, allenamento strutturato' },
+        { name:'Allergie/Intolleranze', val:'Ambrosia (oculorinite) · Pollini', ref:'—', ok:false, note:'Stagionali, controllate' },
+      ]},
+      { cat: 'Esame obiettivo & reperti', items: [
+        { name:'Obbiettività generale', val:'Non reperti sospetti', ref:'—', ok:true },
+        { name:'Testicolo sinistro', val:'Ipotrofia confermata', ref:'—', ok:false, note:'🔴 Dimensioni ridotte · Aspetto ipoecogeno lieve · Varicocele sin gr.3', sev:'alert' },
+        { name:'Idrocele bilaterale', val:'Presente (mag. sin)', ref:'—', ok:false, note:'Confermato eco 27/05' },
+      ]},
+      { cat: 'Diagnosi clinica', items: [
+        { name:'Diagnosi principale', val:'Ipotrofia testicolare sinistra', ref:'—', ok:false, note:'🔴 Correlata a varicocele gr.3 · Possibile ridotta produzione steroidea locale', sev:'alert' },
+        { name:'Asse ipofisario', val:'Ipergonadotropo (FSH ↑ LH ↑)', ref:'—', ok:false, note:'FSH 21.2→24.27 · LH 10.9→14.24 (trend in peggioramento)' },
+        { name:'SHBG', val:'72.80→54.10 nmol/L', ref:'16–80', ok:true, note:'Calo rapido anomalo in 10gg (−26%)' },
+        { name:'Testosterone totale', val:'526.20 ng/dL', ref:'249–836', ok:true, note:'Basso-normale · Frazione biodisponibile calata per SHBG ridotto' },
+      ]},
+      { cat: 'Terapia consigliata & follow-up', items: [
+        { name:'Monitoraggio', val:'6–8 mesi', ref:'—', ok:true, note:'Testosterone totale + SHBG · Rivalutazione funzione testicolare' },
+        { name:'Approfondimenti', val:'Nessuno suggerito', ref:'—', ok:true, note:'Chirurgia varicocele non raccomandata (Dr.ssa Maccagnano 29/06)' },
+        { name:'Autorizzazione protocollo', val:'✅ APPROVATO', ref:'—', ok:true, note:'🟢 "Protocollo sperimentale peptidico sotto controllo medico di base"' },
+      ]},
+    ]
+  };
+
   const p_apr2026 = {
     date: '10 aprile 2026', label: 'Panel CDI Bicocca',
     note: 'Prelievo ore 08:22 · 59 giorni prima dell\'inizio protocollo',
@@ -3491,8 +3536,12 @@ function buildMedView() {
     </div></div>
 
     <!-- ESAMI COMPLETATI -->
-    <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Esami completati (10 apr 2026 – 13 lug 2026)</div>
+    <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Esami completati (10 apr 2026 – 14 lug 2026)</div>
     <div class="med-timeline" style="margin-bottom:20px">
+      <div class="med-tl-item">
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid #34c759">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">14 lug 2026 · 09:23</div><div class="med-tl-title">Visita endocrinologica (Dr. Seregni CDI)</div><div class="med-tl-sub"><strong>Biometria:</strong> Peso 72kg (BMI 24.91) · PA 120/80 · FC 66bpm | <strong>Diagnosi:</strong> Ipotrofia testicolare sx · Ipergonadotropismo (FSH 24.27↑↑ LH 14.24↑↑) | <strong>Follow-up:</strong> T totale + SHBG tra 6–8 mesi · <strong>🟢 Autorizzazione:</strong> Protocollo peptidico sotto controllo medico di base</div></div>
+      </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid #34c759">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
         <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">13 lug 2026 · 14:00</div><div class="med-tl-title">Echo-doppler arterie renali (Bionics CDI, Dott. Corsi)</div><div class="med-tl-sub">Risultati: Normali · Aorta 1.7 cm · Arterie renali 5.0/5.2 mm · PSV 100/110 · Indici ok</div></div>
@@ -3570,6 +3619,7 @@ function buildMedView() {
 
   <!-- Indice panel -->
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px">
+    <a href="#panel-seregni-14lug" style="background:rgba(52,199,89,.12);color:#34c759;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">👨‍⚕️ Visita Seregni 14 lug 2026</a>
     <a href="#panel-t0-sant" style="background:rgba(255,59,48,.12);color:#ff3b30;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none">🔴 T0 Santagostino 13 lug 2026</a>
     <a href="#panel-jul6-2026" style="background:rgba(52,199,89,.12);color:#34c759;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🧪 Urine ACR + Cortisolo 6 lug 2026</a>
     <a href="#panel-jul2026" style="background:rgba(255,149,0,.12);color:#ff9500;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🩸 Ormonale+renale 3 lug 2026</a>
@@ -3586,6 +3636,7 @@ function buildMedView() {
 
   // Panel più recente prima
   const panelOrder = [
+    { id:'panel-seregni-14lug', p: p_visita_seregni },
     { id:'panel-t0-sant', p: p0_sant },
     { id:'panel-jul6-2026', p: p_jul6_2026 },
     { id:'panel-jul2026', p: p_jul2026 },
