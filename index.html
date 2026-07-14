@@ -1444,9 +1444,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="med-view" id="timeline-view"></div>
 <div class="med-view" id="food-view"></div>
 <div class="med-view" id="history-view"></div>
-<div class="diary-view hidden" id="proto2-view">
-  <div class="container" id="container2"></div>
-</div>
+<div class="diary-view hidden" id="proto2-view"></div>
 
 <div class="save-bar">
   <span class="save-hint" id="last-saved">Mai salvato</span>
@@ -3215,18 +3213,18 @@ function buildMedView() {
         { name:'Insulina', val:'3.6 µU/mL', ref:'2.6–24.0', ok:true },
         { name:'HOMA Index', val:'0.73', ref:'<2.5', ok:true, note:'Calcolato da gluc × insul / 405' },
         { name:'Creatinina', val:'1.28 mg/dL', ref:'0.73–1.18', ok:false, note:'⚠️ Sopra range (trend 1.13→1.29→1.32→1.28)' },
-        { name:'Trigliceridi', val:'50 mg/dL', ref:'<150', ok:true },
+        { name:'Trigliceridi', val:'50 mg/dL', ref:'≤170', ok:true },
         { name:'Colesterolo HDL', val:'32 mg/dL', ref:'≥40', ok:false, note:'↓ Basso — persistente' },
         { name:'Colesterolo LDL', val:'49 mg/dL', ref:'<115', ok:true },
-        { name:'PCR (alta sensibilità)', val:'0.40 mg/L', ref:'≤3.3', ok:true, note:'Bassa — buon controllo infiammazione' },
+        { name:'PCR (alta sensibilità)', val:'0.40 mg/L', ref:'≤5.00', ok:true, note:'Bassa — buon controllo infiammazione' },
       ]},
       { cat: 'Immunologia & asse ormonale', items: [
         { name:'LH', val:'14.24 mUI/mL', ref:'0.57–12.7 (uomo)', ok:false, note:'🔴 PEGGIORATO — +30% vs 03/07 (10.9→14.24) ↑↑', sev:'alert' },
         { name:'FSH', val:'24.27 mIU/mL', ref:'0.95–11.95 (uomo)', ok:false, note:'🔴 PEGGIORATO — +14% vs 03/07 (21.2→24.27) ↑', sev:'alert' },
-        { name:'Testosterone totale', val:'526.20 ng/dL', ref:'249–836 (uomo)', ok:true, note:'Nel range medio-basso · CDI 03/07 era 6.85nmol/L (~197ng/dL), aumentato' },
+        { name:'Testosterone totale', val:'526.20 ng/dL', ref:'127.18–1020.36 (uomo)', ok:true, note:'Nel range medio-basso · CDI 03/07 era 6.85 — unità da confermare (µg/L→685ng/dL oppure nmol/L→~198ng/dL: risultati molto diversi, verificare referto originale)' },
         { name:'Testosterone libero', val:'18.80 pg/mL', ref:'9.57–40.60', ok:true, note:'Nella parte bassa del range' },
         { name:'SHBG', val:'54.10 nmol/L', ref:'11.20–78.10', ok:true, note:'🔴 CALO SIGNIFICATIVO — -26% vs 03/07 (72.80→54.10) ↓↓' },
-        { name:'Estradiolo (E2)', val:'<24 ng/L', ref:'11.8–39.8 (M)', ok:true, note:'Sotto limite rilevabilità' },
+        { name:'Estradiolo (E2)', val:'<24 pg/mL', ref:'<44 (uomo)', ok:true, note:'Sotto limite rilevabilità' },
         { name:'IGF-1', val:'86.00 µg/L', ref:'55–248', ok:false, note:'🔴 CALATO — -8.5% vs 20/05 (94→86) ↓ · Target Tesamorelin 115–150+' },
       ]},
       { cat: 'Discrepanze vs CDI 03/07', items: [
@@ -3273,8 +3271,8 @@ function buildMedView() {
       { cat: 'Diagnosi clinica', items: [
         { name:'Diagnosi principale', val:'Ipotrofia testicolare sinistra', ref:'—', ok:false, note:'🔴 Correlata a varicocele gr.3 · Possibile ridotta produzione steroidea locale', sev:'alert' },
         { name:'Asse ipofisario', val:'Ipergonadotropo (FSH ↑ LH ↑)', ref:'—', ok:false, note:'FSH 21.2→24.27 · LH 10.9→14.24 (trend in peggioramento)' },
-        { name:'SHBG', val:'72.80→54.10 nmol/L', ref:'16–80', ok:true, note:'Calo rapido anomalo in 10gg (−26%)' },
-        { name:'Testosterone totale', val:'526.20 ng/dL', ref:'249–836', ok:true, note:'Basso-normale · Frazione biodisponibile calata per SHBG ridotto' },
+        { name:'SHBG', val:'72.80→54.10 nmol/L', ref:'11.20–78.10', ok:true, note:'Calo rapido anomalo in 10gg (−26%)' },
+        { name:'Testosterone totale', val:'526.20 ng/dL', ref:'127.18–1020.36', ok:true, note:'Basso-normale · Frazione biodisponibile calata per SHBG ridotto' },
       ]},
       { cat: 'Terapia consigliata & follow-up', items: [
         { name:'Monitoraggio', val:'6–8 mesi', ref:'—', ok:true, note:'Testosterone totale + SHBG · Rivalutazione funzione testicolare' },
@@ -5383,7 +5381,7 @@ function getWorkout2(dayIdx) {
 }
 
 function getDotColor2(type) {
-  const m = {Push:'#0071e3',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3',Riposo:'#c7c7cc'};
+  const m = {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3',Riposo:'#c7c7cc'};
   return m[type]||'#c7c7cc';
 }
 
