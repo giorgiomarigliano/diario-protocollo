@@ -1931,7 +1931,10 @@ function buildDays(){
     }
 
     const card=document.createElement('div');
-    card.className='day-card'+(isToday?' today open':'');
+    // Aprire card T0 (day_35 = 13 lug) di default, chiudere le precedenti
+    const isT0Day = i === 35; // day_35 = T0 Santagostino
+    const shouldBeOpen = isToday || isT0Day;
+    card.className='day-card'+(shouldBeOpen?' today open':'');
     card.id='card-'+id;
 
     card.innerHTML=`
@@ -2283,6 +2286,17 @@ function updateLabBadges(data) {
       }
     }
   });
+  
+  // Forza apertura di lab_t0 e chiusura delle altre (default state nel tab Diario)
+  const t0Card = document.getElementById('card-lab_t0');
+  const wk8Card = document.getElementById('card-lab_wk8');
+  const finalCard = document.getElementById('card-lab_final');
+  const cdiCard = document.getElementById('card-lab_cdi_quadro');
+  
+  if (t0Card) t0Card.classList.add('open');
+  if (wk8Card) wk8Card.classList.remove('open');
+  if (finalCard) finalCard.classList.remove('open');
+  if (cdiCard) cdiCard.classList.remove('open');
 }
 
 let _saving=false;
@@ -2478,11 +2492,11 @@ const DEXA_T0 = {
 };
 
 // Card 1: quadro generale pre-protocollo (CDI) — sempre completata, riferimento storico
-const LAB_CDI_CARD = {id:'lab_cdi_quadro', label:'Quadro generale pre-protocollo · CDI', badge:'p1b', locked:true, sub:'Ultimo panel CDI (20 mag 2026) — riferimento storico, non è il T0 ufficiale'};
+const LAB_CDI_CARD = {id:'lab_cdi_quadro', label:'Quadro generale pre-protocollo · CDI', badge:'p1b', locked:false, sub:'Ultimo panel CDI (20 mag 2026) — riferimento storico, non è il T0 ufficiale'};
 
 // Card 2-4: T0/T1/T2 — SOLO marker Sant'Agostino (panel dedicato, codice 00K24KC2), vuote finché non fatte
 const LAB_MILESTONES = [
-  {id:'lab_t0',   label:'T0 · Sant\u2019Agostino (pre-v2)',        badge:'p1b', locked:false},
+  {id:'lab_t0',   label:'T0 · Sant\u2019Agostino (pre-v2)',        badge:'p1b', locked:true},
   {id:'lab_wk8',  label:'T1 · Sant\u2019Agostino (sett. 8 da v2)', badge:'p3b', locked:false},
   {id:'lab_final',label:'T2 · Sant\u2019Agostino (fine ciclo)',    badge:'p4b', locked:false},
 ];
@@ -3147,6 +3161,48 @@ function buildMedView() {
     ]
   };
 
+  const p0_sant = {
+    date: '13 luglio 2026', label: 'Panel T0 Santagostino (pre-v2)',
+    note: 'Codice 00K24KC2 · Prelievo ore 08:32 · Risultati 14/07/2026',
+    cats: [
+      { cat: 'Ematologia', items: [
+        { name:'Globuli Bianchi (WBC)', val:'9.41 ×10⁹/L', ref:'4.00–10.00', ok:true },
+        { name:'Globuli Rossi (RBC)', val:'4.01 ×10¹²/L', ref:'4.20–6.00', ok:false, note:'↓ Basso — confermato cronico' },
+        { name:'Emoglobina (Hb)', val:'118.0 g/L', ref:'140–180', ok:false, note:'🔴 Bassa — stabile bassa (119→118)' },
+        { name:'Ematocrito (Hct)', val:'37.1%', ref:'37.0–54.0', ok:true },
+        { name:'MCV', val:'92.5 fL', ref:'80–95', ok:true },
+        { name:'MCHC', val:'318 g/L', ref:'320–380', ok:false, note:'Lievemente bassa' },
+        { name:'Piastrine', val:'237 ×10⁹/L', ref:'150–450', ok:true },
+      ]},
+      { cat: 'Chimica clinica', items: [
+        { name:'Glucosio', val:'82 mg/dL', ref:'70–100', ok:true },
+        { name:'Insulina', val:'3.6 µU/mL', ref:'2.6–24.0', ok:true },
+        { name:'HOMA Index', val:'0.73', ref:'<2.5', ok:true, note:'Calcolato da gluc × insul / 405' },
+        { name:'Creatinina', val:'1.28 mg/dL', ref:'0.73–1.18', ok:false, note:'⚠️ Sopra range (trend 1.13→1.29→1.32→1.28)' },
+        { name:'Trigliceridi', val:'50 mg/dL', ref:'<150', ok:true },
+        { name:'Colesterolo HDL', val:'32 mg/dL', ref:'≥40', ok:false, note:'↓ Basso — persistente' },
+        { name:'Colesterolo LDL', val:'49 mg/dL', ref:'<115', ok:true },
+        { name:'PCR (alta sensibilità)', val:'0.40 mg/L', ref:'≤3.3', ok:true, note:'Bassa — buon controllo infiammazione' },
+      ]},
+      { cat: 'Immunologia & asse ormonale', items: [
+        { name:'LH', val:'14.24 mUI/mL', ref:'0.57–12.7 (uomo)', ok:false, note:'🔴 PEGGIORATO — +30% vs 03/07 (10.9→14.24) ↑↑', sev:'alert' },
+        { name:'FSH', val:'24.27 mIU/mL', ref:'0.95–11.95 (uomo)', ok:false, note:'🔴 PEGGIORATO — +14% vs 03/07 (21.2→24.27) ↑', sev:'alert' },
+        { name:'Testosterone totale', val:'526.20 ng/dL', ref:'249–836 (uomo)', ok:true, note:'Nel range medio-basso · CDI 03/07 era 6.85nmol/L (~197ng/dL), aumentato' },
+        { name:'Testosterone libero', val:'18.80 pg/mL', ref:'9.57–40.60', ok:true, note:'Nella parte bassa del range' },
+        { name:'SHBG', val:'54.10 nmol/L', ref:'11.20–78.10', ok:true, note:'🔴 CALO SIGNIFICATIVO — -26% vs 03/07 (72.80→54.10) ↓↓' },
+        { name:'Estradiolo (E2)', val:'<24 ng/L', ref:'11.8–39.8 (M)', ok:true, note:'Sotto limite rilevabilità' },
+        { name:'IGF-1', val:'86.00 µg/L', ref:'55–248', ok:false, note:'🔴 CALATO — -8.5% vs 20/05 (94→86) ↓ · Target Tesamorelin 115–150+' },
+      ]},
+      { cat: 'Discrepanze vs CDI 03/07', items: [
+        { name:'LH: 10.9 → 14.24', val:'+30% ↑↑', ref:'—', ok:false, note:'Peggioramento in 10 giorni durante warm-up', sev:'alert' },
+        { name:'FSH: 21.2 → 24.27', val:'+14% ↑', ref:'—', ok:false, note:'Lieve peggioramento asse ipofisario' },
+        { name:'SHBG: 72.80 → 54.10', val:'-26% ↓↓', ref:'—', ok:false, note:'Calo rapido anomalo in 10 giorni', sev:'alert' },
+        { name:'IGF-1: 94 → 86', val:'-8.5% ↓', ref:'—', ok:false, note:'Continua trend negativo da maggio' },
+        { name:'Hb: 119 → 118', val:'Stabile bassa', ref:'—', ok:false, note:'Cronico — RBC anche basso', sev:'warn' },
+      ]},
+    ]
+  };
+
   const p_apr2026 = {
     date: '10 aprile 2026', label: 'Panel CDI Bicocca',
     note: 'Prelievo ore 08:22 · 59 giorni prima dell\'inizio protocollo',
@@ -3514,6 +3570,7 @@ function buildMedView() {
 
   <!-- Indice panel -->
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px">
+    <a href="#panel-t0-sant" style="background:rgba(255,59,48,.12);color:#ff3b30;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none">🔴 T0 Santagostino 13 lug 2026</a>
     <a href="#panel-jul6-2026" style="background:rgba(52,199,89,.12);color:#34c759;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🧪 Urine ACR + Cortisolo 6 lug 2026</a>
     <a href="#panel-jul2026" style="background:rgba(255,149,0,.12);color:#ff9500;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🩸 Ormonale+renale 3 lug 2026</a>
     <a href="#panel-bionics-jun2026" style="background:rgba(0,113,227,.12);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🧪 Lab Bionics 9 giu 2026</a>
@@ -3529,6 +3586,7 @@ function buildMedView() {
 
   // Panel più recente prima
   const panelOrder = [
+    { id:'panel-t0-sant', p: p0_sant },
     { id:'panel-jul6-2026', p: p_jul6_2026 },
     { id:'panel-jul2026', p: p_jul2026 },
     { id:'panel-bionics-jun2026', p: p_bionics_jun2026 },
