@@ -2255,8 +2255,34 @@ function applyAll(data){
   });
   updateProgress();
   _lastData = data;
+  updateLabBadges(data);
   setTimeout(refreshWeekSummary, 0);
   setTimeout(() => { if (typeof refreshCharts === 'function') refreshCharts(); }, 50);
+}
+
+function updateLabBadges(data) {
+  // Aggiorna il badge "In attesa" → "Completato" per le card lab
+  const labCards = ['lab_t0', 'lab_wk8', 'lab_final'];
+  labCards.forEach(cardId => {
+    const card = document.getElementById('card-' + cardId);
+    if (!card) return;
+    const labData = data[cardId] || {};
+    // Conta campi compilati (escludendo lab_note e lab_completed)
+    const filledCount = Object.entries(labData)
+      .filter(([k, v]) => k.startsWith('lab_') && !k.endsWith('_note') && k !== 'lab_completed' && v && v !== '—')
+      .length;
+    // Se almeno 12 campi compilati, marca come Completato
+    const isComplete = filledCount >= 12 || labData.lab_completed === '1';
+    const badgeEl = card.querySelector('.milestone-badge');
+    if (badgeEl) {
+      if (isComplete) {
+        badgeEl.textContent = 'Completato';
+        card.classList.add('open');  // Apri la card
+      } else {
+        badgeEl.textContent = 'In attesa';
+      }
+    }
+  });
 }
 
 let _saving=false;
