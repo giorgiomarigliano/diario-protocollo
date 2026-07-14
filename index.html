@@ -2499,23 +2499,26 @@ const LAB_CDI_QUADRO = {
 };
 
 // Template Sant'Agostino — stessi 16 marker per T0/T1/T2, vuoti finché non arrivano i referti
+// Valori T0 reali da referto Sant'Agostino (accettazione 13/07/26, referto 14/07/26, cod. 709992694).
+// Range di riferimento = quelli stampati sul referto (uomini). Questo stesso oggetto alimenta anche
+// i placeholder/ref per le card T1/T2 (val non mostrato finché non locked).
 const LAB_SANTAGOSTINO = {
-  igf1:     {val:'—', ref:'~115–300',    label:'IGF-1',         unit:'ng/mL'},
-  gluc:     {val:'—', ref:'70–99',       label:'Glucosio',       unit:'mg/dL'},
-  insulina: {val:'—', ref:'2.6–24.9',    label:'Insulina',       unit:'µUI/mL'},
+  igf1:     {val:'86.00', ref:'55.00–248.00', label:'IGF-1',         unit:'µg/L'},
+  gluc:     {val:'82',    ref:'70–100',       label:'Glucosio',       unit:'mg/dL'},
+  insulina: {val:'3.6',   ref:'2.6–24.0',     label:'Insulina',       unit:'µU/mL'},
   homa:     {val:'—', ref:'<2.5',        label:'HOMA Index',     unit:''},
-  hb:       {val:'—', ref:'133–179',     label:'Emoglobina',     unit:'g/L'},
-  t_tot:    {val:'—', ref:'249–836',     label:'T Totale',       unit:'ng/dL'},
-  t_lib:    {val:'—', ref:'9.57–40.60',  label:'T Libero',       unit:'ng/L'},
-  shbg:     {val:'—', ref:'16.00–80.50', label:'SHBG',           unit:'nmol/L'},
-  hdl:      {val:'—', ref:'>40',         label:'HDL',            unit:'mg/dL'},
-  ldl:      {val:'—', ref:'<115',        label:'LDL',            unit:'mg/dL'},
-  tg:       {val:'—', ref:'<150',        label:'Trigliceridi',   unit:'mg/dL'},
-  e2:       {val:'—', ref:'11.8–39.8 (M)', label:'Estradiolo E2', unit:'ng/L'},
-  creat:    {val:'—', ref:'0.73–1.20',   label:'Creatinina',     unit:'mg/dL'},
-  crp:      {val:'—', ref:'≤3.3',        label:'PCR',            unit:'mg/L'},
-  lh:       {val:'—', ref:'1.5–9.3',     label:'LH',             unit:'UI/L'},
-  fsh:      {val:'—', ref:'1.4–18.1',    label:'FSH',            unit:'mU/mL'},
+  hb:       {val:'118.0', ref:'140.0–180.0',  label:'Emoglobina',     unit:'g/L'},
+  t_tot:    {val:'526.20',ref:'127.18–1020.36', label:'T Totale',   unit:'ng/dL'},
+  t_lib:    {val:'18.80', ref:'9.57–40.60',   label:'T Libero',       unit:'pg/mL'},
+  shbg:     {val:'54.10', ref:'11.20–78.10',  label:'SHBG',           unit:'nmol/L'},
+  hdl:      {val:'32',    ref:'≥40',          label:'HDL',            unit:'mg/dL'},
+  ldl:      {val:'49',    ref:'≤115',         label:'LDL',            unit:'mg/dL'},
+  tg:       {val:'50',    ref:'≤170',         label:'Trigliceridi',   unit:'mg/dL'},
+  e2:       {val:'<24',   ref:'<44 (uomini)', label:'Estradiolo E2', unit:'pg/mL'},
+  creat:    {val:'1.28',  ref:'0.73–1.18',    label:'Creatinina',     unit:'mg/dL'},
+  crp:      {val:'<0.40', ref:'≤5.00',        label:'PCR',            unit:'mg/L'},
+  lh:       {val:'14.24', ref:'0.57–12.7',    label:'LH',             unit:'mUI/mL'},
+  fsh:      {val:'24.27', ref:'0.95–11.95',   label:'FSH',            unit:'mIU/mL'},
 };
 
 const DEXA_T0 = {
@@ -6423,7 +6426,7 @@ function buildMedDash() {
       {d:'Ott 2020',v:33,t:'2020-10'},{d:'Nov 2022',v:37,t:'2022-11'},
       {d:'Gen 2024',v:24,t:'2024-01'},{d:'Feb 2025',v:27,t:'2025-02'},
       {d:'Apr 2026',v:28,t:'2026-04'},{d:'Mag 2026',v:35,t:'2026-05'},
-      {d:'Giu 2026',v:32,t:'2026-06'}
+      {d:'Giu 2026',v:32,t:'2026-06'},{d:'13 lug 2026 T0 Sant',v:32,t:'2026-07c'}
     ],
     colTot: [
       {d:'Ott 2020',v:109,t:'2020-10'},{d:'Nov 2022',v:120,t:'2022-11'},
@@ -6435,13 +6438,13 @@ function buildMedDash() {
       {d:'Ott 2020',v:62,t:'2020-10'},{d:'Nov 2022',v:66,t:'2022-11'},
       {d:'Gen 2024',v:52,t:'2024-01'},{d:'Feb 2025',v:62,t:'2025-02'},
       {d:'Apr 2026',v:60,t:'2026-04'},{d:'Mag 2026',v:57,t:'2026-05'},
-      {d:'9 giu 2026',v:64,t:'2026-06b'}
+      {d:'9 giu 2026',v:64,t:'2026-06b'},{d:'13 lug 2026 T0 Sant',v:49,t:'2026-07c'}
     ],
     tg: [
       {d:'Ott 2020',v:69,t:'2020-10'},{d:'Nov 2022',v:83,t:'2022-11'},
       {d:'Gen 2024',v:64,t:'2024-01'},{d:'Feb 2025',v:67,t:'2025-02'},
       {d:'Apr 2026',v:65,t:'2026-04'},{d:'Mag 2026',v:77,t:'2026-05'},
-      {d:'Giu 2026',v:108,t:'2026-06'}
+      {d:'Giu 2026',v:108,t:'2026-06'},{d:'13 lug 2026 T0 Sant',v:50,t:'2026-07c'}
     ],
     omocist: [
       {d:'Apr 2026',v:21.9,t:'2026-04'},{d:'Mag 2026',v:17.5,t:'2026-05'}
@@ -6460,7 +6463,8 @@ function buildMedDash() {
       {d:'Mag 2026 T0',v:94,t:'2026-05'},{d:'13 lug 2026 T0 Sant',v:86.00,t:'2026-07'}
     ],
     testLibero: [
-      {d:'Gen 2024',v:16.53,t:'2024-01'},{d:'Apr 2026',v:15.60,t:'2026-04'}
+      {d:'Gen 2024',v:16.53,t:'2024-01'},{d:'Apr 2026',v:15.60,t:'2026-04'},
+      {d:'13 lug 2026 T0 Sant',v:18.80,t:'2026-07'} // pg/mL Sant'Agostino = ng/L (unita' equivalente)
     ],
     ves: [
       {d:'Apr 2026',v:17,t:'2026-04'},{d:'Mag 2026',v:25,t:'2026-05'}
@@ -6471,7 +6475,8 @@ function buildMedDash() {
     ],
     creatinina: [
       {d:'10 apr 2026',v:1.13,t:'2026-04'},{d:'20 mag 2026',v:1.29,t:'2026-05a'},
-      {d:'21 mag 2026',v:1.29,t:'2026-05b'},{d:'3 lug 2026',v:1.32,t:'2026-07'}
+      {d:'21 mag 2026',v:1.29,t:'2026-05b'},{d:'3 lug 2026',v:1.32,t:'2026-07'},
+      {d:'13 lug 2026 T0 Sant',v:1.28,t:'2026-07b'}
     ],
     egfr: [
       {d:'10 apr 2026',v:75,t:'2026-04'},{d:'3 lug 2026',v:62,t:'2026-07'}
@@ -6486,7 +6491,7 @@ function buildMedDash() {
     ],
     testTotale: [
       {d:'3 lug 2026 CDI',v:685,t:'2026-07'},{d:'13 lug 2026 T0 Sant',v:526.20,t:'2026-07b'}
-    ], // unità base: ng/dL (Sant'Agostino, T0/T1/T2). Valore CDI 3/07 convertito da 6.85 µg/L ×100. Range provvisorio 187–684 ng/dL (=1.87–6.84 µg/L CDI) — DA SOSTITUIRE col range stampato sul referto Sant'Agostino appena disponibile.
+    ], // unità base: ng/dL (Sant'Agostino, referto T0 13/07/2026). Valore CDI 3/07 convertito da 6.85 µg/L ×100. Range 127.18–1020.36 ng/dL da referto Sant'Agostino.
     shbg: [
       {d:'10 apr 2026',v:75.10,t:'2026-04'},{d:'20 mag 2026',v:75.10,t:'2026-05'},{d:'3 lug 2026',v:72.80,t:'2026-07'},{d:'13 lug 2026 T0',v:54.10,t:'2026-07b'}
     ],
@@ -6500,7 +6505,8 @@ function buildMedDash() {
       {d:'Apr 2026',v:142,t:'2026-04'},{d:'Mag 2026',v:161,t:'2026-05'}
     ],
     crp: [
-      {d:'Apr 2026',v:2.7,t:'2026-04'},{d:'Mag 2026',v:2.7,t:'2026-05'}
+      {d:'Apr 2026',v:2.7,t:'2026-04'},{d:'Mag 2026',v:2.7,t:'2026-05'},
+      {d:'13 lug 2026 T0 Sant',v:0.40,t:'2026-07'} // referto riporta "<0.40" (sotto soglia rilevabilita'), plottato come 0.40 = limite superiore
     ],
   };
 
@@ -6672,11 +6678,11 @@ function buildMedDash() {
 
   <div class="section-label">⚖️ Asse gonadico</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
-    ${kpiCard('Testosterone tot.', DATA.testTotale, 'ng/dL', 187, 684, 'range 187–684 (conv. CDI, da confermare Sant\'Agostino)', '#0071e3')}
-    ${kpiCard('Testosterone lib.', DATA.testLibero, 'ng/L', 15, 40, 'target >15 (efficace)', '#0071e3')}
-    ${kpiCard('SHBG', DATA.shbg, 'nmol/L', undefined, 80.50, 'target ≤80.50', '#8e44ad')}
-    ${kpiCard('FSH', DATA.fsh, 'mU/mL', undefined, 18.1, 'target ≤18.1', '#ff3b30')}
-    ${kpiCard('LH', DATA.lh, 'UI/L', undefined, 9.3, 'target ≤9.3', '#ff3b30')}
+    ${kpiCard('Testosterone tot.', DATA.testTotale, 'ng/dL', 127.18, 1020.36, 'range 127.18–1020.36 (Sant\'Agostino)', '#0071e3')}
+    ${kpiCard('Testosterone lib.', DATA.testLibero, 'pg/mL', 9.57, 40.60, 'range 9.57–40.60 (Sant\'Agostino)', '#0071e3')}
+    ${kpiCard('SHBG', DATA.shbg, 'nmol/L', 11.20, 78.10, 'range 11.20–78.10 (Sant\'Agostino)', '#8e44ad')}
+    ${kpiCard('FSH', DATA.fsh, 'mIU/mL', 0.95, 11.95, 'range 0.95–11.95 (Sant\'Agostino)', '#ff3b30')}
+    ${kpiCard('LH', DATA.lh, 'mUI/mL', 0.57, 12.7, 'range 0.57–12.7 (Sant\'Agostino)', '#ff3b30')}
   </div>
 
   <div class="section-label">🫀 Lipidi</div>
@@ -6772,8 +6778,8 @@ function buildMedDash() {
         ${lineChart([{label:'eGFR',pts:DATA.egfr,color:'#5856d6',refMin:90}], 400, 120)}
       </div>
       <div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
-        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">FSH + LH <span style="color:var(--muted);font-weight:400">asse gonadico · target FSH ≤18.1 · LH ≤9.3</span></div>
-        ${lineChart([{label:'FSH',pts:DATA.fsh,color:'#ff3b30',refMax:12.4},{label:'LH',pts:DATA.lh,color:'#ff9500',refMax:9.3}], 400, 120)}
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">FSH + LH <span style="color:var(--muted);font-weight:400">asse gonadico · range Sant'Agostino FSH 0.95–11.95 · LH 0.57–12.7</span></div>
+        ${lineChart([{label:'FSH',pts:DATA.fsh,color:'#ff3b30',refMax:11.95},{label:'LH',pts:DATA.lh,color:'#ff9500',refMax:12.7}], 400, 120)}
       </div>
     </div>
   </div>
