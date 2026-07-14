@@ -2259,8 +2259,42 @@ function applyAll(data){
   updateProgress();
   _lastData = data;
   updateLabBadges(data);
+  ['lab_cdi_quadro','lab_t0','lab_wk8','lab_final'].forEach(refreshLabRangeStatus);
   setTimeout(refreshWeekSummary, 0);
   setTimeout(() => { if (typeof refreshCharts === 'function') refreshCharts(); }, 50);
+}
+
+function refreshLabRangeStatus(cardId) {
+  // Ricalcola border/background/badge dei box lab usando il valore REALE
+  // presente nell'input (caricato da Supabase via applyAll), non il placeholder
+  // statico usato al primo render di buildLabSection().
+  const card = document.getElementById('card-' + cardId);
+  if (!card) return;
+  card.querySelectorAll('.lab-box[data-ref]').forEach(box => {
+    const input = box.querySelector('input[data-f^="lab_"]');
+    const badge = box.querySelector('.lab-status-badge');
+    if (!input) return;
+    const val = input.value;
+    const ref = box.getAttribute('data-ref');
+    const status = (val && val !== '—') ? getRangeStatus(val, ref) : 'neutral';
+    const st = rangeStatusStyle(status);
+    box.style.borderLeft = `3px solid ${st.border}`;
+    box.style.background = st.bg;
+    if (badge) {
+      const statusLabel = status === 'ok' ? '✓' : status === 'low' ? '↓' : status === 'high' ? '↑' : '';
+      const statusTitle = status === 'ok' ? 'Nel range' : status === 'low' ? 'Sotto range' : status === 'high' ? 'Sopra range' : '';
+      if (statusLabel) {
+        badge.style.display = '';
+        badge.title = statusTitle;
+        badge.textContent = `${statusLabel} ${statusTitle}`;
+        badge.style.color = st.dot;
+        badge.style.background = st.bg === 'transparent' ? '#f2f2f7' : st.bg;
+        badge.style.borderColor = st.dot;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+  });
 }
 
 function updateLabBadges(data) {
@@ -2587,10 +2621,10 @@ function buildLabSection(container) {
       const statusTitle = status === 'ok' ? 'Nel range' : status === 'low' ? 'Sotto range' : status === 'high' ? 'Sopra range' : '';
 
       return `
-        <div class="lab-box" style="border-left:3px solid ${st.border};background:${st.bg};border-radius:8px;padding:10px 12px;position:relative">
+        <div class="lab-box" id="labbox-${m.id}-${k}" data-ref="${f.ref}" style="border-left:3px solid ${st.border};background:${st.bg};border-radius:8px;padding:10px 12px;position:relative">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
             <label style="margin:0">${f.label} <span style="color:var(--faint);font-weight:400">${f.unit}</span></label>
-            ${statusLabel ? `<span title="${statusTitle}" style="font-size:11px;font-weight:700;color:${st.dot};background:${st.bg === 'transparent' ? '#f2f2f7' : st.bg};border:1px solid ${st.dot};border-radius:20px;padding:0px 6px;line-height:18px">${statusLabel} ${statusTitle}</span>` : ''}
+            <span class="lab-status-badge" title="${statusTitle}" style="font-size:11px;font-weight:700;color:${st.dot};background:${st.bg === 'transparent' ? '#f2f2f7' : st.bg};border:1px solid ${st.dot};border-radius:20px;padding:0px 6px;line-height:18px${statusLabel ? '' : ';display:none'}">${statusLabel} ${statusTitle}</span>
           </div>
           <input type="text" placeholder="${isBaseline ? f.val : '—'}"
             data-id="${m.id}" data-f="lab_${k}"
