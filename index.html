@@ -1574,7 +1574,7 @@ function getWeekRange(wkIdx) {
   return sDay + ' ' + sMon + ' – ' + eDay + ' ' + eMon;
 }
 
-function isBKK(i){ return i>=61&&i<=74; }
+function isBKK(i){ return i>=60&&i<=74; }
 function isVitaDay(i){ return i%7===0; }
 // MOTS-C days: Mon (dayIdx%7===0) and Thu (dayIdx%7===3) — from week 7 onward
 function isMOTSday(i){ return i%7===0||i%7===3; }
