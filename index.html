@@ -2259,6 +2259,10 @@ function applyAll(data){
   updateLabBadges(data);
   ['lab_cdi_quadro','lab_t0','lab_wk8','lab_final'].forEach(refreshLabRangeStatus);
   refreshLabDeltas();
+  // Se il tab Stock era gia' stato aperto/costruito con dati locali, ricostruiscilo
+  // ora che sono arrivati (eventuali) dati piu' recenti sincronizzati da un altro browser.
+  const stockEl = document.getElementById('stock2-view');
+  if (stockEl && stockEl.dataset.built) { delete stockEl.dataset.built; stockEl.innerHTML=''; buildStockView2(); }
   setTimeout(refreshWeekSummary, 0);
   setTimeout(() => { if (typeof refreshCharts === 'function') refreshCharts(); }, 50);
 }
@@ -6055,14 +6059,49 @@ function ucUpdate() {
   }
 }
 
+// ── Stock v2: storage multi-browser ──────────────────────────────────────
+// I dati per-vial (grammatura/BAC/ricostituzione/note/stato) vivono sia in
+// localStorage (cache locale, funziona offline) sia su Supabase (sorgente
+// condivisa, sincronizzata tra dispositivi/browser). Il cloud prevale sui
+// duplicati; le chiavi solo-locali non ancora sincronizzate vengono preservate.
+function stockGetVd() {
+  let localVd = {}; try { localVd = JSON.parse(localStorage.getItem('stock_v2_vials')||'{}'); } catch(e) {}
+  const cloudVd = (typeof _lastData === 'object' && _lastData && _lastData.stock_v2_vials) || {};
+  return Object.assign({}, localVd, cloudVd);
+}
+
+let _stockSaveTimer = null;
+async function stockPushToCloud(vd) {
+  try {
+    const url = SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID;
+    const r = await fetch(url + '&select=data', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    const rows = await r.json();
+    const current = (rows[0] && rows[0].data) || {};
+    current.stock_v2_vials = vd;
+    await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Prefer':'return=minimal' },
+      body: JSON.stringify({ data: current, updated_at: new Date().toISOString() })
+    });
+  } catch(e) { console.error('Stock: sincronizzazione cloud fallita', e); }
+}
+
+function stockPersist(vd) {
+  try { localStorage.setItem('stock_v2_vials', JSON.stringify(vd)); } catch(e) {}
+  if (typeof _lastData === 'object' && _lastData) _lastData.stock_v2_vials = vd;
+  clearTimeout(_stockSaveTimer);
+  _stockSaveTimer = setTimeout(() => stockPushToCloud(vd), 600);
+}
+
 function buildStockView2() {
   const el = document.getElementById('stock2-view');
   if (!el) return;
   if (el.dataset.built) return;
   el.dataset.built = '1';
 
-  const VKEY = 'stock_v2_vials';
-  let vd = {}; try { vd = JSON.parse(localStorage.getItem(VKEY)||'{}'); } catch(e) {}
+  const vd = stockGetVd();
 
   // Ogni composto ora organizza i vial per FORNITORE (sezioni separate in UI).
   // SUPPLIER_META centralizza etichetta/colore badge per fornitore.
@@ -6504,10 +6543,10 @@ function buildStockView2() {
 }
 
 function stockSaveNote(cid, sup, vn, val) {
-  const VKEY='stock_v2_vials'; let vd={};
-  try{vd=JSON.parse(localStorage.getItem(VKEY)||'{}');}catch(e){}
+  const vd = stockGetVd();
   const k=cid+'_'+sup+'_v'+vn; if(!vd[k])vd[k]={};
-  vd[k].note=val; localStorage.setItem(VKEY,JSON.stringify(vd));
+  vd[k].note=val;
+  stockPersist(vd);
 }
 
 
@@ -6526,8 +6565,7 @@ function stockCalcRecon(mg, bac, dosePerInj, stabilityDays, recoDate) {
 }
 
 function stockSaveRecon(cid, sup, vn) {
-  const VKEY = 'stock_v2_vials';
-  let vd = {}; try { vd = JSON.parse(localStorage.getItem(VKEY)||'{}'); } catch(e) {}
+  const vd = stockGetVd();
   const k = `${cid}_${sup}_v${vn}`;
   if (!vd[k]) vd[k] = {};
   const mgEl   = document.getElementById(`mg-${k}`);
@@ -6536,19 +6574,18 @@ function stockSaveRecon(cid, sup, vn) {
   if (mgEl)   vd[k].mg   = mgEl.value;
   if (bacEl)  vd[k].bac  = bacEl.value;
   if (recoEl) vd[k].reco = recoEl.value;
-  localStorage.setItem(VKEY, JSON.stringify(vd));
+  stockPersist(vd);
   // Ricalcola e aggiorna UI senza rebuild
   const el2 = document.getElementById(`stock2-view`);
   if (el2) { delete el2.dataset.built; el2.innerHTML=''; buildStockView2(); }
 }
 
 function stockSetStato(cid, sup, vn, stato) {
-  const VKEY = 'stock_v2_vials';
-  let vd = {}; try { vd = JSON.parse(localStorage.getItem(VKEY)||'{}'); } catch(e) {}
+  const vd = stockGetVd();
   const k = `${cid}_${sup}_v${vn}`;
   if (!vd[k]) vd[k] = {};
   vd[k].stato = stato;
-  localStorage.setItem(VKEY, JSON.stringify(vd));
+  stockPersist(vd);
   const el2 = document.getElementById('stock2-view');
   if (el2) { delete el2.dataset.built; el2.innerHTML=''; buildStockView2(); }
 }
