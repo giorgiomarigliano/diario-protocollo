@@ -2265,6 +2265,67 @@ function applyAll(data){
   if (stockEl && stockEl.dataset.built) { delete stockEl.dataset.built; stockEl.innerHTML=''; buildStockView2(); }
   setTimeout(refreshWeekSummary, 0);
   setTimeout(() => { if (typeof refreshCharts === 'function') refreshCharts(); }, 50);
+  renderBackupStatus(data.backup_status);
+}
+
+function renderBackupStatus(status) {
+  const el = document.getElementById('backup-status-card');
+  if (!el) return; // dashboard non ancora costruita, verra' popolata al prossimo giro
+
+  if (!status || !status.last_run_utc) {
+    el.innerHTML = `<div class="charts-card" style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">⏳</span>
+      <div>
+        <div style="font-weight:600">Backup dati: in attesa del primo report</div>
+        <div style="font-size:12px;color:var(--text-muted)">Nessuno stato ricevuto ancora dal repo di backup.</div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  const last = new Date(status.last_run_utc);
+  const hoursAgo = (Date.now() - last.getTime()) / 3600000;
+  const failed = status.last_run_status !== 'success';
+
+  let level, icon, label;
+  if (failed) {
+    level = 'bad'; icon = '⛔'; label = "Ultimo tentativo di backup NON riuscito";
+  } else if (hoursAgo <= 20) {
+    level = 'good'; icon = '✅'; label = 'Backup regolare';
+  } else if (hoursAgo <= 30) {
+    level = 'warn'; icon = '⚠️'; label = 'Backup in ritardo';
+  } else {
+    level = 'bad'; icon = '⛔'; label = 'Backup fermo da troppo tempo';
+  }
+
+  const colors = {
+    good: {bg:'#e8f8ed', bd:'#1a7a3a', c:'#1a7a3a'},
+    warn: {bg:'#fff6e0', bd:'#b8860b', c:'#8a6100'},
+    bad:  {bg:'#feeeec', bd:'#cc2200', c:'#cc2200'},
+  }[level];
+
+  const hoursTxt = hoursAgo < 1 ? 'meno di un\'ora fa'
+    : hoursAgo < 48 ? `${Math.round(hoursAgo)}h fa`
+    : `${Math.round(hoursAgo/24)} giorni fa`;
+
+  const expected7d = 28; // 4 run/giorno * 7 giorni, se tutto ha funzionato sempre
+  const runs7d = status.runs_last_7d ?? null;
+  const affidabilita = runs7d !== null ? Math.min(100, Math.round((runs7d/expected7d)*100)) : null;
+
+  el.innerHTML = `<div class="charts-card" style="border-left:3px solid ${colors.bd};background:${colors.bg}">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="font-size:20px">${icon}</span>
+      <div>
+        <div style="font-weight:600;color:${colors.c}">${label}</div>
+        <div style="font-size:12px;color:var(--text-muted)">Ultimo backup: ${hoursTxt} · repo privato diario-protocollo-backups</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:20px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;padding-left:30px">
+      <span><b style="color:var(--text)">${status.total_snapshots ?? '—'}</b> snapshot conservati</span>
+      ${affidabilita!==null?`<span><b style="color:var(--text)">${affidabilita}%</b> affidabilità ultimi 7gg (${runs7d}/${expected7d} run attese)</span>`:''}
+      <span>frequenza: ogni 6 ore</span>
+    </div>
+  </div>`;
 }
 
 function getLabFieldVal(cardId, key) {
@@ -4919,6 +4980,12 @@ function buildDashboard() {
       <div class="compliance-grid" id="comp-grid"></div>
     </div>`:''}
 
+    <!-- ══ SEZ. SISTEMA ══════════════════════════════════════════ -->
+    <div class="dash-section">
+      <div class="dash-section-title">Sistema</div>
+      <div id="backup-status-card"></div>
+    </div>
+
   </div>`;
 
   // Doppio rAF garantisce che il browser abbia calcolato il layout
@@ -4948,6 +5015,7 @@ requestAnimationFrame(() => requestAnimationFrame(refreshDashCharts));
 })();
 
 function refreshDashCharts() {
+  renderBackupStatus(_lastData && _lastData.backup_status);
   // ── Badge "pronti per aumentare il carico" ──────────────────
   const _readyEl = document.getElementById('dash-ready-flags');
   if (_readyEl) {
