@@ -6102,6 +6102,13 @@ function buildStockView2() {
   el.dataset.built = '1';
 
   const vd = stockGetVd();
+  // Migrazione one-time: se il browser ha dati locali da prima di questo aggiornamento
+  // e il cloud non li ha ancora, sincronizzali subito (altrimenti resterebbero visibili
+  // solo su questo browser finche' non si tocca di nuovo ogni singolo vial).
+  const _cloudHadStock = !!(typeof _lastData === 'object' && _lastData && _lastData.stock_v2_vials);
+  if (!_cloudHadStock && Object.keys(vd).length > 0) {
+    stockPersist(vd);
+  }
 
   // Ogni composto ora organizza i vial per FORNITORE (sezioni separate in UI).
   // SUPPLIER_META centralizza etichetta/colore badge per fornitore.
