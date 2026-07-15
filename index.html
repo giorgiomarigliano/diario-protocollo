@@ -5401,13 +5401,31 @@ const KEY2        = 'diary_proto2_v1';
 const USER_ID2    = 'giorgio_proto2_2026';
 let   _lastData2  = {};
 
+// Date di viaggio Bangkok FISSE (voli confermati) — la settimana di protocollo in cui
+// cadono dipende invece da START2, che è ancora una stima provvisoria. Questa funzione
+// ricalcola sempre la settimana corretta relativa a START2 corrente, cosi' le etichette
+// "sett. N" mostrate nell'app non restano mai disallineate quando START2 verra' confermato.
+function getBKKWeekInfo() {
+  const s = new Date(START2); s.setHours(0,0,0,0);
+  const bkkS = new Date('2026-08-07'); bkkS.setHours(0,0,0,0);
+  const bkkE = new Date('2026-08-21'); bkkE.setHours(0,0,0,0);
+  const dayStart = Math.round((bkkS - s) / 86400000);
+  const dayEnd   = Math.round((bkkE - s) / 86400000);
+  const wkStart  = Math.floor(dayStart/7)+1;
+  const wkEnd    = Math.floor(dayEnd/7)+1;
+  return { dayStart, dayEnd, wkStart, wkEnd,
+    label: wkStart === wkEnd ? `sett. ${wkStart}` : `sett. ${wkStart}–${wkEnd}` };
+}
+
 function getPhase2(dayIdx) {
   const wk = Math.floor(dayIdx/7)+1;
   const peptidi = 'Fragment · Tesa · Ipa · BPC-157 · TB-500 · IGF-1 DES';
-  if (wk<=4)  return {label:'Fase 1',  peptidi, badge:'p1'};
-  if (wk<=8)  return {label:'Fase 2',  peptidi, badge:'p2', note:'BKK WK5–8'};
-  if (wk<=12) return {label:'Fase 3',  peptidi, badge:'p3'};
-  return             {label:'Fase 4',  peptidi, badge:'p4b'};
+  const bkk = getBKKWeekInfo();
+  const bkkNote = (wk >= bkk.wkStart && wk <= bkk.wkEnd) ? `Bangkok ${bkk.label} (7–21 ago)` : undefined;
+  if (wk<=4)  return {label:'Fase 1',  peptidi, badge:'p1',  note:bkkNote};
+  if (wk<=8)  return {label:'Fase 2',  peptidi, badge:'p2',  note:bkkNote};
+  if (wk<=12) return {label:'Fase 3',  peptidi, badge:'p3',  note:bkkNote};
+  return             {label:'Fase 4',  peptidi, badge:'p4b', note:bkkNote};
 }
 
 function getNextEvent2(elapsed) {
@@ -7042,17 +7060,17 @@ function buildProtocolloTimeline() {
      tc:['p','p','p','p','p','n'],
      warn:'Sett. 8: eseguire panel Santagostino — 197.03 EUR, codice 00K24KC2 (incl. LH/FSH). A digiuno, mattina. Stesse condizioni T0.'},
     {w:'9–12',ph:'Mantenimento',pc:'#f59e0b',title:'Sett. 9–12 — Mantenimento e consolidamento',
-     sub:'Giorni 57–84 · Bangkok sett. 10–12 (7–21 ago) · Protocollo adattato',
+     sub:'Giorni 57–84 · Protocollo adattato',
      mols:['fragment','tesa','ipam','igf1des','bpc','tb500'],
      cats:[
-      {k:'corpo',lb:'Corpo & composizione',c:'#3b82f6',it:['Composizione: consolidamento dei guadagni','Peso: stabile nel nuovo set-point (67–69 kg)','Lipolisi mantenuta ma a ritmo ridotto vs fasi precedenti','Lean mass: mantenimento con training continuo','Bangkok: heat stress — maggiore sudorazione, monitora idratazione']},
-      {k:'energia',lb:'Energia & prestazione',c:'#10b981',it:['Performance: plateau fisiologico, sopra baseline pre-ciclo','Recovery: eccellente, BPC-157 + TB-500 in piena azione rimodellamento','Bangkok: caldo — ridurre intensità WO, priorità LISS mattutino','Sonno: attenzione jet-lag sett. 10 — Fragment mattino stabile']},
+      {k:'corpo',lb:'Corpo & composizione',c:'#3b82f6',it:['Composizione: consolidamento dei guadagni','Peso: stabile nel nuovo set-point (67–69 kg)','Lipolisi mantenuta ma a ritmo ridotto vs fasi precedenti','Lean mass: mantenimento con training continuo']},
+      {k:'energia',lb:'Energia & prestazione',c:'#10b981',it:['Performance: plateau fisiologico, sopra baseline pre-ciclo','Recovery: eccellente, BPC-157 + TB-500 in piena azione rimodellamento']},
       {k:'lab',lb:'Valori attesi',c:'#8b5cf6',it:['IGF-1: 120–150 ng/mL (lieve calo da picco sett. 8)','SHBG: plateau intorno a 60–68 nmol/L','T libero: miglioramento residuo mantenuto','PCR: meno di 1.5 mg/L (anti-infiammatorio consolidato)']},
-      {k:'side',lb:'Effetti collaterali possibili',c:'#f59e0b',it:['Bangkok: attenzione storage peptidi — frigorifero hotel 2–8 gradi C','Caldo aumenta assorbimento SC, possibile variazione picco','Jet lag sett. 10: spike GH alterato, monitorare sonno']}
+      {k:'side',lb:'Effetti collaterali possibili',c:'#f59e0b',it:['Ritenzione idrica: assente o minima a questo punto del ciclo']}
      ],
-     tr:['Peso stabile 67–69 kg','Bangkok: idratazione!','Performance plateau','Jet-lag sett. 10'],
-     tc:['p','n','p','n'],
-     warn:'Bangkok 7–21 ago: storage peptidi in frigorifero hotel (2–8 gradi C). Non lasciare in valigia. Portare 130–140 siringhe.'},
+     tr:['Peso stabile 67–69 kg','Performance plateau'],
+     tc:['p','p'],
+     warn:null},
     {w:'13–16',ph:'Fine ciclo',pc:'#ef4444',title:'Sett. 13–16 — Fase finale e preparazione T1',
      sub:'Giorni 85–112 · Consolidamento · DEXA T1 sabato fine ciclo',
      mols:['fragment','tesa','ipam','igf1des','bpc','tb500'],
@@ -7066,6 +7084,16 @@ function buildProtocolloTimeline() {
      tc:['p','p','p','n'],
      warn:'DEXA T1: prenotare stesso slot mattutino del sabato, stesse condizioni DEXA T0 (9 mag 2026). Confronto diretto.'}
   ];
+
+  // Bangkok (7-21 ago, date fisse) ricade in settimane di protocollo diverse a seconda
+  // di START2 (ancora stima provvisoria). Calcolo qui l'overlap corretto invece di
+  // affidarmi a un numero di settimana scritto a mano nei blocchi sopra.
+  const bkkInfo = getBKKWeekInfo();
+  WW.forEach(w => {
+    const nums = w.w.split(/[–-]/).map(Number);
+    const wStart = nums[0], wEnd = nums.length > 1 ? nums[1] : nums[0];
+    w._bkkOverlap = !(bkkInfo.wkEnd < wStart || bkkInfo.wkStart > wEnd);
+  });
 
   const PHASES = [
     {lb:'Adattamento',n:2,c:'#6366f1'},{lb:'Costruzione',n:4,c:'#3b82f6'},
@@ -7094,6 +7122,12 @@ function buildProtocolloTimeline() {
     let card = `<div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1.25rem">`;
     card += `<div style="font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:4px">${d.title}</div>`;
     card += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">${d.sub}</div>`;
+    if (d._bkkOverlap) {
+      card += `<div style="margin-bottom:12px;background:rgba(192,57,43,.08);border:0.5px solid rgba(192,57,43,.3);border-radius:8px;padding:8px 12px">
+        <div style="font-size:12px;font-weight:600;color:#c0392b;margin-bottom:4px">🇹🇭 Bangkok · ${bkkInfo.label} · 7–21 ago 2026</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.5">Heat stress: maggiore sudorazione, priorità idratazione · Caldo aumenta assorbimento SC, possibile variazione picco · Jet-lag: monitorare sonno e spike GH · Storage peptidi: frigorifero hotel 2–8°C, non lasciare in valigia · Portare 130–140 siringhe</div>
+      </div>`;
+    }
     // Trends
     const TS = {p:'background:#e8f8ed;color:#1a7a3a',n:'background:#f5f5f7;color:var(--text-muted)'};
     card += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">';
