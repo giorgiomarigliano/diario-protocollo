@@ -1444,7 +1444,9 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="med-view" id="timeline-view"></div>
 <div class="med-view" id="food-view"></div>
 <div class="med-view" id="history-view"></div>
-<div class="diary-view hidden" id="proto2-view"></div>
+<div class="diary-view hidden" id="proto2-view">
+  <div class="container" id="container2"></div>
+</div>
 
 <div class="save-bar">
   <span class="save-hint" id="last-saved">Mai salvato</span>
@@ -2258,8 +2260,68 @@ function applyAll(data){
   _lastData = data;
   updateLabBadges(data);
   ['lab_cdi_quadro','lab_t0','lab_wk8','lab_final'].forEach(refreshLabRangeStatus);
+  refreshLabDeltas();
   setTimeout(refreshWeekSummary, 0);
   setTimeout(() => { if (typeof refreshCharts === 'function') refreshCharts(); }, 50);
+}
+
+function getLabFieldVal(cardId, key) {
+  const el = document.querySelector(`#card-${cardId} [data-f="lab_${key}"]`);
+  const v = el ? el.value : '';
+  return (v !== undefined && v !== null && v !== '' && v !== '—') ? v : null;
+}
+
+function labDeltaPillHtml(currStr, prevStr, prevLabel, better) {
+  const c = parseFloat(currStr), p = parseFloat(prevStr);
+  if (isNaN(c) || isNaN(p)) return '';
+  if (c === p) {
+    return `<div style="margin-top:3px;font-size:10px;color:var(--muted)">vs ${prevLabel}: invariato</div>`;
+  }
+  const diff = (c - p).toFixed(2).replace(/\.?0+$/, '');
+  const sign = diff > 0 ? '+' : '';
+  const isGood = better === 'up' ? diff > 0 : better === 'down' ? diff < 0 : null;
+  const col = isGood === true ? '#1a7a3a' : isGood === false ? '#cc2200' : '#636366';
+  const bg  = isGood === true ? '#e8f8ed'  : isGood === false ? '#feeeec'  : '#f2f2f7';
+  return `<div style="margin-top:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+    <span style="font-size:10px;color:var(--muted)">vs ${prevLabel}: ${prevStr}</span>
+    <span style="font-size:10px;font-weight:600;background:${bg};color:${col};padding:1px 6px;border-radius:10px">${sign}${diff}</span>
+  </div>`;
+}
+
+function refreshLabDeltas() {
+  // Card 1: quadro CDI — confronto statico vs 10 apr 2026 (definito in LAB_CDI_QUADRO)
+  Object.entries(LAB_CDI_QUADRO).forEach(([key, f]) => {
+    const el = document.getElementById('labdelta-lab_cdi_quadro-' + key);
+    if (!el) return;
+    el.innerHTML = (f.prev != null && f.prev !== '') ? labDeltaPillHtml(f.val, f.prev, f.prev_label, f.better) : '';
+  });
+  // Card T0 Sant'Agostino — confronto vs quadro CDI (20 mag 2026)
+  Object.keys(LAB_SANTAGOSTINO).forEach(key => {
+    const el = document.getElementById('labdelta-lab_t0-' + key);
+    if (!el) return;
+    const prevVal = getLabFieldVal('lab_cdi_quadro', key);
+    const currVal = getLabFieldVal('lab_t0', key);
+    const better = LAB_CDI_QUADRO[key] ? LAB_CDI_QUADRO[key].better : null;
+    el.innerHTML = (prevVal != null && currVal != null) ? labDeltaPillHtml(currVal, prevVal, 'CDI 20 mag', better) : '';
+  });
+  // Card T1 — confronto vs T0 Sant'Agostino
+  Object.keys(LAB_SANTAGOSTINO).forEach(key => {
+    const el = document.getElementById('labdelta-lab_wk8-' + key);
+    if (!el) return;
+    const prevVal = getLabFieldVal('lab_t0', key);
+    const currVal = getLabFieldVal('lab_wk8', key);
+    const better = LAB_CDI_QUADRO[key] ? LAB_CDI_QUADRO[key].better : null;
+    el.innerHTML = (prevVal != null && currVal != null) ? labDeltaPillHtml(currVal, prevVal, 'T0', better) : '';
+  });
+  // Card T2 — confronto vs T1
+  Object.keys(LAB_SANTAGOSTINO).forEach(key => {
+    const el = document.getElementById('labdelta-lab_final-' + key);
+    if (!el) return;
+    const prevVal = getLabFieldVal('lab_wk8', key);
+    const currVal = getLabFieldVal('lab_final', key);
+    const better = LAB_CDI_QUADRO[key] ? LAB_CDI_QUADRO[key].better : null;
+    el.innerHTML = (prevVal != null && currVal != null) ? labDeltaPillHtml(currVal, prevVal, 'T1', better) : '';
+  });
 }
 
 function refreshLabRangeStatus(cardId) {
@@ -2472,7 +2534,7 @@ function updateNavHighlight(){
 // Panel peptide-specifico T0 (Santagostino, pre-v2)
 // prev = valore storico più recente disponibile pre-T0 (per confronto)
 const LAB_CDI_QUADRO = {
-  igf1:     {val:'94',    ref:'~115–300', label:'IGF-1',         unit:'ng/mL',   prev:'94',    prev_label:'20 mag 2026', better:'up'},
+  igf1:     {val:'94',    ref:'~115–300', label:'IGF-1',         unit:'ng/mL',   prev:'94',    prev_label:'10 apr 2026', better:'up'},
   gluc:     {val:'87',    ref:'70–99',    label:'Glucosio',       unit:'mg/dL',   prev:'88',    prev_label:'10 apr 2026', better:'down'},
   insulina: {val:'5.3',   ref:'2.6–24.9', label:'Insulina',       unit:'µUI/mL',  prev:'3.6',   prev_label:'10 apr 2026', better:'down'},
   homa:     {val:'1.1',   ref:'<2.5',     label:'HOMA Index',     unit:'',        prev:'0.8',   prev_label:'10 apr 2026', better:'down'},
@@ -2497,26 +2559,23 @@ const LAB_CDI_QUADRO = {
 };
 
 // Template Sant'Agostino — stessi 16 marker per T0/T1/T2, vuoti finché non arrivano i referti
-// Valori T0 reali da referto Sant'Agostino (accettazione 13/07/26, referto 14/07/26, cod. 709992694).
-// Range di riferimento = quelli stampati sul referto (uomini). Questo stesso oggetto alimenta anche
-// i placeholder/ref per le card T1/T2 (val non mostrato finché non locked).
 const LAB_SANTAGOSTINO = {
-  igf1:     {val:'86.00', ref:'55.00–248.00', label:'IGF-1',         unit:'µg/L'},
-  gluc:     {val:'82',    ref:'70–100',       label:'Glucosio',       unit:'mg/dL'},
-  insulina: {val:'3.6',   ref:'2.6–24.0',     label:'Insulina',       unit:'µU/mL'},
-  homa:     {val:'0.73', ref:'<2.5',        label:'HOMA Index',     unit:''},
-  hb:       {val:'118.0', ref:'140.0–180.0',  label:'Emoglobina',     unit:'g/L'},
-  t_tot:    {val:'526.20',ref:'127.18–1020.36', label:'T Totale',   unit:'ng/dL'},
-  t_lib:    {val:'18.80', ref:'9.57–40.60',   label:'T Libero',       unit:'pg/mL'},
-  shbg:     {val:'54.10', ref:'11.20–78.10',  label:'SHBG',           unit:'nmol/L'},
-  hdl:      {val:'32',    ref:'≥40',          label:'HDL',            unit:'mg/dL'},
-  ldl:      {val:'49',    ref:'≤115',         label:'LDL',            unit:'mg/dL'},
-  tg:       {val:'50',    ref:'≤170',         label:'Trigliceridi',   unit:'mg/dL'},
-  e2:       {val:'<24',   ref:'<44 (uomini)', label:'Estradiolo E2', unit:'pg/mL'},
-  creat:    {val:'1.28',  ref:'0.73–1.18',    label:'Creatinina',     unit:'mg/dL'},
-  crp:      {val:'<0.40', ref:'≤5.00',        label:'PCR',            unit:'mg/L'},
-  lh:       {val:'14.24', ref:'0.57–12.7',    label:'LH',             unit:'mUI/mL'},
-  fsh:      {val:'24.27', ref:'0.95–11.95',   label:'FSH',            unit:'mIU/mL'},
+  igf1:     {val:'—', ref:'~115–300',    label:'IGF-1',         unit:'ng/mL'},
+  gluc:     {val:'—', ref:'70–99',       label:'Glucosio',       unit:'mg/dL'},
+  insulina: {val:'—', ref:'2.6–24.9',    label:'Insulina',       unit:'µUI/mL'},
+  homa:     {val:'—', ref:'<2.5',        label:'HOMA Index',     unit:''},
+  hb:       {val:'—', ref:'133–179',     label:'Emoglobina',     unit:'g/L'},
+  t_tot:    {val:'—', ref:'249–836',     label:'T Totale',       unit:'ng/dL'},
+  t_lib:    {val:'—', ref:'9.57–40.60',  label:'T Libero',       unit:'ng/L'},
+  shbg:     {val:'—', ref:'16.00–80.50', label:'SHBG',           unit:'nmol/L'},
+  hdl:      {val:'—', ref:'>40',         label:'HDL',            unit:'mg/dL'},
+  ldl:      {val:'—', ref:'<115',        label:'LDL',            unit:'mg/dL'},
+  tg:       {val:'—', ref:'<150',        label:'Trigliceridi',   unit:'mg/dL'},
+  e2:       {val:'—', ref:'11.8–39.8 (M)', label:'Estradiolo E2', unit:'ng/L'},
+  creat:    {val:'—', ref:'0.73–1.20',   label:'Creatinina',     unit:'mg/dL'},
+  crp:      {val:'—', ref:'≤3.3',        label:'PCR',            unit:'mg/L'},
+  lh:       {val:'—', ref:'1.5–9.3',     label:'LH',             unit:'UI/L'},
+  fsh:      {val:'—', ref:'1.4–18.1',    label:'FSH',            unit:'mU/mL'},
 };
 
 const DEXA_T0 = {
@@ -2595,25 +2654,9 @@ function buildLabSection(container) {
     const fields = Object.entries(fieldsObj);
     const rows = fields.map(([k, f]) => {
       const isBaseline = m.locked;
-      // Delta pill vs precedente (solo su baseline locked)
-      let prevHtml = '';
-      if (isBaseline && f.prev) {
-        const curr = parseFloat(f.val);
-        const prev = parseFloat(f.prev);
-        if (!isNaN(curr) && !isNaN(prev) && curr !== prev) {
-          const diff = (curr - prev).toFixed(2).replace(/\.?0+$/,'');
-          const sign = diff > 0 ? '+' : '';
-          const isGood = f.better === 'up' ? diff > 0 : f.better === 'down' ? diff < 0 : null;
-          const col = isGood === true ? '#1a7a3a' : isGood === false ? '#cc2200' : '#636366';
-          const bg  = isGood === true ? '#e8f8ed'  : isGood === false ? '#feeeec'  : '#f2f2f7';
-          prevHtml = `<div style="margin-top:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-            <span style="font-size:10px;color:var(--muted)">vs ${f.prev_label}: ${f.prev}</span>
-            <span style="font-size:10px;font-weight:600;background:${bg};color:${col};padding:1px 6px;border-radius:10px">${sign}${diff}</span>
-          </div>`;
-        } else if (isBaseline && f.prev && parseFloat(f.val) === parseFloat(f.prev)) {
-          prevHtml = `<div style="margin-top:3px;font-size:10px;color:var(--muted)">vs ${f.prev_label}: invariato</div>`;
-        }
-      }
+      // Delta pill vs precedente: placeholder statico, popolato da refreshLabDeltas()
+      // dopo il caricamento dei dati reali (mai calcolato qui su valori segnaposto)
+      const prevHtml = `<div id="labdelta-${m.id}-${k}"></div>`;
       // Range indicator
       const displayVal = isBaseline ? f.val : '';
       const status = (displayVal && displayVal !== '—') ? getRangeStatus(displayVal, f.ref) : 'neutral';
@@ -3213,18 +3256,18 @@ function buildMedView() {
         { name:'Insulina', val:'3.6 µU/mL', ref:'2.6–24.0', ok:true },
         { name:'HOMA Index', val:'0.73', ref:'<2.5', ok:true, note:'Calcolato da gluc × insul / 405' },
         { name:'Creatinina', val:'1.28 mg/dL', ref:'0.73–1.18', ok:false, note:'⚠️ Sopra range (trend 1.13→1.29→1.32→1.28)' },
-        { name:'Trigliceridi', val:'50 mg/dL', ref:'≤170', ok:true },
+        { name:'Trigliceridi', val:'50 mg/dL', ref:'<150', ok:true },
         { name:'Colesterolo HDL', val:'32 mg/dL', ref:'≥40', ok:false, note:'↓ Basso — persistente' },
         { name:'Colesterolo LDL', val:'49 mg/dL', ref:'<115', ok:true },
-        { name:'PCR (alta sensibilità)', val:'0.40 mg/L', ref:'≤5.00', ok:true, note:'Bassa — buon controllo infiammazione' },
+        { name:'PCR (alta sensibilità)', val:'0.40 mg/L', ref:'≤3.3', ok:true, note:'Bassa — buon controllo infiammazione' },
       ]},
       { cat: 'Immunologia & asse ormonale', items: [
         { name:'LH', val:'14.24 mUI/mL', ref:'0.57–12.7 (uomo)', ok:false, note:'🔴 PEGGIORATO — +30% vs 03/07 (10.9→14.24) ↑↑', sev:'alert' },
         { name:'FSH', val:'24.27 mIU/mL', ref:'0.95–11.95 (uomo)', ok:false, note:'🔴 PEGGIORATO — +14% vs 03/07 (21.2→24.27) ↑', sev:'alert' },
-        { name:'Testosterone totale', val:'526.20 ng/dL', ref:'127.18–1020.36 (uomo)', ok:true, note:'Nel range medio-basso · CDI 03/07 era 6.85 — unità da confermare (µg/L→685ng/dL oppure nmol/L→~198ng/dL: risultati molto diversi, verificare referto originale)' },
+        { name:'Testosterone totale', val:'526.20 ng/dL', ref:'249–836 (uomo)', ok:true, note:'Nel range medio-basso · CDI 03/07 era 6.85nmol/L (~197ng/dL), aumentato' },
         { name:'Testosterone libero', val:'18.80 pg/mL', ref:'9.57–40.60', ok:true, note:'Nella parte bassa del range' },
         { name:'SHBG', val:'54.10 nmol/L', ref:'11.20–78.10', ok:true, note:'🔴 CALO SIGNIFICATIVO — -26% vs 03/07 (72.80→54.10) ↓↓' },
-        { name:'Estradiolo (E2)', val:'<24 pg/mL', ref:'<44 (uomo)', ok:true, note:'Sotto limite rilevabilità' },
+        { name:'Estradiolo (E2)', val:'<24 ng/L', ref:'11.8–39.8 (M)', ok:true, note:'Sotto limite rilevabilità' },
         { name:'IGF-1', val:'86.00 µg/L', ref:'55–248', ok:false, note:'🔴 CALATO — -8.5% vs 20/05 (94→86) ↓ · Target Tesamorelin 115–150+' },
       ]},
       { cat: 'Discrepanze vs CDI 03/07', items: [
@@ -3271,8 +3314,8 @@ function buildMedView() {
       { cat: 'Diagnosi clinica', items: [
         { name:'Diagnosi principale', val:'Ipotrofia testicolare sinistra', ref:'—', ok:false, note:'🔴 Correlata a varicocele gr.3 · Possibile ridotta produzione steroidea locale', sev:'alert' },
         { name:'Asse ipofisario', val:'Ipergonadotropo (FSH ↑ LH ↑)', ref:'—', ok:false, note:'FSH 21.2→24.27 · LH 10.9→14.24 (trend in peggioramento)' },
-        { name:'SHBG', val:'72.80→54.10 nmol/L', ref:'11.20–78.10', ok:true, note:'Calo rapido anomalo in 10gg (−26%)' },
-        { name:'Testosterone totale', val:'526.20 ng/dL', ref:'127.18–1020.36', ok:true, note:'Basso-normale · Frazione biodisponibile calata per SHBG ridotto' },
+        { name:'SHBG', val:'72.80→54.10 nmol/L', ref:'16–80', ok:true, note:'Calo rapido anomalo in 10gg (−26%)' },
+        { name:'Testosterone totale', val:'526.20 ng/dL', ref:'249–836', ok:true, note:'Basso-normale · Frazione biodisponibile calata per SHBG ridotto' },
       ]},
       { cat: 'Terapia consigliata & follow-up', items: [
         { name:'Monitoraggio', val:'6–8 mesi', ref:'—', ok:true, note:'Testosterone totale + SHBG · Rivalutazione funzione testicolare' },
@@ -5381,7 +5424,7 @@ function getWorkout2(dayIdx) {
 }
 
 function getDotColor2(type) {
-  const m = {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3',Riposo:'#c7c7cc'};
+  const m = {Push:'#0071e3',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3',Riposo:'#c7c7cc'};
   return m[type]||'#c7c7cc';
 }
 
@@ -5999,94 +6042,52 @@ function buildStockView2() {
   const VKEY = 'stock_v2_vials';
   let vd = {}; try { vd = JSON.parse(localStorage.getItem(VKEY)||'{}'); } catch(e) {}
 
-  // Ogni composto ora organizza i vial per FORNITORE (sezioni separate in UI).
-  // SUPPLIER_META centralizza etichetta/colore badge per fornitore.
-  const SUPPLIER_META = {
-    limitless: { label:'Limitless',  badgeBg:'#fff3cd', badgeC:'#856404', badgeBorder:'#ffc107' },
-    bachem:    { label:'Bachem',     badgeBg:'#e8f4f8', badgeC:'#0c5460', badgeBorder:'#bee5eb' },
-  };
-
-  function mkVials(n, stato) {
-    const out = []; for (let i=1;i<=n;i++) out.push({n:i, stato}); return out;
-  }
-
   const compounds = [
     { id:'tesa',    name:'Tesamorelin',      emoji:'🧬', color:'#0071e3', bg:'rgba(0,113,227,.08)',
       dose:'2mg/sera · SC',           dose_mcg:2000, mgNeeded:224, fab_detail:'112gg × 2mg/die',
       stabilityDays:21, stabilityNote:'21 gg frigo · sensibile alla luce',
       mgOptions:[2,5,10], bacOptions:[0.5,1.0,2.0], defaultMg:10, defaultBac:2.0,
-      suppliers:[
-        { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(24,'intatto') },
-        { key:'limitless', vials:[{n:1,stato:'perso'},{n:2,stato:'perso'},{n:3,stato:'intatto'},{n:4,stato:'intatto'},{n:5,stato:'intatto'},{n:6,stato:'intatto'},{n:7,stato:'intatto'},{n:8,stato:'intatto'},{n:9,stato:'intatto'},{n:10,stato:'intatto'},{n:11,stato:'intatto'},{n:12,stato:'intatto'}] },
-      ] },
+      vials:[{n:1,stato:'perso',fonte:'limitless'},{n:2,stato:'perso',fonte:'limitless'},{n:3,stato:'intatto',fonte:'limitless'},{n:4,stato:'intatto',fonte:'limitless'},{n:5,stato:'intatto',fonte:'limitless'},{n:6,stato:'intatto',fonte:'limitless'},{n:7,stato:'intatto',fonte:'limitless'},{n:8,stato:'intatto',fonte:'limitless'},{n:9,stato:'intatto',fonte:'limitless'},{n:10,stato:'intatto',fonte:'limitless'},{n:11,stato:'intatto',fonte:'limitless'},{n:12,stato:'intatto',fonte:'limitless'},{n:1,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:2,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:3,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:4,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:5,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:6,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:7,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:8,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:9,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:10,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:11,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:12,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:13,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:14,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:15,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:16,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:17,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:18,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:19,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:20,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:21,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:22,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:23,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:24,stato:'attesa',fonte:'new',arrivo:'lug-2026'}],
+      disponibile:100, mgFab:224, gap:'Limitless: 10 vial intatti (100mg) · Nuovo fornitore: 24 vial in arrivo (240mg)' },
     { id:'fragment',name:'Fragment 176-191', emoji:'🔥', color:'#ff3b30', bg:'rgba(255,59,48,.08)',
       dose:'250mcg × 2/die · SC',     dose_mcg:250,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
       stabilityDays:30, stabilityNote:'30 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
-      suppliers:[
-        { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(6,'intatto') },
-      ] },
+      vials:[{n:1,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:2,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:3,stato:'attesa',fonte:'new',arrivo:'lug-2026'},{n:4,stato:'attesa',fonte:'new',arrivo:'lug-2026'}], disponibile:0, mgFab:56, gap:'56mg totali (~6 vial × 10mg)' },
     { id:'ipa',     name:'Ipamorelin',        emoji:'⚡', color:'#34c759', bg:'rgba(52,199,89,.08)',
       dose:'100mcg/sera · SC',        dose_mcg:100,  mgNeeded:11.2,fab_detail:'112gg × 100mcg/die',
       stabilityDays:30, stabilityNote:'30 gg frigo',
       mgOptions:[2,5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
-      suppliers:[
-        { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(4,'intatto') },
-      ] },
+      vials:[], disponibile:0, mgFab:11.2, gap:'~2 vial × 10mg' },
     { id:'igf',     name:'IGF-1 DES',         emoji:'💪', color:'#af52de', bg:'rgba(175,82,222,.08)',
       dose:'50mcg post-WO · IM bilat',dose_mcg:50,   mgNeeded:4,   fab_detail:'80gg WO × 50mcg/die',
       stabilityDays:7, stabilityNote:'⚡ 7 gg frigo · aliquotare subito',
       mgOptions:[2,5], bacOptions:[0.5,1.0], defaultMg:2, defaultBac:1.0,
-      suppliers:[
-        { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(4,'intatto') },
-      ] },
+      vials:[], disponibile:0, mgFab:4, gap:'~4 vial × 1mg' },
     { id:'bpc',     name:'BPC-157',            emoji:'🔧', color:'#ff9500', bg:'rgba(255,149,0,.08)',
       dose:'250mcg × 2/die · SC',     dose_mcg:250,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
       stabilityDays:28, stabilityNote:'28 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
-      suppliers:[
-        { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(6,'intatto') },
-        { key:'limitless', vials:[{n:1,stato:'in_uso'},{n:2,stato:'intatto'}] },
-      ] },
+      vials:[{n:1,stato:'in_uso'},{n:2,stato:'intatto'}], disponibile:20, mgFab:56, gap:'~36mg da riordinare (~4 vial)' },
     { id:'tb500',   name:'TB-500',             emoji:'🩹', color:'#5856d6', bg:'rgba(88,86,214,.08)',
       dose:'500mcg/sera · SC',        dose_mcg:500,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
       stabilityDays:28, stabilityNote:'28 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
-      suppliers:[
-        { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(6,'intatto') },
-      ] },
+      vials:[], disponibile:0, mgFab:56, gap:'~6 vial × 10mg' },
     // ─── Peptidi non inclusi nel Protocollo v2 ───
     { id:'motsc',   name:'MOTS-C',             emoji:'🔋', color:'#8e8e93', bg:'rgba(142,142,147,.08)',
       dose:'Non schedulato · v2',      dose_mcg:null, mgNeeded:null, fab_detail:'Non nel Protocollo v2',
       stabilityDays:null, stabilityNote:'Polvere liofilizzata · frigo',
       mgOptions:[5], bacOptions:[1.0], defaultMg:5, defaultBac:1.0,
-      suppliers:[ { key:'limitless', vials:mkVials(5,'intatto') } ],
-      offProtocol:true, offLabel:'5 vial disponibili · non allocati al Ciclo 1' },
+      vials:[{n:1,stato:'intatto',fonte:'limitless'},{n:2,stato:'intatto',fonte:'limitless'},{n:3,stato:'intatto',fonte:'limitless'},{n:4,stato:'intatto',fonte:'limitless'},{n:5,stato:'intatto',fonte:'limitless'}],
+      disponibile:null, mgFab:null, gap:null, offProtocol:true, offLabel:'5 vial disponibili · non allocati al Ciclo 1' },
     { id:'ghkcu',   name:'GHK-Cu',             emoji:'🔬', color:'#8e8e93', bg:'rgba(142,142,147,.08)',
       dose:'Non schedulato · v2',      dose_mcg:null, mgNeeded:null, fab_detail:'Non nel Protocollo v2',
       stabilityDays:null, stabilityNote:'Polvere liofilizzata · frigo',
       mgOptions:[1,5], bacOptions:[0.5,1.0], defaultMg:1, defaultBac:1.0,
-      suppliers:[ { key:'limitless', vials:[{n:1,stato:'intatto'}] } ],
-      offProtocol:true, offLabel:'1 vial disponibile · non allocato al Ciclo 1' },
+      vials:[{n:1,stato:'intatto',fonte:'limitless'}],
+      disponibile:null, mgFab:null, gap:null, offProtocol:true, offLabel:'1 vial disponibile · non allocato al Ciclo 1' },
   ];
-
-  // ── Calcoli aggregati derivati dai vial per fornitore ──
-  function vialMg(c, v) { return parseFloat(v.mg) || c.defaultMg; }
-  function supplierMg(c, sup) {
-    return sup.vials.reduce((s,v) => s + (['intatto','in_uso','congelato'].includes(v.stato) ? vialMg(c,v) : 0), 0);
-  }
-  function compoundMg(c) {
-    if (!c.suppliers) return 0;
-    return c.suppliers.reduce((s,sup) => s + supplierMg(c,sup), 0);
-  }
-  compounds.forEach(c => {
-    c.disponibile = c.offProtocol ? null : Math.round(compoundMg(c)*10)/10;
-    c.mgFab = c.mgNeeded;
-    if (!c.offProtocol) {
-      const diff = Math.round((c.disponibile - c.mgNeeded)*10)/10;
-      c.gap = diff >= 0 ? `Coperto · +${diff}mg di margine` : `Mancano ${Math.abs(diff)}mg`;
-    }
-  });
 
   function stSty(s) {
     const M = { intatto:{dot:'#34c759',text:'Intatto',bg:'rgba(52,199,89,.10)',c:'#1d6e32'},
@@ -6117,12 +6118,6 @@ function buildStockView2() {
   const ucOpts = UC_PEPTIDES.map(p => `<option value="${p.id}"${p.id==='bpc'?' selected':''}>${p.name}</option>`).join('');
 
   let html = `<div class="app-view-inner view-wrap">
-    <style>
-      .stock-vchip summary{list-style:none;cursor:pointer;border-radius:8px}
-      .stock-vchip summary::-webkit-details-marker{display:none}
-      .stock-vchip summary::marker{content:''}
-      .stock-vchip[open] summary{border-radius:8px 8px 0 0}
-    </style>
     <div style="font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.02em;margin-bottom:4px">Stock peptidi · Ciclo 1</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px">20 lug – 8 nov 2026 (stimato) · 112 giorni</div>
 
@@ -6173,9 +6168,12 @@ function buildStockView2() {
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
       ${compounds.filter(c=>!c.offProtocol).map(c => {
         const dispMg = c.disponibile || 0;
+        const attesaMg = c.vials.filter(v=>v.stato==='attesa').length * c.defaultMg;
+        const totMg = dispMg + attesaMg;
         const pctDisp = c.mgNeeded ? Math.min(100,Math.round((dispMg/c.mgNeeded)*100)) : 0;
-        const surplus = Math.round((dispMg - c.mgNeeded)*10)/10;
+        const pctTot  = c.mgNeeded ? Math.min(100,Math.round((totMg/c.mgNeeded)*100)) : 0;
         const col = pctDisp>=100?'#34c759':pctDisp>0?'#0071e3':'#ff3b30';
+        const colTot = pctTot>=100?'#34c759':'#ff9500';
         return `<div style="background:var(--surface,#fff);border:1px solid var(--border,#e8e8ed);border-radius:12px;padding:10px 12px">
           <div style="font-size:10px;font-weight:700;color:${c.color};margin-bottom:4px">${c.emoji} ${c.name}</div>
           <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
@@ -6186,13 +6184,15 @@ function buildStockView2() {
             <div style="height:100%;width:${pctDisp}%;background:${col};border-radius:2px;transition:width .3s"></div>
           </div>
           <div style="font-size:9px;color:var(--muted)">
-            ${pctDisp>=100?`<span style="color:#34c759;font-weight:600">✓ coperto (+${surplus}mg)</span>`:pctDisp>0?`<span style="color:${col};font-weight:600">${pctDisp}% coperto</span>`:'<span style="color:#ff3b30;font-weight:600">0 in stock</span>'}
+            ${dispMg>0?`<span style="color:${col};font-weight:600">✓ ${pctDisp}% ora</span>`:'<span style="color:#ff3b30;font-weight:600">0 in stock</span>'}
+            ${attesaMg>0?` · <span style="color:#8e8e93">+${attesaMg}mg arr.</span>`:''}
+            ${pctTot>=100?` · <span style="color:#34c759;font-weight:600">✓ coperto</span>`:''}
           </div>
         </div>`;
       }).join('')}
     </div>
-    <div style="background:rgba(52,199,89,.08);border:1px solid rgba(52,199,89,.25);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#1d6e32">
-      <b style="color:#1d6e32">✓ Consegna Bachem arrivata (15 lug) · </b>tutti i composti del Ciclo 1 ora coperti. Ipamorelin in forte surplus (40mg vs 11.2mg necessari) — verificare se è un taglio minimo di confezione del fornitore.
+    <div style="background:rgba(255,59,48,.07);border:1px solid rgba(255,59,48,.2);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#7a2020">
+      <b style="color:#c0392b">⚠️ Riordino necessario prima del 13 lug · </b>Fragment, Ipamorelin, IGF-1 DES, TB-500 non in stock · Tesa e BPC-157 parzialmente coperti
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;overflow-x:auto;padding-bottom:4px">
       <button onclick="document.getElementById('stock-anchor-tesa').scrollIntoView({behavior:'smooth',block:'start'})"
@@ -6232,129 +6232,96 @@ function buildStockView2() {
     const circ = (2*Math.PI*20).toFixed(1);
     const off  = (parseFloat(circ)*(1-pct/100)).toFixed(1);
 
-    // Rende una card di dettaglio completa (grammatura/BAC/UI/scadenza/note) — solo per i vial ATTIVI (in_uso/congelato)
-    function renderFullCard(c, sup, v, k, sv) {
-      const stato = sv.stato||v.stato;
-      const st = stSty(stato);
-      const mg  = parseFloat(sv.mg)  || c.defaultMg;
-      const bac = parseFloat(sv.bac) || c.defaultBac;
-      const ui  = c.dose_mcg ? calcUI(mg, bac, c.dose_mcg) : {conc:(mg/bac).toFixed(1), ui:'—'};
-      const exp = c.stabilityDays ? calcExpiry(sv.reco, c.stabilityDays) : {text:'Liofilizzato · stabile', daysLeft:null};
-      const igfNote = c.id==='igf' ? `<span style="font-size:9px;color:var(--muted)"> → ${(parseFloat(ui.ui)/2).toFixed(1)} UI/lato</span>` : '';
-      let lifeBar = '';
-      if (sv.reco) {
-        const recoD = new Date(sv.reco); recoD.setHours(0,0,0,0);
-        const today2 = new Date(); today2.setHours(0,0,0,0);
-        const elapsed = Math.floor((today2-recoD)/86400000);
-        const pctLife = Math.min(100,Math.round((elapsed/c.stabilityDays)*100));
-        const lifeC = pctLife>=90?'#ff3b30':pctLife>=70?'#ff9500':'#34c759';
-        const left2 = Math.max(0, c.stabilityDays-elapsed);
-        lifeBar = `<div style="margin:6px 0 4px">
-          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px">
-            <span>Vita residua</span><span>${left2} gg / ${c.stabilityDays}</span>
-          </div>
-          <div style="height:4px;background:var(--surface3,#e8e8ed);border-radius:2px;overflow:hidden">
-            <div style="height:100%;width:${pctLife}%;background:${lifeC};border-radius:2px"></div>
-          </div></div>`;
-      }
-      const statoBtns = ['intatto','in_uso','esaurito','perso','congelato'].map(s => {
-        const ss = stSty(s); const active = stato===s;
-        return `<button onclick="stockSetStato('${c.id}','${sup.key}',${v.n},'${s}')" style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;border:1px solid ${active?ss.c:'var(--border,#e8e8ed)'};background:${active?ss.bg:'transparent'};color:${active?ss.c:'var(--muted)'};cursor:pointer;font-family:inherit">${ss.text}</button>`;
-      }).join('');
-      const mgOpts = c.mgOptions.map(m => `<option value="${m}"${m===mg?' selected':''}>${m}mg</option>`).join('');
-      const bacOpts = c.bacOptions.map(b => `<option value="${b}"${b===bac?' selected':''}>${b}ml</option>`).join('');
-      const expColor = exp.daysLeft===null?'var(--muted)':exp.daysLeft<0?'#c0392b':exp.daysLeft<=5?'#a05a00':'#1d6e32';
-      return `
-        <div style="border:1px solid var(--border,#e8e8ed);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--surface,#fff)">
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
-            <div style="width:8px;height:8px;border-radius:50%;background:${st.dot};flex-shrink:0"></div>
-            <span style="font-size:13px;font-weight:700;color:var(--text)">Vial ${v.n}</span>
-            <span style="font-size:10px;font-weight:600;background:${st.bg};color:${st.c};padding:2px 8px;border-radius:10px">${st.text}</span>
-          </div>
-          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">${statoBtns}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
-            <div>
-              <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Grammatura</div>
-              <select onchange="stockSaveRecon('${c.id}','${sup.key}',${v.n})" id="mg-${k}" style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">${mgOpts}</select>
-            </div>
-            <div>
-              <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">BAC Water</div>
-              <select onchange="stockSaveRecon('${c.id}','${sup.key}',${v.n})" id="bac-${k}" style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">${bacOpts}</select>
-            </div>
-            <div>
-              <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">UI / dose</div>
-              <div style="font-size:18px;font-weight:700;color:var(--text);line-height:1">${ui.ui}</div>
-              <div style="font-size:9px;color:var(--muted)">${ui.conc}mg/ml${igfNote}</div>
-            </div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
-            <div>
-              <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Data ricostituzione</div>
-              <input type="date" id="reco-${k}" value="${sv.reco||''}" onchange="stockSaveRecon('${c.id}','${sup.key}',${v.n})" style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">
-            </div>
-            <div>
-              <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Scadenza (auto)</div>
-              <div style="font-size:11px;font-weight:600;color:${expColor};padding:5px 6px;background:var(--surface2,#f5f5f7);border:1px solid var(--border,#e8e8ed);border-radius:6px;min-height:28px">${exp.text}</div>
-            </div>
-          </div>
-          ${lifeBar}
-          <div>
-            <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Note</div>
-            <input type="text" id="note-${k}" value="${(sv.note||'').replace(/"/g,'&quot;')}" placeholder="es. 10mg + 2ml BAC · frigo A" onblur="stockSaveNote('${c.id}','${sup.key}',${v.n},this.value)" style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">
-          </div>
-        </div>`;
-    }
-
-    // Rende un vial "a basso segnale" (intatto/perso/esaurito) come chip compatto <details> — pesa una frazione
-    // dello spazio di una card completa, evitando che composti con molti vial (es. Tesamorelin, 34 vial) dominino la UI.
-    function renderChip(c, sup, v, k, sv) {
-      const stato = sv.stato||v.stato;
-      const st = stSty(stato);
-      const statoBtns = ['intatto','in_uso','esaurito','perso','congelato'].map(s => {
-        const ss = stSty(s); const active = stato===s;
-        return `<button onclick="stockSetStato('${c.id}','${sup.key}',${v.n},'${s}')" style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:9px;border:1px solid ${active?ss.c:'var(--border,#e8e8ed)'};background:${active?ss.bg:'transparent'};color:${active?ss.c:'var(--muted)'};cursor:pointer;font-family:inherit">${ss.text}</button>`;
-      }).join('');
-      return `<details class="stock-vchip" style="border:1px solid ${st.dot}40;border-radius:8px;background:${st.bg}">
-        <summary style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${st.c}" title="Vial ${v.n} · ${st.text}">${v.n}</summary>
-        <div style="padding:6px 8px;border-top:1px solid ${st.dot}30;min-width:150px">
-          <div style="font-size:9px;color:var(--muted);margin-bottom:5px">Vial ${v.n} · <span style="color:${st.c};font-weight:600">${st.text}</span></div>
-          <div style="display:flex;gap:4px;flex-wrap:wrap">${statoBtns}</div>
-        </div>
-      </details>`;
-    }
-
     let vialsHtml = '';
-    if (!c.suppliers || c.suppliers.every(s=>s.vials.length===0)) {
-      vialsHtml = `<div style="background:rgba(255,59,48,.06);border-radius:8px;padding:8px 10px;font-size:11px;color:#7a2020">⚠️ ${c.gap||'Nessun vial registrato'}</div>`;
+    if (c.vials.length === 0) {
+      vialsHtml = `<div style="background:rgba(255,59,48,.06);border-radius:8px;padding:8px 10px;font-size:11px;color:#7a2020">⚠️ ${c.gap}</div>`;
     } else {
-      c.suppliers.forEach(sup => {
-        if (sup.vials.length === 0) return;
-        const meta = SUPPLIER_META[sup.key] || {label:sup.key, badgeBg:'#f5f5f7', badgeC:'#636366', badgeBorder:'#e8e8ed'};
-        const subtotalMg = supplierMg(c, sup);
-        let chips = '', fullCards = '';
-        sup.vials.forEach(v => {
-          const k = c.id+'_'+sup.key+'_v'+v.n;
-          const sv = vd[k]||{};
-          const stato = sv.stato||v.stato;
-          if (stato==='in_uso' || stato==='congelato') {
-            fullCards += renderFullCard(c, sup, v, k, sv);
-          } else {
-            chips += renderChip(c, sup, v, k, sv);
-          }
-        });
-        vialsHtml += `<div style="margin-bottom:10px">
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">
-            <span style="font-size:10px;font-weight:700;background:${meta.badgeBg};color:${meta.badgeC};border:1px solid ${meta.badgeBorder};padding:2px 8px;border-radius:8px">${meta.label}</span>
-            <span style="font-size:11px;color:var(--muted)">${sup.vials.length} vial · ${Math.round(subtotalMg*10)/10}mg</span>
-            ${sup.arrivo ? `<span style="font-size:9px;color:#8e8e93;margin-left:auto">arr. ${sup.arrivo}</span>` : ''}
-          </div>
-          ${chips ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:${fullCards?'8px':'0'}">${chips}</div>` : ''}
-          ${fullCards}
-        </div>`;
+      c.vials.forEach(v => {
+        const k = c.id+'_v'+v.n;
+        const sv = vd[k]||{};
+        const stato = sv.stato||v.stato;
+        const st = stSty(stato);
+        const mg  = parseFloat(sv.mg)  || c.defaultMg;
+        const bac = parseFloat(sv.bac) || c.defaultBac;
+        const ui  = c.dose_mcg ? calcUI(mg, bac, c.dose_mcg) : {conc:(mg/bac).toFixed(1), ui:'—'};
+        const exp = c.stabilityDays ? calcExpiry(sv.reco, c.stabilityDays) : {text:'Liofilizzato · stabile', daysLeft:null};
+        const igfNote = c.id==='igf' ? `<span style="font-size:9px;color:var(--muted)"> → ${(parseFloat(ui.ui)/2).toFixed(1)} UI/lato</span>` : '';
+
+        // Barra vita residua
+        let lifeBar = '';
+        if (sv.reco) {
+          const recoD = new Date(sv.reco); recoD.setHours(0,0,0,0);
+          const today2 = new Date(); today2.setHours(0,0,0,0);
+          const elapsed = Math.floor((today2-recoD)/86400000);
+          const pctLife = Math.min(100,Math.round((elapsed/c.stabilityDays)*100));
+          const lifeC = pctLife>=90?'#ff3b30':pctLife>=70?'#ff9500':'#34c759';
+          const left2 = Math.max(0, c.stabilityDays-elapsed);
+          lifeBar = `<div style="margin:6px 0 4px">
+            <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px">
+              <span>Vita residua</span><span>${left2} gg / ${c.stabilityDays}</span>
+            </div>
+            <div style="height:4px;background:var(--surface3,#e8e8ed);border-radius:2px;overflow:hidden">
+              <div style="height:100%;width:${pctLife}%;background:${lifeC};border-radius:2px"></div>
+            </div></div>`;
+        }
+
+        // Bottoni stato
+        const statoBtns = ['intatto','in_uso','esaurito','perso','congelato'].map(s => {
+          const ss = stSty(s); const active = stato===s;
+          return `<button onclick="stockSetStato('${c.id}',${v.n},'${s}')" style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;border:1px solid ${active?ss.c:'var(--border,#e8e8ed)'};background:${active?ss.bg:'transparent'};color:${active?ss.c:'var(--muted)'};cursor:pointer;font-family:inherit">${ss.text}</button>`;
+        }).join('');
+
+        // Opzioni select mg
+        const mgOpts = c.mgOptions.map(m => `<option value="${m}"${m===mg?' selected':''}>${m}mg</option>`).join('');
+        const bacOpts = c.bacOptions.map(b => `<option value="${b}"${b===bac?' selected':''}>${b}ml</option>`).join('');
+
+        // Colore scadenza
+        const expColor = exp.daysLeft===null?'var(--muted)':exp.daysLeft<0?'#c0392b':exp.daysLeft<=5?'#a05a00':'#1d6e32';
+
+        vialsHtml += `
+          <div style="border:1px solid var(--border,#e8e8ed);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--surface,#fff)">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+              <div style="width:8px;height:8px;border-radius:50%;background:${st.dot};flex-shrink:0"></div>
+              <span style="font-size:13px;font-weight:700;color:var(--text)">Vial ${v.n}</span>
+              <span style="font-size:10px;font-weight:600;background:${st.bg};color:${st.c};padding:2px 8px;border-radius:10px">${st.text}</span>
+              ${v.fonte==='limitless' ? '<span style="font-size:9px;font-weight:700;background:#fff3cd;color:#856404;padding:2px 7px;border-radius:8px;border:1px solid #ffc107">Limitless ✓</span>' : v.fonte==='new' ? '<span style="font-size:9px;font-weight:700;background:#e8f4f8;color:#0c5460;padding:2px 7px;border-radius:8px;border:1px solid #bee5eb">Nuovo · arr. ' + (v.arrivo||'lug-2026') + '</span>' : ''}
+            </div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">${statoBtns}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+              <div>
+                <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Grammatura</div>
+                <select onchange="stockSaveRecon('${c.id}',${v.n})" id="mg-${c.id}-${v.n}" style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">${mgOpts}</select>
+              </div>
+              <div>
+                <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">BAC Water</div>
+                <select onchange="stockSaveRecon('${c.id}',${v.n})" id="bac-${c.id}-${v.n}" style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">${bacOpts}</select>
+              </div>
+              <div>
+                <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">UI / dose</div>
+                <div style="font-size:18px;font-weight:700;color:var(--text);line-height:1">${ui.ui}</div>
+                <div style="font-size:9px;color:var(--muted)">${ui.conc}mg/ml${igfNote}</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+              <div>
+                <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Data ricostituzione</div>
+                <input type="date" id="reco-${c.id}-${v.n}" value="${sv.reco||''}" onchange="stockSaveRecon('${c.id}',${v.n})" style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">
+              </div>
+              <div>
+                <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Scadenza (auto)</div>
+                <div style="font-size:11px;font-weight:600;color:${expColor};padding:5px 6px;background:var(--surface2,#f5f5f7);border:1px solid var(--border,#e8e8ed);border-radius:6px;min-height:28px">${exp.text}</div>
+              </div>
+            </div>
+            ${lifeBar}
+            <div>
+              <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Note</div>
+              <input type="text" id="note-${c.id}-${v.n}" value="${(sv.note||'').replace(/"/g,'&quot;')}" placeholder="es. 10mg + 2ml BAC · frigo A" onblur="stockSaveNote('${c.id}',${v.n},this.value)" style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">
+            </div>
+          </div>`;
+        if (c.disponibile > 0 && c.disponibile < c.mgNeeded) {
+          vialsHtml += `<div style="background:rgba(255,149,0,.08);border-radius:8px;padding:7px 10px;font-size:11px;color:#7a4400">⚠️ ${c.gap}</div>`;
+        }
       });
-      if (c.disponibile > 0 && c.disponibile < c.mgNeeded) {
-        vialsHtml += `<div style="background:rgba(255,149,0,.08);border-radius:8px;padding:7px 10px;font-size:11px;color:#7a4400">⚠️ ${c.gap}</div>`;
-      }
     }
 
     if (c.offProtocol) {
@@ -6416,8 +6383,8 @@ function buildStockView2() {
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
         <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:10px">
           <span style="font-size:18px">💧</span>
-          <div><div style="font-size:12px;font-weight:600;color:var(--text)">BAC Water</div><div style="font-size:10px;color:var(--muted)">Limitless 4 + Bachem 20 · frigo</div></div>
-          <span style="margin-left:auto;font-size:14px;font-weight:700;color:#34c759">×24</span>
+          <div><div style="font-size:12px;font-weight:600;color:var(--text)">BAC Water</div><div style="font-size:10px;color:var(--muted)">4 flaconi · frigo</div></div>
+          <span style="margin-left:auto;font-size:14px;font-weight:700;color:#34c759">×4</span>
         </div>
         <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:10px">
           <span style="font-size:18px">💉</span>
@@ -6438,10 +6405,10 @@ function buildStockView2() {
   if (ucSel) ucFillDefaults(ucSel.value);
 }
 
-function stockSaveNote(cid, sup, vn, val) {
+function stockSaveNote(cid, vn, val) {
   const VKEY='stock_v2_vials'; let vd={};
   try{vd=JSON.parse(localStorage.getItem(VKEY)||'{}');}catch(e){}
-  const k=cid+'_'+sup+'_v'+vn; if(!vd[k])vd[k]={};
+  const k=cid+'_v'+vn; if(!vd[k])vd[k]={};
   vd[k].note=val; localStorage.setItem(VKEY,JSON.stringify(vd));
 }
 
@@ -6460,14 +6427,14 @@ function stockCalcRecon(mg, bac, dosePerInj, stabilityDays, recoDate) {
   return { conc: conc.toFixed(1), ui: ui.toFixed(1), expire };
 }
 
-function stockSaveRecon(cid, sup, vn) {
+function stockSaveRecon(cid, vn) {
   const VKEY = 'stock_v2_vials';
   let vd = {}; try { vd = JSON.parse(localStorage.getItem(VKEY)||'{}'); } catch(e) {}
-  const k = `${cid}_${sup}_v${vn}`;
+  const k = `${cid}_v${vn}`;
   if (!vd[k]) vd[k] = {};
-  const mgEl   = document.getElementById(`mg-${k}`);
-  const bacEl  = document.getElementById(`bac-${k}`);
-  const recoEl = document.getElementById(`reco-${k}`);
+  const mgEl   = document.getElementById(`mg-${cid}-${vn}`);
+  const bacEl  = document.getElementById(`bac-${cid}-${vn}`);
+  const recoEl = document.getElementById(`reco-${cid}-${vn}`);
   if (mgEl)   vd[k].mg   = mgEl.value;
   if (bacEl)  vd[k].bac  = bacEl.value;
   if (recoEl) vd[k].reco = recoEl.value;
@@ -6477,10 +6444,10 @@ function stockSaveRecon(cid, sup, vn) {
   if (el2) { delete el2.dataset.built; el2.innerHTML=''; buildStockView2(); }
 }
 
-function stockSetStato(cid, sup, vn, stato) {
+function stockSetStato(cid, vn, stato) {
   const VKEY = 'stock_v2_vials';
   let vd = {}; try { vd = JSON.parse(localStorage.getItem(VKEY)||'{}'); } catch(e) {}
-  const k = `${cid}_${sup}_v${vn}`;
+  const k = `${cid}_v${vn}`;
   if (!vd[k]) vd[k] = {};
   vd[k].stato = stato;
   localStorage.setItem(VKEY, JSON.stringify(vd));
@@ -6500,7 +6467,7 @@ function buildMedDash() {
       {d:'Ott 2020',v:33,t:'2020-10'},{d:'Nov 2022',v:37,t:'2022-11'},
       {d:'Gen 2024',v:24,t:'2024-01'},{d:'Feb 2025',v:27,t:'2025-02'},
       {d:'Apr 2026',v:28,t:'2026-04'},{d:'Mag 2026',v:35,t:'2026-05'},
-      {d:'Giu 2026',v:32,t:'2026-06'},{d:'13 lug 2026 T0 Sant',v:32,t:'2026-07c'}
+      {d:'Giu 2026',v:32,t:'2026-06'}
     ],
     colTot: [
       {d:'Ott 2020',v:109,t:'2020-10'},{d:'Nov 2022',v:120,t:'2022-11'},
@@ -6512,13 +6479,13 @@ function buildMedDash() {
       {d:'Ott 2020',v:62,t:'2020-10'},{d:'Nov 2022',v:66,t:'2022-11'},
       {d:'Gen 2024',v:52,t:'2024-01'},{d:'Feb 2025',v:62,t:'2025-02'},
       {d:'Apr 2026',v:60,t:'2026-04'},{d:'Mag 2026',v:57,t:'2026-05'},
-      {d:'9 giu 2026',v:64,t:'2026-06b'},{d:'13 lug 2026 T0 Sant',v:49,t:'2026-07c'}
+      {d:'9 giu 2026',v:64,t:'2026-06b'}
     ],
     tg: [
       {d:'Ott 2020',v:69,t:'2020-10'},{d:'Nov 2022',v:83,t:'2022-11'},
       {d:'Gen 2024',v:64,t:'2024-01'},{d:'Feb 2025',v:67,t:'2025-02'},
       {d:'Apr 2026',v:65,t:'2026-04'},{d:'Mag 2026',v:77,t:'2026-05'},
-      {d:'Giu 2026',v:108,t:'2026-06'},{d:'13 lug 2026 T0 Sant',v:50,t:'2026-07c'}
+      {d:'Giu 2026',v:108,t:'2026-06'}
     ],
     omocist: [
       {d:'Apr 2026',v:21.9,t:'2026-04'},{d:'Mag 2026',v:17.5,t:'2026-05'}
@@ -6537,8 +6504,7 @@ function buildMedDash() {
       {d:'Mag 2026 T0',v:94,t:'2026-05'},{d:'13 lug 2026 T0 Sant',v:86.00,t:'2026-07'}
     ],
     testLibero: [
-      {d:'Gen 2024',v:16.53,t:'2024-01'},{d:'Apr 2026',v:15.60,t:'2026-04'},
-      {d:'13 lug 2026 T0 Sant',v:18.80,t:'2026-07'} // pg/mL Sant'Agostino = ng/L (unita' equivalente)
+      {d:'Gen 2024',v:16.53,t:'2024-01'},{d:'Apr 2026',v:15.60,t:'2026-04'}
     ],
     ves: [
       {d:'Apr 2026',v:17,t:'2026-04'},{d:'Mag 2026',v:25,t:'2026-05'}
@@ -6549,8 +6515,7 @@ function buildMedDash() {
     ],
     creatinina: [
       {d:'10 apr 2026',v:1.13,t:'2026-04'},{d:'20 mag 2026',v:1.29,t:'2026-05a'},
-      {d:'21 mag 2026',v:1.29,t:'2026-05b'},{d:'3 lug 2026',v:1.32,t:'2026-07'},
-      {d:'13 lug 2026 T0 Sant',v:1.28,t:'2026-07b'}
+      {d:'21 mag 2026',v:1.29,t:'2026-05b'},{d:'3 lug 2026',v:1.32,t:'2026-07'}
     ],
     egfr: [
       {d:'10 apr 2026',v:75,t:'2026-04'},{d:'3 lug 2026',v:62,t:'2026-07'}
@@ -6564,8 +6529,8 @@ function buildMedDash() {
       {d:'3 lug 2026',v:10.9,t:'2026-07'},{d:'13 lug 2026 T0',v:14.24,t:'2026-07b'}
     ],
     testTotale: [
-      {d:'3 lug 2026 CDI',v:685,t:'2026-07'},{d:'13 lug 2026 T0 Sant',v:526.20,t:'2026-07b'}
-    ], // unità base: ng/dL (Sant'Agostino, referto T0 13/07/2026). Valore CDI 3/07 convertito da 6.85 µg/L ×100. Range 127.18–1020.36 ng/dL da referto Sant'Agostino.
+      {d:'3 lug 2026 CDI',v:6.85,t:'2026-07'},{d:'13 lug 2026 T0',v:526.20,t:'2026-07b',unit:'ng/dL'}
+    ],
     shbg: [
       {d:'10 apr 2026',v:75.10,t:'2026-04'},{d:'20 mag 2026',v:75.10,t:'2026-05'},{d:'3 lug 2026',v:72.80,t:'2026-07'},{d:'13 lug 2026 T0',v:54.10,t:'2026-07b'}
     ],
@@ -6579,8 +6544,7 @@ function buildMedDash() {
       {d:'Apr 2026',v:142,t:'2026-04'},{d:'Mag 2026',v:161,t:'2026-05'}
     ],
     crp: [
-      {d:'Apr 2026',v:2.7,t:'2026-04'},{d:'Mag 2026',v:2.7,t:'2026-05'},
-      {d:'13 lug 2026 T0 Sant',v:0.40,t:'2026-07'} // referto riporta "<0.40" (sotto soglia rilevabilita'), plottato come 0.40 = limite superiore
+      {d:'Apr 2026',v:2.7,t:'2026-04'},{d:'Mag 2026',v:2.7,t:'2026-05'}
     ],
   };
 
@@ -6752,11 +6716,11 @@ function buildMedDash() {
 
   <div class="section-label">⚖️ Asse gonadico</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
-    ${kpiCard('Testosterone tot.', DATA.testTotale, 'ng/dL', 127.18, 1020.36, 'range 127.18–1020.36 (Sant\'Agostino)', '#0071e3')}
-    ${kpiCard('Testosterone lib.', DATA.testLibero, 'pg/mL', 9.57, 40.60, 'range 9.57–40.60 (Sant\'Agostino)', '#0071e3')}
-    ${kpiCard('SHBG', DATA.shbg, 'nmol/L', 11.20, 78.10, 'range 11.20–78.10 (Sant\'Agostino)', '#8e44ad')}
-    ${kpiCard('FSH', DATA.fsh, 'mIU/mL', 0.95, 11.95, 'range 0.95–11.95 (Sant\'Agostino)', '#ff3b30')}
-    ${kpiCard('LH', DATA.lh, 'mUI/mL', 0.57, 12.7, 'range 0.57–12.7 (Sant\'Agostino)', '#ff3b30')}
+    ${kpiCard('Testosterone tot.', DATA.testTotale, 'µg/L', 1.87, 6.84, 'range 1.87–6.84', '#0071e3')}
+    ${kpiCard('Testosterone lib.', DATA.testLibero, 'ng/L', 15, 40, 'target >15 (efficace)', '#0071e3')}
+    ${kpiCard('SHBG', DATA.shbg, 'nmol/L', undefined, 80.50, 'target ≤80.50', '#8e44ad')}
+    ${kpiCard('FSH', DATA.fsh, 'mU/mL', undefined, 18.1, 'target ≤18.1', '#ff3b30')}
+    ${kpiCard('LH', DATA.lh, 'UI/L', undefined, 9.3, 'target ≤9.3', '#ff3b30')}
   </div>
 
   <div class="section-label">🫀 Lipidi</div>
@@ -6852,8 +6816,8 @@ function buildMedDash() {
         ${lineChart([{label:'eGFR',pts:DATA.egfr,color:'#5856d6',refMin:90}], 400, 120)}
       </div>
       <div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
-        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">FSH + LH <span style="color:var(--muted);font-weight:400">asse gonadico · range Sant'Agostino FSH 0.95–11.95 · LH 0.57–12.7</span></div>
-        ${lineChart([{label:'FSH',pts:DATA.fsh,color:'#ff3b30',refMax:11.95},{label:'LH',pts:DATA.lh,color:'#ff9500',refMax:12.7}], 400, 120)}
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">FSH + LH <span style="color:var(--muted);font-weight:400">asse gonadico · target FSH ≤18.1 · LH ≤9.3</span></div>
+        ${lineChart([{label:'FSH',pts:DATA.fsh,color:'#ff3b30',refMax:12.4},{label:'LH',pts:DATA.lh,color:'#ff9500',refMax:9.3}], 400, 120)}
       </div>
     </div>
   </div>
@@ -7438,10 +7402,10 @@ function buildHistoryTab() {
   function guessType(title) {
     const t = title.toLowerCase();
     if (t.includes('gambe') || t.includes('glute')) return 'Legs';
-    if ((t.includes('dorso') || t.includes('schiena')) && t.includes('bicip') && !t.includes('petto')) return 'Pull';
+    if (t.includes('dorso') && (t.includes('bicip') || t.includes('spall'))) return 'Pull';
     if (t.includes('petto') && t.includes('tricip')) return 'Push';
-    if (t.includes('sabato')) return 'Upper Sab';
     if (t.includes('mattina') && (t.includes('spalle') || t.includes('parte superiore'))) return 'Upper Dom';
+    if (t.includes('sabato')) return 'Upper Sab';
     return 'Altro';
   }
 
@@ -7752,7 +7716,7 @@ function buildOrariView() {
         { time:'11:00', icon:'🥩', action:'Spuntino — carne secca', tag:'', tagColor:'' },
         { time:'13:00', icon:'🍽️', action:'Pranzo', tag:'', tagColor:'' },
         { time:'13:00', icon:'💊', action:'Omega-3 ×2 · Normocis 400', tag:'', tagColor:'' },
-        { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'3h post-pranzo', tagColor:'#34c759' },
+        { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'2h15 post-pranzo', tagColor:'#34c759' },
         { time:'17:00', icon:'🍫', action:'2Bar Net Integratori (22g prot · 0.3g zuccheri) o bresaola', tag:'no-carb · post-Fragment', tagColor:'#34c759' },
         { time:'19:00', icon:'🏋️', action:'Allenamento', tag:'fino alle 21:00', tagColor:'#8e8e93' },
         { time:'21:00', icon:'💉', action:'IGF-1 DES 50mcg IM bilaterale (25mcg R + 25mcg L)', tag:'immediato post-WO', tagColor:'#af52de' },
@@ -7777,7 +7741,7 @@ function buildOrariView() {
         { time:'11:00', icon:'🥩', action:'Spuntino — carne secca', tag:'', tagColor:'' },
         { time:'13:00', icon:'🍽️', action:'Pranzo', tag:'', tagColor:'' },
         { time:'13:00', icon:'💊', action:'Omega-3 ×2 · Normocis 400', tag:'', tagColor:'' },
-        { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'3h post-pranzo', tagColor:'#34c759' },
+        { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'2h15 post-pranzo', tagColor:'#34c759' },
         { time:'17:00', icon:'🍫', action:'2Bar Net Integratori (22g prot · 0.3g zuccheri) o bresaola', tag:'no-carb · post-Fragment', tagColor:'#34c759' },
         { time:'19:30', icon:'🍽️', action:'Cena — pesce/carne magra + verdure + max 4-5 Wasa', tag:'low-fat · low-GI · no grassi aggiunti', tagColor:'#ff9500' },
         { time:'22:30', icon:'💉', action:'Tesamorelin 2mg + Ipamorelin 100mcg + BPC-157 250mcg + TB-500 500mcg SC', tag:'3h post-cena ✅', tagColor:'#34c759' },
@@ -7798,7 +7762,7 @@ function buildOrariView() {
         { time:'08:00', icon:'💊', action:'Creatina 5g · Omega-3 ×1 · Zinco 15mg', tag:'con colazione', tagColor:'#8e8e93' },
         { time:'10:00', icon:'🏋️', action:'Allenamento (mattina)', tag:'orario flessibile', tagColor:'#5ac8fa' },
         { time:'11:30', icon:'💉', action:'IGF-1 DES 50mcg IM bilaterale (25mcg R + 25mcg L)', tag:'immediato post-WO', tagColor:'#af52de' },
-        { time:'13:00', icon:'🍽️', action:'Pranzo', tag:'NO carbs 1h30 post IGF-1', tagColor:'#ff3b30' },
+        { time:'13:00', icon:'🍽️', action:'Pranzo', tag:'NO carbs 2h post IGF-1', tagColor:'#ff3b30' },
         { time:'13:30', icon:'💊', action:'Omega-3 ×2 · Normocis 400', tag:'', tagColor:'' },
         { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'2h+ post-pranzo', tagColor:'#34c759' },
         { time:'17:00', icon:'🍫', action:'2Bar Net Integratori (22g prot · 0.3g zuccheri) o bresaola', tag:'no-carb · post-Fragment', tagColor:'#34c759' },
