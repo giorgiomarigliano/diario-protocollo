@@ -906,6 +906,11 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .check-item input[type=checkbox]:checked{background:var(--blue);border-color:var(--blue)}
 .check-item input[type=checkbox]:checked::after{content:'';position:absolute;left:4px;top:1.5px;width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(42deg)}
 .check-item label{font-size:13px;color:var(--text);cursor:pointer;user-select:none}
+.skip-toggle{margin-left:auto;font-size:10px;color:var(--faint,#c7c7cc);cursor:pointer;user-select:none;padding:2px 6px;border-radius:8px;white-space:nowrap;flex-shrink:0}
+.skip-toggle:hover{color:var(--muted);background:rgba(0,0,0,.05)}
+.skip-toggle.active{color:#ff9500;font-weight:600;background:rgba(255,149,0,.12)}
+.check-item.skipped{background:rgba(255,149,0,.08)}
+.check-item.skipped label{color:#ff9500;text-decoration:line-through;text-decoration-color:rgba(255,149,0,.5)}
 
 .week-summary-card{background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
 .week-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
@@ -2112,8 +2117,10 @@ function buildDays(){
         <div class="section-label" style="margin-top:14px">Stack mattutino</div>
         <div class="check-grid">
           <div class="check-item">
-            <input type="checkbox" id="ck-d3-${id}" data-id="${id}" data-f="ck_d3">
+            <input type="checkbox" id="ck-d3-${id}" data-id="${id}" data-f="ck_d3" onchange="if(this.checked) clearSupplementSkip(this)">
             <label for="ck-d3-${id}">D3 + K2</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_d3_skip">
           </div>
           <div class="check-item">
             <input type="checkbox" id="ck-omega-${id}" data-id="${id}" data-f="ck_omega">
@@ -2124,28 +2131,38 @@ function buildDays(){
             <label for="ck-creat-${id}">Creatina</label>
           </div>
           <div class="check-item">
-            <input type="checkbox" id="ck-zinc-${id}" data-id="${id}" data-f="ck_zinc">
+            <input type="checkbox" id="ck-zinc-${id}" data-id="${id}" data-f="ck_zinc" onchange="if(this.checked) clearSupplementSkip(this)">
             <label for="ck-zinc-${id}">Zinco</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_zinc_skip">
           </div>
           <div class="check-item">
-            <input type="checkbox" id="ck-b12-${id}" data-id="${id}" data-f="ck_b12">
+            <input type="checkbox" id="ck-b12-${id}" data-id="${id}" data-f="ck_b12" onchange="if(this.checked) clearSupplementSkip(this)">
             <label for="ck-b12-${id}">B12 + Folato</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_b12_skip">
           </div>
           <div class="check-item">
-            <input type="checkbox" id="ck-norm-${id}" data-id="${id}" data-f="ck_norm">
+            <input type="checkbox" id="ck-norm-${id}" data-id="${id}" data-f="ck_norm" onchange="if(this.checked) clearSupplementSkip(this)">
             <label for="ck-norm-${id}">Normocis</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_norm_skip">
           </div>
         </div>
 
         <div class="section-label" style="margin-top:14px">Stack serale</div>
         <div class="check-grid">
           <div class="check-item">
-            <input type="checkbox" id="ck-mag-${id}" data-id="${id}" data-f="ck_mag">
+            <input type="checkbox" id="ck-mag-${id}" data-id="${id}" data-f="ck_mag" onchange="if(this.checked) clearSupplementSkip(this)">
             <label for="ck-mag-${id}">Magnesio</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_mag_skip">
           </div>
           <div class="check-item">
-            <input type="checkbox" id="ck-gly-${id}" data-id="${id}" data-f="ck_gly">
+            <input type="checkbox" id="ck-gly-${id}" data-id="${id}" data-f="ck_gly" onchange="if(this.checked) clearSupplementSkip(this)">
             <label for="ck-gly-${id}">Glicina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_gly_skip">
           </div>
           <div class="check-item">
             <input type="checkbox" id="ck-melatonina-${id}" data-id="${id}" data-f="ck_melatonina">
@@ -2272,6 +2289,56 @@ function applyAll(data){
   setTimeout(() => { if (typeof refreshCharts === 'function') refreshCharts(); }, 50);
   renderBackupStatus(data.backup_status);
   checkMissingYesterday(data);
+  refreshSupplementSkipVisuals();
+}
+
+// ── Integratori: segna come "saltato apposta" (non conta come dimenticato) ──
+function toggleSupplementSkip(spanEl) {
+  const item = spanEl.closest('.check-item');
+  if (!item) return;
+  const checkbox = item.querySelector('input[type="checkbox"]');
+  const hidden = item.querySelector('input[type="hidden"]');
+  if (!hidden) return;
+  const isActive = spanEl.classList.contains('active');
+  if (isActive) {
+    spanEl.classList.remove('active');
+    item.classList.remove('skipped');
+    hidden.value = '';
+  } else {
+    spanEl.classList.add('active');
+    item.classList.add('skipped');
+    hidden.value = '1';
+    if (checkbox) checkbox.checked = false; // saltato = non preso
+  }
+}
+
+function clearSupplementSkip(checkboxEl) {
+  // Se l'utente spunta "preso" dopo aver segnato "saltato", il saltato non ha piu' senso
+  const item = checkboxEl.closest('.check-item');
+  if (!item) return;
+  const spanEl = item.querySelector('.skip-toggle');
+  const hidden = item.querySelector('input[type="hidden"]');
+  if (spanEl) spanEl.classList.remove('active');
+  item.classList.remove('skipped');
+  if (hidden) hidden.value = '';
+}
+
+function refreshSupplementSkipVisuals() {
+  // Dopo il caricamento dati, gli input hidden ck_*_skip hanno gia' il valore giusto
+  // (popolati dal ciclo generico di applyAll); qui aggiorniamo solo l'aspetto visivo
+  // (classe attiva sul pulsante + stile "saltato" sulla riga) di conseguenza.
+  document.querySelectorAll('.check-item').forEach(item => {
+    const hidden = item.querySelector('input[type="hidden"][data-f$="_skip"]');
+    const spanEl = item.querySelector('.skip-toggle');
+    if (!hidden || !spanEl) return;
+    if (hidden.value === '1') {
+      spanEl.classList.add('active');
+      item.classList.add('skipped');
+    } else {
+      spanEl.classList.remove('active');
+      item.classList.remove('skipped');
+    }
+  });
 }
 
 // ── Alert dati mancanti (stessa logica del workflow di controllo giornaliero) ──
@@ -2295,6 +2362,8 @@ function computeMissingForDay(entry, dayIdx) {
   });
   Object.entries(MISSING_SUPPLEMENT_FIELDS).forEach(([f, label]) => {
     const v = entry[f];
+    const skipped = entry[f + '_skip'];
+    if (skipped) return; // saltato apposta, non conta come dimenticato
     if (!v || v === '0' || v === 'false') missing.push(`Integratore non spuntato: ${label}`);
   });
   if (MISSING_TRAINING_DAYS.has(((dayIdx % 7) + 7) % 7)) {
