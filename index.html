@@ -1911,7 +1911,14 @@ function buildDays(){
   const today=new Date(); today.setHours(0,0,0,0);
   let curWk=-1;
 
-  for(let i=0;i<TOTAL_DAYS;i++){
+  // Il warm-up serve solo fino al giorno prima dell'inizio confermato del Protocollo v2:
+  // oltre quel punto Giorgio non inserira' piu' dati qui (passa al tab Protocollo v2),
+  // quindi non ha senso generare card vuote per i giorni rimanenti fino a TOTAL_DAYS.
+  const s0wu = new Date(START); s0wu.setHours(0,0,0,0);
+  const s2wu = new Date(START2); s2wu.setHours(0,0,0,0);
+  const warmupDayCount = Math.max(0, Math.min(TOTAL_DAYS, Math.round((s2wu - s0wu) / 86400000)));
+
+  for(let i=0;i<warmupDayCount;i++){
     const d=new Date(START); d.setDate(d.getDate()+i); d.setHours(0,0,0,0);
     const wk=Math.floor(i/7)+1;
     const ph=getPhase(i);
