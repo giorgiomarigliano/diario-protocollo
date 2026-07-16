@@ -2670,9 +2670,26 @@ const DEXA_MILESTONES = [
 
 // Valuta se un valore numerico è in range dato un ref string tipo '>40', '<1.0', '70–99', '115–220'
 function getRangeStatus(valStr, refStr) {
-  const v = parseFloat(valStr);
-  if (isNaN(v) || !refStr) return 'neutral';
+  if (!refStr) return 'neutral';
   const r = refStr.trim();
+  const vStr = String(valStr).trim();
+
+  // Valore espresso come soglia di rilevamento ("<24", "≤0.5"): non e' un numero esatto.
+  // Se anche il riferimento e' un tetto massimo ("<44"), possiamo comunque concludere
+  // "Nel range" quando soglia_valore <= soglia_riferimento — il vero valore, qualunque
+  // sia, sta sotto la sua soglia, che a sua volta e' gia' sotto quella di riferimento.
+  // Se la soglia del valore e' piu' alta di quella di riferimento, o il riferimento non
+  // e' dello stesso tipo (es. un range min-max), resta 'neutral': non indoviniamo mai
+  // il valore vero.
+  const vThresholdM = vStr.match(/^[<≤]\s*([\d.]+)/);
+  if (vThresholdM) {
+    const ltRefM = r.match(/[<≤]\s*([\d.]+)/);
+    if (ltRefM) return parseFloat(vThresholdM[1]) <= parseFloat(ltRefM[1]) ? 'ok' : 'neutral';
+    return 'neutral';
+  }
+
+  const v = parseFloat(valStr);
+  if (isNaN(v)) return 'neutral';
   // Range: "70–99", "~115–300", "11.8–39.8 (M)" — tollera prefissi/suffissi non numerici
   const rangeM = r.match(/([\d.]+)\s*[–\-]\s*([\d.]+)/);
   if (rangeM) {
