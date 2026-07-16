@@ -2131,12 +2131,16 @@ function buildDays(){
             <input type="hidden" data-id="${id}" data-f="ck_d3_skip">
           </div>
           <div class="check-item">
-            <input type="checkbox" id="ck-omega-${id}" data-id="${id}" data-f="ck_omega">
+            <input type="checkbox" id="ck-omega-${id}" data-id="${id}" data-f="ck_omega" onchange="if(this.checked) clearSupplementSkip(this)">
             <label for="ck-omega-${id}">Omega-3</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_omega_skip">
           </div>
           <div class="check-item">
-            <input type="checkbox" id="ck-creat-${id}" data-id="${id}" data-f="ck_creat">
+            <input type="checkbox" id="ck-creat-${id}" data-id="${id}" data-f="ck_creat" onchange="if(this.checked) clearSupplementSkip(this)">
             <label for="ck-creat-${id}">Creatina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_creat_skip">
           </div>
           <div class="check-item">
             <input type="checkbox" id="ck-zinc-${id}" data-id="${id}" data-f="ck_zinc" onchange="if(this.checked) clearSupplementSkip(this)">
@@ -2173,8 +2177,10 @@ function buildDays(){
             <input type="hidden" data-id="${id}" data-f="ck_gly_skip">
           </div>
           <div class="check-item">
-            <input type="checkbox" id="ck-melatonina-${id}" data-id="${id}" data-f="ck_melatonina">
+            <input type="checkbox" id="ck-melatonina-${id}" data-id="${id}" data-f="ck_melatonina" onchange="if(this.checked) clearSupplementSkip(this)">
             <label for="ck-melatonina-${id}">Melatonina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_melatonina_skip">
           </div>
         </div>
 
@@ -6195,8 +6201,18 @@ function buildTestProtoCards(container) {
             <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
             <input type="hidden" data-id="${id}" data-f="ck_d3_skip">
           </div>
-          <div class="check-item"><input type="checkbox" id="ck2-omega-${id}" data-id="${id}" data-f="ck_omega"><label for="ck2-omega-${id}">Omega-3</label></div>
-          <div class="check-item"><input type="checkbox" id="ck2-creat-${id}" data-id="${id}" data-f="ck_creat"><label for="ck2-creat-${id}">Creatina</label></div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-omega-${id}" data-id="${id}" data-f="ck_omega" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-omega-${id}">Omega-3</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_omega_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-creat-${id}" data-id="${id}" data-f="ck_creat" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-creat-${id}">Creatina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_creat_skip">
+          </div>
           <div class="check-item">
             <input type="checkbox" id="ck2-zinc-${id}" data-id="${id}" data-f="ck_zinc" onchange="if(this.checked) clearSupplementSkip(this)">
             <label for="ck2-zinc-${id}">Zinco</label>
@@ -6231,7 +6247,12 @@ function buildTestProtoCards(container) {
             <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
             <input type="hidden" data-id="${id}" data-f="ck_gly_skip">
           </div>
-          <div class="check-item"><input type="checkbox" id="ck2-melatonina-${id}" data-id="${id}" data-f="ck_melatonina"><label for="ck2-melatonina-${id}">Melatonina</label></div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-melatonina-${id}" data-id="${id}" data-f="ck_melatonina" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-melatonina-${id}">Melatonina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_melatonina_skip">
+          </div>
         </div>
 
         <div class="section-label" style="margin-top:14px">Iniezioni v2</div>
@@ -6457,8 +6478,18 @@ function buildProtoV2() {
             <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
             <input type="hidden" data-id="${id}" data-f="ck_d3_skip">
           </div>
-          <div class="check-item"><input type="checkbox" id="ck2-omega-${id}" data-id="${id}" data-f="ck_omega"><label for="ck2-omega-${id}">Omega-3</label></div>
-          <div class="check-item"><input type="checkbox" id="ck2-creat-${id}" data-id="${id}" data-f="ck_creat"><label for="ck2-creat-${id}">Creatina</label></div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-omega-${id}" data-id="${id}" data-f="ck_omega" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-omega-${id}">Omega-3</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_omega_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-creat-${id}" data-id="${id}" data-f="ck_creat" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-creat-${id}">Creatina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_creat_skip">
+          </div>
           <div class="check-item">
             <input type="checkbox" id="ck2-zinc-${id}" data-id="${id}" data-f="ck_zinc" onchange="if(this.checked) clearSupplementSkip(this)">
             <label for="ck2-zinc-${id}">Zinco</label>
@@ -6493,7 +6524,12 @@ function buildProtoV2() {
             <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
             <input type="hidden" data-id="${id}" data-f="ck_gly_skip">
           </div>
-          <div class="check-item"><input type="checkbox" id="ck2-melatonina-${id}" data-id="${id}" data-f="ck_melatonina"><label for="ck2-melatonina-${id}">Melatonina</label></div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-melatonina-${id}" data-id="${id}" data-f="ck_melatonina" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-melatonina-${id}">Melatonina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_melatonina_skip">
+          </div>
         </div>
 
         <div class="section-label" style="margin-top:14px">Iniezioni v2</div>
