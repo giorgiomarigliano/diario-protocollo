@@ -2654,7 +2654,7 @@ const DEXA_T0 = {
 };
 
 // Card 1: quadro generale pre-protocollo (CDI) — sempre completata, riferimento storico
-const LAB_CDI_CARD = {id:'lab_cdi_quadro', label:'Quadro generale pre-protocollo · CDI', badge:'p1b', locked:true, sub:'Ultimo panel CDI (20 mag 2026) — riferimento storico, non è il T0 ufficiale'};
+const LAB_CDI_CARD = {id:'lab_cdi_quadro', label:'Quadro generale pre-protocollo · CDI', badge:'p1b', locked:true, openDefault:false, sub:'Ultimo panel CDI (20 mag 2026) — riferimento storico, non è il T0 ufficiale'};
 
 // Card 2-4: T0/T1/T2 — SOLO marker Sant'Agostino (panel dedicato, codice 00K24KC2), vuote finché non fatte
 const LAB_MILESTONES = [
@@ -2717,7 +2717,7 @@ function buildLabSection(container) {
 
   function renderLabCard(m, fieldsObj, subOverride) {
     const card = document.createElement('div');
-    card.className = 'milestone-card' + (m.locked ? ' open' : '');
+    card.className = 'milestone-card' + ((m.openDefault !== undefined ? m.openDefault : m.locked) ? ' open' : '');
     card.id = 'card-' + m.id;
 
     const fields = Object.entries(fieldsObj);
