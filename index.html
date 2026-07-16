@@ -1436,6 +1436,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
         <span class="pre-proto-chev" id="pre-proto-chev">›</span>
       </div>
       <div id="pre-proto-body" class="pre-proto-body">
+        <div id="warmup-assessment-card"></div>
         <div id="container"></div>
       </div>
     </div>
@@ -2290,6 +2291,89 @@ function applyAll(data){
   renderBackupStatus(data.backup_status);
   checkMissingYesterday(data);
   refreshSupplementSkipVisuals();
+  renderWarmupAssessment(data);
+}
+
+// ── Valutazione complessiva di fine warm-up (8 giu – 17 lug, day_0..day_39) ──
+// Calcolata sempre dal vivo sui dati reali, non un testo fisso: si aggiorna da
+// sola se un giorno viene corretto o se manca ancora l'ultimo giorno loggato.
+const WARMUP_HEADLINE_LIFTS = {
+  sl_bench_kg: 'Panca piana', sl_legpress_kg: 'Leg Press', sl_rdl_kg: 'RDL',
+  sl_hipthrust_kg: 'Hip Thrust', sl_incbench_kg: 'Panca inclinata', sl_lat_kg: 'Lat Machine',
+};
+
+function computeWarmupSummary(data) {
+  const s0 = new Date(START); s0.setHours(0, 0, 0, 0);
+  const s2 = new Date(START2); s2.setHours(0, 0, 0, 0);
+  const lastDay = Math.round((s2 - s0) / 86400000) - 1; // ultimo giorno di warm-up (giorno prima di START2)
+
+  const biom = { peso: [], hrv: [], rhr: [], ore_sonno: [] };
+  const lifts = {};
+
+  for (let i = 0; i <= lastDay; i++) {
+    const entry = data['day_' + i];
+    if (!entry) continue;
+    ['peso', 'hrv', 'rhr', 'ore_sonno'].forEach(f => {
+      const v = parseFloat(String(entry[f]).replace(',', '.'));
+      if (!isNaN(v)) biom[f].push({ day: i, val: v });
+    });
+    Object.keys(WARMUP_HEADLINE_LIFTS).forEach(k => {
+      const v = parseFloat(entry[k]);
+      if (!isNaN(v)) { if (!lifts[k]) lifts[k] = []; lifts[k].push({ day: i, val: v }); }
+    });
+  }
+
+  function avgFirstLast(arr, n = 5) {
+    if (arr.length < 2) return null;
+    const nn = Math.max(1, Math.min(n, Math.floor(arr.length / 2)));
+    const first = arr.slice(0, nn).reduce((a, b) => a + b.val, 0) / nn;
+    const last = arr.slice(-nn).reduce((a, b) => a + b.val, 0) / nn;
+    return { first, last, delta: last - first };
+  }
+
+  const biomSummary = {};
+  Object.entries(biom).forEach(([f, arr]) => { biomSummary[f] = avgFirstLast(arr); });
+
+  const liftSummary = {};
+  Object.entries(lifts).forEach(([k, arr]) => {
+    if (arr.length >= 2) liftSummary[k] = { first: arr[0].val, last: arr[arr.length - 1].val, delta: arr[arr.length - 1].val - arr[0].val };
+  });
+
+  return { lastDay, daysLogged: biom.peso.length, biomSummary, liftSummary };
+}
+
+function renderWarmupAssessment(data) {
+  const el = document.getElementById('warmup-assessment-card');
+  if (!el) return;
+  const s = computeWarmupSummary(data);
+  if (s.daysLogged < 5) { el.innerHTML = ''; return; } // dati insufficienti per una valutazione sensata
+
+  const bs = s.biomSummary;
+  const fmt = (v, d = 1) => (v === null || v === undefined || isNaN(v)) ? '—' : v.toFixed(d);
+  const biomRow = (label, obj, unit, dec = 1) => obj
+    ? `<div>${label}: ${fmt(obj.first, dec)} → <b>${fmt(obj.last, dec)}${unit}</b> <span style="color:${obj.delta > 0 ? '#1a7a3a' : obj.delta < 0 ? '#cc2200' : '#888'}">(${obj.delta > 0 ? '+' : ''}${obj.delta.toFixed(dec)})</span></div>`
+    : `<div>${label}: dati insufficienti</div>`;
+
+  const liftRows = Object.entries(s.liftSummary)
+    .map(([k, v]) => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border,#eee)">
+        <span>${WARMUP_HEADLINE_LIFTS[k]}</span>
+        <span>${v.first}kg → <b>${v.last}kg</b> <span style="color:${v.delta > 0 ? '#1a7a3a' : v.delta < 0 ? '#cc2200' : '#888'}">(${v.delta > 0 ? '+' : ''}${v.delta}kg)</span></span>
+      </div>`)
+    .join('');
+
+  el.innerHTML = `
+    <div class="charts-card" style="margin-bottom:14px;border-left:3px solid #0071e3">
+      <div style="font-weight:700;margin-bottom:10px">📋 Valutazione di fine warm-up · ${s.daysLogged}/${s.lastDay + 1} giorni loggati</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px 16px;font-size:13px;margin-bottom:14px">
+        ${biomRow('Peso', bs.peso, 'kg')}
+        ${biomRow('HRV', bs.hrv, 'ms', 0)}
+        ${biomRow('RHR', bs.rhr, 'bpm', 0)}
+        ${biomRow('Sonno', bs.ore_sonno, 'h')}
+      </div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Sentinel lift — primo vs ultimo dato registrato</div>
+      ${liftRows || '<div style="font-size:12px;color:var(--muted)">Dati insufficienti</div>'}
+      <div style="font-size:11px;color:var(--muted);margin-top:10px">Confronto tra i primi e gli ultimi valori effettivamente loggati nel periodo di warm-up (8 giu – 17 lug) — non un giudizio clinico, solo l'andamento dei dati raccolti.</div>
+    </div>`;
 }
 
 // ── Integratori: segna come "saltato apposta" (non conta come dimenticato) ──
@@ -6446,6 +6530,43 @@ function buildStockView2() {
     }
   });
 
+  // ── Fabbisogno viaggio Bangkok (7-21 agosto, date fisse confermate) ──
+  // Calcolato sul tempo REALE fuori casa (giorno di partenza e rientro inclusi),
+  // non solo sui giorni "in loco" — parte la sera del 7, rientra la sera del 21.
+  const BKK_START = new Date('2026-08-07'); BKK_START.setHours(0,0,0,0);
+  const BKK_END   = new Date('2026-08-21'); BKK_END.setHours(0,0,0,0);
+  const bkkTotalDays = Math.round((BKK_END - BKK_START)/86400000) + 1;
+  const s0v2 = new Date(START2); s0v2.setHours(0,0,0,0);
+  let bkkTrainingDays = 0;
+  for (let d = new Date(BKK_START); d <= BKK_END; d.setDate(d.getDate()+1)) {
+    const wd = d.getDay(); // 0=domenica...6=sabato
+    if ([2,3,5,6,0].includes(wd)) bkkTrainingDays++; // mar/mer/ven/sab/dom
+  }
+  const bkkRestDays = bkkTotalDays - bkkTrainingDays;
+
+  const BKK_DOSE_MCG_PER_DAY = {
+    tesa: 2000, fragment: 500, ipa: 100, bpc: 500, tb500: 500, // ogni giorno
+  };
+  const BKK_IU_PER_DOSE = { // da schema ricostituzione concordato
+    fragment: 5, bpc: 5, tb500: 10, tesa: 20, ipa: 2, igf: 2.5, // igf = per lato
+  };
+  const BKK_SLOTS_PER_DAY = { fragment: 2, bpc: 2, tesa: 1, ipa: 1, tb500: 1 }; // iniezioni/die (igf gestito a parte)
+
+  compounds.forEach(c => {
+    if (BKK_DOSE_MCG_PER_DAY[c.id] !== undefined) {
+      c.bkkMg = Math.round(BKK_DOSE_MCG_PER_DAY[c.id] * bkkTotalDays / 1000 * 100) / 100;
+      c.bkkSyringes = (BKK_SLOTS_PER_DAY[c.id] || 0) * bkkTotalDays;
+    } else if (c.id === 'igf') {
+      c.bkkMg = Math.round(50 * bkkTrainingDays / 1000 * 100) / 100; // 25+25mcg, solo gg WO
+      c.bkkSyringes = 2 * bkkTrainingDays; // bilaterale
+    }
+  });
+  const bkkSyringesSC = compounds.filter(c => ['tesa','fragment','ipa','bpc','tb500'].includes(c.id))
+    .reduce((s,c) => s + (c.bkkSyringes||0), 0);
+  const bkkSyringesIM = compounds.find(c => c.id==='igf')?.bkkSyringes || 0;
+  const bkkSyringesTotal = bkkSyringesSC + bkkSyringesIM;
+  const bkkSyringesMargin = Math.round(bkkSyringesTotal * 1.15);
+
   function stSty(s) {
     const M = { intatto:{dot:'#34c759',text:'Intatto',bg:'rgba(52,199,89,.10)',c:'#1d6e32'},
       in_uso:{dot:'#0071e3',text:'In uso',bg:'rgba(0,113,227,.10)',c:'#0058b8'},
@@ -6788,6 +6909,32 @@ function buildStockView2() {
           <span style="margin-left:auto;font-size:14px;font-weight:700;color:#34c759">210</span>
         </div>
       </div>
+    </div>
+
+    <div style="background:var(--surface,#fff);border-radius:12px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 4px rgba(0,0,0,.06);padding:14px 16px;margin-top:14px">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">🇹🇭 Fabbisogno viaggio Bangkok</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">7–21 agosto 2026 · ${bkkTotalDays} giorni fuori casa (partenza sera 7/8, rientro sera 21/8) · ${bkkTrainingDays} gg allenamento + ${bkkRestDays} gg riposo · settimane 3–5 del protocollo</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:12px">
+        ${['tesa','fragment','ipa','bpc','tb500','igf'].map(id => {
+          const c = compounds.find(x => x.id === id);
+          if (!c || c.bkkMg === undefined) return '';
+          return `<div style="background:${c.bg};border-left:3px solid ${c.color};border-radius:8px;padding:9px 12px">
+            <div style="font-size:11px;font-weight:600;color:var(--text)">${c.emoji} ${c.name}</div>
+            <div style="font-size:16px;font-weight:700;color:${c.color};margin:2px 0">${c.bkkMg}mg</div>
+            <div style="font-size:10px;color:var(--muted)">${c.bkkSyringes} siringhe${id==='igf'?' (bilat.)':''}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);background:var(--surface2,#f5f5f7);border-radius:8px;padding:10px 12px;margin-bottom:12px">
+        <span>Siringhe SC: <b style="color:var(--text)">${bkkSyringesSC}</b></span>
+        <span>Siringhe IM: <b style="color:var(--text)">${bkkSyringesIM}</b></span>
+        <span>Totale minimo: <b style="color:var(--text)">${bkkSyringesTotal}</b></span>
+        <span>Con margine 15%: <b style="color:#1a7a3a">${bkkSyringesMargin}</b></span>
+      </div>
+      <div style="background:rgba(175,82,222,.08);border:0.5px solid rgba(175,82,222,.3);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text)">
+        <b style="color:#af52de">⚡ IGF-1 DES — attenzione stabilità:</b> una volta ricostituito dura solo 7 giorni in frigo, meno della metà del viaggio (${bkkTotalDays}gg). Se lo ricostituisci prima di partire, andrà a male a metà soggiorno. Valuta di portare il vial in polvere e ricostituirlo in loco (serve BAC water + tecnica sterile disponibile in hotel), oppure pianificare due ricostituzioni separate.
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px">mg calcolati sulle dosi già stabilite dal protocollo (non nuovi dosaggi) · siringhe calcolate 1 per composto per slot, nessun mix nella stessa siringa · verifica di avere BAC water sufficiente per eventuali ricostituzioni in loco.</div>
     </div>
   </div>`;
 
