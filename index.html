@@ -1394,7 +1394,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="header">
   <div class="h-left">
     <h1>Diario Protocollo</h1>
-    <p class="h-subtitle">18 LUG – 6 NOV 2026 · 16 settimane · 112 giorni</p>
+    <p class="h-subtitle">20 LUG – 8 NOV 2026 · 16 settimane · 112 giorni</p>
   </div>
   <div class="h-right">
     <div class="sync-indicator">
@@ -1725,7 +1725,7 @@ function buildNav(){
 function buildCycleCard(container){
   const today=new Date(); today.setHours(0,0,0,0);
   const startWU=new Date(START); startWU.setHours(0,0,0,0);
-  const startV2=new Date('2026-07-18'); startV2.setHours(0,0,0,0); // CONFERMATA il 16/07/2026
+  const startV2=new Date('2026-07-20'); startV2.setHours(0,0,0,0); // CONFERMATA il 16/07/2026 (ciclo ufficiale conteggiato; test protocollo 18-19/7 a parte)
   const elapsed=Math.floor((today-startWU)/86400000);
   if(elapsed<0) return;
 
@@ -1742,7 +1742,7 @@ function buildCycleCard(container){
   // Countdown a inizio protocollo v2
   const daysToV2=Math.floor((startV2-today)/86400000);
   const countdownHtml=daysToV2>0
-    ? `<div class="cycle-next">⟶ Protocollo v2 tra <b>${daysToV2} giorni</b> · 18 lug 2026 (confermato)</div>`
+    ? `<div class="cycle-next">⟶ Protocollo v2 tra <b>${daysToV2} giorni</b> · 20 lug 2026 (confermato)</div>`
     : daysToV2===0
     ? `<div class="cycle-next" style="color:#34c759">⟶ Oggi inizia il Protocollo v2!</div>`
     : `<div class="cycle-next" style="color:#0071e3">⟶ Protocollo v2 in corso · giorno ${Math.abs(daysToV2)}</div>`;
@@ -1911,11 +1911,11 @@ function buildDays(){
   const today=new Date(); today.setHours(0,0,0,0);
   let curWk=-1;
 
-  // Il warm-up serve solo fino al giorno prima dell'inizio confermato del Protocollo v2:
-  // oltre quel punto Giorgio non inserira' piu' dati qui (passa al tab Protocollo v2),
-  // quindi non ha senso generare card vuote per i giorni rimanenti fino a TOTAL_DAYS.
+  // Il warm-up serve solo fino al giorno prima del Test Protocollo (18-19 lug, rodaggio
+  // pre-ciclo): oltre quel punto Giorgio non inserira' piu' dati qui (passa al tab
+  // Protocollo v2), quindi non ha senso generare card vuote per i giorni rimanenti.
   const s0wu = new Date(START); s0wu.setHours(0,0,0,0);
-  const s2wu = new Date(START2); s2wu.setHours(0,0,0,0);
+  const s2wu = new Date(TEST_PROTO_START); s2wu.setHours(0,0,0,0);
   const warmupDayCount = Math.max(0, Math.min(TOTAL_DAYS, Math.round((s2wu - s0wu) / 86400000)));
 
   for(let i=0;i<warmupDayCount;i++){
@@ -2311,8 +2311,8 @@ const WARMUP_HEADLINE_LIFTS = {
 
 function computeWarmupSummary(data) {
   const s0 = new Date(START); s0.setHours(0, 0, 0, 0);
-  const s2 = new Date(START2); s2.setHours(0, 0, 0, 0);
-  const lastDay = Math.round((s2 - s0) / 86400000) - 1; // ultimo giorno di warm-up (giorno prima di START2)
+  const s2 = new Date(TEST_PROTO_START); s2.setHours(0, 0, 0, 0);
+  const lastDay = Math.round((s2 - s0) / 86400000) - 1; // ultimo giorno di warm-up (giorno prima del Test Protocollo)
 
   const biom = { peso: [], hrv: [], rhr: [], ore_sonno: [] };
   const lifts = {};
@@ -2724,7 +2724,7 @@ async function saveData(){
   // Separa dati v1 (day_N) da dati v2 (p2_day_N)
   const dataV1={},dataV2={};
   Object.entries(all).forEach(([id,f])=>{
-    if(id.startsWith('p2_day_')) dataV2[id]=f; else dataV1[id]=f;
+    if(id.startsWith('p2_day_')||id.startsWith('test_proto_')) dataV2[id]=f; else dataV1[id]=f;
   });
   // Preserva chiavi top-level non editabili da form (history_sessions, muscle_volume_summary,
   // ready_to_progress, history_sentinels, dexa_t0/t1, lab_*) — collectAll() le ignora perché non
@@ -4013,11 +4013,11 @@ function buildMedView() {
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed #0071e3">🔬</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sab 5 set 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T1 mid-ciclo · Santagostino (codice 00K24KC2)</div><div class="med-tl-sub">Confronto vs T0 · Inizio settimana 8 da inizio v2 (18 lug confermato)</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sab 5 set 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T1 mid-ciclo · Santagostino (codice 00K24KC2)</div><div class="med-tl-sub">Confronto vs T0 · ~8 settimane dall'inizio reale delle iniezioni (18 lug, incl. Test Protocollo)</div></div>
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed #0071e3">🔬</div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sab 7 nov 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T2 fine ciclo + DEXA T1 · Santagostino</div><div class="med-tl-sub">Giorno successivo a fine ciclo (112gg, 18 lug confermato) · Stesso giorno della settimana, stesse condizioni T0</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sab 7 nov 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T2 fine ciclo + DEXA T1 · Santagostino</div><div class="med-tl-sub">Fine ciclo ufficiale (112gg dal 20 lug = 8 nov) — appuntamento sul sabato più vicino, stesse condizioni T0</div></div>
       </div>
     </div>
 
@@ -5737,7 +5737,7 @@ function importMotra(dayId) {
 
 
 // ── PROTO V2 ─────────────────────────────────────────────────────────────────
-const START2      = new Date('2026-07-18'); // CONFERMATA il 16/07/2026 (sabato)
+const START2      = new Date('2026-07-20'); // CONFERMATA il 16/07/2026 (lunedi' - inizio ciclo ufficiale conteggiato; 18-19/7 sono Test Protocollo a parte, vedi TEST_PROTO_START)
 const TOTAL_DAYS2 = 112;
 const KEY2        = 'diary_proto2_v1';
 const USER_ID2    = 'giorgio_proto2_2026';
@@ -5842,12 +5842,12 @@ function buildCycleCard2(container) {
     ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
       <circle cx="36" cy="36" r="30" fill="none" stroke="#e8e8ed" stroke-width="5"/>
     </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">—</span><span class="cycle-ring-sub">ciclo</span></div>`;
-    infoHtml = `<h3>Protocollo peptidico · Ciclo 1</h3><p>Inizio tra <b>${daysTo}</b> giorni · 18 lug 2026 (confermato)</p><div class="cycle-next">⟶ Composti arrivati, in attesa di inizio</div>`;
+    infoHtml = `<h3>Protocollo peptidico · Ciclo 1</h3><p>Inizio tra <b>${daysTo}</b> giorni · 20 lug 2026 (confermato)</p><div class="cycle-next">⟶ Composti arrivati, in attesa di inizio</div>`;
   } else if (elapsed >= TOTAL_DAYS2) {
     ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
       <circle cx="36" cy="36" r="30" fill="none" stroke="#34c759" stroke-width="5"/>
     </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">✓</span><span class="cycle-ring-sub">fine</span></div>`;
-    infoHtml = `<h3>Ciclo 1 completato</h3><p>112 giorni · 18 lug – 6 nov 2026</p>`;
+    infoHtml = `<h3>Ciclo 1 completato</h3><p>112 giorni · 20 lug – 8 nov 2026</p>`;
   } else {
     pct = Math.min(100, Math.round((elapsed/TOTAL_DAYS2)*100));
     wk  = Math.floor(elapsed/7)+1;
@@ -5917,7 +5917,7 @@ function buildProtoHeader2(container) {
   div.innerHTML = `
     <div style="background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;box-shadow:var(--shadow);border:none">
       <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Protocollo peptidico · Ciclo 1</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">18 lug – 6 nov 2026 · 16 settimane</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">20 lug – 8 nov 2026 · 16 settimane</div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
           <i class="ti ti-sunrise" style="font-size:17px;color:#0071e3;flex-shrink:0;margin-top:1px"></i>
@@ -6025,6 +6025,182 @@ function buildWeekSummary2(container, wkIdx) {
   return card;
 }
 
+// ── TEST PROTOCOLLO — sab 18 e dom 19 luglio 2026 ──────────────────────────
+// 2 giorni di "rodaggio" per abituarsi a iniezioni/routine PRIMA dell'inizio
+// ufficiale del ciclo conteggiato (lun 20/7 = day_0). Stessa struttura/6 peptidi
+// delle card v2 reali, ma con chiavi dati separate (test_proto_0/1) che NON
+// entrano nel conteggio dei 112 giorni, nelle statistiche di aderenza né nei
+// calcoli di fase/settimana. Confermato con Giorgio e il medico il 16/07/2026.
+const TEST_PROTO_START = new Date('2026-07-18'); // sabato, invariato rispetto a prima
+const TEST_PROTO_DAYS  = 2;
+
+function buildTestProtoCards(container) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-bottom:18px';
+  wrap.innerHTML = `<div class="section-label" style="margin-bottom:8px">🧪 Test Protocollo · rodaggio pre-ciclo (non conteggiato nei 112 giorni)</div>`;
+
+  for (let t = 0; t < TEST_PROTO_DAYS; t++) {
+    const dayOffsetFromStart2 = t - TEST_PROTO_DAYS; // -2, -1 relativo a START2 (lun 20/7)
+    const d = new Date(START2); d.setDate(d.getDate() + dayOffsetFromStart2); d.setHours(0,0,0,0);
+    const wo = getWorkout2(dayOffsetFromStart2); // stesso calcolo giorno-settimana delle card reali
+    const id = 'test_proto_' + t;
+    const dateStr = d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'short'});
+    const dotColor = getDotColor2(wo.type);
+
+    const slots = getInjectionSlots2(dayOffsetFromStart2);
+    const slotHTML = slots.map(s => {
+      const muscleField = s.igfMuscle !== undefined ? `
+        <div style="margin-top:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare (IM)</div>
+          <select data-id="${id}" data-f="inj_${s.n}_distretto">
+            ${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m=>`<option value="${m}" ${m===s.igfMuscle?'selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>` : '';
+      const slotClass = s.n === 1 ? 'inj-card-mattino' : s.n === 2 ? 'inj-card-pomeriggio' : s.igfMuscle !== undefined ? 'inj-card-postWO' : 'inj-card-sera';
+      const slotIconMap = {
+        1: '<i class="ti ti-sunrise" style="font-size:15px;color:#0071e3"></i>',
+        2: '<i class="ti ti-sun" style="font-size:15px;color:#ff9500"></i>',
+      };
+      const slotIcon = s.igfMuscle !== undefined
+        ? '<i class="ti ti-barbell" style="font-size:15px;color:#af52de"></i>'
+        : slotIconMap[s.n] || '<i class="ti ti-moon" style="font-size:15px;color:#34c759"></i>';
+      return `
+      <div class="inj-card ${slotClass}">
+        <div class="inj-num">${slotIcon}</div>
+        <div class="inj-body">
+          <div class="inj-title">${s.label}</div>
+          <div class="inj-timing">${s.momento}</div>
+          <div class="inj-fields" style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+            ${s.fields.map(f => {
+              const fkey = f.replace(/[\s\-]/g,'_');
+              const isIgf = f.includes('IGF');
+              const isBpcOrTb = f.includes('BPC') || f.includes('TB-500');
+              const scOpts = s.n === 1 || s.n === 2
+                ? (isBpcOrTb ? ['Addome dx','Addome sx','Ombelico dx','Ombelico sx','Gluteo dx','Gluteo sx'] : ['Addome dx','Addome sx','Ombelico dx','Ombelico sx'])
+                : (isBpcOrTb ? ['Addome dx','Addome sx','Coscia dx','Coscia sx','Gluteo dx','Gluteo sx'] : ['Addome dx','Addome sx','Coscia dx','Coscia sx']);
+              const siteSelect = !isIgf ? `<select data-id="${id}" data-f="inj_${s.n}_${fkey}_sito" style="flex-shrink:0;width:100px;margin-left:6px">
+                  <option value="">— sito</option>
+                  ${scOpts.map(o=>`<option value="${o}">${o}</option>`).join('')}
+                </select>` : '';
+              return `
+            <div style="display:flex;align-items:center;gap:8px;background:var(--surface,#fff);border-radius:8px;padding:6px 10px">
+              <span style="font-size:12px;font-weight:500;color:var(--text);flex:1">${f}</span>
+              <select data-id="${id}" data-f="inj_${s.n}_${fkey}" style="flex-shrink:0;width:100px">
+                <option value="">— stato</option>
+                <option value="fatto">✅ Fatto</option>
+                <option value="skip">⏭ Skip</option>
+              </select>
+              ${siteSelect}
+            </div>`;
+            }).join('')}
+          </div>
+          ${muscleField}
+        </div>
+      </div>`;
+    }).join('');
+
+    const card = document.createElement('div');
+    card.className = 'day-card';
+    card.id = 'card-' + id;
+    card.innerHTML = `
+      <div class="day-head" onclick="toggleDay('${id}')">
+        <span class="day-dot" style="background:${dotColor}"></span>
+        <div class="day-info">
+          <div class="day-name">${dateStr}</div>
+        </div>
+        <div class="day-quick">
+          <div class="dq"><div class="dq-v empty" id="q-${id}-peso">—</div><div class="dq-l">kg</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-hrv">—</div><div class="dq-l">HRV</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-ore_sonno">—</div><div class="dq-l">sonno</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-inj">—</div><div class="dq-l">inj</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-integr">—</div><div class="dq-l">integr%</div></div>
+        </div>
+        <span class="day-badge" style="background:rgba(175,82,222,.12);color:#af52de">TEST</span>
+        <span class="day-chev">▾</span>
+      </div>
+      <div class="day-body" id="body-${id}">
+
+        <div class="section-label">Biometria</div>
+        <div class="bio-grid">
+          <div class="bio-box"><input type="number" placeholder="70.0" data-id="${id}" data-f="peso" oninput="onInput(this,'${id}','peso')"><div class="bio-lbl">Peso kg</div></div>
+          <div class="bio-box"><input type="number" placeholder="48"   data-id="${id}" data-f="hrv"  oninput="onInput(this,'${id}','hrv')"><div class="bio-lbl">HRV ms</div></div>
+          <div class="bio-box"><input type="number" placeholder="55"   data-id="${id}" data-f="rhr"><div class="bio-lbl">RHR bpm</div></div>
+          <div class="bio-box"><input type="number" placeholder="120"  data-id="${id}" data-f="bp_sys"><div class="bio-lbl">Sistolica</div></div>
+          <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="bp_dia"><div class="bio-lbl">Diastolica</div></div>
+          <div class="bio-box"><input type="number" placeholder="6.5"  data-id="${id}" data-f="ore_sonno" oninput="onInput(this,'${id}','ore_sonno')"><div class="bio-lbl">Ore sonno</div></div>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Stack mattutino</div>
+        <div class="check-grid">
+          <div class="check-item"><input type="checkbox" id="ck2-d3-${id}"    data-id="${id}" data-f="ck_d3">   <label for="ck2-d3-${id}">D3 + K2</label></div>
+          <div class="check-item"><input type="checkbox" id="ck2-omega-${id}" data-id="${id}" data-f="ck_omega"><label for="ck2-omega-${id}">Omega-3</label></div>
+          <div class="check-item"><input type="checkbox" id="ck2-creat-${id}" data-id="${id}" data-f="ck_creat"><label for="ck2-creat-${id}">Creatina</label></div>
+          <div class="check-item"><input type="checkbox" id="ck2-zinc-${id}"  data-id="${id}" data-f="ck_zinc"> <label for="ck2-zinc-${id}">Zinco</label></div>
+          <div class="check-item"><input type="checkbox" id="ck2-b12-${id}"   data-id="${id}" data-f="ck_b12">  <label for="ck2-b12-${id}">B12 + Folato</label></div>
+          <div class="check-item"><input type="checkbox" id="ck2-norm-${id}"  data-id="${id}" data-f="ck_norm"> <label for="ck2-norm-${id}">Normocis</label></div>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Stack serale</div>
+        <div class="check-grid">
+          <div class="check-item"><input type="checkbox" id="ck2-mag-${id}" data-id="${id}" data-f="ck_mag"><label for="ck2-mag-${id}">Magnesio</label></div>
+          <div class="check-item"><input type="checkbox" id="ck2-gly-${id}" data-id="${id}" data-f="ck_gly"><label for="ck2-gly-${id}">Glicina</label></div>
+          <div class="check-item"><input type="checkbox" id="ck2-melatonina-${id}" data-id="${id}" data-f="ck_melatonina"><label for="ck2-melatonina-${id}">Melatonina</label></div>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Iniezioni v2</div>
+        <div class="inj-grid">${slotHTML}</div>
+
+        ${wo.type !== 'Riposo' ? `
+        <div class="section-label" style="margin-top:14px">Sentinel lifts</div>
+        ${buildSentinelSection(id, wo.type)}
+        <div class="section-label" style="margin-top:14px">Import Motra</div>
+        ${buildMotraSection(id)}
+        ` : ''}
+
+        <div class="section-label" style="margin-top:14px">Soggettivo</div>
+        <div class="subj-row">
+          <div class="subj-item">
+            <div class="subj-lbl">Energia /10</div>
+            <select class="subj-sel" data-id="${id}" data-f="energia">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+          <div class="subj-item">
+            <div class="subj-lbl">Recupero /10</div>
+            <select class="subj-sel" data-id="${id}" data-f="recupero">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+          <div class="subj-item">
+            <div class="subj-lbl">Umore /10</div>
+            <select class="subj-sel" data-id="${id}" data-f="umore">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+          <div class="subj-item">
+            <div class="subj-lbl">RPE</div>
+            <select class="subj-sel" data-id="${id}" data-f="rpe">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:18px">Note del giorno</div>
+        <textarea class="note-ta" data-id="${id}" data-f="note" placeholder="Sensazioni, variazioni, effetti peptidi, qualità sonno, osservazioni fisiche…" rows="3"></textarea>
+
+        <button class="proto2-save-btn" onclick="saveProto2Data()">Salva dati</button>
+      </div>`;
+
+    wrap.appendChild(card);
+  }
+
+  container.appendChild(wrap);
+}
+
 // ── MAIN BUILD ────────────────────────────────────────────────────────────
 let _proto2Built = false;
 
@@ -6056,6 +6232,9 @@ function buildProtoV2() {
 
   // 4. Riquadro protocollo Seregni
   buildProtoHeader2(container);
+
+  // 4b. Test Protocollo (sab 18 + dom 19, rodaggio pre-ciclo, non conteggiato)
+  buildTestProtoCards(container);
 
   // 5. Nav settimane
   const navStrip2 = document.createElement('div');
@@ -6297,10 +6476,16 @@ function applyProto2Data() {
     if (qPeso  && fields.peso)     { qPeso.textContent  = fields.peso;     qPeso.classList.remove('empty'); }
     if (qHrv   && fields.hrv)      { qHrv.textContent   = fields.hrv;      qHrv.classList.remove('empty'); }
     if (qSonno && fields.ore_sonno){ qSonno.textContent = fields.ore_sonno; qSonno.classList.remove('empty'); }
-    // Iniezioni fatte vs totale
+    // Iniezioni fatte vs totale (card v2 reali + Test Protocollo)
+    let dayIdxForSlots = null;
     if (id.startsWith('p2_day_')) {
-      const dayIdx = parseInt(id.replace('p2_day_',''));
-      if (!isNaN(dayIdx)) {
+      dayIdxForSlots = parseInt(id.replace('p2_day_',''));
+    } else if (id.startsWith('test_proto_')) {
+      const t = parseInt(id.replace('test_proto_',''));
+      if (!isNaN(t)) dayIdxForSlots = t - TEST_PROTO_DAYS; // -2, -1
+    }
+    if (dayIdxForSlots !== null && !isNaN(dayIdxForSlots)) {
+        const dayIdx = dayIdxForSlots;
         const slots2 = getInjectionSlots2(dayIdx);
         let doneInj2 = 0, totalInj2 = 0;
         slots2.forEach(s => {
@@ -6325,7 +6510,6 @@ function applyProto2Data() {
           qIntegr.classList.remove('empty');
           qIntegr.style.color = doneIntegr === integrKeys.length ? '#34c759' : '#ff9500';
         }
-      }
     }
   });
   colorInjSelects();
@@ -6609,7 +6793,7 @@ function buildStockView2() {
       .stock-vchip[open] summary{border-radius:8px 8px 0 0}
     </style>
     <div style="font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.02em;margin-bottom:4px">Stock peptidi · Ciclo 1</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">18 lug – 6 nov 2026 · 112 giorni</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">20 lug – 8 nov 2026 · 112 giorni</div>
 
     <div style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);padding:16px;margin-bottom:16px">
       <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">🧮 Unit Converter</div>
@@ -7624,7 +7808,7 @@ function buildProtocolloTimeline() {
   wnav += '</div>';
 
   el.innerHTML = `<div class="app-view-inner view-wrap">
-    <div class="week-hdr" style="margin-bottom:1.5rem"><h2>Timeline protocollo v2</h2><span class="week-range">Effetti attesi · 16 settimane · 6 molecole · dal 18 lug 2026 (confermato)</span></div>
+    <div class="week-hdr" style="margin-bottom:1.5rem"><h2>Timeline protocollo v2</h2><span class="week-range">Effetti attesi · 16 settimane · 6 molecole · dal 20 lug 2026 (confermato)</span></div>
     ${mfilter}${pbar}${legend}${wnav}
     <div id="tl-body"></div>
   </div>`;
@@ -8410,7 +8594,7 @@ function buildOrariView() {
   let html = `<div class="view-wrap">
   <div style="margin-bottom:24px">
     <div class="t-page-title">Schema giornaliero</div>
-    <div class="t-page-sub">Protocollo v2 · 18 lug – 6 nov 2026</div>
+    <div class="t-page-sub">Protocollo v2 · 20 lug – 8 nov 2026</div>
   </div>`;
 
   // Day type selector tabs
