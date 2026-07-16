@@ -2466,26 +2466,80 @@ function computeMissingForDay(entry, dayIdx) {
   return missing;
 }
 
+function computeMissingForV2Day(entry, dayIdxForSlots) {
+  // Analogo a computeMissingForDay ma per le card v2/Test Protocollo: stessi
+  // controlli su biometria e integratori, ma iniezioni (slot v2) invece di
+  // durata allenamento. 'skip' nell'iniezione conta come gestito (non manca).
+  const missing = [];
+  entry = entry || {};
+  Object.entries(MISSING_CORE_FIELDS).forEach(([f, label]) => {
+    const v = entry[f];
+    if (v === undefined || v === null || v === '' || v === '0' || v === 0) missing.push(label);
+  });
+  Object.entries(MISSING_SUPPLEMENT_FIELDS).forEach(([f, label]) => {
+    if (entry[f + '_skip']) return; // saltato apposta, non conta come dimenticato
+    const v = entry[f];
+    if (!v || v === '0' || v === 'false') missing.push(`Integratore non spuntato: ${label}`);
+  });
+  const slots = getInjectionSlots2(dayIdxForSlots);
+  let missingInj = 0, totalInj = 0;
+  slots.forEach(s => {
+    s.fields.forEach(f => {
+      totalInj++;
+      const key = 'inj_' + s.n + '_' + f.replace(/[\s\-]/g,'_');
+      const v = entry[key];
+      if (v !== 'fatto' && v !== 'skip') missingInj++;
+    });
+  });
+  if (missingInj > 0) missing.push(`Iniezioni non registrate: ${missingInj}/${totalInj}`);
+  return missing;
+}
+
 function checkMissingYesterday(data) {
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   yesterday.setHours(0, 0, 0, 0);
-  const s = new Date(START); s.setHours(0, 0, 0, 0);
-  const dayIdx = Math.round((yesterday - s) / 86400000);
-  if (dayIdx < 0 || dayIdx > 111) return; // fuori dal range v1
 
-  const entry = data['day_' + dayIdx];
-  const missing = computeMissingForDay(entry, dayIdx);
-  if (!missing.length) return;
+  const testStart = new Date(TEST_PROTO_START); testStart.setHours(0, 0, 0, 0);
+  const testEnd = new Date(testStart); testEnd.setDate(testEnd.getDate() + TEST_PROTO_DAYS - 1);
+  const s2 = new Date(START2); s2.setHours(0, 0, 0, 0);
+  const s0 = new Date(START); s0.setHours(0, 0, 0, 0);
 
-  const dayLabel = yesterday.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
-  const dismissKey = 'missing_dismissed_day_' + dayIdx;
+  let entry, missing, dismissKey, view, cardId;
+
+  if (yesterday >= testStart && yesterday <= testEnd) {
+    // Test Protocollo (sab 18 / dom 19 lug) — usa dati v2 (_lastData2)
+    const t = Math.round((yesterday - testStart) / 86400000);
+    entry = (_lastData2 || {})['test_proto_' + t];
+    missing = computeMissingForV2Day(entry, t - TEST_PROTO_DAYS);
+    dismissKey = 'missing_dismissed_test_' + t;
+    view = 'proto2'; cardId = 'card-test_proto_' + t;
+  } else if (yesterday >= s2) {
+    // Ciclo v2 ufficiale (dal 20 lug)
+    const dayIdx = Math.round((yesterday - s2) / 86400000);
+    if (dayIdx > 111) return; // oltre la fine del ciclo, nessun controllo
+    entry = (_lastData2 || {})['p2_day_' + dayIdx];
+    missing = computeMissingForV2Day(entry, dayIdx);
+    dismissKey = 'missing_dismissed_p2_' + dayIdx;
+    view = 'proto2'; cardId = 'card-p2_day_' + dayIdx;
+  } else {
+    // Warm-up (v1, prima del Test Protocollo)
+    const dayIdx = Math.round((yesterday - s0) / 86400000);
+    if (dayIdx < 0 || dayIdx > 111) return;
+    entry = data['day_' + dayIdx];
+    missing = computeMissingForDay(entry, dayIdx);
+    dismissKey = 'missing_dismissed_day_' + dayIdx;
+    view = 'diary'; cardId = 'card-day_' + dayIdx;
+  }
+
+  if (!missing || !missing.length) return;
   if (localStorage.getItem(dismissKey) === '1') return;
 
-  showMissingDataPopup(dayLabel, dayIdx, missing, dismissKey);
+  const dayLabel = yesterday.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
+  showMissingDataPopup(dayLabel, view, cardId, missing, dismissKey);
 }
 
-function showMissingDataPopup(dayLabel, dayIdx, missing, dismissKey) {
+function showMissingDataPopup(dayLabel, view, cardId, missing, dismissKey) {
   const overlay = document.getElementById('missing-data-overlay');
   const card = document.getElementById('missing-data-card');
   if (!overlay || !card) return;
@@ -2515,8 +2569,8 @@ function showMissingDataPopup(dayLabel, dayIdx, missing, dismissKey) {
   document.getElementById('missing-goto-btn').onclick = () => {
     localStorage.setItem(dismissKey, '1');
     overlay.style.display = 'none';
-    if (typeof switchView === 'function') switchView('diary');
-    const dayCard = document.getElementById('card-day_' + dayIdx);
+    if (typeof switchView === 'function') switchView(view);
+    const dayCard = document.getElementById(cardId);
     if (dayCard) { dayCard.classList.add('open'); dayCard.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
   };
 }
@@ -2794,6 +2848,9 @@ async function loadFromCloud(){
         if(!ts||ts2>ts) ts=ts2;
       }
     }
+    // Ri-controlla dati mancanti ora che sia _lastData che _lastData2 sono popolati
+    // (checkMissingYesterday puo' aver girato prima con _lastData2 ancora vuoto)
+    if (typeof checkMissingYesterday === 'function' && _lastData) checkMissingYesterday(_lastData);
     if(ts){
       document.getElementById('last-saved').textContent='Caricato · '+new Date(ts).toLocaleString('it-IT');
       setSyncStatus('ok');
@@ -6132,18 +6189,48 @@ function buildTestProtoCards(container) {
 
         <div class="section-label" style="margin-top:14px">Stack mattutino</div>
         <div class="check-grid">
-          <div class="check-item"><input type="checkbox" id="ck2-d3-${id}"    data-id="${id}" data-f="ck_d3">   <label for="ck2-d3-${id}">D3 + K2</label></div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-d3-${id}" data-id="${id}" data-f="ck_d3" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-d3-${id}">D3 + K2</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_d3_skip">
+          </div>
           <div class="check-item"><input type="checkbox" id="ck2-omega-${id}" data-id="${id}" data-f="ck_omega"><label for="ck2-omega-${id}">Omega-3</label></div>
           <div class="check-item"><input type="checkbox" id="ck2-creat-${id}" data-id="${id}" data-f="ck_creat"><label for="ck2-creat-${id}">Creatina</label></div>
-          <div class="check-item"><input type="checkbox" id="ck2-zinc-${id}"  data-id="${id}" data-f="ck_zinc"> <label for="ck2-zinc-${id}">Zinco</label></div>
-          <div class="check-item"><input type="checkbox" id="ck2-b12-${id}"   data-id="${id}" data-f="ck_b12">  <label for="ck2-b12-${id}">B12 + Folato</label></div>
-          <div class="check-item"><input type="checkbox" id="ck2-norm-${id}"  data-id="${id}" data-f="ck_norm"> <label for="ck2-norm-${id}">Normocis</label></div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-zinc-${id}" data-id="${id}" data-f="ck_zinc" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-zinc-${id}">Zinco</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_zinc_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-b12-${id}" data-id="${id}" data-f="ck_b12" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-b12-${id}">B12 + Folato</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_b12_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-norm-${id}" data-id="${id}" data-f="ck_norm" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-norm-${id}">Normocis</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_norm_skip">
+          </div>
         </div>
 
         <div class="section-label" style="margin-top:14px">Stack serale</div>
         <div class="check-grid">
-          <div class="check-item"><input type="checkbox" id="ck2-mag-${id}" data-id="${id}" data-f="ck_mag"><label for="ck2-mag-${id}">Magnesio</label></div>
-          <div class="check-item"><input type="checkbox" id="ck2-gly-${id}" data-id="${id}" data-f="ck_gly"><label for="ck2-gly-${id}">Glicina</label></div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-mag-${id}" data-id="${id}" data-f="ck_mag" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-mag-${id}">Magnesio</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_mag_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-gly-${id}" data-id="${id}" data-f="ck_gly" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-gly-${id}">Glicina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_gly_skip">
+          </div>
           <div class="check-item"><input type="checkbox" id="ck2-melatonina-${id}" data-id="${id}" data-f="ck_melatonina"><label for="ck2-melatonina-${id}">Melatonina</label></div>
         </div>
 
@@ -6364,18 +6451,48 @@ function buildProtoV2() {
 
         <div class="section-label" style="margin-top:14px">Stack mattutino</div>
         <div class="check-grid">
-          <div class="check-item"><input type="checkbox" id="ck2-d3-${id}"    data-id="${id}" data-f="ck_d3">   <label for="ck2-d3-${id}">D3 + K2</label></div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-d3-${id}" data-id="${id}" data-f="ck_d3" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-d3-${id}">D3 + K2</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_d3_skip">
+          </div>
           <div class="check-item"><input type="checkbox" id="ck2-omega-${id}" data-id="${id}" data-f="ck_omega"><label for="ck2-omega-${id}">Omega-3</label></div>
           <div class="check-item"><input type="checkbox" id="ck2-creat-${id}" data-id="${id}" data-f="ck_creat"><label for="ck2-creat-${id}">Creatina</label></div>
-          <div class="check-item"><input type="checkbox" id="ck2-zinc-${id}"  data-id="${id}" data-f="ck_zinc"> <label for="ck2-zinc-${id}">Zinco</label></div>
-          <div class="check-item"><input type="checkbox" id="ck2-b12-${id}"   data-id="${id}" data-f="ck_b12">  <label for="ck2-b12-${id}">B12 + Folato</label></div>
-          <div class="check-item"><input type="checkbox" id="ck2-norm-${id}"  data-id="${id}" data-f="ck_norm"> <label for="ck2-norm-${id}">Normocis</label></div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-zinc-${id}" data-id="${id}" data-f="ck_zinc" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-zinc-${id}">Zinco</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_zinc_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-b12-${id}" data-id="${id}" data-f="ck_b12" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-b12-${id}">B12 + Folato</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_b12_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-norm-${id}" data-id="${id}" data-f="ck_norm" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-norm-${id}">Normocis</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_norm_skip">
+          </div>
         </div>
 
         <div class="section-label" style="margin-top:14px">Stack serale</div>
         <div class="check-grid">
-          <div class="check-item"><input type="checkbox" id="ck2-mag-${id}" data-id="${id}" data-f="ck_mag"><label for="ck2-mag-${id}">Magnesio</label></div>
-          <div class="check-item"><input type="checkbox" id="ck2-gly-${id}" data-id="${id}" data-f="ck_gly"><label for="ck2-gly-${id}">Glicina</label></div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-mag-${id}" data-id="${id}" data-f="ck_mag" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-mag-${id}">Magnesio</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_mag_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-gly-${id}" data-id="${id}" data-f="ck_gly" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-gly-${id}">Glicina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come saltato apposta (non conta come dimenticato)">saltato?</span>
+            <input type="hidden" data-id="${id}" data-f="ck_gly_skip">
+          </div>
           <div class="check-item"><input type="checkbox" id="ck2-melatonina-${id}" data-id="${id}" data-f="ck_melatonina"><label for="ck2-melatonina-${id}">Melatonina</label></div>
         </div>
 
@@ -6513,6 +6630,7 @@ function applyProto2Data() {
     }
   });
   colorInjSelects();
+  refreshSupplementSkipVisuals();
 }
 
 
