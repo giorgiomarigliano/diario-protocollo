@@ -6537,12 +6537,11 @@ function buildStockView2() {
   const BKK_END   = new Date('2026-08-21'); BKK_END.setHours(0,0,0,0);
   const bkkTotalDays = Math.round((BKK_END - BKK_START)/86400000) + 1;
   const s0v2 = new Date(START2); s0v2.setHours(0,0,0,0);
-  let bkkTrainingDays = 0;
-  for (let d = new Date(BKK_START); d <= BKK_END; d.setDate(d.getDate()+1)) {
-    const wd = d.getDay(); // 0=domenica...6=sabato
-    if ([2,3,5,6,0].includes(wd)) bkkTrainingDays++; // mar/mer/ven/sab/dom
-  }
-  const bkkRestDays = bkkTotalDays - bkkTrainingDays;
+  // A Bangkok l'allenamento e' previsto TUTTI i giorni (incluso leg day), non sullo
+  // split standard mar/mer/ven/sab/dom + riposo lun/gio — questo aumenta il fabbisogno
+  // di IGF-1 DES (dosato solo post-workout) rispetto allo split casa.
+  const bkkTrainingDays = bkkTotalDays;
+  const bkkRestDays = 0;
 
   const BKK_DOSE_MCG_PER_DAY = {
     tesa: 2000, fragment: 500, ipa: 100, bpc: 500, tb500: 500, // ogni giorno
@@ -6913,7 +6912,8 @@ function buildStockView2() {
 
     <div style="background:var(--surface,#fff);border-radius:12px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 4px rgba(0,0,0,.06);padding:14px 16px;margin-top:14px">
       <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">🇹🇭 Fabbisogno viaggio Bangkok</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">7–21 agosto 2026 · ${bkkTotalDays} giorni fuori casa (partenza sera 7/8, rientro sera 21/8) · ${bkkTrainingDays} gg allenamento + ${bkkRestDays} gg riposo · settimane 3–5 del protocollo</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">7–21 agosto 2026 · ${bkkTotalDays} giorni fuori casa (partenza sera 7/8, rientro sera 21/8) · ${bkkTrainingDays} gg allenamento (nessun riposo previsto in loco) · settimane 3–5 del protocollo</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;font-style:italic">Assunzione: allenamento tutti i giorni a Bangkok (incluso leg day), non lo split standard casa mar/mer/ven/sab/dom+riposo — da confermare/aggiornare se cambia il piano.</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:12px">
         ${['tesa','fragment','ipa','bpc','tb500','igf'].map(id => {
           const c = compounds.find(x => x.id === id);
