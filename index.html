@@ -1394,7 +1394,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="header">
   <div class="h-left">
     <h1>Diario Protocollo</h1>
-    <p class="h-subtitle">20 LUG – 8 NOV 2026 (stimato) · 16 settimane · 112 giorni</p>
+    <p class="h-subtitle">18 LUG – 6 NOV 2026 · 16 settimane · 112 giorni</p>
   </div>
   <div class="h-right">
     <div class="sync-indicator">
@@ -1430,7 +1430,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
       <div class="pre-proto-toggle" id="pre-proto-toggle" onclick="togglePreProto()">
         <div class="pre-proto-toggle-left">
           <span class="pre-proto-badge">PRE-PROTOCOLLO</span>
-          <span class="pre-proto-title">8 giu – 19 lug 2026 (stimato)</span>
+          <span class="pre-proto-title">8 giu – 17 lug 2026</span>
           <span class="pre-proto-sub">Biometria baseline · allenamenti · parametri vitali</span>
         </div>
         <span class="pre-proto-chev" id="pre-proto-chev">›</span>
@@ -1724,7 +1724,7 @@ function buildNav(){
 function buildCycleCard(container){
   const today=new Date(); today.setHours(0,0,0,0);
   const startWU=new Date(START); startWU.setHours(0,0,0,0);
-  const startV2=new Date('2026-07-20'); startV2.setHours(0,0,0,0); // STIMA PROVVISORIA — data reale dipende da arrivo composti, da confermare
+  const startV2=new Date('2026-07-18'); startV2.setHours(0,0,0,0); // CONFERMATA il 16/07/2026
   const elapsed=Math.floor((today-startWU)/86400000);
   if(elapsed<0) return;
 
@@ -1741,7 +1741,7 @@ function buildCycleCard(container){
   // Countdown a inizio protocollo v2
   const daysToV2=Math.floor((startV2-today)/86400000);
   const countdownHtml=daysToV2>0
-    ? `<div class="cycle-next">⟶ Protocollo v2 tra <b>${daysToV2} giorni</b> · 20 lug 2026 (stimato, da confermare)</div>`
+    ? `<div class="cycle-next">⟶ Protocollo v2 tra <b>${daysToV2} giorni</b> · 18 lug 2026 (confermato)</div>`
     : daysToV2===0
     ? `<div class="cycle-next" style="color:#34c759">⟶ Oggi inizia il Protocollo v2!</div>`
     : `<div class="cycle-next" style="color:#0071e3">⟶ Protocollo v2 in corso · giorno ${Math.abs(daysToV2)}</div>`;
@@ -3922,11 +3922,11 @@ function buildMedView() {
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed #0071e3">🔬</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sett. 8 da inizio v2 — PIANIFICATO</div><div class="med-tl-title">Panel T1 mid-ciclo · Santagostino (codice 00K24KC2)</div><div class="med-tl-sub">Confronto vs T0 · Se start 15/07 → ~30 ago; se start 20/07 → ~4 set</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sab 5 set 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T1 mid-ciclo · Santagostino (codice 00K24KC2)</div><div class="med-tl-sub">Confronto vs T0 · Inizio settimana 8 da inizio v2 (18 lug confermato)</div></div>
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed #0071e3">🔬</div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Fine ott / inizio nov 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T2 fine ciclo + DEXA T1 · Santagostino</div><div class="med-tl-sub">Se start 15/07 → 3 nov; se start 20/07 → 8 nov · Stesso giorno, stesse condizioni T0</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sab 7 nov 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T2 fine ciclo + DEXA T1 · Santagostino</div><div class="med-tl-sub">Giorno successivo a fine ciclo (112gg, 18 lug confermato) · Stesso giorno della settimana, stesse condizioni T0</div></div>
       </div>
     </div>
 
@@ -5646,16 +5646,16 @@ function importMotra(dayId) {
 
 
 // ── PROTO V2 ─────────────────────────────────────────────────────────────────
-const START2      = new Date('2026-07-20'); // STIMA PROVVISORIA — data reale dipende da arrivo composti
+const START2      = new Date('2026-07-18'); // CONFERMATA il 16/07/2026 (sabato)
 const TOTAL_DAYS2 = 112;
 const KEY2        = 'diary_proto2_v1';
 const USER_ID2    = 'giorgio_proto2_2026';
 let   _lastData2  = {};
 
 // Date di viaggio Bangkok FISSE (voli confermati) — la settimana di protocollo in cui
-// cadono dipende invece da START2, che è ancora una stima provvisoria. Questa funzione
-// ricalcola sempre la settimana corretta relativa a START2 corrente, cosi' le etichette
-// "sett. N" mostrate nell'app non restano mai disallineate quando START2 verra' confermato.
+// cadono dipende da START2. Questa funzione ricalcola sempre la settimana corretta
+// relativa a START2 corrente, cosi' le etichette "sett. N" mostrate nell'app restano
+// sempre coerenti anche se START2 dovesse mai essere corretta in futuro.
 function getBKKWeekInfo() {
   const s = new Date(START2); s.setHours(0,0,0,0);
   const bkkS = new Date('2026-08-07'); bkkS.setHours(0,0,0,0);
@@ -5751,12 +5751,12 @@ function buildCycleCard2(container) {
     ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
       <circle cx="36" cy="36" r="30" fill="none" stroke="#e8e8ed" stroke-width="5"/>
     </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">—</span><span class="cycle-ring-sub">ciclo</span></div>`;
-    infoHtml = `<h3>Protocollo peptidico · Ciclo 1</h3><p>Inizio tra <b>${daysTo}</b> giorni · 20 lug 2026 (stimato, da confermare)</p><div class="cycle-next">⟶ In attesa arrivo composti</div>`;
+    infoHtml = `<h3>Protocollo peptidico · Ciclo 1</h3><p>Inizio tra <b>${daysTo}</b> giorni · 18 lug 2026 (confermato)</p><div class="cycle-next">⟶ Composti arrivati, in attesa di inizio</div>`;
   } else if (elapsed >= TOTAL_DAYS2) {
     ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
       <circle cx="36" cy="36" r="30" fill="none" stroke="#34c759" stroke-width="5"/>
     </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">✓</span><span class="cycle-ring-sub">fine</span></div>`;
-    infoHtml = `<h3>Ciclo 1 completato</h3><p>112 giorni · 20 lug – 8 nov 2026 (stimato)</p>`;
+    infoHtml = `<h3>Ciclo 1 completato</h3><p>112 giorni · 18 lug – 6 nov 2026</p>`;
   } else {
     pct = Math.min(100, Math.round((elapsed/TOTAL_DAYS2)*100));
     wk  = Math.floor(elapsed/7)+1;
@@ -5826,7 +5826,7 @@ function buildProtoHeader2(container) {
   div.innerHTML = `
     <div style="background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;box-shadow:var(--shadow);border:none">
       <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Protocollo peptidico · Ciclo 1</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">20 lug – 8 nov 2026 (stimato) · 16 settimane</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">18 lug – 6 nov 2026 · 16 settimane</div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
           <i class="ti ti-sunrise" style="font-size:17px;color:#0071e3;flex-shrink:0;margin-top:1px"></i>
@@ -6482,7 +6482,7 @@ function buildStockView2() {
       .stock-vchip[open] summary{border-radius:8px 8px 0 0}
     </style>
     <div style="font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.02em;margin-bottom:4px">Stock peptidi · Ciclo 1</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">20 lug – 8 nov 2026 (stimato) · 112 giorni</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">18 lug – 6 nov 2026 · 112 giorni</div>
 
     <div style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);padding:16px;margin-bottom:16px">
       <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">🧮 Unit Converter</div>
@@ -7377,7 +7377,7 @@ function buildProtocolloTimeline() {
   ];
 
   // Bangkok (7-21 ago, date fisse) ricade in settimane di protocollo diverse a seconda
-  // di START2 (ancora stima provvisoria). Calcolo qui l'overlap corretto invece di
+  // di START2 (confermata il 16/07/2026). Calcolo qui l'overlap corretto invece di
   // affidarmi a un numero di settimana scritto a mano nei blocchi sopra.
   const bkkInfo = getBKKWeekInfo();
   WW.forEach(w => {
@@ -7470,7 +7470,7 @@ function buildProtocolloTimeline() {
   wnav += '</div>';
 
   el.innerHTML = `<div class="app-view-inner view-wrap">
-    <div class="week-hdr" style="margin-bottom:1.5rem"><h2>Timeline protocollo v2</h2><span class="week-range">Effetti attesi · 16 settimane · 6 molecole · dal 20 lug 2026 (stimato — in attesa arrivo composti)</span></div>
+    <div class="week-hdr" style="margin-bottom:1.5rem"><h2>Timeline protocollo v2</h2><span class="week-range">Effetti attesi · 16 settimane · 6 molecole · dal 18 lug 2026 (confermato)</span></div>
     ${mfilter}${pbar}${legend}${wnav}
     <div id="tl-body"></div>
   </div>`;
@@ -8256,7 +8256,7 @@ function buildOrariView() {
   let html = `<div class="view-wrap">
   <div style="margin-bottom:24px">
     <div class="t-page-title">Schema giornaliero</div>
-    <div class="t-page-sub">Protocollo v2 · 20 lug – 8 nov 2026 (stimato)</div>
+    <div class="t-page-sub">Protocollo v2 · 18 lug – 6 nov 2026</div>
   </div>`;
 
   // Day type selector tabs
