@@ -6856,12 +6856,14 @@ async function reconLoadFromCloud() {
     const rows = await r.json();
     if (rows && rows[0] && rows[0].data) {
       const recon = rows[0].data.peptide_reconstitution;
-      if (recon && Array.isArray(recon)) {
+      if (recon && Array.isArray(recon) && recon.length > 0) {
         if (!_lastData) _lastData = {};
         _lastData.peptide_reconstitution = recon;
+        console.log('✅ peptide_reconstitution caricato:', recon.length, 'peptidi');
         return true;
       }
     }
+    console.warn('⚠️ peptide_reconstitution non trovato o vuoto');
   } catch(e) { console.error('Errore caricamento peptide_reconstitution', e); }
   return false;
 }
@@ -6961,18 +6963,16 @@ function stockPersist(vd) {
   _stockSaveTimer = setTimeout(() => stockPushToCloud(vd), 600);
 }
 
-function buildStockView2() {
+async function buildStockView2() {
   const el = document.getElementById('stock2-view');
   if (!el) return;
-  // Sincronizza i dati di ricostituzione prima di renderizzare
-  if (!_lastData || !_lastData.peptide_reconstitution) {
-    reconLoadFromCloud().then(() => {
-      // Rende il contenuto della tabella dopo il caricamento
-      const tbody = document.getElementById('recon-table-body');
-      if (tbody) renderReconTable(tbody);
-    });
-  }
   if (el.dataset.built) return;
+  
+  // Sincronizza i dati di ricostituzione PRIMA di renderizzare
+  if (!_lastData || !_lastData.peptide_reconstitution || _lastData.peptide_reconstitution.length === 0) {
+    await reconLoadFromCloud();
+  }
+  
   el.dataset.built = '1';
 
   const vd = stockGetVd();
@@ -9069,26 +9069,10 @@ function buildOrariView() {
 
   el.innerHTML = html;
 
-  // Popola la tabella di ricostituzione (con fetch diretto se necessario)
+  // Popola la tabella di ricostituzione
   const reconTableBody = document.getElementById('recon-table-body');
   if (reconTableBody) {
-    let reconData = reconGetData();
-    
-    // Se la tabella è vuota, fai un fetch diretto
-    if (!reconData || reconData.length === 0) {
-      fetch(SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID + '&select=data', {
-        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
-      }).then(r => r.json()).then(rows => {
-        if (rows && rows[0] && rows[0].data && rows[0].data.peptide_reconstitution) {
-          reconData = rows[0].data.peptide_reconstitution;
-          if (!_lastData) _lastData = {};
-          _lastData.peptide_reconstitution = reconData;
-          renderReconTable(reconTableBody, reconData, compounds);
-        }
-      }).catch(e => console.error('Fetch ricostituzione fallito', e));
-      return; // Esci dalla funzione sincrona, il rendering asincrono farà il resto
-    }
-    
+    const reconData = reconGetData();
     const peptideMap = {};
     compounds.filter(c => !c.offProtocol).forEach(c => peptideMap[c.id] = c);
     
