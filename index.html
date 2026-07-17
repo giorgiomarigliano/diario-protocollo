@@ -6834,6 +6834,73 @@ function ucUpdate() {
   }
 }
 
+
+// ── Gestione Ricostituzione Peptidi ──────────────────────────────────────
+// Leggi la tabella di ricostituzione da _lastData.peptide_reconstitution
+function reconGetData() {
+  if (!_lastData || !_lastData.peptide_reconstitution) return [];
+  return _lastData.peptide_reconstitution || [];
+}
+
+// Salva i dati di ricostituzione su Supabase
+async function reconPushToCloud(data) {
+  try {
+    const url = SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID;
+    const r = await fetch(url + '&select=data', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    const rows = await r.json();
+    const current = (rows[0] && rows[0].data) || {};
+    current.peptide_reconstitution = data;
+    await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Prefer':'return=minimal' },
+      body: JSON.stringify({ data: current, updated_at: new Date().toISOString() })
+    });
+    if (_lastData) _lastData.peptide_reconstitution = data;
+  } catch(e) { console.error('Ricostituzione: sincronizzazione cloud fallita', e); }
+}
+
+// Modifica un valore di ricostituzione e salva
+function reconUpdate(peptideId, field, newValue) {
+  const data = reconGetData();
+  const item = data.find(x => x.id === peptideId);
+  if (!item) return;
+  item[field] = parseFloat(newValue) || 0;
+  reconPushToCloud(data);
+  buildStockView2(); // Rirenderizza con i nuovi dati
+}
+
+// Calcola i numeri chiave per un peptide ricostituito
+function calcReconsData(peptide) {
+  const recon = reconGetData();
+  const item = recon.find(x => x.id === peptide.id);
+  if (!item) return { conc: 0, drawUnits: {} };
+  
+  const mg = item.vial_mg;
+  const bac = item.bac_ml;
+  
+  const concMcgMl = bac > 0 ? (mg * 1000) / bac : 0; // mcg/ml
+  const drawUnits = {};
+  
+  // Calcola le unità per ogni dosaggio che questo peptide ha negli slot
+  if (peptide.id === 'fragment') { // 250mcg × 2
+    drawUnits['250mcg'] = concMcgMl > 0 ? (250 / concMcgMl * 100).toFixed(1) : '—';
+  } else if (peptide.id === 'bpc') { // 250mcg × 2
+    drawUnits['250mcg'] = concMcgMl > 0 ? (250 / concMcgMl * 100).toFixed(1) : '—';
+  } else if (peptide.id === 'tb500') { // 500mcg
+    drawUnits['500mcg'] = concMcgMl > 0 ? (500 / concMcgMl * 100).toFixed(1) : '—';
+  } else if (peptide.id === 'tesa') { // 2000mcg
+    drawUnits['2000mcg'] = concMcgMl > 0 ? (2000 / concMcgMl * 100).toFixed(1) : '—';
+  } else if (peptide.id === 'ipa') { // 100mcg
+    drawUnits['100mcg'] = concMcgMl > 0 ? (100 / concMcgMl * 100).toFixed(1) : '—';
+  } else if (peptide.id === 'igf') { // 25mcg/lato
+    drawUnits['25mcg'] = concMcgMl > 0 ? (25 / concMcgMl * 100).toFixed(1) : '—';
+  }
+  
+  return { conc: concMcgMl.toFixed(1), drawUnits, vial_mg: mg, bac_ml: bac };
+}
+
 // ── Stock v2: storage multi-browser ──────────────────────────────────────
 // I dati per-vial (grammatura/BAC/ricostituzione/note/stato) vivono sia in
 // localStorage (cache locale, funziona offline) sia su Supabase (sorgente
@@ -7090,6 +7157,29 @@ function buildStockView2() {
       </div>
       <div id="uc-bilat" style="display:none;font-size:11px;color:var(--blue);font-weight:600;text-align:center;margin-top:8px"></div>
       <div style="font-size:9px;color:var(--muted);margin-top:10px;text-align:center">Solo conversione di unità · non sostituisce indicazione medica</div>
+    </div>
+
+    <div style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);padding:16px;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">🧪 Tabella Ricostituzione</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Vial mg · BAC mL · Concentrazione mcg/mL · Unità (UI) da tirare</div>
+      
+      <div style="overflow-x:auto">
+        <table style="width:100%;font-size:11px;border-collapse:collapse;color:var(--text)">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border,#e8e8ed);text-align:left">
+              <th style="padding:8px 0;font-weight:600;color:var(--muted)">Peptide</th>
+              <th style="padding:8px 0;font-weight:600;color:var(--muted);text-align:center">Vial (mg)</th>
+              <th style="padding:8px 0;font-weight:600;color:var(--muted);text-align:center">BAC (mL)</th>
+              <th style="padding:8px 0;font-weight:600;color:var(--muted);text-align:center">Conc</th>
+              <th style="padding:8px 0;font-weight:600;color:var(--muted);text-align:center">UI da tirare</th>
+              <th style="padding:8px 0;font-weight:600;color:var(--muted);text-align:center">Data</th>
+            </tr>
+          </thead>
+          <tbody id="recon-table-body">
+          </tbody>
+        </table>
+      </div>
+      <div style="font-size:9px;color:var(--muted);margin-top:10px;text-align:center">Modifica vial e BAC · salva automaticamente su Supabase</div>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
@@ -8946,6 +9036,34 @@ function buildOrariView() {
   html += `</div></div>`;
 
   el.innerHTML = html;
+
+  // Popola la tabella di ricostituzione
+  const reconTableBody = document.getElementById('recon-table-body');
+  if (reconTableBody) {
+    const reconData = reconGetData();
+    const peptideMap = {};
+    compounds.filter(c => !c.offProtocol).forEach(c => peptideMap[c.id] = c);
+    
+    reconTableBody.innerHTML = reconData.map(item => {
+      const pep = peptideMap[item.id];
+      if (!pep) return '';
+      
+      const calc = calcReconsData(pep);
+      const doseKey = Object.keys(calc.drawUnits)[0];
+      const uiVal = calc.drawUnits[doseKey] || '—';
+      const dateStr = item.date_reconstituted || '—';
+      
+      return `<tr style="border-bottom:1px solid var(--border,#e8e8ed)">
+        <td style="padding:8px 0;font-weight:500">${pep.emoji} ${pep.name}</td>
+        <td style="padding:8px 0;text-align:center"><input type="number" value="${item.vial_mg}" step="0.1" min="0" onchange="reconUpdate('${item.id}','vial_mg',this.value)" style="width:50px;padding:4px 6px;border:1px solid var(--border,#e8e8ed);border-radius:4px;font-size:10px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;text-align:center;font-family:inherit"></td>
+        <td style="padding:8px 0;text-align:center"><input type="number" value="${item.bac_ml}" step="0.1" min="0" onchange="reconUpdate('${item.id}','bac_ml',this.value)" style="width:50px;padding:4px 6px;border:1px solid var(--border,#e8e8ed);border-radius:4px;font-size:10px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;text-align:center;font-family:inherit"></td>
+        <td style="padding:8px 0;text-align:center;font-weight:600;color:${pep.color}">${calc.conc} mcg/mL</td>
+        <td style="padding:8px 0;text-align:center;font-weight:700;color:var(--blue)">${uiVal} UI</td>
+        <td style="padding:8px 0;text-align:center;font-size:10px;color:var(--muted)">${dateStr}</td>
+      </tr>`;
+    }).join('');
+  }
+
 
   // Selector function
   window.orariShowDay = function(id) {
