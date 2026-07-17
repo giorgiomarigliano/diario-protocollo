@@ -1713,7 +1713,14 @@ function getNextEvent(elapsed){
 
 function buildNav(){
   const nav=document.getElementById('nav-strip');
-  for(let w=0;w<16;w++){
+  // Il warm-up copre solo dall'8 giu al giorno prima del Test Protocollo (17 lug):
+  // genera solo le settimane realmente presenti, non 16 fisse (le altre appartengono
+  // al Protocollo v2, che ha il suo tab e la sua nav dedicata).
+  const s0 = new Date(START); s0.setHours(0,0,0,0);
+  const sEnd = new Date(TEST_PROTO_START); sEnd.setHours(0,0,0,0);
+  const warmupDays = Math.max(0, Math.round((sEnd - s0) / 86400000));
+  const warmupWeeks = Math.max(1, Math.ceil(warmupDays / 7));
+  for(let w=0;w<warmupWeeks;w++){
     const tab=document.createElement('div');
     tab.className='nav-tab'; tab.id='nav-w'+(w+1);
     tab.textContent='WK '+(w+1);
@@ -2320,21 +2327,52 @@ function computeWarmupSummary(data) {
   const lastDay = Math.round((s2 - s0) / 86400000) - 1; // ultimo giorno di warm-up (giorno prima del Test Protocollo)
 
   const biom = { peso: [], hrv: [], rhr: [], ore_sonno: [] };
+  const subj = { energia: [], recupero: [], umore: [] };
   const lifts = {};
+  const suppFields = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm','ck_mag','ck_gly','ck_melatonina'];
+  let suppTaken = 0, suppSkipped = 0, suppPossible = 0;
+  let woCount = 0, woVolumeTot = 0, woDurataSum = 0, woDurataN = 0, daysWithData = 0;
+
+  // Rileva TUTTI i sentinel lift presenti (campi sl_*_kg), non solo i principali
+  const allLiftKeys = new Set();
 
   for (let i = 0; i <= lastDay; i++) {
     const entry = data['day_' + i];
     if (!entry) continue;
+    daysWithData++;
+
     ['peso', 'hrv', 'rhr', 'ore_sonno'].forEach(f => {
       const v = parseFloat(String(entry[f]).replace(',', '.'));
       if (!isNaN(v)) biom[f].push({ day: i, val: v });
     });
-    Object.keys(WARMUP_HEADLINE_LIFTS).forEach(k => {
-      const v = parseFloat(entry[k]);
-      if (!isNaN(v)) { if (!lifts[k]) lifts[k] = []; lifts[k].push({ day: i, val: v }); }
+    ['energia','recupero','umore'].forEach(f => {
+      const v = parseFloat(entry[f]);
+      if (!isNaN(v)) subj[f].push(v);
+    });
+
+    suppFields.forEach(s => {
+      suppPossible++;
+      if (entry[s + '_skip']) { suppSkipped++; suppPossible--; } // saltato apposta non conta nel denominatore
+      else if (entry[s] === '1') suppTaken++;
+    });
+
+    if (entry.wo_volume) { const v = parseFloat(entry.wo_volume); if (!isNaN(v)) { woVolumeTot += v; woCount++; } }
+    if (entry.wo_durata) { const v = parseFloat(entry.wo_durata); if (!isNaN(v)) { woDurataSum += v; woDurataN++; } }
+
+    Object.keys(entry).forEach(k => {
+      if (k.startsWith('sl_') && k.endsWith('_kg') && entry[k] !== '' && entry[k] != null) {
+        const v = parseFloat(entry[k]);
+        if (!isNaN(v)) { allLiftKeys.add(k); if (!lifts[k]) lifts[k] = []; lifts[k].push({ day: i, val: v }); }
+      }
     });
   }
 
+  function stats(arr) {
+    if (!arr.length) return null;
+    const vals = arr.map(x => x.val !== undefined ? x.val : x);
+    const sum = vals.reduce((a, b) => a + b, 0);
+    return { min: Math.min(...vals), max: Math.max(...vals), avg: sum / vals.length, n: vals.length };
+  }
   function avgFirstLast(arr, n = 5) {
     if (arr.length < 2) return null;
     const nn = Math.max(1, Math.min(n, Math.floor(arr.length / 2)));
@@ -2343,48 +2381,110 @@ function computeWarmupSummary(data) {
     return { first, last, delta: last - first };
   }
 
-  const biomSummary = {};
-  Object.entries(biom).forEach(([f, arr]) => { biomSummary[f] = avgFirstLast(arr); });
+  const biomSummary = {}, biomStats = {};
+  Object.entries(biom).forEach(([f, arr]) => { biomSummary[f] = avgFirstLast(arr); biomStats[f] = stats(arr); });
+
+  const subjStats = {};
+  Object.entries(subj).forEach(([f, arr]) => { subjStats[f] = arr.length ? { avg: arr.reduce((a,b)=>a+b,0)/arr.length, n: arr.length } : null; });
 
   const liftSummary = {};
   Object.entries(lifts).forEach(([k, arr]) => {
-    if (arr.length >= 2) liftSummary[k] = { first: arr[0].val, last: arr[arr.length - 1].val, delta: arr[arr.length - 1].val - arr[0].val };
+    if (arr.length >= 2) liftSummary[k] = { first: arr[0].val, last: arr[arr.length - 1].val, delta: arr[arr.length - 1].val - arr[0].val, sessions: arr.length };
+    else if (arr.length === 1) liftSummary[k] = { first: arr[0].val, last: arr[0].val, delta: 0, sessions: 1 };
   });
 
-  return { lastDay, daysLogged: biom.peso.length, biomSummary, liftSummary };
+  return {
+    lastDay, daysLogged: biom.peso.length, biomSummary, biomStats, subjStats,
+    liftSummary,
+    adherence: {
+      suppPct: suppPossible > 0 ? Math.round(suppTaken / suppPossible * 100) : null,
+      suppTaken, suppPossible, suppSkipped,
+      woCount, woVolumeTot: Math.round(woVolumeTot),
+      woDurataAvg: woDurataN > 0 ? Math.round(woDurataSum / woDurataN) : null,
+    },
+  };
 }
+
+const LIFT_LABELS = {
+  sl_bench_kg:'Panca piana', sl_incbench_kg:'Panca inclinata', sl_dbpress_kg:'Distensioni manubri',
+  sl_pecfly_kg:'Pectoral fly', sl_legpress_kg:'Leg Press', sl_legext_kg:'Leg Extension',
+  sl_legcurl_kg:'Leg Curl', sl_rdl_kg:'RDL', sl_hipthrust_kg:'Hip Thrust', sl_calf_kg:'Calf',
+  sl_lat_kg:'Lat Machine', sl_bbrow_kg:'Rematore bilanciere', sl_tbar_kg:'T-Bar Row',
+  sl_bbohp_kg:'Military Press', sl_dblateral_kg:'Alzate laterali', sl_dbcurl_kg:'Curl manubri',
+  sl_hammercurl_kg:'Hammer Curl', sl_tridown_kg:'Pushdown tricipiti', sl_triover_kg:'French Press',
+};
 
 function renderWarmupAssessment(data) {
   const el = document.getElementById('warmup-assessment-card');
   if (!el) return;
   const s = computeWarmupSummary(data);
-  if (s.daysLogged < 5) { el.innerHTML = ''; return; } // dati insufficienti per una valutazione sensata
+  if (s.daysLogged < 5) { el.innerHTML = ''; return; }
 
-  const bs = s.biomSummary;
+  const bs = s.biomSummary, bst = s.biomStats, ad = s.adherence, ss = s.subjStats;
   const fmt = (v, d = 1) => (v === null || v === undefined || isNaN(v)) ? '—' : v.toFixed(d);
-  const biomRow = (label, obj, unit, dec = 1) => obj
-    ? `<div>${label}: ${fmt(obj.first, dec)} → <b>${fmt(obj.last, dec)}${unit}</b> <span style="color:${obj.delta > 0 ? '#1a7a3a' : obj.delta < 0 ? '#cc2200' : '#888'}">(${obj.delta > 0 ? '+' : ''}${obj.delta.toFixed(dec)})</span></div>`
-    : `<div>${label}: dati insufficienti</div>`;
+  const col = d => d > 0 ? '#1a7a3a' : d < 0 ? '#cc2200' : '#888';
 
-  const liftRows = Object.entries(s.liftSummary)
-    .map(([k, v]) => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid var(--border,#eee)">
-        <span>${WARMUP_HEADLINE_LIFTS[k]}</span>
-        <span>${v.first}kg → <b>${v.last}kg</b> <span style="color:${v.delta > 0 ? '#1a7a3a' : v.delta < 0 ? '#cc2200' : '#888'}">(${v.delta > 0 ? '+' : ''}${v.delta}kg)</span></span>
-      </div>`)
-    .join('');
+  // Blocco 1 — Biometria estesa: primo→ultimo + min/max/media
+  const biomRow = (label, obj, st, unit, dec = 1) => {
+    if (!obj || !st) return `<div style="padding:6px 0;border-bottom:1px solid var(--border,#eee);font-size:12.5px">${label}: dati insufficienti</div>`;
+    return `<div style="padding:6px 0;border-bottom:1px solid var(--border,#eee)">
+      <div style="display:flex;justify-content:space-between;font-size:13px">
+        <span style="font-weight:600">${label}</span>
+        <span>${fmt(obj.first,dec)} → <b>${fmt(obj.last,dec)}${unit}</b> <span style="color:${col(obj.delta)}">(${obj.delta>0?'+':''}${obj.delta.toFixed(dec)})</span></span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">min ${fmt(st.min,dec)} · max ${fmt(st.max,dec)} · media ${fmt(st.avg,dec)}${unit} · ${st.n} rilevazioni</div>
+    </div>`;
+  };
+
+  // Blocco 4 — Sentinel lift completi, ordinati per delta decrescente
+  const liftEntries = Object.entries(s.liftSummary)
+    .sort((a, b) => b[1].delta - a[1].delta);
+  const liftRows = liftEntries.map(([k, v]) => `
+    <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border,#eee)">
+      <span>${LIFT_LABELS[k] || k.replace('sl_','').replace('_kg','')}</span>
+      <span>${v.first}kg → <b>${v.last}kg</b> <span style="color:${col(v.delta)}">(${v.delta>0?'+':''}${v.delta}kg)</span></span>
+    </div>`).join('');
 
   el.innerHTML = `
     <div class="charts-card" style="margin-bottom:14px;border-left:3px solid #0071e3">
-      <div style="font-weight:700;margin-bottom:10px">📋 Valutazione di fine warm-up · ${s.daysLogged}/${s.lastDay + 1} giorni loggati</div>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px 16px;font-size:13px;margin-bottom:14px">
-        ${biomRow('Peso', bs.peso, 'kg')}
-        ${biomRow('HRV', bs.hrv, 'ms', 0)}
-        ${biomRow('RHR', bs.rhr, 'bpm', 0)}
-        ${biomRow('Sonno', bs.ore_sonno, 'h')}
+      <div style="font-weight:700;margin-bottom:4px;font-size:15px">📋 Valutazione di fine warm-up</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Periodo 8 giu – 17 lug 2026 · ${s.daysLogged}/${s.lastDay + 1} giorni loggati · dati pre-protocollo</div>
+
+      <div style="font-size:11px;font-weight:600;color:#0071e3;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px">1 · Biometria</div>
+      <div style="margin-bottom:16px">
+        ${biomRow('Peso', bs.peso, bst.peso, 'kg')}
+        ${biomRow('HRV', bs.hrv, bst.hrv, 'ms', 0)}
+        ${biomRow('RHR', bs.rhr, bst.rhr, 'bpm', 0)}
+        ${biomRow('Sonno', bs.ore_sonno, bst.ore_sonno, 'h')}
       </div>
-      <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Sentinel lift — primo vs ultimo dato registrato</div>
+
+      <div style="font-size:11px;font-weight:600;color:#0071e3;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">2 · Aderenza & allenamento</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px">
+        <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px">
+          <div style="font-size:20px;font-weight:700;color:${ad.suppPct>=80?'#1a7a3a':ad.suppPct>=60?'#b8860b':'#cc2200'}">${ad.suppPct!=null?ad.suppPct+'%':'—'}</div>
+          <div style="font-size:11px;color:var(--muted)">Aderenza integratori<br>${ad.suppTaken}/${ad.suppPossible} dosi${ad.suppSkipped?` · ${ad.suppSkipped} skip`:''}</div>
+        </div>
+        <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px">
+          <div style="font-size:20px;font-weight:700;color:var(--text)">${ad.woCount}</div>
+          <div style="font-size:11px;color:var(--muted)">Allenamenti registrati${ad.woDurataAvg?`<br>~${ad.woDurataAvg} min medi`:''}</div>
+        </div>
+        <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px;grid-column:span 2">
+          <div style="font-size:16px;font-weight:700;color:var(--text)">${ad.woVolumeTot.toLocaleString('it-IT')} kg</div>
+          <div style="font-size:11px;color:var(--muted)">Volume totale sollevato nel periodo${ad.woCount?` · media ${Math.round(ad.woVolumeTot/ad.woCount).toLocaleString('it-IT')} kg/sessione`:''}</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:600;color:#0071e3;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">3 · Benessere soggettivo (media /10)</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;margin-bottom:16px;background:var(--surface2,#f5f5f7);border-radius:8px;padding:10px 12px">
+        <span>⚡ Energia <b>${ss.energia?fmt(ss.energia.avg):'—'}</b></span>
+        <span>🔋 Recupero <b>${ss.recupero?fmt(ss.recupero.avg):'—'}</b></span>
+        <span>😊 Umore <b>${ss.umore?fmt(ss.umore.avg):'—'}</b></span>
+      </div>
+
+      <div style="font-size:11px;font-weight:600;color:#0071e3;letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">4 · Sentinel lift — primo vs ultimo (${liftEntries.length} esercizi)</div>
       ${liftRows || '<div style="font-size:12px;color:var(--muted)">Dati insufficienti</div>'}
-      <div style="font-size:11px;color:var(--muted);margin-top:10px">Confronto tra i primi e gli ultimi valori effettivamente loggati nel periodo di warm-up (8 giu – 17 lug) — non un giudizio clinico, solo l'andamento dei dati raccolti.</div>
+
+      <div style="font-size:11px;color:var(--muted);margin-top:12px">Tutti i valori sono confronti tra i primi e gli ultimi dati effettivamente loggati nel warm-up (8 giu – 17 lug). Non è un giudizio clinico: è l'andamento descrittivo dei dati raccolti, utile come baseline prima dell'inizio del protocollo.</div>
     </div>`;
 }
 
