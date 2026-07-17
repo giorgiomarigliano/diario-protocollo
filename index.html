@@ -1948,8 +1948,7 @@ function buildDays(){
 
     const card=document.createElement('div');
     // Aprire card T0 (day_35 = 13 lug) di default, chiudere le precedenti
-    const isT0Day = i === 35; // day_35 = T0 Santagostino
-    const shouldBeOpen = isToday || isT0Day;
+    const shouldBeOpen = isToday;
     card.className='day-card'+(shouldBeOpen?' today open':'');
     card.id='card-'+id;
 
