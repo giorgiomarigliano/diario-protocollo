@@ -2304,7 +2304,7 @@ function applyAll(data){
   // Se il tab Stock era gia' stato aperto/costruito con dati locali, ricostruiscilo
   // ora che sono arrivati (eventuali) dati piu' recenti sincronizzati da un altro browser.
   const stockEl = document.getElementById('stock2-view');
-  if (stockEl && stockEl.dataset.built) { delete stockEl.dataset.built; stockEl.innerHTML=''; buildStockView2(); }
+  if (stockEl && stockEl.dataset.built) { delete stockEl.dataset.built; stockEl.innerHTML=''; reconLoadFromCloud2().then(() => buildStockView2();); /* carica dati prima di renderizzare */ }
   setTimeout(refreshWeekSummary, 0);
   setTimeout(() => { if (typeof refreshCharts === 'function') refreshCharts(); }, 50);
   renderBackupStatus(data.backup_status);
@@ -5905,29 +5905,6 @@ const KEY2        = 'diary_proto2_v1';
 const USER_ID2    = 'giorgio_proto2_2026';
 let   _lastData2  = {};
 
-// ─── CARICA RICOSTITUZIONE V2 DAL CLOUD O CACHE ──────────────────────────────
-// Carica una volta al startup, poi usa cache locale
-(function initRecon2() {
-  // Prova a caricare da localStorage prima
-  const cached = localStorage.getItem('_recon2_cache');
-  if (cached) {
-    try {
-      const data = JSON.parse(cached);
-      if (data && data.length > 0) {
-        _lastData2.peptide_reconstitution = data;
-        console.log('✅ Dati ricostituzione caricati da cache locale');
-      }
-    } catch(e) {}
-  }
-  
-  // In background, aggiorna da Supabase
-  reconLoadFromCloud2().then(success => {
-    if (success && _lastData2.peptide_reconstitution) {
-      localStorage.setItem('_recon2_cache', JSON.stringify(_lastData2.peptide_reconstitution));
-      console.log('✅ Cache ricostituzione aggiornato da Supabase');
-    }
-  }).catch(e => console.error('Errore aggiornamento cache:', e));
-})();
 
 
 </script>
