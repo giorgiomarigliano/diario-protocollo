@@ -5905,14 +5905,38 @@ const KEY2        = 'diary_proto2_v1';
 const USER_ID2    = 'giorgio_proto2_2026';
 let   _lastData2  = {};
 
-// ─── PRECARICA I DATI DI RICOSTITUZIONE V2 AL STARTUP ───────────────────────
-// Questo carica i dati PRIMA che buildStockView2 venga richiamato
+// ─── PRECARICA I DATI DI RICOSTITUZIONE V2 ──────────────────────────────────
+let _recon2Ready = false;
+const _recon2Callbacks = [];
+
+function onRecon2Ready(callback) {
+  if (_recon2Ready) {
+    callback();
+  } else {
+    _recon2Callbacks.push(callback);
+  }
+}
+
+function _triggerRecon2Ready() {
+  _recon2Ready = true;
+  while (_recon2Callbacks.length > 0) {
+    const cb = _recon2Callbacks.shift();
+    try { cb(); } catch(e) { console.error(e); }
+  }
+}
+
+// Precarica al startup (in background, non blocca)
 (async function preloadReconData() {
   try {
-    await reconLoadFromCloud2();
-    console.log('✅ Dati ricostituzione precaricati al startup');
+    const success = await reconLoadFromCloud2();
+    if (success || (_lastData2 && _lastData2.peptide_reconstitution)) {
+      _triggerRecon2Ready();
+      console.log('✅ Dati ricostituzione pronti');
+    }
   } catch(e) {
-    console.error('⚠️ Errore precaricamento ricostituzione:', e);
+    console.error('⚠️ Errore precaricamento:', e);
+    // Comunque, prova a renderizzare - potrebbe avere cache
+    setTimeout(_triggerRecon2Ready, 500);
   }
 })();
 
@@ -7093,19 +7117,19 @@ function buildStockView2() {
   if (!el) return;
   if (el.dataset.built) return;
   
-  // Precarica i dati di ricostituzione se non sono già stati caricati
-  if (!_lastData2 || !_lastData2.peptide_reconstitution || _lastData2.peptide_reconstitution.length === 0) {
-    reconLoadFromCloud2();
+  // Aspetta che i dati di ricostituzione v2 siano pronti prima di continuare
+  if (!_recon2Ready) {
+    console.log('⏳ Aspetto dati ricostituzione v2...');
+    onRecon2Ready(() => {
+      if (!el.dataset.built) {
+        el.dataset.built = '';  // Resetta per permettere il rebuild
+        buildStockView2();
+      }
+    });
+    return;
   }
   
   el.dataset.built = '1';
-  
-  // Se i dati di ricostituzione non sono ancora caricati, rinvia il rendering
-  if (!_lastData2 || !_lastData2.peptide_reconstitution || _lastData2.peptide_reconstitution.length === 0) {
-    console.log('⏳ Dati di ricostituzione non pronti, rinnvio renderizzazione...');
-    setTimeout(buildStockView2, 100);  // Riprova tra 100ms
-    return;
-  }
 
   const vd = stockGetVd();
   // Migrazione one-time: se il browser ha dati locali da prima di questo aggiornamento
