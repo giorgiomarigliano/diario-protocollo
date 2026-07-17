@@ -6777,7 +6777,7 @@ const UC_PEPTIDES = [
   { id:'tesa',     name:'Tesamorelin',       dose_mcg:2000, defaultMg:10, defaultBac:2.0, bilat:false },
   { id:'fragment', name:'Fragment 176-191',  dose_mcg:250,  defaultMg:10, defaultBac:2.0, bilat:false },
   { id:'ipa',      name:'Ipamorelin',        dose_mcg:100,  defaultMg:10, defaultBac:2.0, bilat:false },
-  { id:'igf',      name:'IGF-1 DES',         dose_mcg:50,   defaultMg:1,  defaultBac:1.0, bilat:true  },
+  { id:'igf',      name:'IGF-1 DES',         dose_mcg:50,   defaultMg:2,  defaultBac:3.0, bilat:true  },
   { id:'bpc',      name:'BPC-157',           dose_mcg:250,  defaultMg:10, defaultBac:2.0, bilat:false },
   { id:'tb500',    name:'TB-500',            dose_mcg:500,  defaultMg:10, defaultBac:2.0, bilat:false },
   { id:'custom',   name:'Personalizzato',    dose_mcg:250,  defaultMg:10, defaultBac:2.0, bilat:false },
@@ -6994,7 +6994,7 @@ function buildStockView2() {
     { id:'igf',     name:'IGF-1 DES',         emoji:'💪', color:'#af52de', bg:'rgba(175,82,222,.08)',
       dose:'50mcg post-WO · IM bilat',dose_mcg:50,   mgNeeded:4,   fab_detail:'80gg WO × 50mcg/die',
       stabilityDays:30, stabilityNote:'30–40+ gg frigo (indicato dal medico, dato il dosaggio · verificare aspetto prima di ogni uso)',
-      mgOptions:[2,5], bacOptions:[0.5,1.0], defaultMg:2, defaultBac:1.0,
+      mgOptions:[2,5], bacOptions:[0.5,1.0,2.0,3.0], defaultMg:2, defaultBac:3.0,
       suppliers:[
         { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(4,'intatto') },
       ] },
