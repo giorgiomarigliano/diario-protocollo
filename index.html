@@ -5905,6 +5905,18 @@ const KEY2        = 'diary_proto2_v1';
 const USER_ID2    = 'giorgio_proto2_2026';
 let   _lastData2  = {};
 
+// ─── PRECARICA I DATI DI RICOSTITUZIONE V2 AL STARTUP ───────────────────────
+// Questo carica i dati PRIMA che buildStockView2 venga richiamato
+(async function preloadReconData() {
+  try {
+    await reconLoadFromCloud2();
+    console.log('✅ Dati ricostituzione precaricati al startup');
+  } catch(e) {
+    console.error('⚠️ Errore precaricamento ricostituzione:', e);
+  }
+})();
+
+
 // Date di viaggio Bangkok FISSE (voli confermati) — la settimana di protocollo in cui
 // cadono dipende da START2. Questa funzione ricalcola sempre la settimana corretta
 // relativa a START2 corrente, cosi' le etichette "sett. N" mostrate nell'app restano
@@ -7087,6 +7099,13 @@ function buildStockView2() {
   }
   
   el.dataset.built = '1';
+  
+  // Se i dati di ricostituzione non sono ancora caricati, rinvia il rendering
+  if (!_lastData2 || !_lastData2.peptide_reconstitution || _lastData2.peptide_reconstitution.length === 0) {
+    console.log('⏳ Dati di ricostituzione non pronti, rinnvio renderizzazione...');
+    setTimeout(buildStockView2, 100);  // Riprova tra 100ms
+    return;
+  }
 
   const vd = stockGetVd();
   // Migrazione one-time: se il browser ha dati locali da prima di questo aggiornamento
