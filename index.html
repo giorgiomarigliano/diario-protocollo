@@ -5905,31 +5905,1969 @@ const KEY2        = 'diary_proto2_v1';
 const USER_ID2    = 'giorgio_proto2_2026';
 let   _lastData2  = {};
 
-// ─── CARICA RICOSTITUZIONE V2 DAL CLOUD O CACHE ──────────────────────────────
-// Carica una volta al startup, poi usa cache locale
-(function initRecon2() {
-  // Prova a caricare da localStorage prima
-  const cached = localStorage.getItem('_recon2_cache');
-  if (cached) {
-    try {
-      const data = JSON.parse(cached);
-      if (data && data.length > 0) {
-        _lastData2.peptide_reconstitution = data;
-        console.log('✅ Dati ricostituzione caricati da cache locale');
-      }
-    } catch(e) {}
+// Date di viaggio Bangkok FISSE (voli confermati) — la settimana di protocollo in cui
+// cadono dipende da START2. Questa funzione ricalcola sempre la settimana corretta
+// relativa a START2 corrente, cosi' le etichette "sett. N" mostrate nell'app restano
+// sempre coerenti anche se START2 dovesse mai essere corretta in futuro.
+function getBKKWeekInfo() {
+  const s = new Date(START2); s.setHours(0,0,0,0);
+  const bkkS = new Date('2026-08-07'); bkkS.setHours(0,0,0,0);
+  const bkkE = new Date('2026-08-21'); bkkE.setHours(0,0,0,0);
+  const dayStart = Math.round((bkkS - s) / 86400000);
+  const dayEnd   = Math.round((bkkE - s) / 86400000);
+  const wkStart  = Math.floor(dayStart/7)+1;
+  const wkEnd    = Math.floor(dayEnd/7)+1;
+  return { dayStart, dayEnd, wkStart, wkEnd,
+    label: wkStart === wkEnd ? `sett. ${wkStart}` : `sett. ${wkStart}–${wkEnd}` };
+}
+
+function getPhase2(dayIdx) {
+  const wk = Math.floor(dayIdx/7)+1;
+  const peptidi = 'Fragment · Tesa · Ipa · BPC-157 · TB-500 · IGF-1 DES';
+  const bkk = getBKKWeekInfo();
+  const bkkNote = (wk >= bkk.wkStart && wk <= bkk.wkEnd) ? `Bangkok ${bkk.label} (7–21 ago)` : undefined;
+  if (wk<=4)  return {label:'Fase 1',  peptidi, badge:'p1',  note:bkkNote};
+  if (wk<=8)  return {label:'Fase 2',  peptidi, badge:'p2',  note:bkkNote};
+  if (wk<=12) return {label:'Fase 3',  peptidi, badge:'p3',  note:bkkNote};
+  return             {label:'Fase 4',  peptidi, badge:'p4b', note:bkkNote};
+}
+
+function getNextEvent2(elapsed) {
+  const wk = Math.floor(elapsed/7)+1;
+  if (wk<5)  { return `+ GHK-Cu tra ${(4-wk)*7} giorni (sett. 5)`; }
+  if (wk<7)  { return `+ MOTS-C + IGF-1 DES tra ${(6-wk)*7} giorni (sett. 7)`; }
+  if (wk<13) { return `+ BPC-157 + TB-500 tra ${(12-wk)*7} giorni (sett. 13)`; }
+  return 'Fine ciclo · DEXA T1 + panel sangue';
+}
+
+function getWorkout2(dayIdx) {
+  const d = new Date(START2); d.setDate(d.getDate()+dayIdx);
+  const dow = d.getDay(); // 0=dom
+  const map = {0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
+  const badges = {Riposo:'badge-rest',Push:'badge-push',Pull:'badge-pull',Legs:'badge-legs','Upper Sab':'badge-upper','Upper Dom':'badge-upper-dom'};
+  const type = map[dow]||'Riposo';
+  return {type, badge:badges[type]||'badge-rest', label:type.toUpperCase()};
+}
+
+function getDotColor2(type) {
+  const m = {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3',Riposo:'#c7c7cc'};
+  return m[type]||'#c7c7cc';
+}
+
+function getWeekRange2(wkIdx) {
+  const s = new Date(START2); s.setDate(s.getDate()+wkIdx*7);
+  const e = new Date(START2); e.setDate(e.getDate()+wkIdx*7+6);
+  const sDay = s.getDate();
+  const eDay = e.getDate();
+  const sMon = s.toLocaleDateString('it-IT',{month:'short'});
+  const eMon = e.toLocaleDateString('it-IT',{month:'short'});
+  if (sMon === eMon) return sDay + '–' + eDay + ' ' + sMon;
+  return sDay + ' ' + sMon + ' – ' + eDay + ' ' + eMon;
+}
+
+function getInjectionSlots2(dayIdx) {
+  const wo = getWorkout2(dayIdx);
+  const isTraining = wo.type !== 'Riposo';
+  const slots = [
+    { n:1, label:'Mattino', momento:'Mattino · digiuno',
+      fields:['Fragment 176-191 250mcg','BPC-157 250mcg'] },
+    { n:2, label:'Pomeriggio', momento:'Pomeriggio',
+      fields:['Fragment 176-191 250mcg'] },
+    { n:3, label:'Sera', momento:'Sera · 90–120min post-cena',
+      fields:['Tesamorelin 2mg','Ipamorelin 100mcg','BPC-157 250mcg','TB-500 500mcg'] },
+  ];
+  if (isTraining) {
+    // Rotazione distretto muscolare IGF-1 DES sui 5 giorni di WO della settimana
+    const wkDay = dayIdx % 7; // 0=lun,1=mar,2=mer,3=gio,4=ven,5=sab,6=dom
+    // Mapping giorno→muscolo: mar=Petto, mer=Bicipiti, ven=Quadricipiti, sab=Tricipiti, dom=Deltoidi
+    const muscleMap = { 1:'Petto', 2:'Bicipiti', 4:'Quadricipiti', 5:'Tricipiti', 6:'Deltoidi' };
+    const defaultMuscle = muscleMap[wkDay] || '';
+    slots.splice(2, 0, { n:3, label:'Post-WO', momento:'Post-workout · IM bilaterale',
+      fields:['IGF-1 DES 25mcg dx','IGF-1 DES 25mcg sx'], igfMuscle: defaultMuscle });
+    slots[3].n = 4;
   }
-  
-  // In background, aggiorna da Supabase
-  reconLoadFromCloud2().then(success => {
-    if (success && _lastData2.peptide_reconstitution) {
-      localStorage.setItem('_recon2_cache', JSON.stringify(_lastData2.peptide_reconstitution));
-      console.log('✅ Cache ricostituzione aggiornato da Supabase');
+  return slots;
+}
+
+// ── CYCLE CARD v2 ─────────────────────────────────────────────────────────
+function buildCycleCard2(container) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START2); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today-start)/86400000);
+  const C = 2*Math.PI*30;
+
+  let pct, wk, ph, nextEv, ringHtml, infoHtml;
+
+  if (elapsed < 0) {
+    const daysTo = Math.abs(elapsed);
+    pct = 0;
+    ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
+      <circle cx="36" cy="36" r="30" fill="none" stroke="#e8e8ed" stroke-width="5"/>
+    </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">—</span><span class="cycle-ring-sub">ciclo</span></div>`;
+    infoHtml = `<h3>Protocollo peptidico · Ciclo 1</h3><p>Inizio tra <b>${daysTo}</b> giorni · 20 lug 2026 (confermato)</p><div class="cycle-next">⟶ Composti arrivati, in attesa di inizio</div>`;
+  } else if (elapsed >= TOTAL_DAYS2) {
+    ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
+      <circle cx="36" cy="36" r="30" fill="none" stroke="#34c759" stroke-width="5"/>
+    </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">✓</span><span class="cycle-ring-sub">fine</span></div>`;
+    infoHtml = `<h3>Ciclo 1 completato</h3><p>112 giorni · 20 lug – 8 nov 2026</p>`;
+  } else {
+    pct = Math.min(100, Math.round((elapsed/TOTAL_DAYS2)*100));
+    wk  = Math.floor(elapsed/7)+1;
+    ph  = getPhase2(elapsed);
+    nextEv = getNextEvent2(elapsed);
+    const offset = C*(1-pct/100);
+    ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
+      <circle cx="36" cy="36" r="30" fill="none" stroke="#e8e8ed" stroke-width="5"/>
+      <circle cx="36" cy="36" r="30" fill="none" stroke="#0071e3" stroke-width="5"
+        stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" stroke-linecap="round"/>
+    </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">${pct}%</span><span class="cycle-ring-sub">ciclo</span></div>`;
+    infoHtml = `<h3>Settimana ${wk} · ${ph.label}</h3><p>Giorno ${elapsed+1} di ${TOTAL_DAYS2} · ${TOTAL_DAYS2-elapsed-1} giorni al termine</p><div class="cycle-next">⟶ ${nextEv}</div>`;
+  }
+
+  const card = document.createElement('div');
+  card.className = 'cycle-card';
+  card.innerHTML = `<div class="cycle-ring">${ringHtml}</div><div class="cycle-info">${infoHtml}</div>`;
+  container.insertBefore(card, container.firstChild);
+}
+
+// ── CHARTS v2 ─────────────────────────────────────────────────────────────
+function buildCharts2(container) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START2); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today-start)/86400000);
+  if (elapsed < 2) return;
+  const from = Math.max(0, elapsed-13);
+  const pesoData = [], hrvData = [];
+  for (let i=from; i<=elapsed && i<TOTAL_DAYS2; i++) {
+    const dc = _lastData2['p2_day_'+i] || {};
+    pesoData.push(dc['peso'] ? parseFloat(dc['peso']) : null);
+    hrvData.push(dc['hrv']  ? parseFloat(dc['hrv'])  : null);
+  }
+  if (!pesoData.some(v=>v!==null) && !hrvData.some(v=>v!==null)) return;
+
+  const card = document.createElement('div');
+  card.className = 'charts-card'; card.id = 'charts-card2';
+  card.innerHTML = `
+    <div class="charts-card-title">Andamento · ultimi 14 giorni</div>
+    <div class="charts-grid">
+      <div><div class="chart-label">Peso kg</div><canvas class="mini-chart" id="chart2-peso" height="64"></canvas></div>
+      <div><div class="chart-label">HRV ms</div><canvas class="mini-chart" id="chart2-hrv" height="64"></canvas></div>
+    </div>`;
+
+  const cycleCard = container.querySelector('.cycle-card');
+  const existingRow = container.querySelector('.cycle-charts-row');
+  if (existingRow) { existingRow.appendChild(card); }
+  else if (cycleCard) {
+    const row = document.createElement('div');
+    row.className = 'cycle-charts-row';
+    cycleCard.parentNode.insertBefore(row, cycleCard);
+    row.appendChild(cycleCard);
+    row.appendChild(card);
+  } else {
+    container.insertBefore(card, container.firstChild);
+  }
+  setTimeout(() => {
+    drawChart('chart2-peso', pesoData, '#0071e3');
+    drawChart('chart2-hrv',  hrvData,  '#34c759');
+  }, 100);
+}
+
+// ── RIQUADRO PROTOCOLLO SEREGNI ───────────────────────────────────────────
+function buildProtoHeader2(container) {
+  const div = document.createElement('div');
+  div.style.cssText = 'margin-bottom:8px';
+  div.innerHTML = `
+    <div style="background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;box-shadow:var(--shadow);border:none">
+      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Protocollo peptidico · Ciclo 1</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">20 lug – 8 nov 2026 · 16 settimane</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
+          <i class="ti ti-sunrise" style="font-size:17px;color:#0071e3;flex-shrink:0;margin-top:1px"></i>
+          <div><div style="font-size:12px;font-weight:600;color:#0071e3">Mattino · digiuno</div>
+          <div style="font-size:12px;color:var(--text)">Fragment 176-191 <b>250mcg</b> · BPC-157 <b>250mcg</b></div></div>
+        </div>
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
+          <i class="ti ti-sun" style="font-size:17px;color:#ff9500;flex-shrink:0;margin-top:1px"></i>
+          <div><div style="font-size:12px;font-weight:600;color:#ff9500">Pomeriggio</div>
+          <div style="font-size:12px;color:var(--text)">Fragment 176-191 <b>250mcg</b></div></div>
+        </div>
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
+          <i class="ti ti-barbell" style="font-size:17px;color:#af52de;flex-shrink:0;margin-top:1px"></i>
+          <div><div style="font-size:12px;font-weight:600;color:#af52de">Post-WO <span style="font-weight:400;color:var(--muted)">(solo giorni allenamento)</span></div>
+          <div style="font-size:12px;color:var(--text)">IGF-1 DES <b>25mcg dx</b> · IGF-1 DES <b>25mcg sx</b></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:3px">Distretto: rotazione mar=Petto · mer=Bicipiti · ven=Quadricipiti · sab=Tricipiti · dom=Deltoidi</div></div>
+        </div>
+        <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
+          <i class="ti ti-moon" style="font-size:17px;color:#34c759;flex-shrink:0;margin-top:1px"></i>
+          <div><div style="font-size:12px;font-weight:600;color:#34c759">Sera · 90–120 min post-cena</div>
+          <div style="font-size:12px;color:var(--text)">Tesamorelin <b>2mg</b> · Ipamorelin <b>100mcg</b> · BPC-157 <b>250mcg</b> · TB-500 <b>500mcg</b></div></div>
+        </div>
+      </div>
+    </div>`;
+  container.appendChild(div);
+}
+
+
+function buildWeekSummary2(container, wkIdx) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(START2); start.setHours(0,0,0,0);
+  const elapsed = Math.floor((today - start) / 86400000);
+  const currentWk = Math.floor(elapsed / 7);
+  if (wkIdx !== currentWk) return null;
+
+  const wkStart = wkIdx * 7;
+  const wkEnd   = Math.min(wkStart + 7, TOTAL_DAYS2);
+  const get = (id, f) => (_lastData2[id] && _lastData2[id][f]) || '';
+
+  let totalInj=0,doneInj=0,totalWo=0,doneWo=0;
+  let pesoSum=0,pesoCount=0,hrvSum=0,hrvCount=0;
+  let rpeSum=0,rpeCount=0,sysSum=0,sysCount=0;
+  let energiaSum=0,energiaCount=0,kcalTotal=0;
+
+  for (let i=wkStart; i<wkEnd && i<=elapsed; i++) {
+    const id = 'p2_day_'+i;
+    const slots = getInjectionSlots2(i);
+    totalInj += slots.length;
+    slots.forEach(s => {
+      s.fields.forEach(f => {
+        if (get(id, 'inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_')) === 'fatto') doneInj++;
+      });
+    });
+    const wo = getWorkout2(i);
+    if (wo.type !== 'Riposo') {
+      totalWo++;
+      const kcal = parseFloat(get(id,'wo_kcal'));
+      const vol  = parseFloat(get(id,'wo_volume'));
+      const rpe  = parseFloat(get(id,'rpe'));
+      if (!isNaN(kcal)&&kcal>0 || !isNaN(vol)&&vol>0 || !isNaN(rpe)) {
+        doneWo++;
+        if (!isNaN(rpe)) { rpeSum+=rpe; rpeCount++; }
+      }
     }
-  }).catch(e => console.error('Errore aggiornamento cache:', e));
-})();
+    const peso = parseFloat(get(id,'peso'));
+    if (!isNaN(peso)) { pesoSum+=peso; pesoCount++; }
+    const hrv = parseFloat(get(id,'hrv'));
+    if (!isNaN(hrv)) { hrvSum+=hrv; hrvCount++; }
+    const sys = parseFloat(get(id,'bp_sys'));
+    if (!isNaN(sys)) { sysSum+=sys; sysCount++; }
+    const en = parseFloat(get(id,'energia'));
+    if (!isNaN(en)) { energiaSum+=en; energiaCount++; }
+    const kcal2 = parseFloat(get(id,'wo_kcal'));
+    if (!isNaN(kcal2)) kcalTotal+=kcal2;
+  }
+
+  const avgPeso    = pesoCount    ? (pesoSum/pesoCount).toFixed(1) : '—';
+  const avgHrv     = hrvCount     ? Math.round(hrvSum/hrvCount)    : '—';
+  const avgRpe     = rpeCount     ? (rpeSum/rpeCount).toFixed(1)   : '—';
+  const avgSys     = sysCount     ? Math.round(sysSum/sysCount)    : '—';
+  const avgEnergia = energiaCount ? (energiaSum/energiaCount).toFixed(1) : '—';
+  const injColor   = totalInj>0 && doneInj===totalInj ? '#34c759' : doneInj>0 ? '#ff9500' : 'var(--text)';
+  const daysLogged = pesoCount;
+
+  const card = document.createElement('div');
+  card.className = 'week-summary-card';
+  card.id = 'week-summary2-'+wkIdx;
+  card.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+      <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Riepilogo settimana ${wkIdx+1}</div>
+      <div style="font-size:11px;color:var(--muted)">${daysLogged} gg registrati · ${getWeekRange2(wkIdx)}</div>
+    </div>
+    <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="ws-item"><div class="ws-val">${avgPeso}<span style="font-size:12px;font-weight:400"> kg</span></div><div class="ws-lbl">Peso medio</div></div>
+      <div class="ws-item"><div class="ws-val">${avgHrv}<span style="font-size:12px;font-weight:400"> ms</span></div><div class="ws-lbl">HRV medio</div></div>
+      <div class="ws-item"><div class="ws-val" style="color:${injColor}">${doneInj}/${totalInj}</div><div class="ws-lbl">Iniezioni</div></div>
+      <div class="ws-item"><div class="ws-val">${doneWo}/${totalWo}</div><div class="ws-lbl">Workout</div></div>
+    </div>
+    <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      <div class="ws-item"><div class="ws-val">${avgRpe}<span style="font-size:12px;font-weight:400">/10</span></div><div class="ws-lbl">RPE medio</div></div>
+      <div class="ws-item"><div class="ws-val">${avgSys}<span style="font-size:12px;font-weight:400"> mmHg</span></div><div class="ws-lbl">Sistolica media</div></div>
+      <div class="ws-item"><div class="ws-val">${avgEnergia}<span style="font-size:12px;font-weight:400">/10</span></div><div class="ws-lbl">Energia media</div></div>
+      <div class="ws-item"><div class="ws-val">${kcalTotal>0?kcalTotal:'—'}<span style="font-size:12px;font-weight:400">${kcalTotal>0?' kcal':''}</span></div><div class="ws-lbl">Kcal totali</div></div>
+    </div>`;
+  return card;
+}
+
+// ── TEST PROTOCOLLO — sab 18 e dom 19 luglio 2026 ──────────────────────────
+// 2 giorni di "rodaggio" per abituarsi a iniezioni/routine PRIMA dell'inizio
+// ufficiale del ciclo conteggiato (lun 20/7 = day_0). Stessa struttura/6 peptidi
+// delle card v2 reali, ma con chiavi dati separate (test_proto_0/1) che NON
+// entrano nel conteggio dei 112 giorni, nelle statistiche di aderenza né nei
+// calcoli di fase/settimana. Confermato con Giorgio e il medico il 16/07/2026.
+const TEST_PROTO_START = new Date('2026-07-18'); // sabato, invariato rispetto a prima
+const TEST_PROTO_DAYS  = 2;
+
+function buildTestProtoCards(container) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-bottom:18px';
+  wrap.innerHTML = `<div class="section-label" style="margin-bottom:8px">🧪 Test Protocollo · rodaggio pre-ciclo (non conteggiato nei 112 giorni)</div>`;
+
+  for (let t = 0; t < TEST_PROTO_DAYS; t++) {
+    const dayOffsetFromStart2 = t - TEST_PROTO_DAYS; // -2, -1 relativo a START2 (lun 20/7)
+    const d = new Date(START2); d.setDate(d.getDate() + dayOffsetFromStart2); d.setHours(0,0,0,0);
+    const wo = getWorkout2(dayOffsetFromStart2); // stesso calcolo giorno-settimana delle card reali
+    const id = 'test_proto_' + t;
+    const dateStr = d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'short'});
+    const dotColor = getDotColor2(wo.type);
+
+    const slots = getInjectionSlots2(dayOffsetFromStart2);
+    const slotHTML = slots.map(s => {
+      const muscleField = s.igfMuscle !== undefined ? `
+        <div style="margin-top:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare (IM)</div>
+          <select data-id="${id}" data-f="inj_${s.n}_distretto">
+            ${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m=>`<option value="${m}" ${m===s.igfMuscle?'selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>` : '';
+      const slotClass = s.n === 1 ? 'inj-card-mattino' : s.n === 2 ? 'inj-card-pomeriggio' : s.igfMuscle !== undefined ? 'inj-card-postWO' : 'inj-card-sera';
+      const slotIconMap = {
+        1: '<i class="ti ti-sunrise" style="font-size:15px;color:#0071e3"></i>',
+        2: '<i class="ti ti-sun" style="font-size:15px;color:#ff9500"></i>',
+      };
+      const slotIcon = s.igfMuscle !== undefined
+        ? '<i class="ti ti-barbell" style="font-size:15px;color:#af52de"></i>'
+        : slotIconMap[s.n] || '<i class="ti ti-moon" style="font-size:15px;color:#34c759"></i>';
+      return `
+      <div class="inj-card ${slotClass}">
+        <div class="inj-num">${slotIcon}</div>
+        <div class="inj-body">
+          <div class="inj-title">${s.label}</div>
+          <div class="inj-timing">${s.momento}</div>
+          <div class="inj-fields" style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+            ${s.fields.map(f => {
+              const fkey = f.replace(/[\s\-]/g,'_');
+              const isIgf = f.includes('IGF');
+              const isBpcOrTb = f.includes('BPC') || f.includes('TB-500');
+              const scOpts = s.n === 1 || s.n === 2
+                ? (isBpcOrTb ? ['Addome dx','Addome sx','Ombelico dx','Ombelico sx','Gluteo dx','Gluteo sx'] : ['Addome dx','Addome sx','Ombelico dx','Ombelico sx'])
+                : (isBpcOrTb ? ['Addome dx','Addome sx','Coscia dx','Coscia sx','Gluteo dx','Gluteo sx'] : ['Addome dx','Addome sx','Coscia dx','Coscia sx']);
+              const siteSelect = !isIgf ? `<select data-id="${id}" data-f="inj_${s.n}_${fkey}_sito" style="flex-shrink:0;width:100px;margin-left:6px">
+                  <option value="">— sito</option>
+                  ${scOpts.map(o=>`<option value="${o}">${o}</option>`).join('')}
+                </select>` : '';
+              return `
+            <div style="display:flex;align-items:center;gap:8px;background:var(--surface,#fff);border-radius:8px;padding:6px 10px">
+              <span style="font-size:12px;font-weight:500;color:var(--text);flex:1">${f}</span>
+              <select data-id="${id}" data-f="inj_${s.n}_${fkey}" style="flex-shrink:0;width:100px">
+                <option value="">— stato</option>
+                <option value="fatto">✅ Fatto</option>
+                <option value="skip">⏭ Skip</option>
+              </select>
+              ${siteSelect}
+            </div>`;
+            }).join('')}
+          </div>
+          ${muscleField}
+        </div>
+      </div>`;
+    }).join('');
+
+    const card = document.createElement('div');
+    card.className = 'day-card';
+    card.id = 'card-' + id;
+    card.innerHTML = `
+      <div class="day-head" onclick="toggleDay('${id}')">
+        <span class="day-dot" style="background:${dotColor}"></span>
+        <div class="day-info">
+          <div class="day-name">${dateStr}</div>
+        </div>
+        <div class="day-quick">
+          <div class="dq"><div class="dq-v empty" id="q-${id}-peso">—</div><div class="dq-l">kg</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-hrv">—</div><div class="dq-l">HRV</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-ore_sonno">—</div><div class="dq-l">sonno</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-inj">—</div><div class="dq-l">inj</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-integr">—</div><div class="dq-l">integr%</div></div>
+        </div>
+        <span class="day-badge" style="background:rgba(175,82,222,.12);color:#af52de">TEST</span>
+        <span class="day-chev">▾</span>
+      </div>
+      <div class="day-body" id="body-${id}">
+
+        <div class="section-label">Biometria</div>
+        <div class="bio-grid">
+          <div class="bio-box"><input type="number" placeholder="70.0" data-id="${id}" data-f="peso" oninput="onInput(this,'${id}','peso')"><div class="bio-lbl">Peso kg</div></div>
+          <div class="bio-box"><input type="number" placeholder="48"   data-id="${id}" data-f="hrv"  oninput="onInput(this,'${id}','hrv')"><div class="bio-lbl">HRV ms</div></div>
+          <div class="bio-box"><input type="number" placeholder="55"   data-id="${id}" data-f="rhr"><div class="bio-lbl">RHR bpm</div></div>
+          <div class="bio-box"><input type="number" placeholder="120"  data-id="${id}" data-f="bp_sys"><div class="bio-lbl">Sistolica</div></div>
+          <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="bp_dia"><div class="bio-lbl">Diastolica</div></div>
+          <div class="bio-box"><input type="number" placeholder="6.5"  data-id="${id}" data-f="ore_sonno" oninput="onInput(this,'${id}','ore_sonno')"><div class="bio-lbl">Ore sonno</div></div>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Stack mattutino</div>
+        <div class="check-grid">
+          <div class="check-item">
+            <input type="checkbox" id="ck2-d3-${id}" data-id="${id}" data-f="ck_d3" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-d3-${id}">D3 + K2</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_d3_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-omega-${id}" data-id="${id}" data-f="ck_omega" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-omega-${id}">Omega-3</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_omega_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-creat-${id}" data-id="${id}" data-f="ck_creat" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-creat-${id}">Creatina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_creat_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-zinc-${id}" data-id="${id}" data-f="ck_zinc" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-zinc-${id}">Zinco</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_zinc_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-b12-${id}" data-id="${id}" data-f="ck_b12" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-b12-${id}">B12 + Folato</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_b12_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-norm-${id}" data-id="${id}" data-f="ck_norm" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-norm-${id}">Normocis</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_norm_skip">
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Stack serale</div>
+        <div class="check-grid">
+          <div class="check-item">
+            <input type="checkbox" id="ck2-mag-${id}" data-id="${id}" data-f="ck_mag" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-mag-${id}">Magnesio</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_mag_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-gly-${id}" data-id="${id}" data-f="ck_gly" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-gly-${id}">Glicina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_gly_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-melatonina-${id}" data-id="${id}" data-f="ck_melatonina" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-melatonina-${id}">Melatonina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_melatonina_skip">
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Iniezioni v2</div>
+        <div class="inj-grid">${slotHTML}</div>
+
+        ${wo.type !== 'Riposo' ? `
+        <div class="section-label" style="margin-top:14px">Sentinel lifts</div>
+        ${buildSentinelSection(id, wo.type)}
+        <div class="section-label" style="margin-top:14px">Import Motra</div>
+        ${buildMotraSection(id)}
+        ` : ''}
+
+        <div class="section-label" style="margin-top:14px">Soggettivo</div>
+        <div class="subj-row">
+          <div class="subj-item">
+            <div class="subj-lbl">Energia /10</div>
+            <select class="subj-sel" data-id="${id}" data-f="energia">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+          <div class="subj-item">
+            <div class="subj-lbl">Recupero /10</div>
+            <select class="subj-sel" data-id="${id}" data-f="recupero">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+          <div class="subj-item">
+            <div class="subj-lbl">Umore /10</div>
+            <select class="subj-sel" data-id="${id}" data-f="umore">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+          <div class="subj-item">
+            <div class="subj-lbl">RPE</div>
+            <select class="subj-sel" data-id="${id}" data-f="rpe">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:18px">Note del giorno</div>
+        <textarea class="note-ta" data-id="${id}" data-f="note" placeholder="Sensazioni, variazioni, effetti peptidi, qualità sonno, osservazioni fisiche…" rows="3"></textarea>
+
+        <button class="proto2-save-btn" onclick="saveProto2Data()">Salva dati</button>
+      </div>`;
+
+    wrap.appendChild(card);
+  }
+
+  container.appendChild(wrap);
+}
+
+// ── MAIN BUILD ────────────────────────────────────────────────────────────
+let _proto2Built = false;
+
+function buildProtoV2() {
+  if (_proto2Built) return;
+  _proto2Built = true;
+
+  const container = document.getElementById('container2');
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // Carica dati salvati prima di costruire
+  const raw2 = localStorage.getItem(KEY2);
+  if (raw2) { try { _lastData2 = JSON.parse(raw2); } catch(e){} }
+
+  // 1. Progress bar
+  const progWrap = document.createElement('div');
+  progWrap.className = 'prog-wrap';
+  const start2h = new Date(START2); start2h.setHours(0,0,0,0);
+  const elapsed2h = Math.floor((today - start2h)/86400000);
+  const pct2 = Math.max(0, Math.min(100, Math.round((elapsed2h/TOTAL_DAYS2)*100)));
+  progWrap.innerHTML = `<div class="prog-bar" style="width:${pct2}%"></div>`;
+  container.appendChild(progWrap);
+
+  // 2. Cycle card (identica struttura v1)
+  buildCycleCard2(container);
+
+  // 3. Charts ultimi 14gg
+  buildCharts2(container);
+
+  // 4. Riquadro protocollo Seregni
+  buildProtoHeader2(container);
+
+  // 4b. Test Protocollo (sab 18 + dom 19, rodaggio pre-ciclo, non conteggiato)
+  buildTestProtoCards(container);
+
+  // 5. Nav settimane
+  const navStrip2 = document.createElement('div');
+  navStrip2.className = 'nav-strip-inner';
+  navStrip2.style.cssText = 'position:sticky;top:44px;z-index:90';
+  for (let w=0; w<16; w++) {
+    const tab = document.createElement('div');
+    tab.className = 'nav-tab';
+    tab.textContent = 'WK '+(w+1);
+    tab.onclick = () => document.getElementById('proto2-week-'+(w+1))?.scrollIntoView({behavior:'smooth',block:'start'});
+    navStrip2.appendChild(tab);
+  }
+  container.appendChild(navStrip2);
+
+  // 5. Card giornaliere
+  let curWk = -1;
+  for (let i=0; i<TOTAL_DAYS2; i++) {
+    const d = new Date(START2); d.setDate(d.getDate()+i); d.setHours(0,0,0,0);
+    const wk = Math.floor(i/7)+1;
+    const wo = getWorkout2(i);
+    const id = 'p2_day_'+i;
+    const isToday = d.getTime()===today.getTime();
+    const dotColor = getDotColor2(wo.type);
+    const dateStr = d.toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'});
+
+    if (wk !== curWk) {
+      curWk = wk;
+      const ph = getPhase2((wk-1)*7);
+      const wh = document.createElement('div');
+      wh.id = 'proto2-week-'+wk; wh.className = 'week-hdr';
+      wh.innerHTML = `
+        <div class="week-hdr-row1">
+          <h2>Settimana ${wk}</h2>
+          <span class="week-phase ${ph.badge}">${ph.label}</span>
+          <span class="week-range">${getWeekRange2(wk-1)}</span>
+        </div>
+        <div class="week-hdr-row2">${ph.peptidi}${ph.note ? ' · <em>'+ph.note+'</em>' : ''}</div>`;
+      container.appendChild(wh);
+      // Week summary (solo settimana corrente)
+      const ws2 = buildWeekSummary2(container, wk-1);
+      if (ws2) container.appendChild(ws2);
+    }
+
+    const slots = getInjectionSlots2(i);
+    const slotHTML = slots.map(s => {
+      const muscleField = s.igfMuscle !== undefined ? `
+        <div style="margin-top:8px">
+          <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare (IM)</div>
+          <select data-id="${id}" data-f="inj_${s.n}_distretto">
+            ${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m=>`<option value="${m}" ${m===s.igfMuscle?'selected':''}>${m}</option>`).join('')}
+          </select>
+        </div>` : '';
+      const scField = '';
+      const slotClass = s.n === 1 ? 'inj-card-mattino' : s.n === 2 ? 'inj-card-pomeriggio' : s.igfMuscle !== undefined ? 'inj-card-postWO' : 'inj-card-sera';
+      const slotIconMap = {
+        1: '<i class="ti ti-sunrise" style="font-size:15px;color:#0071e3"></i>',
+        2: '<i class="ti ti-sun" style="font-size:15px;color:#ff9500"></i>',
+      };
+      const slotIcon = s.igfMuscle !== undefined
+        ? '<i class="ti ti-barbell" style="font-size:15px;color:#af52de"></i>'
+        : slotIconMap[s.n] || '<i class="ti ti-moon" style="font-size:15px;color:#34c759"></i>';
+      return `
+      <div class="inj-card ${slotClass}">
+        <div class="inj-num">${slotIcon}</div>
+        <div class="inj-body">
+          <div class="inj-title">${s.label}</div>
+          <div class="inj-timing">${s.momento}</div>
+          <div class="inj-fields" style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+            ${s.fields.map(f => {
+              const fkey = f.replace(/[\s\-]/g,'_');
+              const isIgf = f.includes('IGF');
+              const isBpcOrTb = f.includes('BPC') || f.includes('TB-500');
+              const scOpts = s.n === 1 || s.n === 2
+                ? (isBpcOrTb ? ['Addome dx','Addome sx','Ombelico dx','Ombelico sx','Gluteo dx','Gluteo sx'] : ['Addome dx','Addome sx','Ombelico dx','Ombelico sx'])
+                : (isBpcOrTb ? ['Addome dx','Addome sx','Coscia dx','Coscia sx','Gluteo dx','Gluteo sx'] : ['Addome dx','Addome sx','Coscia dx','Coscia sx']);
+              const siteSelect = !isIgf ? `<select data-id="${id}" data-f="inj_${s.n}_${fkey}_sito" style="flex-shrink:0;width:100px;margin-left:6px">
+                  <option value="">— sito</option>
+                  ${scOpts.map(o=>`<option value="${o}">${o}</option>`).join('')}
+                </select>` : '';
+              return `
+            <div style="display:flex;align-items:center;gap:8px;background:var(--surface,#fff);border-radius:8px;padding:6px 10px">
+              <span style="font-size:12px;font-weight:500;color:var(--text);flex:1">${f}</span>
+              <select data-id="${id}" data-f="inj_${s.n}_${fkey}" style="flex-shrink:0;width:100px">
+                <option value="">— stato</option>
+                <option value="fatto">✅ Fatto</option>
+                <option value="skip">⏭ Skip</option>
+              </select>
+              ${siteSelect}
+            </div>`;
+            }).join('')}
+          </div>
+          ${muscleField}${scField}
+        </div>
+      </div>`;
+    }).join('');
+
+    const card = document.createElement('div');
+    card.className = 'day-card'+(isToday?' today open':'');
+    card.id = 'card-'+id;
+    card.innerHTML = `
+      <div class="day-head" onclick="toggleDay('${id}')">
+        <span class="day-dot" style="background:${dotColor}"></span>
+        <div class="day-info">
+          <div class="day-name">${dateStr}${isToday?'<span class="today-badge">Oggi</span>':''}</div>
+        </div>
+        <div class="day-quick">
+          <div class="dq"><div class="dq-v empty" id="q-${id}-peso">—</div><div class="dq-l">kg</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-hrv">—</div><div class="dq-l">HRV</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-ore_sonno">—</div><div class="dq-l">sonno</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-inj">—</div><div class="dq-l">inj</div></div>
+          <div class="dq"><div class="dq-v empty" id="q-${id}-integr">—</div><div class="dq-l">integr%</div></div>
+        </div>
+        <span class="day-badge ${wo.badge}">${wo.label}</span>
+        <span class="day-chev">▾</span>
+      </div>
+      <div class="day-body" id="body-${id}">
+
+        <div class="section-label">Biometria</div>
+        <div class="bio-grid">
+          <div class="bio-box"><input type="number" placeholder="70.0" data-id="${id}" data-f="peso" oninput="onInput(this,'${id}','peso')"><div class="bio-lbl">Peso kg</div></div>
+          <div class="bio-box"><input type="number" placeholder="48"   data-id="${id}" data-f="hrv"  oninput="onInput(this,'${id}','hrv')"><div class="bio-lbl">HRV ms</div></div>
+          <div class="bio-box"><input type="number" placeholder="55"   data-id="${id}" data-f="rhr"><div class="bio-lbl">RHR bpm</div></div>
+          <div class="bio-box"><input type="number" placeholder="120"  data-id="${id}" data-f="bp_sys"><div class="bio-lbl">Sistolica</div></div>
+          <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="bp_dia"><div class="bio-lbl">Diastolica</div></div>
+          <div class="bio-box"><input type="number" placeholder="6.5"  data-id="${id}" data-f="ore_sonno" oninput="onInput(this,'${id}','ore_sonno')"><div class="bio-lbl">Ore sonno</div></div>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Stack mattutino</div>
+        <div class="check-grid">
+          <div class="check-item">
+            <input type="checkbox" id="ck2-d3-${id}" data-id="${id}" data-f="ck_d3" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-d3-${id}">D3 + K2</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_d3_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-omega-${id}" data-id="${id}" data-f="ck_omega" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-omega-${id}">Omega-3</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_omega_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-creat-${id}" data-id="${id}" data-f="ck_creat" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-creat-${id}">Creatina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_creat_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-zinc-${id}" data-id="${id}" data-f="ck_zinc" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-zinc-${id}">Zinco</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_zinc_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-b12-${id}" data-id="${id}" data-f="ck_b12" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-b12-${id}">B12 + Folato</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_b12_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-norm-${id}" data-id="${id}" data-f="ck_norm" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-norm-${id}">Normocis</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_norm_skip">
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Stack serale</div>
+        <div class="check-grid">
+          <div class="check-item">
+            <input type="checkbox" id="ck2-mag-${id}" data-id="${id}" data-f="ck_mag" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-mag-${id}">Magnesio</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_mag_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-gly-${id}" data-id="${id}" data-f="ck_gly" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-gly-${id}">Glicina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_gly_skip">
+          </div>
+          <div class="check-item">
+            <input type="checkbox" id="ck2-melatonina-${id}" data-id="${id}" data-f="ck_melatonina" onchange="if(this.checked) clearSupplementSkip(this)">
+            <label for="ck2-melatonina-${id}">Melatonina</label>
+            <span class="skip-toggle" onclick="toggleSupplementSkip(this)" title="Segna come skip (non conta come dimenticato)">skip</span>
+            <input type="hidden" data-id="${id}" data-f="ck_melatonina_skip">
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:14px">Iniezioni v2</div>
+        <div class="inj-grid">${slotHTML}</div>
+
+        ${wo.type !== 'Riposo' ? `
+        <div class="section-label" style="margin-top:14px">Sentinel lifts</div>
+        ${buildSentinelSection(id, wo.type)}
+        <div class="section-label" style="margin-top:14px">Import Motra</div>
+        ${buildMotraSection(id)}
+        ` : ''}
+
+        <div class="section-label" style="margin-top:14px">Soggettivo</div>
+        <div class="subj-row">
+          <div class="subj-item">
+            <div class="subj-lbl">Energia /10</div>
+            <select class="subj-sel" data-id="${id}" data-f="energia">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+          <div class="subj-item">
+            <div class="subj-lbl">Recupero /10</div>
+            <select class="subj-sel" data-id="${id}" data-f="recupero">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+          <div class="subj-item">
+            <div class="subj-lbl">Umore /10</div>
+            <select class="subj-sel" data-id="${id}" data-f="umore">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+          <div class="subj-item">
+            <div class="subj-lbl">RPE</div>
+            <select class="subj-sel" data-id="${id}" data-f="rpe">
+              <option value="">—</option>
+              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:18px">Note del giorno</div>
+        <textarea class="note-ta" data-id="${id}" data-f="note" placeholder="Sensazioni, variazioni, effetti peptidi, qualità sonno, osservazioni fisiche…" rows="3"></textarea>
+
+        <button class="proto2-save-btn" onclick="saveProto2Data()">Salva dati</button>
+      </div>`;
+
+    container.appendChild(card);
+  }
+
+  // Applica dati salvati
+  applyProto2Data();
+
+  // Auto-save + colora select iniezioni
+  container.querySelectorAll('input,select,textarea').forEach(el => {
+    el.addEventListener('change', () => { saveProto2Data(); colorInjSelects(container); });
+    if (el.tagName==='TEXTAREA'||el.type==='number') el.addEventListener('input', () => saveProto2Data());
+  });
+}
+
+function colorInjSelects(root) {
+  const r = root || document.getElementById('container2');
+  r.querySelectorAll('.inj-grid select').forEach(sel => {
+    const v = sel.value;
+    sel.style.color = v === 'fatto' ? '#34c759' : v === 'skip' ? 'var(--muted)' : 'var(--text)';
+    sel.style.borderColor = v === 'fatto' ? '#34c75940' : '';
+    sel.style.background = v === 'fatto' ? 'rgba(52,199,89,.07)' : v === 'skip' ? 'var(--surface2)' : '';
+  });
+}
+
+function saveProto2Data() {
+  const data = _lastData2;
+  document.querySelectorAll('#container2 [data-id]').forEach(el => {
+    const id=el.dataset.id, f=el.dataset.f;
+    if (!id||!f) return;
+    if (!data[id]) data[id]={};
+    data[id][f] = el.type==='checkbox' ? el.checked : el.value;
+  });
+  localStorage.setItem(KEY2, JSON.stringify(data));
+}
+
+function applyProto2Data() {
+  Object.entries(_lastData2).forEach(([id,fields]) => {
+    Object.entries(fields).forEach(([f,v]) => {
+      const el = document.querySelector(`#container2 [data-id="${id}"][data-f="${f}"]`);
+      if (!el) return;
+      if (el.type==='checkbox') el.checked = !!v;
+      else if (v!==''&&v!=null) el.value = v;
+    });
+    // Aggiorna quick-data visibili nella card chiusa
+    const qPeso  = document.getElementById('q-'+id+'-peso');
+    const qHrv   = document.getElementById('q-'+id+'-hrv');
+    const qSonno = document.getElementById('q-'+id+'-ore_sonno');
+    if (qPeso  && fields.peso)     { qPeso.textContent  = fields.peso;     qPeso.classList.remove('empty'); }
+    if (qHrv   && fields.hrv)      { qHrv.textContent   = fields.hrv;      qHrv.classList.remove('empty'); }
+    if (qSonno && fields.ore_sonno){ qSonno.textContent = fields.ore_sonno; qSonno.classList.remove('empty'); }
+    // Iniezioni fatte vs totale (card v2 reali + Test Protocollo)
+    let dayIdxForSlots = null;
+    if (id.startsWith('p2_day_')) {
+      dayIdxForSlots = parseInt(id.replace('p2_day_',''));
+    } else if (id.startsWith('test_proto_')) {
+      const t = parseInt(id.replace('test_proto_',''));
+      if (!isNaN(t)) dayIdxForSlots = t - TEST_PROTO_DAYS; // -2, -1
+    }
+    if (dayIdxForSlots !== null && !isNaN(dayIdxForSlots)) {
+        const dayIdx = dayIdxForSlots;
+        const slots2 = getInjectionSlots2(dayIdx);
+        let doneInj2 = 0, totalInj2 = 0;
+        slots2.forEach(s => {
+          s.fields.forEach(f2 => {
+            totalInj2++;
+            const key = 'inj_'+s.n+'_'+f2.replace(/[\s\-]/g,'_');
+            if (fields[key] === 'fatto') doneInj2++;
+          });
+        });
+        const qInj = document.getElementById('q-'+id+'-inj');
+        if (qInj && totalInj2 > 0) {
+          qInj.textContent = doneInj2+'/'+totalInj2;
+          qInj.classList.remove('empty');
+          qInj.style.color = doneInj2 === totalInj2 ? '#34c759' : doneInj2 > 0 ? '#ff9500' : '';
+        }
+        // Aderenza integratori — tutti i checkbox stack mattutino + serale
+        const integrKeys = ['ck_d3','ck_b12','ck_omega','ck_creat','ck_zinc','ck_norm','ck_mag','ck_gly','ck_melatonina'];
+        const doneIntegr = integrKeys.filter(k => fields[k] === true || fields[k] === '1' || fields[k] === 1).length;
+        const qIntegr = document.getElementById('q-'+id+'-integr');
+        if (qIntegr && doneIntegr > 0) {
+          qIntegr.textContent = Math.round(doneIntegr/integrKeys.length*100)+'%';
+          qIntegr.classList.remove('empty');
+          qIntegr.style.color = doneIntegr === integrKeys.length ? '#34c759' : '#ff9500';
+        }
+    }
+  });
+  colorInjSelects();
+  refreshSupplementSkipVisuals();
+}
 
 
+const UC_PEPTIDES = [
+  { id:'tesa',     name:'Tesamorelin',       dose_mcg:2000, defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:'fragment', name:'Fragment 176-191',  dose_mcg:250,  defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:'ipa',      name:'Ipamorelin',        dose_mcg:100,  defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:'igf',      name:'IGF-1 DES',         dose_mcg:50,   defaultMg:1,  defaultBac:1.0, bilat:true  },
+  { id:'bpc',      name:'BPC-157',           dose_mcg:250,  defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:'tb500',    name:'TB-500',            dose_mcg:500,  defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:'custom',   name:'Personalizzato',    dose_mcg:250,  defaultMg:10, defaultBac:2.0, bilat:false },
+];
+
+function ucFillDefaults(id) {
+  const p = UC_PEPTIDES.find(x => x.id === id);
+  if (!p) return;
+  const mgEl = document.getElementById('uc-mg');
+  const bacEl = document.getElementById('uc-bac');
+  const targetEl = document.getElementById('uc-target');
+  if (mgEl) mgEl.value = p.defaultMg;
+  if (bacEl) bacEl.value = p.defaultBac;
+  if (id !== 'custom' && targetEl) targetEl.value = p.dose_mcg;
+  ucUpdate();
+}
+
+function ucUpdate() {
+  const mgEl = document.getElementById('uc-mg');
+  const bacEl = document.getElementById('uc-bac');
+  const targetEl = document.getElementById('uc-target');
+  const selEl = document.getElementById('uc-peptide');
+  if (!mgEl || !bacEl || !targetEl || !selEl) return;
+
+  const mg = parseFloat(mgEl.value) || 0;
+  const bac = parseFloat(bacEl.value) || 0;
+  const target = parseFloat(targetEl.value) || 0;
+  const p = UC_PEPTIDES.find(x => x.id === selEl.value);
+
+  const concEl = document.getElementById('uc-conc');
+  const drawEl = document.getElementById('uc-draw');
+  const dosesEl = document.getElementById('uc-doses');
+  const bilatEl = document.getElementById('uc-bilat');
+
+  if (bac <= 0) {
+    if (concEl) concEl.textContent = '—';
+    if (drawEl) drawEl.textContent = '—';
+    if (dosesEl) dosesEl.textContent = '—';
+    if (bilatEl) bilatEl.style.display = 'none';
+    return;
+  }
+
+  const concMcgMl = (mg * 1000) / bac; // mcg/ml
+  const drawUnits = concMcgMl > 0 ? (target / concMcgMl) * 100 : 0; // unità su siringa U-100
+  const dosesPerVial = target > 0 ? Math.floor((mg * 1000) / target) : 0;
+
+  if (concEl) concEl.textContent = concMcgMl.toFixed(0);
+  if (drawEl) drawEl.textContent = drawUnits.toFixed(1);
+  if (dosesEl) dosesEl.textContent = dosesPerVial;
+
+  if (bilatEl) {
+    if (p && p.bilat) {
+      bilatEl.style.display = 'block';
+      bilatEl.textContent = `→ ${(drawUnits/2).toFixed(1)} UI/lato (dose divisa bilaterale)`;
+    } else {
+      bilatEl.style.display = 'none';
+    }
+  }
+}
+
+// ── Stock v2: storage multi-browser ──────────────────────────────────────
+// I dati per-vial (grammatura/BAC/ricostituzione/note/stato) vivono sia in
+// localStorage (cache locale, funziona offline) sia su Supabase (sorgente
+// condivisa, sincronizzata tra dispositivi/browser). Il cloud prevale sui
+// duplicati; le chiavi solo-locali non ancora sincronizzate vengono preservate.
+function stockGetVd() {
+  let localVd = {}; try { localVd = JSON.parse(localStorage.getItem('stock_v2_vials')||'{}'); } catch(e) {}
+  const cloudVd = (typeof _lastData === 'object' && _lastData && _lastData.stock_v2_vials) || {};
+  return Object.assign({}, localVd, cloudVd);
+}
+
+let _stockSaveTimer = null;
+async function stockPushToCloud(vd) {
+  try {
+    const url = SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID;
+    const r = await fetch(url + '&select=data', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    const rows = await r.json();
+    const current = (rows[0] && rows[0].data) || {};
+    current.stock_v2_vials = vd;
+    await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Prefer':'return=minimal' },
+      body: JSON.stringify({ data: current, updated_at: new Date().toISOString() })
+    });
+  } catch(e) { console.error('Stock: sincronizzazione cloud fallita', e); }
+}
+
+function stockPersist(vd) {
+  try { localStorage.setItem('stock_v2_vials', JSON.stringify(vd)); } catch(e) {}
+  if (typeof _lastData === 'object' && _lastData) _lastData.stock_v2_vials = vd;
+  clearTimeout(_stockSaveTimer);
+  _stockSaveTimer = setTimeout(() => stockPushToCloud(vd), 600);
+}
+
+function buildStockView2() {
+  const el = document.getElementById('stock2-view');
+  if (!el) return;
+  if (el.dataset.built) return;
+  el.dataset.built = '1';
+
+  const vd = stockGetVd();
+  // Migrazione one-time: se il browser ha dati locali da prima di questo aggiornamento
+  // e il cloud non li ha ancora, sincronizzali subito (altrimenti resterebbero visibili
+  // solo su questo browser finche' non si tocca di nuovo ogni singolo vial).
+  const _cloudHadStock = !!(typeof _lastData === 'object' && _lastData && _lastData.stock_v2_vials);
+  if (!_cloudHadStock && Object.keys(vd).length > 0) {
+    stockPersist(vd);
+  }
+
+  // Ogni composto ora organizza i vial per FORNITORE (sezioni separate in UI).
+  // SUPPLIER_META centralizza etichetta/colore badge per fornitore.
+  const SUPPLIER_META = {
+    limitless: { label:'Limitless',  badgeBg:'#fff3cd', badgeC:'#856404', badgeBorder:'#ffc107' },
+    bachem:    { label:'Bachem',     badgeBg:'#e8f4f8', badgeC:'#0c5460', badgeBorder:'#bee5eb' },
+  };
+
+  function mkVials(n, stato) {
+    const out = []; for (let i=1;i<=n;i++) out.push({n:i, stato}); return out;
+  }
+
+  const compounds = [
+    { id:'tesa',    name:'Tesamorelin',      emoji:'🧬', color:'#0071e3', bg:'rgba(0,113,227,.08)',
+      dose:'2mg/sera · SC',           dose_mcg:2000, mgNeeded:224, fab_detail:'112gg × 2mg/die',
+      stabilityDays:21, stabilityNote:'21 gg frigo · sensibile alla luce',
+      mgOptions:[2,5,10], bacOptions:[0.5,1.0,2.0], defaultMg:10, defaultBac:2.0,
+      suppliers:[
+        { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(24,'intatto') },
+        { key:'limitless', vials:[{n:1,stato:'perso'},{n:2,stato:'perso'},{n:3,stato:'intatto'},{n:4,stato:'intatto'},{n:5,stato:'intatto'},{n:6,stato:'intatto'},{n:7,stato:'intatto'},{n:8,stato:'intatto'},{n:9,stato:'intatto'},{n:10,stato:'intatto'},{n:11,stato:'intatto'},{n:12,stato:'intatto'}] },
+      ] },
+    { id:'fragment',name:'Fragment 176-191', emoji:'🔥', color:'#ff3b30', bg:'rgba(255,59,48,.08)',
+      dose:'250mcg × 2/die · SC',     dose_mcg:250,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
+      stabilityDays:30, stabilityNote:'30 gg frigo',
+      mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
+      suppliers:[
+        { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(6,'intatto') },
+      ] },
+    { id:'ipa',     name:'Ipamorelin',        emoji:'⚡', color:'#34c759', bg:'rgba(52,199,89,.08)',
+      dose:'100mcg/sera · SC',        dose_mcg:100,  mgNeeded:11.2,fab_detail:'112gg × 100mcg/die',
+      stabilityDays:30, stabilityNote:'30 gg frigo',
+      mgOptions:[2,5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
+      suppliers:[
+        { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(4,'intatto') },
+      ] },
+    { id:'igf',     name:'IGF-1 DES',         emoji:'💪', color:'#af52de', bg:'rgba(175,82,222,.08)',
+      dose:'50mcg post-WO · IM bilat',dose_mcg:50,   mgNeeded:4,   fab_detail:'80gg WO × 50mcg/die',
+      stabilityDays:30, stabilityNote:'30–40+ gg frigo (indicato dal medico, dato il dosaggio · verificare aspetto prima di ogni uso)',
+      mgOptions:[2,5], bacOptions:[0.5,1.0], defaultMg:2, defaultBac:1.0,
+      suppliers:[
+        { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(4,'intatto') },
+      ] },
+    { id:'bpc',     name:'BPC-157',            emoji:'🔧', color:'#ff9500', bg:'rgba(255,149,0,.08)',
+      dose:'250mcg × 2/die · SC',     dose_mcg:250,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
+      stabilityDays:28, stabilityNote:'28 gg frigo',
+      mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
+      suppliers:[
+        { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(6,'intatto') },
+        { key:'limitless', vials:[{n:1,stato:'in_uso'},{n:2,stato:'intatto'}] },
+      ] },
+    { id:'tb500',   name:'TB-500',             emoji:'🩹', color:'#5856d6', bg:'rgba(88,86,214,.08)',
+      dose:'500mcg/sera · SC',        dose_mcg:500,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
+      stabilityDays:28, stabilityNote:'28 gg frigo',
+      mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
+      suppliers:[
+        { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(6,'intatto') },
+      ] },
+    // ─── Peptidi non inclusi nel Protocollo v2 ───
+    { id:'motsc',   name:'MOTS-C',             emoji:'🔋', color:'#8e8e93', bg:'rgba(142,142,147,.08)',
+      dose:'Non schedulato · v2',      dose_mcg:null, mgNeeded:null, fab_detail:'Non nel Protocollo v2',
+      stabilityDays:null, stabilityNote:'Polvere liofilizzata · frigo',
+      mgOptions:[5], bacOptions:[1.0], defaultMg:5, defaultBac:1.0,
+      suppliers:[ { key:'limitless', vials:mkVials(5,'intatto') } ],
+      offProtocol:true, offLabel:'5 vial disponibili · non allocati al Ciclo 1' },
+    { id:'ghkcu',   name:'GHK-Cu',             emoji:'🔬', color:'#8e8e93', bg:'rgba(142,142,147,.08)',
+      dose:'Non schedulato · v2',      dose_mcg:null, mgNeeded:null, fab_detail:'Non nel Protocollo v2',
+      stabilityDays:null, stabilityNote:'Polvere liofilizzata · frigo',
+      mgOptions:[1,5], bacOptions:[0.5,1.0], defaultMg:1, defaultBac:1.0,
+      suppliers:[ { key:'limitless', vials:[{n:1,stato:'intatto'}] } ],
+      offProtocol:true, offLabel:'1 vial disponibile · non allocato al Ciclo 1' },
+  ];
+
+  // ── Calcoli aggregati derivati dai vial per fornitore ──
+  function vialMg(c, v) { return parseFloat(v.mg) || c.defaultMg; }
+  function supplierMg(c, sup) {
+    return sup.vials.reduce((s,v) => s + (['intatto','in_uso','congelato'].includes(v.stato) ? vialMg(c,v) : 0), 0);
+  }
+  function compoundMg(c) {
+    if (!c.suppliers) return 0;
+    return c.suppliers.reduce((s,sup) => s + supplierMg(c,sup), 0);
+  }
+  compounds.forEach(c => {
+    c.disponibile = c.offProtocol ? null : Math.round(compoundMg(c)*10)/10;
+    c.mgFab = c.mgNeeded;
+    if (!c.offProtocol) {
+      const diff = Math.round((c.disponibile - c.mgNeeded)*10)/10;
+      c.gap = diff >= 0 ? `Coperto · +${diff}mg di margine` : `Mancano ${Math.abs(diff)}mg`;
+    }
+  });
+
+  // ── Fabbisogno viaggio Bangkok (7-21 agosto, date fisse confermate) ──
+  // Calcolato sul tempo REALE fuori casa (giorno di partenza e rientro inclusi),
+  // non solo sui giorni "in loco" — parte la sera del 7, rientra la sera del 21.
+  const BKK_START = new Date('2026-08-07'); BKK_START.setHours(0,0,0,0);
+  const BKK_END   = new Date('2026-08-21'); BKK_END.setHours(0,0,0,0);
+  const bkkTotalDays = Math.round((BKK_END - BKK_START)/86400000) + 1;
+  const s0v2 = new Date(START2); s0v2.setHours(0,0,0,0);
+  // A Bangkok l'allenamento e' previsto TUTTI i giorni (incluso leg day), non sullo
+  // split standard mar/mer/ven/sab/dom + riposo lun/gio — questo aumenta il fabbisogno
+  // di IGF-1 DES (dosato solo post-workout) rispetto allo split casa.
+  const bkkTrainingDays = bkkTotalDays;
+  const bkkRestDays = 0;
+
+  const BKK_DOSE_MCG_PER_DAY = {
+    tesa: 2000, fragment: 500, ipa: 100, bpc: 500, tb500: 500, // ogni giorno
+  };
+  const BKK_IU_PER_DOSE = { // da schema ricostituzione concordato
+    fragment: 5, bpc: 5, tb500: 10, tesa: 20, ipa: 2, igf: 2.5, // igf = per lato
+  };
+  const BKK_SLOTS_PER_DAY = { fragment: 2, bpc: 2, tesa: 1, ipa: 1, tb500: 1 }; // iniezioni/die (igf gestito a parte)
+
+  compounds.forEach(c => {
+    if (BKK_DOSE_MCG_PER_DAY[c.id] !== undefined) {
+      c.bkkMg = Math.round(BKK_DOSE_MCG_PER_DAY[c.id] * bkkTotalDays / 1000 * 100) / 100;
+      c.bkkSyringes = (BKK_SLOTS_PER_DAY[c.id] || 0) * bkkTotalDays;
+    } else if (c.id === 'igf') {
+      c.bkkMg = Math.round(50 * bkkTrainingDays / 1000 * 100) / 100; // 25+25mcg, solo gg WO
+      c.bkkSyringes = 2 * bkkTrainingDays; // bilaterale
+    }
+  });
+  const bkkSyringesSC = compounds.filter(c => ['tesa','fragment','ipa','bpc','tb500'].includes(c.id))
+    .reduce((s,c) => s + (c.bkkSyringes||0), 0);
+  const bkkSyringesIM = compounds.find(c => c.id==='igf')?.bkkSyringes || 0;
+  const bkkSyringesTotal = bkkSyringesSC + bkkSyringesIM;
+  const bkkSyringesMargin = Math.round(bkkSyringesTotal * 1.15);
+
+  function stSty(s) {
+    const M = { intatto:{dot:'#34c759',text:'Intatto',bg:'rgba(52,199,89,.10)',c:'#1d6e32'},
+      in_uso:{dot:'#0071e3',text:'In uso',bg:'rgba(0,113,227,.10)',c:'#0058b8'},
+      esaurito:{dot:'#ff3b30',text:'Esaurito',bg:'rgba(255,59,48,.10)',c:'#c0392b'},
+      perso:{dot:'#ff9500',text:'Perso',bg:'rgba(255,149,0,.10)',c:'#a05a00'},
+      congelato:{dot:'#5ac8fa',text:'Congelato',bg:'rgba(90,200,250,.10)',c:'#006fa6'},
+      attesa:{dot:'#8e8e93',text:'In arrivo',bg:'rgba(142,142,147,.12)',c:'#636366'} };
+    return M[s] || {dot:'#aeaeb2',text:s,bg:'#f5f5f7',c:'#6e6e73'};
+  }
+
+  function calcUI(mg, bac, dose_mcg) {
+    const conc = mg/bac; // mg/ml
+    const ui = Math.round((dose_mcg/1000/conc)*100*10)/10;
+    return { conc:conc.toFixed(1), ui:ui.toFixed(1) };
+  }
+
+  function calcExpiry(recoDate, days) {
+    if (!recoDate) return {text:'—', daysLeft:null};
+    const d = new Date(recoDate); d.setDate(d.getDate()+days);
+    const today = new Date(); today.setHours(0,0,0,0); d.setHours(0,0,0,0);
+    const left = Math.floor((d-today)/86400000);
+    const dateStr = d.toLocaleDateString('it-IT',{day:'numeric',month:'short',year:'numeric'});
+    const suffix = left<0?' ⛔ SCADUTO':left<=5?` ⚠️ ${left}gg`:`+${left}gg`;
+    return {text:dateStr+' ('+suffix+')', daysLeft:left};
+  }
+
+  const ucOpts = UC_PEPTIDES.map(p => `<option value="${p.id}"${p.id==='bpc'?' selected':''}>${p.name}</option>`).join('');
+
+  let html = `<div class="app-view-inner view-wrap">
+    <style>
+      .stock-vchip summary{list-style:none;cursor:pointer;border-radius:8px}
+      .stock-vchip summary::-webkit-details-marker{display:none}
+      .stock-vchip summary::marker{content:''}
+      .stock-vchip[open] summary{border-radius:8px 8px 0 0}
+    </style>
+    <div style="font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.02em;margin-bottom:4px">Stock peptidi · Ciclo 1</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">20 lug – 8 nov 2026 · 112 giorni</div>
+
+    <div style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);padding:16px;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">🧮 Unit Converter</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Volume di prelievo su siringa da insulina U-100</div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px">
+        <div>
+          <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Peptide</div>
+          <select id="uc-peptide" onchange="ucFillDefaults(this.value)" style="width:100%;font-size:12px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">${ucOpts}</select>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Quantità vial</div>
+          <div style="position:relative"><input type="number" id="uc-mg" value="10" step="0.1" min="0" oninput="ucUpdate()" style="width:100%;font-size:12px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 24px 7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted)">mg</span></div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Acqua BAC</div>
+          <div style="position:relative"><input type="number" id="uc-bac" value="2" step="0.1" min="0" oninput="ucUpdate()" style="width:100%;font-size:12px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 24px 7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted)">ml</span></div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Dose target</div>
+          <div style="position:relative"><input type="number" id="uc-target" value="250" step="1" min="0" oninput="ucUpdate()" style="width:100%;font-size:12px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 30px 7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted)">mcg</span></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:10px;align-items:stretch">
+        <div style="background:var(--surface2,#f5f5f7);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase">Concentrazione</div>
+          <div id="uc-conc" style="font-size:18px;font-weight:700;color:var(--text);margin:2px 0">—</div>
+          <div style="font-size:9px;color:var(--muted)">mcg/ml</div>
+        </div>
+        <div style="background:rgba(0,113,227,.08);border:1px solid rgba(0,113,227,.25);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:var(--blue);font-weight:600;text-transform:uppercase">Volume da prelevare</div>
+          <div id="uc-draw" style="font-size:22px;font-weight:800;color:var(--blue);margin:2px 0">—</div>
+          <div style="font-size:9px;color:var(--blue)">unità (UI)</div>
+        </div>
+        <div style="background:var(--surface2,#f5f5f7);border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase">Dosi/vial</div>
+          <div id="uc-doses" style="font-size:18px;font-weight:700;color:var(--text);margin:2px 0">—</div>
+          <div style="font-size:9px;color:var(--muted)">dosi</div>
+        </div>
+      </div>
+      <div id="uc-bilat" style="display:none;font-size:11px;color:var(--blue);font-weight:600;text-align:center;margin-top:8px"></div>
+      <div style="font-size:9px;color:var(--muted);margin-top:10px;text-align:center">Solo conversione di unità · non sostituisce indicazione medica</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+      ${compounds.filter(c=>!c.offProtocol).map(c => {
+        const dispMg = c.disponibile || 0;
+        const pctDisp = c.mgNeeded ? Math.min(100,Math.round((dispMg/c.mgNeeded)*100)) : 0;
+        const surplus = Math.round((dispMg - c.mgNeeded)*10)/10;
+        const col = pctDisp>=100?'#34c759':pctDisp>0?'#0071e3':'#ff3b30';
+        return `<div style="background:var(--surface,#fff);border:1px solid var(--border,#e8e8ed);border-radius:12px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:700;color:${c.color};margin-bottom:4px">${c.emoji} ${c.name}</div>
+          <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
+            <span style="font-size:16px;font-weight:700;color:var(--text)">${dispMg}</span>
+            <span style="font-size:10px;color:var(--muted)">/ ${c.mgNeeded}mg</span>
+          </div>
+          <div style="height:4px;background:var(--border,#e8e8ed);border-radius:2px;margin-bottom:4px;overflow:hidden">
+            <div style="height:100%;width:${pctDisp}%;background:${col};border-radius:2px;transition:width .3s"></div>
+          </div>
+          <div style="font-size:9px;color:var(--muted)">
+            ${pctDisp>=100?`<span style="color:#34c759;font-weight:600">✓ coperto (+${surplus}mg)</span>`:pctDisp>0?`<span style="color:${col};font-weight:600">${pctDisp}% coperto</span>`:'<span style="color:#ff3b30;font-weight:600">0 in stock</span>'}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="background:rgba(52,199,89,.08);border:1px solid rgba(52,199,89,.25);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#1d6e32">
+      <b style="color:#1d6e32">✓ Consegna Bachem arrivata (15 lug) · </b>tutti i composti del Ciclo 1 ora coperti. Ipamorelin in forte surplus (40mg vs 11.2mg necessari) — verificare se è un taglio minimo di confezione del fornitore.
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;overflow-x:auto;padding-bottom:4px">
+      <button onclick="document.getElementById('stock-anchor-tesa').scrollIntoView({behavior:'smooth',block:'start'})"
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid #0071e3;background:#0071e3;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🧬 Tesamorelin</button>
+      <button onclick="document.getElementById('stock-anchor-fragment').scrollIntoView({behavior:'smooth',block:'start'})"
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid #ff3b30;background:transparent;color:#ff3b30;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🔥 Fragment</button>
+      <button onclick="document.getElementById('stock-anchor-ipa').scrollIntoView({behavior:'smooth',block:'start'})"
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid #34c759;background:transparent;color:#34c759;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">⚡ Ipamorelin</button>
+      <button onclick="document.getElementById('stock-anchor-igf').scrollIntoView({behavior:'smooth',block:'start'})"
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid #af52de;background:transparent;color:#af52de;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">💪 IGF-1 DES</button>
+      <button onclick="document.getElementById('stock-anchor-bpc').scrollIntoView({behavior:'smooth',block:'start'})"
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid #ff9500;background:transparent;color:#ff9500;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🔧 BPC-157</button>
+      <button onclick="document.getElementById('stock-anchor-tb500').scrollIntoView({behavior:'smooth',block:'start'})"
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid #ff2d55;background:transparent;color:#ff2d55;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🛡️ TB-500</button>
+      <button onclick="document.getElementById('stock-anchor-motsc').scrollIntoView({behavior:'smooth',block:'start'})"
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid #8e8e93;background:transparent;color:#8e8e93;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🔋 MOTS-C</button>
+      <button onclick="document.getElementById('stock-anchor-ghkcu').scrollIntoView({behavior:'smooth',block:'start'})"
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid #8e8e93;background:transparent;color:#8e8e93;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🔬 GHK-Cu</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-bottom:16px">`;
+
+  let offProtocolSeparatorAdded = false;
+  compounds.forEach(c => {
+    // Separatore visivo prima dei peptidi non-v2
+    if (c.offProtocol && !offProtocolSeparatorAdded) {
+      offProtocolSeparatorAdded = true;
+      html += `</div>
+      <div style="margin:20px 0 14px;display:flex;align-items:center;gap:10px">
+        <div style="flex:1;height:1px;background:var(--border,#e8e8ed)"></div>
+        <div style="font-size:11px;font-weight:700;color:#aeaeb2;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;padding:0 4px">Riserva · non allocati al Ciclo 1</div>
+        <div style="flex:1;height:1px;background:var(--border,#e8e8ed)"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-bottom:16px">`;
+    }
+    const pct = c.offProtocol ? 0 : Math.min(100,Math.round((c.disponibile/c.mgNeeded)*100));
+    const barC = pct>=100?'#34c759':pct>30?'#ff9500':'#ff3b30';
+    const circ = (2*Math.PI*20).toFixed(1);
+    const off  = (parseFloat(circ)*(1-pct/100)).toFixed(1);
+
+    // Rende una card di dettaglio completa (grammatura/BAC/UI/scadenza/note) — solo per i vial ATTIVI (in_uso/congelato)
+    function renderFullCard(c, sup, v, k, sv) {
+      const stato = sv.stato||v.stato;
+      const st = stSty(stato);
+      const mg  = parseFloat(sv.mg)  || c.defaultMg;
+      const bac = parseFloat(sv.bac) || c.defaultBac;
+      const ui  = c.dose_mcg ? calcUI(mg, bac, c.dose_mcg) : {conc:(mg/bac).toFixed(1), ui:'—'};
+      const exp = c.stabilityDays ? calcExpiry(sv.reco, c.stabilityDays) : {text:'Liofilizzato · stabile', daysLeft:null};
+      const igfNote = c.id==='igf' ? `<span style="font-size:9px;color:var(--muted)"> → ${(parseFloat(ui.ui)/2).toFixed(1)} UI/lato</span>` : '';
+      let lifeBar = '';
+      if (sv.reco) {
+        const recoD = new Date(sv.reco); recoD.setHours(0,0,0,0);
+        const today2 = new Date(); today2.setHours(0,0,0,0);
+        const elapsed = Math.floor((today2-recoD)/86400000);
+        const pctLife = Math.min(100,Math.round((elapsed/c.stabilityDays)*100));
+        const lifeC = pctLife>=90?'#ff3b30':pctLife>=70?'#ff9500':'#34c759';
+        const left2 = Math.max(0, c.stabilityDays-elapsed);
+        lifeBar = `<div style="margin:6px 0 4px">
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px">
+            <span>Vita residua</span><span>${left2} gg / ${c.stabilityDays}</span>
+          </div>
+          <div style="height:4px;background:var(--surface3,#e8e8ed);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${pctLife}%;background:${lifeC};border-radius:2px"></div>
+          </div></div>`;
+      }
+      const statoBtns = ['intatto','in_uso','esaurito','perso','congelato'].map(s => {
+        const ss = stSty(s); const active = stato===s;
+        return `<button onclick="stockSetStato('${c.id}','${sup.key}',${v.n},'${s}')" style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;border:1px solid ${active?ss.c:'var(--border,#e8e8ed)'};background:${active?ss.bg:'transparent'};color:${active?ss.c:'var(--muted)'};cursor:pointer;font-family:inherit">${ss.text}</button>`;
+      }).join('');
+      const mgOpts = c.mgOptions.map(m => `<option value="${m}"${m===mg?' selected':''}>${m}mg</option>`).join('');
+      const bacOpts = c.bacOptions.map(b => `<option value="${b}"${b===bac?' selected':''}>${b}ml</option>`).join('');
+      const expColor = exp.daysLeft===null?'var(--muted)':exp.daysLeft<0?'#c0392b':exp.daysLeft<=5?'#a05a00':'#1d6e32';
+      return `
+        <div style="border:1px solid var(--border,#e8e8ed);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--surface,#fff)">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+            <div style="width:8px;height:8px;border-radius:50%;background:${st.dot};flex-shrink:0"></div>
+            <span style="font-size:13px;font-weight:700;color:var(--text)">Vial ${v.n}</span>
+            <span style="font-size:10px;font-weight:600;background:${st.bg};color:${st.c};padding:2px 8px;border-radius:10px">${st.text}</span>
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:10px">${statoBtns}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+            <div>
+              <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Grammatura</div>
+              <select onchange="stockSaveRecon('${c.id}','${sup.key}',${v.n})" id="mg-${k}" style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">${mgOpts}</select>
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">BAC Water</div>
+              <select onchange="stockSaveRecon('${c.id}','${sup.key}',${v.n})" id="bac-${k}" style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">${bacOpts}</select>
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">UI / dose</div>
+              <div style="font-size:18px;font-weight:700;color:var(--text);line-height:1">${ui.ui}</div>
+              <div style="font-size:9px;color:var(--muted)">${ui.conc}mg/ml${igfNote}</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+            <div>
+              <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Data ricostituzione</div>
+              <input type="date" id="reco-${k}" value="${sv.reco||''}" onchange="stockSaveRecon('${c.id}','${sup.key}',${v.n})" style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Scadenza (auto)</div>
+              <div style="font-size:11px;font-weight:600;color:${expColor};padding:5px 6px;background:var(--surface2,#f5f5f7);border:1px solid var(--border,#e8e8ed);border-radius:6px;min-height:28px">${exp.text}</div>
+            </div>
+          </div>
+          ${lifeBar}
+          <div>
+            <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Note</div>
+            <input type="text" id="note-${k}" value="${(sv.note||'').replace(/"/g,'&quot;')}" placeholder="es. 10mg + 2ml BAC · frigo A" onblur="stockSaveNote('${c.id}','${sup.key}',${v.n},this.value)" style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">
+          </div>
+        </div>`;
+    }
+
+    // Rende un vial "a basso segnale" (intatto/perso/esaurito) come chip compatto <details> — pesa una frazione
+    // dello spazio di una card completa, evitando che composti con molti vial (es. Tesamorelin, 34 vial) dominino la UI.
+    function renderChip(c, sup, v, k, sv) {
+      const stato = sv.stato||v.stato;
+      const st = stSty(stato);
+      const statoBtns = ['intatto','in_uso','esaurito','perso','congelato'].map(s => {
+        const ss = stSty(s); const active = stato===s;
+        return `<button onclick="stockSetStato('${c.id}','${sup.key}',${v.n},'${s}')" style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:9px;border:1px solid ${active?ss.c:'var(--border,#e8e8ed)'};background:${active?ss.bg:'transparent'};color:${active?ss.c:'var(--muted)'};cursor:pointer;font-family:inherit">${ss.text}</button>`;
+      }).join('');
+      return `<details class="stock-vchip" style="border:1px solid ${st.dot}40;border-radius:8px;background:${st.bg}">
+        <summary style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${st.c}" title="Vial ${v.n} · ${st.text}">${v.n}</summary>
+        <div style="padding:6px 8px;border-top:1px solid ${st.dot}30;min-width:150px">
+          <div style="font-size:9px;color:var(--muted);margin-bottom:5px">Vial ${v.n} · <span style="color:${st.c};font-weight:600">${st.text}</span></div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">${statoBtns}</div>
+        </div>
+      </details>`;
+    }
+
+    let vialsHtml = '';
+    if (!c.suppliers || c.suppliers.every(s=>s.vials.length===0)) {
+      vialsHtml = `<div style="background:rgba(255,59,48,.06);border-radius:8px;padding:8px 10px;font-size:11px;color:#7a2020">⚠️ ${c.gap||'Nessun vial registrato'}</div>`;
+    } else {
+      c.suppliers.forEach(sup => {
+        if (sup.vials.length === 0) return;
+        const meta = SUPPLIER_META[sup.key] || {label:sup.key, badgeBg:'#f5f5f7', badgeC:'#636366', badgeBorder:'#e8e8ed'};
+        const subtotalMg = supplierMg(c, sup);
+        let chips = '', fullCards = '';
+        sup.vials.forEach(v => {
+          const k = c.id+'_'+sup.key+'_v'+v.n;
+          const sv = vd[k]||{};
+          const stato = sv.stato||v.stato;
+          if (stato==='in_uso' || stato==='congelato') {
+            fullCards += renderFullCard(c, sup, v, k, sv);
+          } else {
+            chips += renderChip(c, sup, v, k, sv);
+          }
+        });
+        vialsHtml += `<div style="margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">
+            <span style="font-size:10px;font-weight:700;background:${meta.badgeBg};color:${meta.badgeC};border:1px solid ${meta.badgeBorder};padding:2px 8px;border-radius:8px">${meta.label}</span>
+            <span style="font-size:11px;color:var(--muted)">${sup.vials.length} vial · ${Math.round(subtotalMg*10)/10}mg</span>
+            ${sup.arrivo ? `<span style="font-size:9px;color:#8e8e93;margin-left:auto">arr. ${sup.arrivo}</span>` : ''}
+          </div>
+          ${chips ? `<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:${fullCards?'8px':'0'}">${chips}</div>` : ''}
+          ${fullCards}
+        </div>`;
+      });
+      if (c.disponibile > 0 && c.disponibile < c.mgNeeded) {
+        vialsHtml += `<div style="background:rgba(255,149,0,.08);border-radius:8px;padding:7px 10px;font-size:11px;color:#7a4400">⚠️ ${c.gap}</div>`;
+      }
+    }
+
+    if (c.offProtocol) {
+      // Card off-protocol: grigia, senza ring, senza progress bar
+      html += `
+      <div id="stock-anchor-${c.id}" style="background:var(--surface,#fff);border-radius:14px;border:1px dashed #c7c7cc;box-shadow:none;overflow:hidden;opacity:.82">
+        <div style="padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px dashed #c7c7cc">
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(142,142,147,.10);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;filter:grayscale(1)">${c.emoji}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:14px;font-weight:700;color:#636366">${c.name}</span>
+              <span style="font-size:9px;font-weight:700;background:rgba(142,142,147,.15);color:#636366;border:1px solid #aeaeb2;padding:1px 7px;border-radius:10px;letter-spacing:.02em">NON V2</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px">${c.fab_detail}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px">🧊 ${c.stabilityNote}</div>
+          </div>
+        </div>
+        <div style="padding:7px 14px;background:rgba(142,142,147,.05);border-bottom:1px dashed #c7c7cc">
+          <span style="font-size:11px;color:#aeaeb2">${c.offLabel}</span>
+        </div>
+        <div style="padding:10px 14px">${vialsHtml}</div>
+      </div>`;
+    } else {
+      html += `
+      <div id="stock-anchor-${c.id}" style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);overflow:hidden">
+        <div style="padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border,#e8e8ed)">
+          <div style="width:38px;height:38px;border-radius:10px;background:${c.bg};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${c.emoji}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:700;color:${c.color}">${c.name}</div>
+            <div style="font-size:11px;color:var(--muted)">${c.dose}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px">🧊 ${c.stabilityNote}</div>
+          </div>
+          <div style="position:relative;width:48px;height:48px;flex-shrink:0">
+            <svg width="48" height="48" viewBox="0 0 48 48">
+              <circle cx="24" cy="24" r="20" fill="none" stroke="var(--surface2,#f5f5f7)" stroke-width="5"/>
+              <circle cx="24" cy="24" r="20" fill="none" stroke="${barC}" stroke-width="5"
+                stroke-dasharray="${circ}" stroke-dashoffset="${off}" stroke-linecap="round" transform="rotate(-90 24 24)"/>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${barC}">${pct}%</div>
+          </div>
+        </div>
+        <div style="padding:7px 14px;display:flex;justify-content:space-between;align-items:center;background:var(--surface2,#f5f5f7);border-bottom:1px solid var(--border,#e8e8ed)">
+          <span style="font-size:11px;color:var(--muted)">${c.fab_detail}</span>
+          <span style="font-size:13px;font-weight:700;color:var(--text)">${c.disponibile}mg <span style="font-weight:400;color:var(--muted);font-size:11px">/ ${c.mgNeeded}mg</span></span>
+        </div>
+        <div style="padding:0 14px 2px;background:var(--surface2,#f5f5f7);border-bottom:1px solid var(--border,#e8e8ed)">
+          <div style="height:4px;background:var(--surface3,#e8e8ed);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${barC};border-radius:2px"></div>
+          </div>
+        </div>
+        <div style="padding:10px 14px">${vialsHtml}</div>
+      </div>`;
+    }
+  });
+
+  html += `</div>
+    <div style="background:var(--surface,#fff);border-radius:12px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 4px rgba(0,0,0,.06);padding:12px 14px">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Consumabili</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
+        <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">💧</span>
+          <div><div style="font-size:12px;font-weight:600;color:var(--text)">BAC Water</div><div style="font-size:10px;color:var(--muted)">Limitless 4 + Bachem 20 · frigo</div></div>
+          <span style="margin-left:auto;font-size:14px;font-weight:700;color:#34c759">×24</span>
+        </div>
+        <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">💉</span>
+          <div><div style="font-size:12px;font-weight:600;color:var(--text)">Siringhe SC</div><div style="font-size:10px;color:var(--muted)">PIC 31G 8mm · iniezioni SC</div></div>
+          <span style="margin-left:auto;font-size:14px;font-weight:700;color:#34c759">390</span>
+        </div>
+        <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:10px">
+          <span style="font-size:18px">💉</span>
+          <div><div style="font-size:12px;font-weight:600;color:var(--text)">Siringhe IM</div><div style="font-size:10px;color:var(--muted)">PIC 29G 12,7mm · IGF-1 DES → IM</div></div>
+          <span style="margin-left:auto;font-size:14px;font-weight:700;color:#34c759">210</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface,#fff);border-radius:12px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 4px rgba(0,0,0,.06);padding:14px 16px;margin-top:14px">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">🇹🇭 Fabbisogno viaggio Bangkok</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">7–21 agosto 2026 · ${bkkTotalDays} giorni fuori casa (partenza sera 7/8, rientro sera 21/8) · ${bkkTrainingDays} gg allenamento (nessun riposo previsto in loco) · settimane 3–5 del protocollo</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;font-style:italic">Assunzione: allenamento tutti i giorni a Bangkok (incluso leg day), non lo split standard casa mar/mer/ven/sab/dom+riposo — da confermare/aggiornare se cambia il piano.</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:12px">
+        ${['tesa','fragment','ipa','bpc','tb500','igf'].map(id => {
+          const c = compounds.find(x => x.id === id);
+          if (!c || c.bkkMg === undefined) return '';
+          return `<div style="background:${c.bg};border-left:3px solid ${c.color};border-radius:8px;padding:9px 12px">
+            <div style="font-size:11px;font-weight:600;color:var(--text)">${c.emoji} ${c.name}</div>
+            <div style="font-size:16px;font-weight:700;color:${c.color};margin:2px 0">${c.bkkMg}mg</div>
+            <div style="font-size:10px;color:var(--muted)">${c.bkkSyringes} siringhe${id==='igf'?' (bilat.)':''}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);background:var(--surface2,#f5f5f7);border-radius:8px;padding:10px 12px;margin-bottom:12px">
+        <span>Siringhe SC: <b style="color:var(--text)">${bkkSyringesSC}</b></span>
+        <span>Siringhe IM: <b style="color:var(--text)">${bkkSyringesIM}</b></span>
+        <span>Totale minimo: <b style="color:var(--text)">${bkkSyringesTotal}</b></span>
+        <span>Con margine 15%: <b style="color:#1a7a3a">${bkkSyringesMargin}</b></span>
+      </div>
+      <div style="background:rgba(175,82,222,.08);border:0.5px solid rgba(175,82,222,.3);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text)">
+        <b style="color:#af52de">💪 IGF-1 DES — stabilità:</b> secondo indicazione del medico (dato il dosaggio), la soluzione ricostituita dura circa 30–40+ giorni in frigo — ampiamente sufficiente per i ${bkkTotalDays} giorni di viaggio con un'unica ricostituzione fatta prima della partenza. Verifica comunque l'aspetto della soluzione (limpida, senza particolato) prima di ogni uso.
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px">mg calcolati sulle dosi già stabilite dal protocollo (non nuovi dosaggi) · siringhe calcolate 1 per composto per slot, nessun mix nella stessa siringa · verifica di avere BAC water sufficiente per eventuali ricostituzioni in loco.</div>
+    </div>
+  </div>`;
+
+  el.innerHTML = html;
+  const ucSel = document.getElementById('uc-peptide');
+  if (ucSel) ucFillDefaults(ucSel.value);
+}
+
+function stockSaveNote(cid, sup, vn, val) {
+  const vd = stockGetVd();
+  const k=cid+'_'+sup+'_v'+vn; if(!vd[k])vd[k]={};
+  vd[k].note=val;
+  stockPersist(vd);
+}
+
+
+function stockCalcRecon(mg, bac, dosePerInj, stabilityDays, recoDate) {
+  const conc = mg / bac;
+  const ui = Math.round((dosePerInj / conc) * 100 * 10) / 10;
+  let expire = '—';
+  if (recoDate) {
+    const d = new Date(recoDate); d.setDate(d.getDate() + stabilityDays);
+    const today = new Date(); today.setHours(0,0,0,0); d.setHours(0,0,0,0);
+    const dLeft = Math.floor((d - today) / 86400000);
+    expire = d.toLocaleDateString('it-IT',{day:'numeric',month:'short',year:'numeric'});
+    expire += dLeft < 0 ? ' ⛔ SCADUTO' : dLeft <= 5 ? ` ⚠️ ${dLeft}gg` : ` (+${dLeft}gg)`;
+  }
+  return { conc: conc.toFixed(1), ui: ui.toFixed(1), expire };
+}
+
+function stockSaveRecon(cid, sup, vn) {
+  const vd = stockGetVd();
+  const k = `${cid}_${sup}_v${vn}`;
+  if (!vd[k]) vd[k] = {};
+  const mgEl   = document.getElementById(`mg-${k}`);
+  const bacEl  = document.getElementById(`bac-${k}`);
+  const recoEl = document.getElementById(`reco-${k}`);
+  if (mgEl)   vd[k].mg   = mgEl.value;
+  if (bacEl)  vd[k].bac  = bacEl.value;
+  if (recoEl) vd[k].reco = recoEl.value;
+  stockPersist(vd);
+  // Ricalcola e aggiorna UI senza rebuild
+  const el2 = document.getElementById(`stock2-view`);
+  if (el2) { delete el2.dataset.built; el2.innerHTML=''; buildStockView2(); }
+}
+
+function stockSetStato(cid, sup, vn, stato) {
+  const vd = stockGetVd();
+  const k = `${cid}_${sup}_v${vn}`;
+  if (!vd[k]) vd[k] = {};
+  vd[k].stato = stato;
+  stockPersist(vd);
+  const el2 = document.getElementById('stock2-view');
+  if (el2) { delete el2.dataset.built; el2.innerHTML=''; buildStockView2(); }
+}
+
+
+function buildMedDash() {
+  const el = document.getElementById('meddash-view');
+  if (el.dataset.built) return;
+  el.dataset.built = '1';
+
+  // ── DATI STORICI ─────────────────────────────
+  const DATA = {
+    hdl: [
+      {d:'Ott 2020',v:33,t:'2020-10'},{d:'Nov 2022',v:37,t:'2022-11'},
+      {d:'Gen 2024',v:24,t:'2024-01'},{d:'Feb 2025',v:27,t:'2025-02'},
+      {d:'Apr 2026',v:28,t:'2026-04'},{d:'Mag 2026',v:35,t:'2026-05'},
+      {d:'Giu 2026',v:32,t:'2026-06'},{d:'13 lug 2026 T0 Sant',v:32,t:'2026-07c'}
+    ],
+    colTot: [
+      {d:'Ott 2020',v:109,t:'2020-10'},{d:'Nov 2022',v:120,t:'2022-11'},
+      {d:'Gen 2024',v:89,t:'2024-01'},{d:'Feb 2025',v:102,t:'2025-02'},
+      {d:'Apr 2026',v:101,t:'2026-04'},{d:'Mag 2026',v:107,t:'2026-05'},
+      {d:'Giu 2026',v:118,t:'2026-06'}
+    ],
+    ldl: [
+      {d:'Ott 2020',v:62,t:'2020-10'},{d:'Nov 2022',v:66,t:'2022-11'},
+      {d:'Gen 2024',v:52,t:'2024-01'},{d:'Feb 2025',v:62,t:'2025-02'},
+      {d:'Apr 2026',v:60,t:'2026-04'},{d:'Mag 2026',v:57,t:'2026-05'},
+      {d:'9 giu 2026',v:64,t:'2026-06b'},{d:'13 lug 2026 T0 Sant',v:49,t:'2026-07c'}
+    ],
+    tg: [
+      {d:'Ott 2020',v:69,t:'2020-10'},{d:'Nov 2022',v:83,t:'2022-11'},
+      {d:'Gen 2024',v:64,t:'2024-01'},{d:'Feb 2025',v:67,t:'2025-02'},
+      {d:'Apr 2026',v:65,t:'2026-04'},{d:'Mag 2026',v:77,t:'2026-05'},
+      {d:'Giu 2026',v:108,t:'2026-06'},{d:'13 lug 2026 T0 Sant',v:50,t:'2026-07c'}
+    ],
+    omocist: [
+      {d:'Apr 2026',v:21.9,t:'2026-04'},{d:'Mag 2026',v:17.5,t:'2026-05'}
+    ],
+    vitd: [
+      {d:'Apr 2026',v:9.5,t:'2026-04'},{d:'Mag 2026',v:22,t:'2026-05'}
+    ],
+    zinco: [
+      {d:'Apr 2026',v:53.30,t:'2026-04'},{d:'Mag 2026',v:50.30,t:'2026-05'}
+    ],
+    emoglobina: [
+      {d:'Ott 2020',v:141,t:'2020-10'},{d:'Apr 2026',v:129,t:'2026-04'},
+      {d:'Mag 2026',v:119,t:'2026-05'}
+    ],
+    igf1: [
+      {d:'Mag 2026 T0',v:94,t:'2026-05'},{d:'13 lug 2026 T0 Sant',v:86.00,t:'2026-07'}
+    ],
+    testLibero: [
+      {d:'Gen 2024',v:16.53,t:'2024-01'},{d:'Apr 2026',v:15.60,t:'2026-04'},
+      {d:'13 lug 2026 T0 Sant',v:18.80,t:'2026-07'} // pg/mL Sant'Agostino = ng/L (unita' equivalente)
+    ],
+    ves: [
+      {d:'Apr 2026',v:17,t:'2026-04'},{d:'Mag 2026',v:25,t:'2026-05'}
+    ],
+    psa: [
+      {d:'Feb 2025',v:0.54,t:'2025-02'},{d:'Apr 2026',v:0.48,t:'2026-04'},
+      {d:'Mag 2026',v:0.63,t:'2026-05'},{d:'Giu 2026',v:0.49,t:'2026-06'}
+    ],
+    creatinina: [
+      {d:'10 apr 2026',v:1.13,t:'2026-04'},{d:'20 mag 2026',v:1.29,t:'2026-05a'},
+      {d:'21 mag 2026',v:1.29,t:'2026-05b'},{d:'3 lug 2026',v:1.32,t:'2026-07'},
+      {d:'13 lug 2026 T0 Sant',v:1.28,t:'2026-07b'}
+    ],
+    egfr: [
+      {d:'10 apr 2026',v:75,t:'2026-04'},{d:'3 lug 2026',v:62,t:'2026-07'}
+    ],
+    fsh: [
+      {d:'Nov 2022',v:12.6,t:'2022-11'},{d:'20 mag 2026',v:25.7,t:'2026-05'},
+      {d:'3 lug 2026',v:21.2,t:'2026-07'},{d:'13 lug 2026 T0',v:24.27,t:'2026-07b'}
+    ],
+    lh: [
+      {d:'Gen 2023',v:6.9,t:'2023-01'},{d:'20 mag 2026',v:13.8,t:'2026-05'},
+      {d:'3 lug 2026',v:10.9,t:'2026-07'},{d:'13 lug 2026 T0',v:14.24,t:'2026-07b'}
+    ],
+    testTotale: [
+      {d:'3 lug 2026 CDI',v:685,t:'2026-07'},{d:'13 lug 2026 T0 Sant',v:526.20,t:'2026-07b'}
+    ], // unità base: ng/dL (Sant'Agostino, referto T0 13/07/2026). Valore CDI 3/07 convertito da 6.85 µg/L ×100. Range 127.18–1020.36 ng/dL da referto Sant'Agostino.
+    shbg: [
+      {d:'10 apr 2026',v:75.10,t:'2026-04'},{d:'20 mag 2026',v:75.10,t:'2026-05'},{d:'3 lug 2026',v:72.80,t:'2026-07'},{d:'13 lug 2026 T0',v:54.10,t:'2026-07b'}
+    ],
+    acr: [
+      {d:'6 lug 2026',v:5,t:'2026-07'}
+    ],
+    cortisolUrin: [
+      {d:'6 lug 2026',v:58.45,t:'2026-07'}
+    ],
+    ferritina: [
+      {d:'Apr 2026',v:142,t:'2026-04'},{d:'Mag 2026',v:161,t:'2026-05'}
+    ],
+    crp: [
+      {d:'Apr 2026',v:2.7,t:'2026-04'},{d:'Mag 2026',v:2.7,t:'2026-05'},
+      {d:'13 lug 2026 T0 Sant',v:0.40,t:'2026-07'} // referto riporta "<0.40" (sotto soglia rilevabilita'), plottato come 0.40 = limite superiore
+    ],
+  };
+
+  // ── SPARKLINE SVG ─────────────────────────────
+  function sparkline(pts, w, h, color, refMin, refMax) {
+    if (pts.length < 2) {
+      // punto singolo — solo dot
+      return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+        <circle cx="${w/2}" cy="${h/2}" r="4" fill="${color}"/>
+      </svg>`;
+    }
+    const vals = pts.map(p=>p.v);
+    const minV = Math.min(...vals), maxV = Math.max(...vals);
+    const pad = 6;
+    const range = maxV - minV || 1;
+    const toX = (i) => pad + (i / (pts.length-1)) * (w - pad*2);
+    const toY = (v) => h - pad - ((v - minV) / range) * (h - pad*2);
+
+    let refBand = '';
+    if (refMin !== undefined && refMax !== undefined) {
+      const y1 = Math.min(toY(refMin), toY(refMax));
+      const y2 = Math.max(toY(refMin), toY(refMax));
+      refBand = `<rect x="0" y="${Math.max(0,y1)}" width="${w}" height="${Math.min(h,y2)-Math.max(0,y1)}" fill="rgba(52,199,89,.08)"/>`;
+    } else if (refMin !== undefined) {
+      const yRef = toY(refMin);
+      refBand = `<line x1="0" y1="${yRef}" x2="${w}" y2="${yRef}" stroke="rgba(52,199,89,.4)" stroke-width="1" stroke-dasharray="3,3"/>`;
+    }
+
+    const polyPts = pts.map((p,i) => `${toX(i)},${toY(p.v)}`).join(' ');
+    // area fill
+    const areaBottom = h - pad;
+    const areaPts = `${toX(0)},${areaBottom} ${polyPts} ${toX(pts.length-1)},${areaBottom}`;
+
+    const dots = pts.map((p,i) => {
+      const ok = (refMin === undefined || p.v >= refMin) && (refMax === undefined || p.v <= refMax);
+      const dc = ok ? color : '#ff3b30';
+      return `<circle cx="${toX(i)}" cy="${toY(p.v)}" r="3" fill="${dc}" stroke="white" stroke-width="1.5"/>`;
+    }).join('');
+
+    const lastVal = pts[pts.length-1].v;
+    const prevVal = pts[pts.length-2]?.v;
+    const lastX = toX(pts.length-1), lastY = toY(lastVal);
+
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      ${refBand}
+      <polygon points="${areaPts}" fill="${color}" opacity="0.08"/>
+      <polyline points="${polyPts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+    </svg>`;
+  }
+
+  // ── BARRA PROGRESSO ──────────────────────────
+  function progressBar(current, target, max, color, label) {
+    const pct = Math.min(100, (current/target)*100).toFixed(0);
+    const warn = current < target;
+    const barColor = warn ? '#ff9500' : color;
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+        <span style="font-weight:500">${label}</span>
+        <span style="color:${warn?'#ff9500':'#34c759'};font-weight:600">${current} <span style="color:var(--muted);font-weight:400">/ target ${target}</span></span>
+      </div>
+      <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden">
+        <div style="background:${barColor};height:6px;width:${pct}%;border-radius:4px;transition:width .5s ease"></div>
+      </div>
+    </div>`;
+  }
+
+  // ── KPI CARD ─────────────────────────────────
+  function kpiCard(label, pts, unit, refMin, refMax, targetLabel, color) {
+    const last = pts[pts.length-1];
+    const prev = pts[pts.length-2];
+    const delta = prev ? (last.v - prev.v) : null;
+    const isOk = (refMin === undefined || last.v >= refMin) && (refMax === undefined || last.v <= refMax);
+    const valColor = isOk ? '#34c759' : (Math.abs(last.v - (refMin||refMax)) < (refMin||refMax)*0.15 ? '#ff9500' : '#ff3b30');
+    const arrow = delta === null ? '' : delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
+    const arrowColor = delta === null ? '' :
+      (refMin && delta > 0) || (refMax && delta < 0) ? '#34c759' : '#ff3b30';
+    const spark = sparkline(pts, 120, 50, color, refMin, refMax);
+    return `<div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px">
+      <div class="t-section-title" style="margin-bottom:6px">${label}</div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between">
+        <div>
+          <span style="font-size:var(--fs-2xl);font-weight:var(--fw-semi);letter-spacing:-.03em;color:${valColor}">${last.v}</span>
+          <span style="font-size:12px;color:var(--muted);margin-left:3px">${unit}</span>
+          ${delta !== null ? `<span style="font-size:13px;font-weight:600;color:${arrowColor};margin-left:6px">${arrow}${Math.abs(delta).toFixed(delta%1===0?0:1)}</span>` : ''}
+        </div>
+        <div>${spark}</div>
+      </div>
+      <div style="font-size:var(--fs-xs);color:var(--muted)">${targetLabel} · ultimo: <span style="font-weight:500">${last.d}</span></div>
+    </div>`;
+  }
+
+  // ── CHART A LINEE MULTI-SERIE ─────────────────
+  function lineChart(series, w, h) {
+    // series: [{label, pts:[{d,v}], color, refMin, refMax}]
+    const allVals = series.flatMap(s=>s.pts.map(p=>p.v));
+    const allDates = [...new Set(series.flatMap(s=>s.pts.map(p=>p.t)))].sort();
+    const minV = Math.min(...allVals)*0.9, maxV = Math.max(...allVals)*1.1;
+    const pad = {t:10,r:10,b:28,l:36};
+    const iW = w-pad.l-pad.r, iH = h-pad.t-pad.b;
+    const toX = (t) => pad.l + (allDates.indexOf(t)/Math.max(allDates.length-1,1))*iW;
+    const toY = (v) => pad.t + iH - ((v-minV)/(maxV-minV||1))*iH;
+
+    // grid lines
+    const nGrid = 4;
+    let gridLines = '', gridLabels = '';
+    for (let i=0;i<=nGrid;i++) {
+      const y = pad.t + (i/nGrid)*iH;
+      const v = (maxV - (maxV-minV)*(i/nGrid)).toFixed(0);
+      gridLines += `<line x1="${pad.l}" y1="${y}" x2="${w-pad.r}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
+      gridLabels += `<text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="9" fill="var(--muted)">${v}</text>`;
+    }
+
+    // x labels (solo primo e ultimo e qualche intermedio)
+    let xLabels = '';
+    const showIdx = [0, Math.floor(allDates.length/2), allDates.length-1].filter((v,i,a)=>a.indexOf(v)===i);
+    // ricavo label leggibile dalle date
+    const dateLookup = {};
+    series.forEach(s=>s.pts.forEach(p=>{ dateLookup[p.t]=p.d; }));
+    showIdx.forEach(i => {
+      const t = allDates[i];
+      const x = toX(t);
+      const lbl = (dateLookup[t]||t).replace(' 2026','').replace(' 20','\'');
+      xLabels += `<text x="${x}" y="${h-4}" text-anchor="middle" font-size="9" fill="var(--muted)">${lbl}</text>`;
+    });
+
+    // ref band (prima serie)
+    let refBands = '';
+    series.forEach(s => {
+      if (s.refMin !== undefined) {
+        const yRef = toY(s.refMin);
+        refBands += `<line x1="${pad.l}" y1="${yRef}" x2="${w-pad.r}" y2="${yRef}" stroke="${s.color}" stroke-width="1" stroke-dasharray="4,3" opacity=".4"/>`;
+      }
+    });
+
+    // linee e dots
+    let lines = '', dots = '';
+    series.forEach(s => {
+      const validPts = s.pts.filter(p=>allDates.includes(p.t));
+      if (validPts.length < 1) return;
+      const polyPts = validPts.map(p=>`${toX(p.t)},${toY(p.v)}`).join(' ');
+      lines += `<polyline points="${polyPts}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+      validPts.forEach(p => {
+        const ok = (s.refMin===undefined||p.v>=s.refMin)&&(s.refMax===undefined||p.v<=s.refMax);
+        dots += `<circle cx="${toX(p.t)}" cy="${toY(p.v)}" r="3.5" fill="${ok?s.color:'#ff3b30'}" stroke="white" stroke-width="1.5"/>`;
+      });
+      // label ultimo valore
+      const lastP = validPts[validPts.length-1];
+      lines += `<text x="${toX(lastP.t)+7}" y="${toY(lastP.v)+4}" font-size="10" fill="${s.color}" font-weight="600">${lastP.v}</text>`;
+    });
+
+    return `<svg width="100%" viewBox="0 0 ${w} ${h}" preserveAspectRatio="xMidYMid meet" style="overflow:visible">
+      ${gridLines}${gridLabels}${xLabels}${refBands}${lines}${dots}
+    </svg>`;
+  }
+
+  // ══════════════════════════════════════════════
+  //  RENDER
+  // ══════════════════════════════════════════════
+  let html = `<div class="app-view-inner view-wrap">
+
+  <!-- KPI GRID — organizzata per categoria clinica -->
+  <div class="section-label" style="margin-top:0">🩺 Asse renale</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
+    ${kpiCard('Creatinina', DATA.creatinina, 'mg/dL', undefined, 1.2, 'target ≤1.20', '#8e8e93')}
+    ${kpiCard('eGFR', DATA.egfr, 'mL/min', 90, undefined, 'target ≥90', '#5856d6')}
+    ${kpiCard('ACR urinario', DATA.acr, 'mg/g cre', undefined, 30, 'target <30 (normoalbuminuria)', '#34c759')}
+  </div>
+
+  <div class="section-label">⚖️ Asse gonadico</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
+    ${kpiCard('Testosterone tot.', DATA.testTotale, 'ng/dL', 127.18, 1020.36, 'range 127.18–1020.36 (Sant\'Agostino)', '#0071e3')}
+    ${kpiCard('Testosterone lib.', DATA.testLibero, 'pg/mL', 9.57, 40.60, 'range 9.57–40.60 (Sant\'Agostino)', '#0071e3')}
+    ${kpiCard('SHBG', DATA.shbg, 'nmol/L', 11.20, 78.10, 'range 11.20–78.10 (Sant\'Agostino)', '#8e44ad')}
+    ${kpiCard('FSH', DATA.fsh, 'mIU/mL', 0.95, 11.95, 'range 0.95–11.95 (Sant\'Agostino)', '#ff3b30')}
+    ${kpiCard('LH', DATA.lh, 'mUI/mL', 0.57, 12.7, 'range 0.57–12.7 (Sant\'Agostino)', '#ff3b30')}
+  </div>
+
+  <div class="section-label">🫀 Lipidi</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
+    ${kpiCard('HDL', DATA.hdl, 'mg/dL', 40, undefined, 'target ≥40', '#ff9500')}
+  </div>
+
+  <div class="section-label">🔥 Infiammazione</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
+    ${kpiCard('Omocisteina', DATA.omocist, 'µmol/L', undefined, 13, 'target ≤13', '#0071e3')}
+    ${kpiCard('VES', DATA.ves, 'mm/h', undefined, 15, 'target ≤15', '#ff9500')}
+    ${kpiCard('PCR', DATA.crp, 'mg/L', undefined, 3.3, 'target ≤3.3', '#8e8e93')}
+  </div>
+
+  <div class="section-label">🧬 Altro / quadro generale</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:28px">
+    ${kpiCard('IGF-1', DATA.igf1, 'µg/L', 115, 300, 'target 150–180+ (post Tesa)', '#af52de')}
+    ${kpiCard('Vitamina D', DATA.vitd, 'µg/L', 50, undefined, 'target ≥50', '#34c759')}
+    ${kpiCard('Emoglobina', DATA.emoglobina, 'g/L', 133, undefined, 'target ≥133', '#ff3b30')}
+    ${kpiCard('Zinco', DATA.zinco, 'µg/dL', 60, 106, 'target 60–106', '#8e44ad')}
+    ${kpiCard('PSA', DATA.psa, 'µg/L', undefined, 4, 'target ≤4', '#34c759')}
+    ${kpiCard('Ferritina', DATA.ferritina, 'µg/L', 22, 322, 'target 22–322', '#ff9500')}
+    ${kpiCard('Cortisolo urinario 24h', DATA.cortisolUrin, 'µg/24h', 4.2, 60.0, 'range 4.2–60.0', '#ff9500')}
+  </div>
+
+  <!-- OBIETTIVI PROTOCOLLO -->
+  <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
+    <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px">🎯 Obiettivi protocollo — baseline vs target</div>
+    ${progressBar(94, 165, 300, '#af52de', 'IGF-1 (µg/L) · target 150–180+')}
+    ${progressBar(32, 40, 60, '#ff9500', 'HDL (mg/dL) · target ≥40')}
+    ${progressBar(22, 50, 100, '#34c759', 'Vitamina D (µg/L) · target ≥50')}
+    ${progressBar(17.5, 13, 25, '#0071e3', 'Omocisteina (µmol/L) · target ≤13 — barra inversa: più alta = peggio')}
+    ${progressBar(119, 133, 180, '#ff3b30', 'Emoglobina (g/L) · target ≥133')}
+    ${progressBar(50.3, 70, 106, '#8e44ad', 'Zinco (µg/dL) · target 70–80')}
+  </div>
+
+  <!-- GRAFICI LIPIDI -->
+  <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
+    <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Profilo lipidico — storico</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">HDL ≥40 · LDL ≤115 · TG ≤150 · ColTot ≤190</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">HDL <span style="color:var(--muted);font-weight:400">target ≥40</span></div>
+        ${lineChart([{label:'HDL',pts:DATA.hdl,color:'#ff9500',refMin:40}], 400, 140)}
+      </div>
+      <div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">LDL + Trigliceridi <span style="color:var(--muted);font-weight:400">target LDL ≤115 · TG ≤150</span></div>
+        ${lineChart([
+          {label:'LDL',pts:DATA.ldl,color:'#0071e3',refMin:undefined,refMax:115},
+          {label:'TG',pts:DATA.tg,color:'#ff9500',refMin:undefined,refMax:150}
+        ], 400, 140)}
+      </div>
+    </div>
+  </div>
+
+  <!-- GRAFICI ASSE ORMONALE / METABOLICO -->
+  <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
+    <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px">Asse ormonale & metabolico</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Emoglobina <span style="color:var(--muted);font-weight:400">target ≥133 g/L</span></div>
+        ${lineChart([{label:'Hb',pts:DATA.emoglobina,color:'#ff3b30',refMin:133}], 400, 120)}
+      </div>
+      <div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Omocisteina <span style="color:var(--muted);font-weight:400">target ≤13 µmol/L</span></div>
+        ${lineChart([{label:'Omocist',pts:DATA.omocist,color:'#0071e3',refMax:13}], 400, 120)}
+      </div>
+      <div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Vitamina D <span style="color:var(--muted);font-weight:400">target ≥50 µg/L</span></div>
+        ${lineChart([{label:'VitD',pts:DATA.vitd,color:'#34c759',refMin:50}], 400, 120)}
+      </div>
+      <div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Zinco <span style="color:var(--muted);font-weight:400">target 60–106 µg/dL</span></div>
+        ${lineChart([{label:'Zinco',pts:DATA.zinco,color:'#8e44ad',refMin:60}], 400, 120)}
+      </div>
+    </div>
+  </div>
+
+  <!-- PSA + CREATININA -->
+  <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
+    <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px">Monitoraggio PSA & funzione renale</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">PSA totale <span style="color:var(--muted);font-weight:400">target ≤4 µg/L</span></div>
+        ${lineChart([{label:'PSA',pts:DATA.psa,color:'#34c759',refMax:4}], 400, 120)}
+      </div>
+      <div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Creatinina <span style="color:var(--muted);font-weight:400">target ≤1.20 mg/dL</span></div>
+        ${lineChart([{label:'Creat',pts:DATA.creatinina,color:'#8e8e93',refMax:1.2}], 400, 120)}
+      </div>
+      <div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">eGFR <span style="color:var(--muted);font-weight:400">target ≥90 mL/min/1.73mq</span></div>
+        ${lineChart([{label:'eGFR',pts:DATA.egfr,color:'#5856d6',refMin:90}], 400, 120)}
+      </div>
+      <div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">FSH + LH <span style="color:var(--muted);font-weight:400">asse gonadico · range Sant'Agostino FSH 0.95–11.95 · LH 0.57–12.7</span></div>
+        ${lineChart([{label:'FSH',pts:DATA.fsh,color:'#ff3b30',refMax:11.95},{label:'LH',pts:DATA.lh,color:'#ff9500',refMax:12.7}], 400, 120)}
+      </div>
+    </div>
+  </div>
+
+  <!-- PROSSIMI CHECK -->
+  <div style="background:rgba(0,113,227,.06);border:1px solid rgba(0,113,227,.2);border-radius:12px;padding:16px;margin-bottom:40px">
+    <div style="font-size:var(--fs-body);font-weight:var(--fw-semi);color:var(--blue);margin-bottom:10px">🔬 Mini-panel mid-cycle previsto — settimane 8–10 (agosto 2026)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:7px">
+      ${['IGF-1','Glucosio / Insulina / HOMA','HDL','Omocisteina','Vitamina D',
+         'Testosterone libero / SHBG','CRP','Zinco','Folato / B12',
+         'Emoglobina / MCHC','eGFR / Creatinina','VES','FSH / LH']
+        .map(m=>`<span style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px">${m}</span>`).join('')}
+    </div>
+  </div>
+
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+
+// ── Pre-Protocollo toggle ─────────────────────────────────────
+let _preProtoOpen = false;
+
+function togglePreProto() {
+  _preProtoOpen = !_preProtoOpen;
+  const body = document.getElementById('pre-proto-body');
+  const chev = document.getElementById('pre-proto-chev');
+  if (_preProtoOpen) {
+    body.classList.add('open');
+    if (chev) chev.textContent = '⌄';
+  } else {
+    body.classList.remove('open');
+    if (chev) chev.textContent = '›';
+  }
+}
+
+// ── loadFromCloud v1 + v2 ─────────────────────────────────────
+// Sovrascrive la versione originale per caricare anche USER_ID2
+
+window.addEventListener('load',async()=>{
+  buildNav();
+  buildDays();
+  buildProtoV2();
+  document.getElementById('loading').style.display='none';
+  const labWrap = document.getElementById('lab-section-wrap');
+  if (labWrap) buildLabSection(labWrap);
+  updateNavHighlight();
+  jumpToday();
+  try{
+    await loadFromCloud();
+  }catch(e){
+    const lr=localStorage.getItem(KEY);
+    if(lr){
+      try{
+        const p=JSON.parse(lr);
+        applyAll(p.data||p);
+        document.getElementById('last-saved').textContent='Offline — dati locali';
+        setSyncStatus('err');
+      }catch(e2){}
+    }
+    const lr2=localStorage.getItem(KEY2);
+    if(lr2){try{_lastData2=JSON.parse(lr2);applyAll(_lastData2);applyProto2Data();}catch(e2){}}
+    setTimeout(refreshCharts,200);
+    setTimeout(refreshDashChartsIfBuilt,200);
+  }
+});
 </script>
 
 <script>
@@ -7008,40 +8946,6 @@ function buildOrariView() {
   html += `</div></div>`;
 
   el.innerHTML = html;
-
-  // Popola la tabella di ricostituzione
-  const reconTableBody = document.getElementById('recon-table-body');
-  if (reconTableBody) {
-    const reconData2 = reconGetData2();
-    renderReconTable2(reconTableBody, reconData2, compounds);
-  }
-
-
-
-// Funzione helper per renderizzare la tabella di ricostituzione
-function renderReconTable(tbody, reconData, compoundsData) {
-  const peptideMap = {};
-  compoundsData.filter(c => !c.offProtocol).forEach(c => peptideMap[c.id] = c);
-  
-  tbody.innerHTML = reconData.map(item => {
-    const pep = peptideMap[item.id];
-    if (!pep) return '';
-    
-    const calc = calcReconsData(pep);
-    const doseKey = Object.keys(calc.drawUnits)[0];
-    const uiVal = calc.drawUnits[doseKey] || '—';
-    const dateStr = item.date_reconstituted || '—';
-    
-    return `<tr style="border-bottom:1px solid var(--border,#e8e8ed)">
-      <td style="padding:8px 0;font-weight:500">${pep.emoji} ${pep.name}</td>
-      <td style="padding:8px 0;text-align:center"><input type="number" value="${item.vial_mg}" step="0.1" min="0" onchange="reconUpdate('${item.id}','vial_mg',this.value)" style="width:50px;padding:4px 6px;border:1px solid var(--border,#e8e8ed);border-radius:4px;font-size:10px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;text-align:center;font-family:inherit"></td>
-      <td style="padding:8px 0;text-align:center"><input type="number" value="${item.bac_ml}" step="0.1" min="0" onchange="reconUpdate('${item.id}','bac_ml',this.value)" style="width:50px;padding:4px 6px;border:1px solid var(--border,#e8e8ed);border-radius:4px;font-size:10px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;text-align:center;font-family:inherit"></td>
-      <td style="padding:8px 0;text-align:center;font-weight:600;color:${pep.color}">${calc.conc} mcg/mL</td>
-      <td style="padding:8px 0;text-align:center;font-weight:700;color:var(--blue)">${uiVal} UI</td>
-      <td style="padding:8px 0;text-align:center;font-size:10px;color:var(--muted)">${dateStr}</td>
-    </tr>`;
-  }).join('');
-}
 
   // Selector function
   window.orariShowDay = function(id) {
