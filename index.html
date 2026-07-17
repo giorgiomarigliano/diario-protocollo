@@ -6766,6 +6766,10 @@ function applyProto2Data() {
   });
   colorInjSelects();
   refreshSupplementSkipVisuals();
+  // Se il tab Stock era gia' stato costruito, ricostruiscilo ora che i dati v2
+  // (incl. peptide_reconstitution) sono arrivati dal cloud.
+  const stockEl2 = document.getElementById('stock2-view');
+  if (stockEl2 && stockEl2.dataset.built) { delete stockEl2.dataset.built; stockEl2.innerHTML=''; buildStockView2(); }
 }
 
 
@@ -6778,6 +6782,74 @@ const UC_PEPTIDES = [
   { id:'tb500',    name:'TB-500',            dose_mcg:500,  defaultMg:10, defaultBac:2.0, bilat:false },
   { id:'custom',   name:'Personalizzato',    dose_mcg:250,  defaultMg:10, defaultBac:2.0, bilat:false },
 ];
+
+// ── Tabella Ricostituzione (Stock v2) ────────────────────────────────────
+// Dati salvati in _lastData2.peptide_reconstitution (record USER_ID2 su Supabase),
+// caricati automaticamente da loadFromCloud() insieme al resto dei dati v2.
+// Nessun fetch custom qui: si legge solo lo stato già presente in memoria.
+function reconGetItem(peptideId) {
+  const list = (_lastData2 && Array.isArray(_lastData2.peptide_reconstitution)) ? _lastData2.peptide_reconstitution : [];
+  return list.find(x => x.id === peptideId) || null;
+}
+
+function renderReconRows(compounds) {
+  const list = (_lastData2 && Array.isArray(_lastData2.peptide_reconstitution)) ? _lastData2.peptide_reconstitution : [];
+  if (!list.length) {
+    return '<tr><td colspan="6" style="padding:10px 4px;text-align:center;color:var(--muted)">Caricamento dati…</td></tr>';
+  }
+  const byId = {}; compounds.forEach(c => byId[c.id] = c);
+  const UC_BY_ID = {}; UC_PEPTIDES.forEach(p => UC_BY_ID[p.id] = p);
+
+  return list.map(item => {
+    const c = byId[item.id];
+    if (!c) return '';
+    const mg = parseFloat(item.vial_mg) || 0;
+    const bac = parseFloat(item.bac_ml) || 0;
+    const conc = bac > 0 ? (mg * 1000 / bac) : 0; // mcg/ml
+    const uc = UC_BY_ID[item.id];
+    const bilat = !!(uc && uc.bilat);
+    const doseMcg = c.dose_mcg || 0;
+    const perInj = bilat ? doseMcg / 2 : doseMcg;
+    const ui = conc > 0 ? (perInj / conc * 100) : 0;
+    const uiLabel = bilat ? (ui.toFixed(1) + ' UI/lato') : (ui.toFixed(1) + ' UI');
+    const dateStr = item.date_reconstituted || '—';
+
+    return `<tr style="border-bottom:1px solid var(--border,#e8e8ed)">
+      <td style="padding:7px 4px;font-weight:600;color:${c.color}">${c.emoji} ${c.name}</td>
+      <td style="padding:7px 4px;text-align:center"><input type="number" value="${mg}" step="0.1" min="0" onchange="reconUpdate('${item.id}','vial_mg',this.value)" style="width:44px;padding:4px;border:1px solid var(--border,#e8e8ed);border-radius:5px;font-size:11px;background:var(--surface2,#f5f5f7);color:var(--text);text-align:center;font-family:inherit"></td>
+      <td style="padding:7px 4px;text-align:center"><input type="number" value="${bac}" step="0.1" min="0" onchange="reconUpdate('${item.id}','bac_ml',this.value)" style="width:44px;padding:4px;border:1px solid var(--border,#e8e8ed);border-radius:5px;font-size:11px;background:var(--surface2,#f5f5f7);color:var(--text);text-align:center;font-family:inherit"></td>
+      <td style="padding:7px 4px;text-align:center;color:var(--text)">${conc.toFixed(1)} mcg/mL</td>
+      <td style="padding:7px 4px;text-align:center;font-weight:700;color:var(--blue)">${uiLabel}</td>
+      <td style="padding:7px 4px;text-align:center;color:var(--muted)">${dateStr}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function reconUpdate(peptideId, field, newValue) {
+  if (!_lastData2 || !Array.isArray(_lastData2.peptide_reconstitution)) return;
+  const item = _lastData2.peptide_reconstitution.find(x => x.id === peptideId);
+  if (!item) return;
+  item[field] = parseFloat(newValue) || 0;
+  localStorage.setItem(KEY2, JSON.stringify(_lastData2));
+  const tbody = document.getElementById('recon-table-body');
+  if (tbody) {
+    const el = document.getElementById('stock2-view');
+    const compounds = (el && el._reconCompounds) || [];
+    if (compounds.length) tbody.innerHTML = renderReconRows(compounds);
+  }
+  try {
+    const url = SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID2;
+    const r = await fetch(url + '&select=data', { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } });
+    const rows = await r.json();
+    const current = (rows[0] && rows[0].data) || {};
+    current.peptide_reconstitution = _lastData2.peptide_reconstitution;
+    await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Prefer':'return=minimal' },
+      body: JSON.stringify({ data: current, updated_at: new Date().toISOString() })
+    });
+  } catch(e) { console.error('Ricostituzione: sync cloud fallita', e); }
+}
 
 function ucFillDefaults(id) {
   const p = UC_PEPTIDES.find(x => x.id === id);
@@ -6955,6 +7027,7 @@ function buildStockView2() {
       suppliers:[ { key:'limitless', vials:[{n:1,stato:'intatto'}] } ],
       offProtocol:true, offLabel:'1 vial disponibile · non allocato al Ciclo 1' },
   ];
+  el._reconCompounds = compounds;
 
   // ── Calcoli aggregati derivati dai vial per fornitore ──
   function vialMg(c, v) { return parseFloat(v.mg) || c.defaultMg; }
@@ -7090,6 +7163,26 @@ function buildStockView2() {
       </div>
       <div id="uc-bilat" style="display:none;font-size:11px;color:var(--blue);font-weight:600;text-align:center;margin-top:8px"></div>
       <div style="font-size:9px;color:var(--muted);margin-top:10px;text-align:center">Solo conversione di unità · non sostituisce indicazione medica</div>
+    </div>
+
+    <div style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);padding:16px;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">🧪 Tabella Ricostituzione</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Diluizione effettiva dei vial ricostituiti · modifica vial/BAC per aggiornare i calcoli</div>
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="border-bottom:1.5px solid var(--border,#e8e8ed)">
+            <th style="text-align:left;padding:6px 4px;color:var(--muted);font-weight:600">Peptide</th>
+            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:600">Vial</th>
+            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:600">BAC</th>
+            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:600">Conc.</th>
+            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:600">UI da tirare</th>
+            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:600">Ricostituito</th>
+          </tr>
+        </thead>
+        <tbody id="recon-table-body">${renderReconRows(compounds)}</tbody>
+      </table>
+      </div>
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
