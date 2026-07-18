@@ -8093,14 +8093,20 @@ function togglePreProto() {
 // Sovrascrive la versione originale per caricare anche USER_ID2
 
 window.addEventListener('load',async()=>{
+  const loadingEl = document.getElementById('loading');
+  const loadingMsg = loadingEl ? loadingEl.querySelector('p') : null;
+  function setLoadingMsg(txt) { if (loadingMsg) loadingMsg.textContent = txt; }
+
+  setLoadingMsg('Costruzione diario...');
   buildNav();
   buildDays();
+  setLoadingMsg('Costruzione protocollo v2...');
   buildProtoV2();
-  document.getElementById('loading').style.display='none';
   const labWrap = document.getElementById('lab-section-wrap');
   if (labWrap) buildLabSection(labWrap);
   updateNavHighlight();
   jumpToday();
+  setLoadingMsg('Sincronizzazione dati...');
   try{
     await loadFromCloud();
   }catch(e){
@@ -8118,6 +8124,7 @@ window.addEventListener('load',async()=>{
     setTimeout(refreshCharts,200);
     setTimeout(refreshDashChartsIfBuilt,200);
   }
+  if (loadingEl) loadingEl.style.display='none';
 });
 </script>
 
