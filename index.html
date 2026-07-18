@@ -2217,14 +2217,14 @@ function setSyncStatus(state){
   else{dot.className='sync-dot';lbl.textContent='—';}
 }
 
-function onInput(el,id,f){
+function onInput(el,id,f,skipProgress){
   const v=el.value;
   const q=document.getElementById('q-'+id+'-'+f);
   if(q){
     if(v){q.textContent=parseFloat(v).toFixed(1);q.classList.remove('empty');}
     else{q.textContent='—';q.classList.add('empty');}
   }
-  updateProgress();
+  if(!skipProgress) updateProgress();
 }
 
 function updateProgress(){
@@ -2279,9 +2279,19 @@ function renderMotraFromLog(dayId, jsonStr) {
 }
 
 function applyAll(data){
+  // Indice costruito UNA SOLA VOLTA di tutti gli elementi data-id/data-f,
+  // invece di un querySelector per ogni singola combinazione presente nei dati
+  // (con centinaia di voci — history_sessions, day_N, ecc. — quell'approccio è
+  // O(dati × DOM) e con dataset cresciuto blocca il thread per decine di secondi).
+  const fieldIndex = new Map();
+  document.querySelectorAll('[data-id][data-f]').forEach(el => {
+    fieldIndex.set(el.dataset.id + '::' + el.dataset.f, el);
+  });
+
   Object.entries(data).forEach(([id,fields])=>{
+    if(!fields||typeof fields!=='object')return;
     Object.entries(fields).forEach(([f,v])=>{
-      const el=document.querySelector(`[data-id="${id}"][data-f="${f}"]`);
+      const el=fieldIndex.get(id+'::'+f);
       if(el){
         if(el.type==='checkbox'){el.checked=(v==='1');return;}
         // Non sovrascrivere con stringa vuota i select che hanno già un default preimpostato
@@ -2293,10 +2303,10 @@ function applyAll(data){
           return;
         }
         el.value=v;
-        if(f==='peso')onInput(el,id,'peso');
-        if(f==='hrv')onInput(el,id,'hrv');
-        if(f==='ore_sonno')onInput(el,id,'ore_sonno');
-        if(f==='qualita_sonno')onInput(el,id,'sonno');
+        if(f==='peso')onInput(el,id,'peso',true);
+        if(f==='hrv')onInput(el,id,'hrv',true);
+        if(f==='ore_sonno')onInput(el,id,'ore_sonno',true);
+        if(f==='qualita_sonno')onInput(el,id,'sonno',true);
       }
     });
   });
@@ -6856,9 +6866,15 @@ function saveProto2Data() {
 }
 
 function applyProto2Data() {
+  const fieldIndex = new Map();
+  document.querySelectorAll('#container2 [data-id][data-f]').forEach(el => {
+    fieldIndex.set(el.dataset.id + '::' + el.dataset.f, el);
+  });
+
   Object.entries(_lastData2).forEach(([id,fields]) => {
+    if (!fields || typeof fields !== 'object') return;
     Object.entries(fields).forEach(([f,v]) => {
-      const el = document.querySelector(`#container2 [data-id="${id}"][data-f="${f}"]`);
+      const el = fieldIndex.get(id + '::' + f);
       if (!el) return;
       if (el.type==='checkbox') el.checked = !!v;
       else if (v!==''&&v!=null) el.value = v;
