@@ -7463,15 +7463,13 @@ function buildStockView2() {
               <div style="font-size:9px;color:var(--muted)">${ui.conc}mg/ml${igfNote}</div>
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
-            <div style="min-width:0;overflow:hidden">
-              <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Data ricostituzione</div>
-              <input type="date" id="reco-${k}" value="${sv.reco||''}" onchange="stockSaveRecon('${c.id}','${sup.key}',${v.n})" style="width:100%;max-width:100%;min-width:0;box-sizing:border-box;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">
-            </div>
-            <div style="min-width:0;overflow:hidden">
-              <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Scadenza (auto)</div>
-              <div style="font-size:11px;font-weight:600;color:${expColor};padding:5px 6px;background:var(--surface2,#f5f5f7);border:1px solid var(--border,#e8e8ed);border-radius:6px;min-height:28px;overflow-wrap:break-word;word-break:break-word">${exp.text}</div>
-            </div>
+          <div style="margin-bottom:6px">
+            <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Data ricostituzione</div>
+            <input type="date" id="reco-${k}" value="${sv.reco||''}" onchange="stockSaveRecon('${c.id}','${sup.key}',${v.n})" style="width:100%;box-sizing:border-box;font-size:13px;height:36px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:0 8px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">
+          </div>
+          <div style="margin-bottom:6px">
+            <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Scadenza (auto)</div>
+            <div style="font-size:13px;font-weight:600;color:${expColor};box-sizing:border-box;height:36px;display:flex;align-items:center;padding:0 8px;background:var(--surface2,#f5f5f7);border:1px solid var(--border,#e8e8ed);border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${exp.text}</div>
           </div>
           ${lifeBar}
           <div>
