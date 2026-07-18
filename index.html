@@ -5068,7 +5068,15 @@ function getDayDataAll(field, days) {
   for (let offset = days-1; offset >= 0; offset--) {
     const d = new Date(today); d.setDate(d.getDate()-offset); d.setHours(0,0,0,0);
     let v = null;
-    if (d >= startV2) {
+    const _tStart = new Date(TEST_PROTO_START); _tStart.setHours(0,0,0,0);
+    const _tEnd = new Date(_tStart); _tEnd.setDate(_tEnd.getDate()+TEST_PROTO_DAYS-1);
+    if (d >= _tStart && d <= _tEnd) {
+      // Giorni Test Protocollo (18-19 lug): vivono in _lastData2.test_proto_N
+      const t = Math.round((d-_tStart)/86400000);
+      const rec = (_lastData2||{})['test_proto_'+t]||{};
+      const fv = parseFloat(rec[field]);
+      if (!isNaN(fv)) v=fv;
+    } else if (d >= startV2) {
       const i = Math.floor((d-startV2)/86400000);
       if (i>=0 && i<TOTAL_DAYS2) {
         const rec = _lastData2['p2_day_'+i]||{};
@@ -5091,6 +5099,105 @@ function getDayDataAll(field, days) {
     result.push({date:d, value:v});
   }
   return result;
+}
+
+
+// ── Striscia sintomi GH-correlati (scale corte 0-3 / 0-1) ────────────────
+// Le linee non funzionano bene su scale a 2-4 livelli: qui una cella per giorno,
+// colorata per intensita', permette di vedere a colpo d'occhio quando compaiono.
+function renderSymptomStrip(containerId, rows, days) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const PALETTE = ['#e8f6ec', '#ffe9c7', '#ffcf9e', '#ff8f7a']; // assente → intenso
+  let html = '';
+  let anyData = false;
+
+  rows.forEach(row => {
+    const series = getDayDataAll(row.field, days);
+    if (series.some(p => p.value !== null)) anyData = true;
+    const cells = series.map(p => {
+      if (p.value === null) return '<div style="flex:1;height:16px;background:var(--surface2,#f5f5f7);border-radius:2px"></div>';
+      const idx = row.max <= 1 ? (p.value >= 1 ? 3 : 0) : Math.min(3, Math.round(p.value));
+      const label = p.date.toLocaleDateString('it-IT',{day:'numeric',month:'short'});
+      return `<div title="${label}: ${row.labels[Math.min(row.labels.length-1, Math.round(p.value))]}" style="flex:1;height:16px;background:${PALETTE[idx]};border-radius:2px"></div>`;
+    }).join('');
+    html += `<div style="margin-bottom:8px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:3px">${row.name}</div>
+      <div style="display:flex;gap:2px">${cells}</div>
+    </div>`;
+  });
+
+  el.innerHTML = anyData ? html + `<div style="display:flex;gap:10px;margin-top:8px;font-size:9px;color:var(--muted);flex-wrap:wrap">
+      <span><span style="display:inline-block;width:9px;height:9px;background:${PALETTE[0]};border-radius:2px;vertical-align:middle"></span> assente</span>
+      <span><span style="display:inline-block;width:9px;height:9px;background:${PALETTE[1]};border-radius:2px;vertical-align:middle"></span> lieve</span>
+      <span><span style="display:inline-block;width:9px;height:9px;background:${PALETTE[2]};border-radius:2px;vertical-align:middle"></span> moderato</span>
+      <span><span style="display:inline-block;width:9px;height:9px;background:${PALETTE[3]};border-radius:2px;vertical-align:middle"></span> intenso</span>
+    </div>`
+    : '<div style="font-size:11px;color:var(--muted);padding:8px 0">Nessun dato ancora — compila i campi nel diario</div>';
+}
+
+// ── Scatter generico X/Y con retta di tendenza ───────────────────────────
+function drawXYScatter(canvasId, points, opts = {}) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const H = opts.height || 150;
+  const W = rect.width || 320;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  if (points.length < 3) {
+    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.fillText('Servono almeno 3 giorni con entrambi i valori', 8, H/2);
+    return;
+  }
+
+  const padL = 34, padB = 26, padT = 10, padR = 10;
+  const xs = points.map(p=>p.x), ys = points.map(p=>p.y);
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const rX = (maxX-minX)||1, rY = (maxY-minY)||1;
+  const px = v => padL + ((v-minX)/rX) * (W-padL-padR);
+  const py = v => (H-padB) - ((v-minY)/rY) * (H-padB-padT);
+
+  // Assi
+  ctx.strokeStyle = 'rgba(142,142,147,.3)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, H-padB); ctx.lineTo(W-padR, H-padB); ctx.stroke();
+
+  ctx.font = '9px -apple-system'; ctx.fillStyle = '#aeaeb2';
+  ctx.fillText(minY.toFixed(0), 4, H-padB);
+  ctx.fillText(maxY.toFixed(0), 4, padT+8);
+  ctx.fillText(minX.toFixed(1), padL, H-padB+14);
+  ctx.fillText(maxX.toFixed(1), W-padR-20, H-padB+14);
+  if (opts.xLabel) { ctx.fillText(opts.xLabel, W/2-24, H-4); }
+
+  // Retta di tendenza (minimi quadrati)
+  const n = points.length;
+  const sumX = xs.reduce((a,b)=>a+b,0), sumY = ys.reduce((a,b)=>a+b,0);
+  const sumXY = points.reduce((a,p)=>a+p.x*p.y,0), sumX2 = xs.reduce((a,b)=>a+b*b,0);
+  const denom = (n*sumX2 - sumX*sumX);
+  if (denom !== 0) {
+    const slope = (n*sumXY - sumX*sumY)/denom;
+    const intercept = (sumY - slope*sumX)/n;
+    ctx.strokeStyle = 'rgba(0,113,227,.5)'; ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,3]);
+    ctx.beginPath();
+    ctx.moveTo(px(minX), py(slope*minX+intercept));
+    ctx.lineTo(px(maxX), py(slope*maxX+intercept));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Punti
+  points.forEach(p => {
+    ctx.fillStyle = opts.color || '#34c759';
+    ctx.beginPath(); ctx.arc(px(p.x), py(p.y), 3.5, 0, Math.PI*2); ctx.fill();
+  });
 }
 
 // ── Sessioni allenamento da V2 ────────────────────────────────
@@ -5299,6 +5406,36 @@ function buildDashboard() {
           <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#af52de"></span>Umore</span>
         </div>
         <canvas class="dash-chart" id="dc-subj" height="100"></canvas>
+      </div>
+    </div>
+
+    <!-- ══ SEZ. EFFETTI PEPTIDI (v2) ══════════════════════════ -->
+    <div class="dash-section">
+      <div class="dash-section-title">Effetti peptidi · ultimi 30 giorni</div>
+      <div class="charts-card">
+        <div class="dash-card-title">Appetito / Sonno percepito / Chiarezza / Libido (1–10)</div>
+        <div class="chart-legend">
+          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#ff9500"></span>Appetito</span>
+          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#5856d6"></span>Sonno perc.</span>
+          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#0071e3"></span>Chiarezza</span>
+          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#ff2d55"></span>Libido</span>
+        </div>
+        <canvas class="dash-chart" id="dc-peptide-subj" height="110"></canvas>
+      </div>
+      <div class="charts-card" style="margin-top:10px">
+        <div class="dash-card-title">Sintomi GH-correlati <span style="font-size:11px;color:var(--muted);font-weight:400">— una cella per giorno</span></div>
+        <div id="dc-symptom-strip" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <!-- ══ SEZ. SONNO vs HRV ══════════════════════════════════ -->
+    <div class="dash-section">
+      <div class="dash-section-title">Sonno e recupero</div>
+      <div class="charts-card">
+        <div class="dash-card-title">Ore di sonno → HRV del giorno dopo</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Ogni punto è una notte · linea tratteggiata = tendenza</div>
+        <canvas class="dash-chart" id="dc-sleep-hrv" height="150"></canvas>
+        <div id="dc-sleep-hrv-note" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
       </div>
     </div>
 
@@ -5535,6 +5672,53 @@ function refreshDashCharts() {
       {data:recup,color:'#34c759'},
       {data:umore,color:'#af52de'}
     ],{height:100,minVal:1,maxVal:10});
+
+  // ── Effetti peptidi: nuovi campi soggettivi (30gg) ─────────
+  const appet = getDayDataAll('appetito',   30);
+  const sonnS = getDayDataAll('sonno_sogg', 30);
+  const chiar = getDayDataAll('chiarezza',  30);
+  const libid = getDayDataAll('libido',     30);
+  if ([...appet,...sonnS,...chiar,...libid].some(p=>p.value!==null)) {
+    drawDashChart('dc-peptide-subj',[
+      {data:appet,color:'#ff9500'},
+      {data:sonnS,color:'#5856d6'},
+      {data:chiar,color:'#0071e3'},
+      {data:libid,color:'#ff2d55'}
+    ],{height:110,minVal:1,maxVal:10});
+  }
+
+  // ── Sintomi GH-correlati: striscia giornaliera (30gg) ──────
+  renderSymptomStrip('dc-symptom-strip', [
+    {field:'ritenzione',   name:'Ritenzione idrica', max:3, labels:['Assente','Lieve','Moderata','Marcata']},
+    {field:'formicolio',   name:'Formicolio mani',   max:1, labels:['Assente','Presente']},
+    {field:'pienezza_add', name:'Pienezza addominale', max:3, labels:['Normale','Lieve','Moderata','Intensa']},
+  ], 30);
+
+  // ── Sonno → HRV giorno dopo (60gg) ─────────────────────────
+  const sonno60 = getDayDataAll('ore_sonno', 60);
+  const hrvAll60 = getDayDataAll('hrv', 60);
+  const shPoints = [];
+  for (let i=0; i<sonno60.length-1; i++) {
+    const s = sonno60[i].value;
+    const h = hrvAll60[i+1] ? hrvAll60[i+1].value : null;  // HRV del giorno DOPO
+    if (s!==null && h!==null) shPoints.push({x:s, y:h});
+  }
+  drawXYScatter('dc-sleep-hrv', shPoints, {height:150, color:'#34c759', xLabel:'ore di sonno'});
+  const shNote = document.getElementById('dc-sleep-hrv-note');
+  if (shNote) {
+    if (shPoints.length < 3) {
+      shNote.textContent = `${shPoints.length} notti con entrambi i dati — servono almeno 3 giorni.`;
+    } else {
+      const n=shPoints.length;
+      const sx=shPoints.reduce((a,p)=>a+p.x,0), sy=shPoints.reduce((a,p)=>a+p.y,0);
+      const sxy=shPoints.reduce((a,p)=>a+p.x*p.y,0), sx2=shPoints.reduce((a,p)=>a+p.x*p.x,0), sy2=shPoints.reduce((a,p)=>a+p.y*p.y,0);
+      const den=Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));
+      const r = den===0 ? 0 : (n*sxy-sx*sy)/den;
+      const forza = Math.abs(r)<0.2?'nessuna':Math.abs(r)<0.4?'debole':Math.abs(r)<0.6?'moderata':'forte';
+      const verso = r>0?'positiva':'negativa';
+      shNote.textContent = `${n} notti · correlazione ${forza}${Math.abs(r)>=0.2?' '+verso:''} (r = ${r.toFixed(2)}). Indicativo, non causale.`;
+    }
+  }
 
   // ── Allenamento sessioni (60gg WU+V2) ──────────────────────
   const sessions = getSessionsAll(60);
