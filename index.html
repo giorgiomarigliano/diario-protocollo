@@ -9225,6 +9225,21 @@ function buildOrariView() {
     });
   };
 }
+
+// ── Pulsante "torna su" ──────────────────────────────────────────────────
+(function() {
+  const btn = document.createElement('button');
+  btn.id = 'scroll-top-btn';
+  btn.setAttribute('aria-label', 'Torna in cima');
+  btn.textContent = '↑';
+  btn.style.cssText = 'position:fixed;bottom:20px;right:16px;width:46px;height:46px;border-radius:50%;background:var(--blue,#0071e3);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:22px;line-height:1;display:none;align-items:center;justify-content:center;z-index:9998;cursor:pointer;padding:0';
+  btn.onclick = function() { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  document.body.appendChild(btn);
+
+  window.addEventListener('scroll', function() {
+    btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
+  }, { passive: true });
+})();
 </script>
 
 </body>
