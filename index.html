@@ -2994,12 +2994,37 @@ function refreshDashChartsIfBuilt(){
 
 function jumpToday(){
   const today=new Date(); today.setHours(0,0,0,0);
-  const start=new Date(START); start.setHours(0,0,0,0);
-  const diff=Math.floor((today-start)/86400000);
-  if(diff>=0&&diff<TOTAL_DAYS){
-    const card=document.getElementById('card-day_'+diff);
-    if(card){card.classList.add('open');card.scrollIntoView({behavior:'smooth',block:'center'});}
+
+  const testStart = new Date(TEST_PROTO_START); testStart.setHours(0,0,0,0);
+  const testEnd = new Date(testStart); testEnd.setDate(testEnd.getDate() + TEST_PROTO_DAYS - 1);
+  const s2 = new Date(START2); s2.setHours(0,0,0,0);
+  const s0 = new Date(START); s0.setHours(0,0,0,0);
+
+  let view = null, cardId = null;
+
+  if (today >= testStart && today <= testEnd) {
+    // Test Protocollo (18-19 lug) — vive nel tab Protocollo v2
+    const t = Math.round((today - testStart) / 86400000);
+    view = 'proto2'; cardId = 'card-test_proto_' + t;
+  } else if (today >= s2) {
+    // Ciclo v2 ufficiale (dal 20 lug)
+    const dayIdx = Math.round((today - s2) / 86400000);
+    if (dayIdx >= 0 && dayIdx < TOTAL_DAYS2) { view = 'proto2'; cardId = 'card-p2_day_' + dayIdx; }
+  } else {
+    // Warm-up v1 (pre 18 lug)
+    const diff = Math.floor((today - s0) / 86400000);
+    if (diff >= 0 && diff < TOTAL_DAYS) { view = 'diary'; cardId = 'card-day_' + diff; }
   }
+
+  if (!view || !cardId) return;
+
+  switchView(view);
+
+  // Aspetta che il tab sia visibile e la card costruita prima di scrollare
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const card = document.getElementById(cardId);
+    if (card) { card.classList.add('open'); card.scrollIntoView({behavior:'smooth',block:'center'}); }
+  }));
 }
 
 function updateNavHighlight(){
@@ -6406,7 +6431,7 @@ function buildTestProtoCards(container) {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Pienezza add. /10</div>
+            <div class="subj-lbl">Pienezza add.</div>
             <select class="subj-sel" data-id="${id}" data-f="pienezza_add">
               <option value="">—</option>
               <option value="0">Normale</option>
@@ -6423,7 +6448,7 @@ function buildTestProtoCards(container) {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Ritenzione idrica /10</div>
+            <div class="subj-lbl">Ritenzione idrica</div>
             <select class="subj-sel" data-id="${id}" data-f="ritenzione">
               <option value="">—</option>
               <option value="0">Assente</option>
@@ -6433,7 +6458,7 @@ function buildTestProtoCards(container) {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Formicolio mani /10</div>
+            <div class="subj-lbl">Formicolio mani</div>
             <select class="subj-sel" data-id="${id}" data-f="formicolio">
               <option value="">—</option>
               <option value="0">Assente</option>
@@ -6739,7 +6764,7 @@ function buildProtoV2() {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Pienezza add. /10</div>
+            <div class="subj-lbl">Pienezza add.</div>
             <select class="subj-sel" data-id="${id}" data-f="pienezza_add">
               <option value="">—</option>
               <option value="0">Normale</option>
@@ -6756,7 +6781,7 @@ function buildProtoV2() {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Ritenzione idrica /10</div>
+            <div class="subj-lbl">Ritenzione idrica</div>
             <select class="subj-sel" data-id="${id}" data-f="ritenzione">
               <option value="">—</option>
               <option value="0">Assente</option>
@@ -6766,7 +6791,7 @@ function buildProtoV2() {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Formicolio mani /10</div>
+            <div class="subj-lbl">Formicolio mani</div>
             <select class="subj-sel" data-id="${id}" data-f="formicolio">
               <option value="">—</option>
               <option value="0">Assente</option>
