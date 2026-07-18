@@ -3010,25 +3010,28 @@ function jumpToday(){
   const s2 = new Date(START2); s2.setHours(0,0,0,0);
   const s0 = new Date(START); s0.setHours(0,0,0,0);
 
-  let view = null, cardId = null;
+  let cardId = null;
 
   if (today >= testStart && today <= testEnd) {
-    // Test Protocollo (18-19 lug) — vive nel tab Protocollo v2
+    // Test Protocollo (18-19 lug) — le card vivono in #container2, dentro la vista 'diary'
     const t = Math.round((today - testStart) / 86400000);
-    view = 'proto2'; cardId = 'card-test_proto_' + t;
+    cardId = 'card-test_proto_' + t;
   } else if (today >= s2) {
-    // Ciclo v2 ufficiale (dal 20 lug)
+    // Ciclo v2 ufficiale (dal 20 lug) — anch'esso in #container2, dentro 'diary'
     const dayIdx = Math.round((today - s2) / 86400000);
-    if (dayIdx >= 0 && dayIdx < TOTAL_DAYS2) { view = 'proto2'; cardId = 'card-p2_day_' + dayIdx; }
+    if (dayIdx >= 0 && dayIdx < TOTAL_DAYS2) cardId = 'card-p2_day_' + dayIdx;
   } else {
-    // Warm-up v1 (pre 18 lug)
+    // Warm-up v1 (pre 18 lug) — in #container, anch'esso dentro 'diary'
     const diff = Math.floor((today - s0) / 86400000);
-    if (diff >= 0 && diff < TOTAL_DAYS) { view = 'diary'; cardId = 'card-day_' + diff; }
+    if (diff >= 0 && diff < TOTAL_DAYS) cardId = 'card-day_' + diff;
   }
 
-  if (!view || !cardId) return;
+  if (!cardId) return;
 
-  switchView(view);
+  // Tutte e tre le sezioni (v1 giorni, test protocollo, ciclo v2) vivono nella
+  // stessa vista 'diary' — non esiste una vista 'proto2' funzionante separata
+  // (main-tab-proto2/proto2-view sono residui inutilizzati, sempre vuoti).
+  switchView('diary');
 
   // setTimeout invece di rAF: più affidabile quando chiamato da dentro l'handler
   // 'load' (molto codice sincrono in coda) o subito dopo un cambio tab pesante.
@@ -6508,12 +6511,10 @@ function buildTestProtoCards(container) {
 let _proto2Built = false;
 
 function buildProtoV2() {
-  console.log('[DIAG buildProtoV2] chiamata, _proto2Built=' + _proto2Built);
   if (_proto2Built) return;
   _proto2Built = true;
 
   const container = document.getElementById('container2');
-  console.log('[DIAG buildProtoV2] container trovato?', !!container);
   const today = new Date(); today.setHours(0,0,0,0);
 
   // Carica dati salvati prima di costruire
@@ -6528,23 +6529,18 @@ function buildProtoV2() {
   const pct2 = Math.max(0, Math.min(100, Math.round((elapsed2h/TOTAL_DAYS2)*100)));
   progWrap.innerHTML = `<div class="prog-bar" style="width:${pct2}%"></div>`;
   container.appendChild(progWrap);
-  console.log('[DIAG buildProtoV2] dopo progress bar, len=' + container.innerHTML.length);
 
   // 2. Cycle card (identica struttura v1)
-  try { buildCycleCard2(container); console.log('[DIAG buildProtoV2] dopo buildCycleCard2, len=' + container.innerHTML.length); }
-  catch(e) { console.log('[DIAG buildProtoV2] ERRORE in buildCycleCard2:', e.message, e.stack); }
+  buildCycleCard2(container);
 
   // 3. Charts ultimi 14gg
-  try { buildCharts2(container); console.log('[DIAG buildProtoV2] dopo buildCharts2, len=' + container.innerHTML.length); }
-  catch(e) { console.log('[DIAG buildProtoV2] ERRORE in buildCharts2:', e.message, e.stack); }
+  buildCharts2(container);
 
   // 4. Riquadro protocollo Seregni
-  try { buildProtoHeader2(container); console.log('[DIAG buildProtoV2] dopo buildProtoHeader2, len=' + container.innerHTML.length); }
-  catch(e) { console.log('[DIAG buildProtoV2] ERRORE in buildProtoHeader2:', e.message, e.stack); }
+  buildProtoHeader2(container);
 
   // 4b. Test Protocollo (sab 18 + dom 19, rodaggio pre-ciclo, non conteggiato)
-  try { buildTestProtoCards(container); console.log('[DIAG buildProtoV2] dopo buildTestProtoCards, len=' + container.innerHTML.length); }
-  catch(e) { console.log('[DIAG buildProtoV2] ERRORE in buildTestProtoCards:', e.message, e.stack); }
+  buildTestProtoCards(container);
 
   // 5. Nav settimane
   const navStrip2 = document.createElement('div');
@@ -6561,7 +6557,6 @@ function buildProtoV2() {
 
   // 5. Card giornaliere
   let curWk = -1;
-  try {
   for (let i=0; i<TOTAL_DAYS2; i++) {
     const d = new Date(START2); d.setDate(d.getDate()+i); d.setHours(0,0,0,0);
     const wk = Math.floor(i/7)+1;
@@ -6841,14 +6836,9 @@ function buildProtoV2() {
 
     container.appendChild(card);
   }
-  console.log('[DIAG buildProtoV2] dopo loop card giornaliere, len=' + container.innerHTML.length);
-  } catch(e) {
-    console.log('[DIAG buildProtoV2] ERRORE nel loop card giornaliere, i corrente non noto:', e.message, e.stack);
-  }
 
   // Applica dati salvati
-  try { applyProto2Data(); console.log('[DIAG buildProtoV2] dopo applyProto2Data OK'); }
-  catch(e) { console.log('[DIAG buildProtoV2] ERRORE in applyProto2Data:', e.message, e.stack); }
+  applyProto2Data();
 
   // Auto-save + colora select iniezioni
   container.querySelectorAll('input,select,textarea').forEach(el => {
