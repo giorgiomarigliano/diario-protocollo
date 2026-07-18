@@ -3020,11 +3020,12 @@ function jumpToday(){
 
   switchView(view);
 
-  // Aspetta che il tab sia visibile e la card costruita prima di scrollare
-  requestAnimationFrame(() => requestAnimationFrame(() => {
+  // setTimeout invece di rAF: più affidabile quando chiamato da dentro l'handler
+  // 'load' (molto codice sincrono in coda) o subito dopo un cambio tab pesante.
+  setTimeout(() => {
     const card = document.getElementById(cardId);
     if (card) { card.classList.add('open'); card.scrollIntoView({behavior:'smooth',block:'center'}); }
-  }));
+  }, 60);
 }
 
 function updateNavHighlight(){
@@ -6396,21 +6397,21 @@ function buildTestProtoCards(container) {
         <div class="section-label" style="margin-top:14px">Soggettivo</div>
         <div class="subj-row">
           <div class="subj-item">
-            <div class="subj-lbl">Energia /10</div>
+            <div class="subj-lbl">Energia</div>
             <select class="subj-sel" data-id="${id}" data-f="energia">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Recupero /10</div>
+            <div class="subj-lbl">Recupero</div>
             <select class="subj-sel" data-id="${id}" data-f="recupero">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Umore /10</div>
+            <div class="subj-lbl">Umore</div>
             <select class="subj-sel" data-id="${id}" data-f="umore">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
@@ -6424,7 +6425,7 @@ function buildTestProtoCards(container) {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Appetito /10</div>
+            <div class="subj-lbl">Appetito</div>
             <select class="subj-sel" data-id="${id}" data-f="appetito">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
@@ -6441,7 +6442,7 @@ function buildTestProtoCards(container) {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Sonno perc. /10</div>
+            <div class="subj-lbl">Sonno perc.</div>
             <select class="subj-sel" data-id="${id}" data-f="sonno_sogg">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
@@ -6466,14 +6467,14 @@ function buildTestProtoCards(container) {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Libido /10</div>
+            <div class="subj-lbl">Libido</div>
             <select class="subj-sel" data-id="${id}" data-f="libido">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Chiarezza mentale /10</div>
+            <div class="subj-lbl">Chiarezza mentale</div>
             <select class="subj-sel" data-id="${id}" data-f="chiarezza">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
@@ -6729,21 +6730,21 @@ function buildProtoV2() {
         <div class="section-label" style="margin-top:14px">Soggettivo</div>
         <div class="subj-row">
           <div class="subj-item">
-            <div class="subj-lbl">Energia /10</div>
+            <div class="subj-lbl">Energia</div>
             <select class="subj-sel" data-id="${id}" data-f="energia">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Recupero /10</div>
+            <div class="subj-lbl">Recupero</div>
             <select class="subj-sel" data-id="${id}" data-f="recupero">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Umore /10</div>
+            <div class="subj-lbl">Umore</div>
             <select class="subj-sel" data-id="${id}" data-f="umore">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
@@ -6757,7 +6758,7 @@ function buildProtoV2() {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Appetito /10</div>
+            <div class="subj-lbl">Appetito</div>
             <select class="subj-sel" data-id="${id}" data-f="appetito">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
@@ -6774,7 +6775,7 @@ function buildProtoV2() {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Sonno perc. /10</div>
+            <div class="subj-lbl">Sonno perc.</div>
             <select class="subj-sel" data-id="${id}" data-f="sonno_sogg">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
@@ -6799,14 +6800,14 @@ function buildProtoV2() {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Libido /10</div>
+            <div class="subj-lbl">Libido</div>
             <select class="subj-sel" data-id="${id}" data-f="libido">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">Chiarezza mentale /10</div>
+            <div class="subj-lbl">Chiarezza mentale</div>
             <select class="subj-sel" data-id="${id}" data-f="chiarezza">
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
