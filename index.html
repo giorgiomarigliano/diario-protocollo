@@ -6409,7 +6409,10 @@ function buildTestProtoCards(container) {
             <div class="subj-lbl">Pienezza add. /10</div>
             <select class="subj-sel" data-id="${id}" data-f="pienezza_add">
               <option value="">—</option>
-              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+              <option value="0">Normale</option>
+              <option value="1">Lieve</option>
+              <option value="2">Moderata</option>
+              <option value="3">Intensa</option>
             </select>
           </div>
           <div class="subj-item">
@@ -6423,14 +6426,18 @@ function buildTestProtoCards(container) {
             <div class="subj-lbl">Ritenzione idrica /10</div>
             <select class="subj-sel" data-id="${id}" data-f="ritenzione">
               <option value="">—</option>
-              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+              <option value="0">Assente</option>
+              <option value="1">Lieve</option>
+              <option value="2">Moderata</option>
+              <option value="3">Marcata</option>
             </select>
           </div>
           <div class="subj-item">
             <div class="subj-lbl">Formicolio mani /10</div>
             <select class="subj-sel" data-id="${id}" data-f="formicolio">
               <option value="">—</option>
-              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+              <option value="0">Assente</option>
+              <option value="1">Presente</option>
             </select>
           </div>
           <div class="subj-item">
@@ -6735,7 +6742,10 @@ function buildProtoV2() {
             <div class="subj-lbl">Pienezza add. /10</div>
             <select class="subj-sel" data-id="${id}" data-f="pienezza_add">
               <option value="">—</option>
-              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+              <option value="0">Normale</option>
+              <option value="1">Lieve</option>
+              <option value="2">Moderata</option>
+              <option value="3">Intensa</option>
             </select>
           </div>
           <div class="subj-item">
@@ -6749,14 +6759,18 @@ function buildProtoV2() {
             <div class="subj-lbl">Ritenzione idrica /10</div>
             <select class="subj-sel" data-id="${id}" data-f="ritenzione">
               <option value="">—</option>
-              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+              <option value="0">Assente</option>
+              <option value="1">Lieve</option>
+              <option value="2">Moderata</option>
+              <option value="3">Marcata</option>
             </select>
           </div>
           <div class="subj-item">
             <div class="subj-lbl">Formicolio mani /10</div>
             <select class="subj-sel" data-id="${id}" data-f="formicolio">
               <option value="">—</option>
-              ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
+              <option value="0">Assente</option>
+              <option value="1">Presente</option>
             </select>
           </div>
           <div class="subj-item">
