@@ -4829,6 +4829,7 @@ function drawBarChart(canvasId, bars, options = {}) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   });
 
+  let lastLabelRight = -Infinity;  // evita che le date sull'asse X si sovrappongano
   bars.forEach((b, i) => {
     if (b.value == null) return;
     const x = pad + i * (bw + gap);
@@ -4859,16 +4860,19 @@ function drawBarChart(canvasId, bars, options = {}) {
       ctx.textAlign = 'left';
     }
 
-    // Label below — diradate se le barre sono troppo strette per starci tutte
+    // Label below — disegnata solo se non si sovrappone alla precedente.
+    // Misura la larghezza reale del testo invece di stimarla: con molte barre
+    // le date "dd/mm" finivano appiccicate e illeggibili.
     if (b.label) {
-      const minLabelPx = 22; // larghezza minima "dd/mm"
-      const labelStep = Math.max(1, Math.ceil(minLabelPx / (bw + gap)));
-      const isLast = i === bars.length - 1;
-      if (i % labelStep === 0 || isLast) {
-        ctx.font = '9px -apple-system'; ctx.fillStyle = '#aeaeb2';
+      ctx.font = '9px -apple-system';
+      const cx = x + bw/2;
+      const halfW = ctx.measureText(b.label).width / 2;
+      if (cx - halfW >= lastLabelRight + 6 && cx + halfW <= W) {
+        ctx.fillStyle = '#aeaeb2';
         ctx.textAlign = 'center';
-        ctx.fillText(b.label, x + bw/2, H - 1);
+        ctx.fillText(b.label, cx, H - 1);
         ctx.textAlign = 'left';
+        lastLabelRight = cx + halfW;
       }
     }
   });
@@ -9416,7 +9420,7 @@ function buildOrariView() {
   btn.id = 'scroll-top-btn';
   btn.setAttribute('aria-label', 'Torna in cima');
   btn.textContent = '↑';
-  btn.style.cssText = 'position:fixed;bottom:20px;right:16px;width:46px;height:46px;border-radius:50%;background:var(--blue,#0071e3);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:22px;line-height:1;display:none;align-items:center;justify-content:center;z-index:9998;cursor:pointer;padding:0';
+  btn.style.cssText = 'position:fixed;bottom:86px;right:16px;width:46px;height:46px;border-radius:50%;background:var(--blue,#0071e3);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:22px;line-height:1;display:none;align-items:center;justify-content:center;z-index:9998;cursor:pointer;padding:0';
   btn.onclick = function() { window.scrollTo({ top: 0, behavior: 'smooth' }); };
   document.body.appendChild(btn);
 
