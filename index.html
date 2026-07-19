@@ -1797,8 +1797,23 @@ function buildCharts(container){
   if(elapsed<2) return;
   const from=Math.max(0,elapsed-13);
   const pesoData=[],hrvData=[];
+  // La chiave del giorno cambia con la fase: day_N (warm-up) → test_proto_N
+  // (18-19 lug, in _lastData2) → p2_day_N (ciclo v2, in _lastData2).
+  const _tS=new Date(TEST_PROTO_START); _tS.setHours(0,0,0,0);
+  const _tE=new Date(_tS); _tE.setDate(_tE.getDate()+TEST_PROTO_DAYS-1);
+  const _s2=new Date(START2); _s2.setHours(0,0,0,0);
   for(let i=from;i<=elapsed&&i<TOTAL_DAYS;i++){
-    const _dc = _lastData['day_' + i] || {};
+    const _d=new Date(START); _d.setDate(_d.getDate()+i); _d.setHours(0,0,0,0);
+    let _dc;
+    if(_d>=_s2){
+      const j=Math.round((_d-_s2)/86400000);
+      _dc=((typeof _lastData2!=='undefined'&&_lastData2)||{})['p2_day_'+j]||{};
+    } else if(_d>=_tS&&_d<=_tE){
+      const t=Math.round((_d-_tS)/86400000);
+      _dc=((typeof _lastData2!=='undefined'&&_lastData2)||{})['test_proto_'+t]||{};
+    } else {
+      _dc=_lastData['day_'+i]||{};
+    }
     pesoData.push(_dc['peso'] ? parseFloat(_dc['peso']) : null);
     hrvData.push(_dc['hrv']  ? parseFloat(_dc['hrv'])  : null);
   }
