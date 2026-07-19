@@ -4336,16 +4336,39 @@ function buildMedView() {
 
 
 function getDayData(field, days) {
-  // Returns array of {dayIdx, date, value} for last N days with data
+  // Returns array of {dayIdx, date, value} for last N days with data.
+  // L'id della card cambia a seconda della fase in cui cade la data:
+  // day_N (warm-up) → test_proto_N (18-19 lug) → p2_day_N (ciclo v2).
+  // Senza questa risoluzione il grafico "ultimi 14 giorni" si fermava alla
+  // fine del warm-up, perche' cercava day_N anche per i giorni successivi.
   const today = new Date(); today.setHours(0,0,0,0);
   const start = new Date(START); start.setHours(0,0,0,0);
+  const tStart = new Date(TEST_PROTO_START); tStart.setHours(0,0,0,0);
+  const tEnd = new Date(tStart); tEnd.setDate(tEnd.getDate() + TEST_PROTO_DAYS - 1);
+  const s2 = new Date(START2); s2.setHours(0,0,0,0);
   const elapsed = Math.floor((today - start) / 86400000);
   const from = Math.max(0, elapsed - (days - 1));
   const result = [];
   for (let i = from; i <= elapsed && i < TOTAL_DAYS; i++) {
-    const el = document.querySelector(`[data-id="day_${i}"][data-f="${field}"]`);
-    const v = el ? (el.type === 'checkbox' ? (el.checked ? 1 : 0) : parseFloat(el.value)) : null;
-    const d = new Date(START); d.setDate(d.getDate() + i);
+    const d = new Date(START); d.setDate(d.getDate() + i); d.setHours(0,0,0,0);
+
+    let id = 'day_' + i, store = null;
+    if (d >= s2) {
+      const j = Math.round((d - s2) / 86400000);
+      if (j >= 0 && j < TOTAL_DAYS2) { id = 'p2_day_' + j; store = (typeof _lastData2!=='undefined') ? _lastData2 : null; }
+    } else if (d >= tStart && d <= tEnd) {
+      const t = Math.round((d - tStart) / 86400000);
+      id = 'test_proto_' + t; store = (typeof _lastData2!=='undefined') ? _lastData2 : null;
+    }
+
+    const el = document.querySelector(`[data-id="${id}"][data-f="${field}"]`);
+    let v = el ? (el.type === 'checkbox' ? (el.checked ? 1 : 0) : parseFloat(el.value)) : NaN;
+    // Fallback sui dati salvati se il campo non e' nel DOM o e' vuoto
+    if (isNaN(v) && store && store[id]) {
+      const raw = store[id][field];
+      const pv = (typeof raw === 'boolean') ? (raw?1:0) : parseFloat(raw);
+      if (!isNaN(pv)) v = pv;
+    }
     result.push({ dayIdx: i, date: d, value: isNaN(v) ? null : v });
   }
   return result;
