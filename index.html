@@ -9332,6 +9332,48 @@ function buildOrariView() {
     { icon:'💉', title:'Tesamorelin + Ipamorelin sera', body:'Finestra critica: minimo 2.5h, ideale 3h post-pasto. Il pasto pre-Tesa deve essere low-fat, low-GI. Zero grassi aggiunti, zero caffè con latte.' },
   ];
 
+  // ── Nutrizione per slot iniezione ──────────────────────────────────────
+  // [P] = previsto dal protocollo Seregni · [+] = prassi aggiuntiva, da confermare col medico
+  const nutriSlots = [
+    {
+      slot:'Mattino · a digiuno', icon:'🌅', color:'#ff9500',
+      peptides:'Fragment 176-191 + BPC-157',
+      prima:'<b>[P]</b> A digiuno notturno · <b>[+]</b> nessuna caloria da almeno 8h. Acqua, caffè o tè <i>amari</i> sono ammessi.',
+      dopo:'<b>[P]</b> LISS 30–40 min · <b>[+]</b> primo pasto almeno <b>60 min</b> dopo l\'iniezione (cioè a fine LISS).',
+      si:'<b>[+]</b> Colazione proteica a basso carico glicemico: albumi/omelette, yogurt greco 0%, whey in acqua.',
+      no:'<b>[+]</b> Carboidrati rapidi e grassi nei 60 min post-iniezione.',
+      why:'Il Fragment mobilizza acidi grassi; l\'insulina è il principale antagonista della lipolisi. Tutto ciò che alza l\'insulina prima o subito dopo ne riduce l\'effetto.'
+    },
+    {
+      slot:'Pomeriggio', icon:'☀️', color:'#34c759',
+      peptides:'Fragment 176-191',
+      prima:'<b>[+]</b> Almeno <b>2h dall\'ultimo pasto</b>. Finestra ideale a metà pomeriggio, lontano da pranzo e cena.',
+      dopo:'<b>[+]</b> Attendere <b>45–60 min</b> prima di mangiare.',
+      si:'<b>[+]</b> Spuntino proteico secco: bresaola, carne secca, barretta ad alto contenuto proteico e zuccheri minimi.',
+      no:'<b>[+]</b> Spuntino zuccherino subito prima o subito dopo.',
+      why:'È lo slot più facile da sbagliare perché cade in orario di lavoro. Se non riesci a rispettare le 2h, meglio spostare l\'iniezione di un\'ora che farla a stomaco pieno.'
+    },
+    {
+      slot:'Post-workout', icon:'💪', color:'#af52de',
+      peptides:'IGF-1 DES (solo giorni di allenamento)',
+      prima:'<b>[+]</b> Nessun vincolo di digiuno.',
+      dopo:'<b>[+]</b> Pasto proteico entro <b>30–45 min</b>, <b>con</b> carboidrati.',
+      si:'<b>[+]</b> 30–40g proteine + carboidrati a medio/alto IG (whey in acqua + riso o mais).',
+      no:'<b>[+]</b> Pasto ricco di grassi: rallenta lo svuotamento gastrico.',
+      why:'⚠️ Questo slot è l\'opposto degli altri: qui l\'insulina è alleata, non nemica. L\'IGF-1 DES agisce localmente sul muscolo appena allenato e il substrato serve.',
+      warn:'Nei giorni con allenamento serale il pasto post-WO ricco di carboidrati può cadere troppo vicino allo slot Tesamorelin (che richiede 2.5–3h dal pasto). Da chiarire col Dr. Seregni come prioritizzare quando i due si sovrappongono.'
+    },
+    {
+      slot:'Sera', icon:'🌙', color:'#5856d6',
+      peptides:'Tesamorelin + Ipamorelin + BPC-157 + TB-500',
+      prima:'<b>[P]</b> <b>2.5–3h dall\'ultimo pasto</b> · <b>[P]</b> il pasto precedente low-fat e low-GI.',
+      dopo:'<b>[P]</b> <b>Nessun carboidrato per 2h</b>.',
+      si:'<b>[+]</b> Cena con proteine magre + verdure, grassi contenuti. Integratori serali (Mg, glicina, melatonina) non interferiscono.',
+      no:'<b>[+]</b> Alcol la sera (deprime marcatamente il picco di GH notturno) · pasti abbondanti o grassi nelle 3h precedenti.',
+      why:'I secretagoghi del GH producono un picco smorzato sia dall\'insulina sia dagli acidi grassi circolanti. È lo slot dove la disciplina alimentare rende di più, perché si somma al picco fisiologico notturno.'
+    },
+  ];
+
   let html = `<div class="view-wrap">
   <div style="margin-bottom:24px">
     <div class="t-page-title">Schema giornaliero</div>
@@ -9417,6 +9459,41 @@ function buildOrariView() {
       html += `</div></div>`; // close panel
     }
   });
+
+  // Nutrizione per slot iniezione
+  html += `<div class="t-section-title" style="margin-top:4px;margin-bottom:4px">NUTRIZIONE PER SLOT INIEZIONE</div>`;
+  html += `<div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5">
+    <b>[P]</b> previsto dal protocollo Seregni · <b>[+]</b> prassi aggiuntiva basata su fisiologia GH/insulina,
+    ragionevole ma non validata clinicamente — da confermare col medico.</div>`;
+  html += `<div style="display:flex;flex-direction:column;gap:12px;margin-bottom:28px">`;
+  nutriSlots.forEach(s => {
+    html += `<div style="background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);
+      border-left:4px solid ${s.color};overflow:hidden">
+      <div style="padding:14px 16px 10px">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:2px">
+          <span style="font-size:18px">${s.icon}</span>
+          <span style="font-size:14px;font-weight:600;color:var(--text)">${s.slot}</span>
+        </div>
+        <div style="font-size:12px;color:${s.color};font-weight:500;margin-left:27px">${s.peptides}</div>
+      </div>
+      <div style="padding:0 16px 12px">
+        ${[['⏱','Prima',s.prima],['⏳','Dopo',s.dopo],['✅','Preferire',s.si],['🚫','Evitare',s.no]].map(([ic,lab,txt]) => `
+          <div style="display:flex;gap:9px;padding:7px 0;border-top:1px solid var(--border)">
+            <div style="font-size:13px;min-width:18px">${ic}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">${lab}</div>
+              <div style="font-size:12.5px;color:var(--text);line-height:1.5;margin-top:1px">${txt}</div>
+            </div>
+          </div>`).join('')}
+        <div style="margin-top:9px;padding:9px 11px;background:var(--surface2,#f5f5f7);border-radius:8px;
+          font-size:11.5px;color:var(--muted);line-height:1.5">${s.why}</div>
+        ${s.warn ? `<div style="margin-top:8px;padding:9px 11px;background:rgba(255,149,0,.10);
+          border-radius:8px;font-size:11.5px;color:var(--text);line-height:1.5">
+          <b style="color:#ff9500">Da chiarire col medico —</b> ${s.warn}</div>` : ''}
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
 
   // Rules section
   html += `<div class="t-section-title" style="margin-top:4px;margin-bottom:12px">REGOLE CRITICHE</div>`;
