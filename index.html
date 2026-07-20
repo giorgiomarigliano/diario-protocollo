@@ -6396,8 +6396,12 @@ function buildWeekSummary2(container, wkIdx) {
   for (let i=wkStart; i<wkEnd && i<=elapsed; i++) {
     const id = 'p2_day_'+i;
     const slots = getInjectionSlots2(i);
-    totalInj += slots.length;
+    // Conta le singole iniezioni (ogni peptide in ogni slot), non i momenti della
+    // giornata: altrimenti il denominatore (slot) e il numeratore (peptidi fatti)
+    // usano unita' diverse e il rapporto mostrato non ha senso (es. "2/3" quando
+    // in realta' sono 2 iniezioni fatte su 7 totali della giornata).
     slots.forEach(s => {
+      totalInj += s.fields.length;
       s.fields.forEach(f => {
         if (get(id, 'inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_')) === 'fatto') doneInj++;
       });
