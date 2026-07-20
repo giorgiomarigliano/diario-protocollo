@@ -6221,10 +6221,16 @@ function getPhase2(dayIdx) {
 
 function getNextEvent2(elapsed) {
   const wk = Math.floor(elapsed/7)+1;
-  if (wk<5)  { return `+ GHK-Cu tra ${(4-wk)*7} giorni (sett. 5)`; }
-  if (wk<7)  { return `+ MOTS-C + IGF-1 DES tra ${(6-wk)*7} giorni (sett. 7)`; }
-  if (wk<13) { return `+ BPC-157 + TB-500 tra ${(12-wk)*7} giorni (sett. 13)`; }
-  return 'Fine ciclo · DEXA T1 + panel sangue';
+  // La trasferta BKK ha priorita' sull'annuncio di fase quando imminente (entro 14gg):
+  // e' l'evento piu' concreto, meglio segnalarlo per tempo.
+  const bkk = getBKKWeekInfo();
+  if (elapsed < bkk.dayStart && (bkk.dayStart - elapsed) <= 14) {
+    return `Trasferta Bangkok tra ${bkk.dayStart - elapsed} giorni (${bkk.label})`;
+  }
+  if (wk<=4)  { return `Fase 2 tra ${28-elapsed} giorni (sett. 5)`; }
+  if (wk<=8)  { return `Fase 3 tra ${56-elapsed} giorni (sett. 9)`; }
+  if (wk<=12) { return `Fase 4 tra ${84-elapsed} giorni (sett. 13)`; }
+  return `Fine ciclo tra ${TOTAL_DAYS2-elapsed} giorni · DEXA T1 + panel sangue`;
 }
 
 function getWorkout2(dayIdx) {
