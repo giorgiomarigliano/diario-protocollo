@@ -6211,6 +6211,16 @@ function getNextEvent2(elapsed) {
 
 function getWorkout2(dayIdx) {
   const d = new Date(START2); d.setDate(d.getDate()+dayIdx);
+  if (isBkkDate(d)) {
+    // Trasferta BKK: allenamento di default ogni giorno, salvo override manuale
+    // "Riposo" impostato dalla card stessa (split irregolare, attrezzatura limitata).
+    const id = 'p2_day_' + dayIdx;
+    const rec = (typeof _lastData2 !== 'undefined' && _lastData2 && _lastData2[id]) || {};
+    if (rec.bkk_riposo === '1') {
+      return { type:'Riposo', badge:'badge-rest', label:'RIPOSO' };
+    }
+    return { type:'Allenamento BKK', badge:'badge-bkk', label:'BKK' };
+  }
   const dow = d.getDay(); // 0=dom
   const map = {0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
   const badges = {Riposo:'badge-rest',Push:'badge-push',Pull:'badge-pull',Legs:'badge-legs','Upper Sab':'badge-upper','Upper Dom':'badge-upper-dom'};
@@ -6219,7 +6229,7 @@ function getWorkout2(dayIdx) {
 }
 
 function getDotColor2(type) {
-  const m = {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3',Riposo:'#c7c7cc'};
+  const m = {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3',Riposo:'#c7c7cc','Allenamento BKK':'#c0392b'};
   return m[type]||'#c7c7cc';
 }
 
@@ -6246,11 +6256,16 @@ function getInjectionSlots2(dayIdx) {
       fields:['Tesamorelin 2mg','Ipamorelin 100mcg','BPC-157 250mcg','TB-500 500mcg'] },
   ];
   if (isTraining) {
-    // Rotazione distretto muscolare IGF-1 DES sui 5 giorni di WO della settimana
-    const wkDay = dayIdx % 7; // 0=lun,1=mar,2=mer,3=gio,4=ven,5=sab,6=dom
-    // Mapping giorno→muscolo: mar=Petto, mer=Bicipiti, ven=Quadricipiti, sab=Tricipiti, dom=Deltoidi
-    const muscleMap = { 1:'Petto', 2:'Bicipiti', 4:'Quadricipiti', 5:'Tricipiti', 6:'Deltoidi' };
-    const defaultMuscle = muscleMap[wkDay] || '';
+    const d = new Date(START2); d.setDate(d.getDate()+dayIdx);
+    let defaultMuscle = '';
+    if (!isBkkDate(d)) {
+      // Rotazione distretto muscolare IGF-1 DES sui 5 giorni di WO della settimana
+      const wkDay = dayIdx % 7; // 0=lun,1=mar,2=mer,3=gio,4=ven,5=sab,6=dom
+      // Mapping giorno→muscolo: mar=Petto, mer=Bicipiti, ven=Quadricipiti, sab=Tricipiti, dom=Deltoidi
+      const muscleMap = { 1:'Petto', 2:'Bicipiti', 4:'Quadricipiti', 5:'Tricipiti', 6:'Deltoidi' };
+      defaultMuscle = muscleMap[wkDay] || '';
+    }
+    // In BKK defaultMuscle resta '' apposta: rotazione libera, scelta manuale ogni giorno
     slots.splice(2, 0, { n:3, label:'Post-WO', momento:'Post-workout · IM bilaterale',
       fields:['IGF-1 DES 25mcg dx','IGF-1 DES 25mcg sx'], igfMuscle: defaultMuscle });
     slots[3].n = 4;
@@ -6469,6 +6484,18 @@ function buildWeekSummary2(container, wkIdx) {
 const TEST_PROTO_START = new Date('2026-07-18'); // sabato, invariato rispetto a prima
 const TEST_PROTO_DAYS  = 2;
 
+// Trasferta Bangkok: split irregolare (allenamento quasi tutti i giorni, riposo
+// sparso deciso di volta in volta) — sovrascrive lo split fisso settimanale
+// solo per queste date. Vedi getWorkout2() e getInjectionSlots2().
+const BKK_START = new Date('2026-08-07');
+const BKK_END   = new Date('2026-08-21');
+function isBkkDate(d) {
+  const s = new Date(BKK_START); s.setHours(0,0,0,0);
+  const e = new Date(BKK_END); e.setHours(0,0,0,0);
+  const dd = new Date(d); dd.setHours(0,0,0,0);
+  return dd >= s && dd <= e;
+}
+
 function buildTestProtoCards(container) {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'margin-bottom:18px';
@@ -6488,6 +6515,7 @@ function buildTestProtoCards(container) {
         <div style="margin-top:8px">
           <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare (IM)</div>
           <select data-id="${id}" data-f="inj_${s.n}_distretto">
+            <option value="" ${!s.igfMuscle?'selected':''}>— scegli distretto —</option>
             ${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m=>`<option value="${m}" ${m===s.igfMuscle?'selected':''}>${m}</option>`).join('')}
           </select>
         </div>` : '';
@@ -6824,6 +6852,7 @@ function buildProtoV2() {
         <div style="margin-top:8px">
           <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare (IM)</div>
           <select data-id="${id}" data-f="inj_${s.n}_distretto">
+            <option value="" ${!s.igfMuscle?'selected':''}>— scegli distretto —</option>
             ${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m=>`<option value="${m}" ${m===s.igfMuscle?'selected':''}>${m}</option>`).join('')}
           </select>
         </div>` : '';
@@ -6891,6 +6920,15 @@ function buildProtoV2() {
         <span class="day-chev">▾</span>
       </div>
       <div class="day-body" id="body-${id}">
+
+        ${isBkkDate(d) ? `
+        <div style="background:rgba(192,57,43,.08);border:1px solid rgba(192,57,43,.25);border-radius:10px;padding:10px 12px;margin-bottom:14px">
+          <div style="font-size:11px;font-weight:600;color:#c0392b;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">🇹🇭 Trasferta BKK · split libero</div>
+          <select data-id="${id}" data-f="bkk_riposo" onchange="_proto2Built=false;const c2=document.getElementById('container2');if(c2){c2.innerHTML='';buildProtoV2();}" style="width:100%;font-size:13px;padding:7px 8px;border:1px solid var(--border,#e8e8ed);border-radius:6px;background:var(--surface,#fff);color:var(--text);font-family:inherit">
+            <option value="" ${(_lastData2[id]&&_lastData2[id].bkk_riposo)!=='1'?'selected':''}>Allenamento (default)</option>
+            <option value="1" ${(_lastData2[id]&&_lastData2[id].bkk_riposo)==='1'?'selected':''}>Riposo</option>
+          </select>
+        </div>` : ''}
 
         <div class="section-label">Biometria</div>
         <div class="bio-grid">
