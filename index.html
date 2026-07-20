@@ -1898,6 +1898,16 @@ function refreshCharts(){
 }
 
 function buildSentinelSection(dayId,woType){
+  if (woType === 'Allenamento BKK') {
+    // Trasferta BKK: attrezzatura diversa/limitata, il confronto contro i lift
+    // di casa non ha senso in questi giorni. La sessione (volume, RPE, esercizi)
+    // resta comunque tracciata normalmente in Storico allenamenti — cambia solo
+    // il confronto sentinel, che qui verrebbe falsato da macchine diverse.
+    return `<div class="log-section-title">Sentinel lifts</div>
+      <div style="font-size:12px;color:var(--muted);padding:10px 12px;background:var(--surface2,#f5f5f7);border-radius:8px;line-height:1.5">
+        🇹🇭 Sospesi durante la trasferta BKK — attrezzatura diversa, nessun confronto significativo con i lift di casa. La sessione resta comunque tracciata in Storico allenamenti.
+      </div>`;
+  }
   const keys=SESSION_SENTINELS[woType]||[];
   if(!keys.length) return '';
   const rows=keys.map(k=>{
