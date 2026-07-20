@@ -6506,9 +6506,9 @@ function buildTestProtoCards(container) {
               const fkey = f.replace(/[\s\-]/g,'_');
               const isIgf = f.includes('IGF');
               const isBpcOrTb = f.includes('BPC') || f.includes('TB-500');
-              const scOpts = s.n === 1 || s.n === 2
-                ? (isBpcOrTb ? ['Addome dx','Addome sx','Ombelico dx','Ombelico sx','Gluteo dx','Gluteo sx'] : ['Addome dx','Addome sx','Ombelico dx','Ombelico sx'])
-                : (isBpcOrTb ? ['Addome dx','Addome sx','Coscia dx','Coscia sx','Gluteo dx','Gluteo sx'] : ['Addome dx','Addome sx','Coscia dx','Coscia sx']);
+              // Sito iniezione: stessa lista fissa per tutti gli slot e tutti i composti SC,
+              // per permettere una rotazione libera e coerente su ogni sede.
+              const scOpts = ['Addome dx','Addome sx','Spalla dx','Spalla sx','Gluteo dx','Gluteo sx','Quadricipite dx','Quadricipite sx'];
               const siteSelect = !isIgf ? `<select data-id="${id}" data-f="inj_${s.n}_${fkey}_sito" style="flex-shrink:0;width:100px;margin-left:6px">
                   <option value="">— sito</option>
                   ${scOpts.map(o=>`<option value="${o}">${o}</option>`).join('')}
@@ -6560,6 +6560,10 @@ function buildTestProtoCards(container) {
           <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="bp_dia"><div class="bio-lbl">Diastolica</div></div>
           <div class="bio-box"><input type="number" placeholder="6.5"  data-id="${id}" data-f="ore_sonno" oninput="onInput(this,'${id}','ore_sonno')"><div class="bio-lbl">Ore sonno</div></div>
         </div>
+        ${d.getDay()===1 ? `
+        <div class="bio-grid" style="margin-top:6px">
+          <div class="bio-box"><input type="number" step="0.1" placeholder="82.0" data-id="${id}" data-f="circ_addome"><div class="bio-lbl">Circonf. addome cm<br><span style="font-weight:400;text-transform:none;letter-spacing:0">— check settimanale lun</span></div></div>
+        </div>` : ''}
 
         <div class="section-label" style="margin-top:14px">Stack mattutino</div>
         <div class="check-grid">
@@ -6839,9 +6843,9 @@ function buildProtoV2() {
               const fkey = f.replace(/[\s\-]/g,'_');
               const isIgf = f.includes('IGF');
               const isBpcOrTb = f.includes('BPC') || f.includes('TB-500');
-              const scOpts = s.n === 1 || s.n === 2
-                ? (isBpcOrTb ? ['Addome dx','Addome sx','Ombelico dx','Ombelico sx','Gluteo dx','Gluteo sx'] : ['Addome dx','Addome sx','Ombelico dx','Ombelico sx'])
-                : (isBpcOrTb ? ['Addome dx','Addome sx','Coscia dx','Coscia sx','Gluteo dx','Gluteo sx'] : ['Addome dx','Addome sx','Coscia dx','Coscia sx']);
+              // Sito iniezione: stessa lista fissa per tutti gli slot e tutti i composti SC,
+              // per permettere una rotazione libera e coerente su ogni sede.
+              const scOpts = ['Addome dx','Addome sx','Spalla dx','Spalla sx','Gluteo dx','Gluteo sx','Quadricipite dx','Quadricipite sx'];
               const siteSelect = !isIgf ? `<select data-id="${id}" data-f="inj_${s.n}_${fkey}_sito" style="flex-shrink:0;width:100px;margin-left:6px">
                   <option value="">— sito</option>
                   ${scOpts.map(o=>`<option value="${o}">${o}</option>`).join('')}
@@ -6893,6 +6897,10 @@ function buildProtoV2() {
           <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="bp_dia"><div class="bio-lbl">Diastolica</div></div>
           <div class="bio-box"><input type="number" placeholder="6.5"  data-id="${id}" data-f="ore_sonno" oninput="onInput(this,'${id}','ore_sonno')"><div class="bio-lbl">Ore sonno</div></div>
         </div>
+        ${d.getDay()===1 ? `
+        <div class="bio-grid" style="margin-top:6px">
+          <div class="bio-box"><input type="number" step="0.1" placeholder="82.0" data-id="${id}" data-f="circ_addome"><div class="bio-lbl">Circonf. addome cm<br><span style="font-weight:400;text-transform:none;letter-spacing:0">— check settimanale lun</span></div></div>
+        </div>` : ''}
 
         <div class="section-label" style="margin-top:14px">Stack mattutino</div>
         <div class="check-grid">
