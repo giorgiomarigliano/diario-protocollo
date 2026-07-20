@@ -6661,8 +6661,8 @@ function buildTestProtoCards(container) {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">RPE</div>
-            <select class="subj-sel" data-id="${id}" data-f="rpe">
+            <div class="subj-lbl"${wo.type==='Riposo' ? ' style="color:var(--muted);opacity:.5"' : ''}>RPE</div>
+            <select class="subj-sel" data-id="${id}" data-f="rpe"${wo.type==='Riposo' ? ' disabled style="opacity:.5;cursor:not-allowed"' : ''}>
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
             </select>
@@ -6998,8 +6998,8 @@ function buildProtoV2() {
             </select>
           </div>
           <div class="subj-item">
-            <div class="subj-lbl">RPE</div>
-            <select class="subj-sel" data-id="${id}" data-f="rpe">
+            <div class="subj-lbl"${wo.type==='Riposo' ? ' style="color:var(--muted);opacity:.5"' : ''}>RPE</div>
+            <select class="subj-sel" data-id="${id}" data-f="rpe"${wo.type==='Riposo' ? ' disabled style="opacity:.5;cursor:not-allowed"' : ''}>
               <option value="">—</option>
               ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}">${n}</option>`).join('')}
             </select>
