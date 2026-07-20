@@ -2676,7 +2676,15 @@ function checkMissingYesterday(data) {
     view = 'diary'; cardId = 'card-day_' + dayIdx;
   }
 
-  if (!missing || !missing.length) return;
+  if (!missing || !missing.length) {
+    // Un ricontrollo successivo (dopo che i dati cloud sono arrivati) puo'
+    // scoprire che in realta' non manca nulla: se un popup era gia' visibile
+    // per via del primo controllo prematuro (dati non ancora caricati), va
+    // chiuso esplicitamente — altrimenti resta appeso con info sbagliate.
+    const staleOverlay = document.getElementById('missing-data-overlay');
+    if (staleOverlay) staleOverlay.style.display = 'none';
+    return;
+  }
   if (localStorage.getItem(dismissKey) === '1') return;
 
   const dayLabel = yesterday.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
