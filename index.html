@@ -3159,13 +3159,15 @@ const LAB_CDI_CARD = {id:'lab_cdi_quadro', label:'Quadro generale pre-protocollo
 // Card 2-4: T0/T1/T2 — SOLO marker Sant'Agostino (panel dedicato, codice 00K24KC2), vuote finché non fatte
 const LAB_MILESTONES = [
   {id:'lab_t0',   label:'T0 · Sant\u2019Agostino (pre-v2)',        badge:'p1b', locked:true},
-  {id:'lab_wk8',  label:'T1 · Sant\u2019Agostino (sett. 8 da v2)', badge:'p3b', locked:false},
+  {id:'lab_wk8',  label:'T1 · Sant\u2019Agostino (sett. 8 da v2)', badge:'p3b', locked:false,
+    sub:'\ud83d\udcc5 Prenotato: 5 set 2026 \u00b7 Santagostino (n. 431190540) \u2014 combacia con la settimana 8 pianificata'},
   {id:'lab_final',label:'T2 · Sant\u2019Agostino (fine ciclo)',    badge:'p4b', locked:false},
 ];
 
 const DEXA_MILESTONES = [
   {id:'dexa_t0', label:'DEXA T0 · 9 mag 2026', badge:'p1b', locked:true},
-  {id:'dexa_t1', label:'DEXA T1 · Fine ciclo', badge:'p4b', locked:false},
+  {id:'dexa_t1', label:'DEXA T1 · Fine ciclo', badge:'p4b', locked:false,
+    sub:'\u26a0\ufe0f Prenotato 5 set 2026 \u00b7 Centro Radiologico Ambrosiano (MOC/21603) \u2014 NON \u00e8 la data di fine ciclo (7 nov). Da confermare: sostituisce il DEXA di fine ciclo o \u00e8 un controllo intermedio aggiuntivo?'},
 ];
 
 // Valuta se un valore numerico è in range dato un ref string tipo '>40', '<1.0', '70–99', '115–220'
@@ -3298,7 +3300,7 @@ function buildLabSection(container) {
 
   // Card 2-4: T0/T1/T2 Sant'Agostino
   LAB_MILESTONES.forEach(m => {
-    wrap.appendChild(renderLabCard(m, LAB_SANTAGOSTINO));
+    wrap.appendChild(renderLabCard(m, LAB_SANTAGOSTINO, m.sub));
   });
 
   // DEXA panels
@@ -3319,7 +3321,7 @@ function buildLabSection(container) {
       <div class="milestone-head" onclick="toggleDay('${m.id}')">
         <div style="flex:1">
           <div style="font-size:15px;font-weight:500">${m.label}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">${isT0 ? 'Baseline confermata' : 'Target: 66–68kg · BF 14–16% · VAT ≤62cm²'}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${m.sub ? m.sub : (isT0 ? 'Baseline confermata' : 'Target: 66–68kg · BF 14–16% · VAT ≤62cm²')}</div>
         </div>
         <span class="milestone-badge ${m.badge}">${isT0 ? 'Completato' : 'In attesa'}</span>
         <span class="day-chev">▾</span>
