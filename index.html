@@ -7298,6 +7298,10 @@ function applyProto2Data() {
       if (!el) return;
       if (el.type==='checkbox') el.checked = !!v;
       else if (v!==''&&v!=null) el.value = v;
+      // motra_log: come in applyAll (v1), il valore da solo non basta — serve
+      // disegnare esplicitamente l'elenco esercizi nel div motra-parsed-*,
+      // altrimenti il log risulta "importato" ma la lista resta invisibile.
+      if (f==='motra_log' && v) renderMotraFromLog(id, v);
     });
     // Aggiorna quick-data visibili nella card chiusa
     const qPeso  = document.getElementById('q-'+id+'-peso');
