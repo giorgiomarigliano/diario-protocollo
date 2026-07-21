@@ -6429,82 +6429,187 @@ function buildWeekSummary2(container, wkIdx) {
   const today = new Date(); today.setHours(0,0,0,0);
   const start = new Date(START2); start.setHours(0,0,0,0);
   const elapsed = Math.floor((today - start) / 86400000);
-  const currentWk = Math.floor(elapsed / 7);
-  if (wkIdx !== currentWk) return null;
-
-  const wkStart = wkIdx * 7;
-  const wkEnd   = Math.min(wkStart + 7, TOTAL_DAYS2);
   const get = (id, f) => (_lastData2[id] && _lastData2[id][f]) || '';
+  const suppFields = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm','ck_mag','ck_gly','ck_melatonina'];
 
-  let totalInj=0,doneInj=0,totalWo=0,doneWo=0;
-  let pesoSum=0,pesoCount=0,hrvSum=0,hrvCount=0;
-  let rpeSum=0,rpeCount=0,sysSum=0,sysCount=0;
-  let energiaSum=0,energiaCount=0,kcalTotal=0;
+  // Elenco giorni della settimana: la settimana 1 include anche i 2 giorni di
+  // Test Protocollo (18-19 lug), che vivono in test_proto_0/1 e non in p2_day_N.
+  const days = [];
+  if (wkIdx === 0) {
+    days.push({ id:'test_proto_0', dayIdx:-2 });
+    days.push({ id:'test_proto_1', dayIdx:-1 });
+  }
+  const wkStart = wkIdx*7, wkEnd = Math.min(wkStart+7, TOTAL_DAYS2);
+  for (let i=wkStart; i<wkEnd; i++) days.push({ id:'p2_day_'+i, dayIdx:i });
 
-  for (let i=wkStart; i<wkEnd && i<=elapsed; i++) {
-    const id = 'p2_day_'+i;
-    const slots = getInjectionSlots2(i);
-    // Conta le singole iniezioni (ogni peptide in ogni slot), non i momenti della
-    // giornata: altrimenti il denominatore (slot) e il numeratore (peptidi fatti)
-    // usano unita' diverse e il rapporto mostrato non ha senso (es. "2/3" quando
-    // in realta' sono 2 iniezioni fatte su 7 totali della giornata).
-    slots.forEach(s => {
-      totalInj += s.fields.length;
-      s.fields.forEach(f => {
-        if (get(id, 'inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_')) === 'fatto') doneInj++;
+  function computeStats(dayList) {
+    let totalInj=0, doneInj=0, totalWo=0, doneWo=0;
+    let pesoSum=0, pesoCount=0, hrvSum=0, hrvCount=0, sonnoSum=0, sonnoCount=0;
+    let rpeSum=0, rpeCount=0, sysSum=0, sysCount=0, energiaSum=0, energiaCount=0, kcalTotal=0;
+    let suppTaken=0, suppPossible=0;
+    let ritenzioneGg=0, formicolioGg=0, pienezzaGg=0, daysLogged=0;
+
+    dayList.forEach(({id, dayIdx}) => {
+      if (dayIdx >= 0 && dayIdx > elapsed) return; // giorno futuro, non ancora accaduto
+
+      const slots = getInjectionSlots2(dayIdx);
+      slots.forEach(s => {
+        totalInj += s.fields.length;
+        s.fields.forEach(f => {
+          if (get(id, 'inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_')) === 'fatto') doneInj++;
+        });
       });
-    });
-    const wo = getWorkout2(i);
-    if (wo.type !== 'Riposo') {
-      totalWo++;
-      const kcal = parseFloat(get(id,'wo_kcal'));
-      const vol  = parseFloat(get(id,'wo_volume'));
-      const rpe  = parseFloat(get(id,'rpe'));
-      if (!isNaN(kcal)&&kcal>0 || !isNaN(vol)&&vol>0 || !isNaN(rpe)) {
-        doneWo++;
-        if (!isNaN(rpe)) { rpeSum+=rpe; rpeCount++; }
+
+      const wo = getWorkout2(dayIdx);
+      if (wo.type !== 'Riposo') {
+        totalWo++;
+        const kcal=parseFloat(get(id,'wo_kcal')), vol=parseFloat(get(id,'wo_volume')), rpe=parseFloat(get(id,'rpe'));
+        if ((!isNaN(kcal)&&kcal>0) || (!isNaN(vol)&&vol>0) || !isNaN(rpe)) {
+          doneWo++;
+          if (!isNaN(rpe)) { rpeSum+=rpe; rpeCount++; }
+        }
       }
-    }
-    const peso = parseFloat(get(id,'peso'));
-    if (!isNaN(peso)) { pesoSum+=peso; pesoCount++; }
-    const hrv = parseFloat(get(id,'hrv'));
-    if (!isNaN(hrv)) { hrvSum+=hrv; hrvCount++; }
-    const sys = parseFloat(get(id,'bp_sys'));
-    if (!isNaN(sys)) { sysSum+=sys; sysCount++; }
-    const en = parseFloat(get(id,'energia'));
-    if (!isNaN(en)) { energiaSum+=en; energiaCount++; }
-    const kcal2 = parseFloat(get(id,'wo_kcal'));
-    if (!isNaN(kcal2)) kcalTotal+=kcal2;
+
+      const peso = parseFloat(get(id,'peso'));   if(!isNaN(peso))  { pesoSum+=peso;   pesoCount++; }
+      const hrv  = parseFloat(get(id,'hrv'));    if(!isNaN(hrv))   { hrvSum+=hrv;     hrvCount++; }
+      const sonno= parseFloat(get(id,'ore_sonno'));if(!isNaN(sonno)){ sonnoSum+=sonno; sonnoCount++; }
+      const sys  = parseFloat(get(id,'bp_sys'));  if(!isNaN(sys))   { sysSum+=sys;     sysCount++; }
+      const en   = parseFloat(get(id,'energia')); if(!isNaN(en))    { energiaSum+=en;  energiaCount++; }
+      const kcal2= parseFloat(get(id,'wo_kcal')); if(!isNaN(kcal2)) kcalTotal+=kcal2;
+
+      suppFields.forEach(s => {
+        suppPossible++;
+        if (get(id, s+'_skip')) { suppPossible--; }
+        else if (get(id, s) === '1') suppTaken++;
+      });
+
+      const rit = get(id,'ritenzione');    if (rit!=='' && parseInt(rit)>0) ritenzioneGg++;
+      const form= get(id,'formicolio');    if (form!=='' && parseInt(form)>0) formicolioGg++;
+      const pie = get(id,'pienezza_add');  if (pie!=='' && parseInt(pie)>0) pienezzaGg++;
+
+      if (peso || hrv || sonno) daysLogged++;
+    });
+
+    return { totalInj,doneInj,totalWo,doneWo,pesoSum,pesoCount,hrvSum,hrvCount,sonnoSum,sonnoCount,
+      rpeSum,rpeCount,sysSum,sysCount,energiaSum,energiaCount,kcalTotal,suppTaken,suppPossible,
+      ritenzioneGg,formicolioGg,pienezzaGg,daysLogged };
   }
 
-  const avgPeso    = pesoCount    ? (pesoSum/pesoCount).toFixed(1) : '—';
-  const avgHrv     = hrvCount     ? Math.round(hrvSum/hrvCount)    : '—';
-  const avgRpe     = rpeCount     ? (rpeSum/rpeCount).toFixed(1)   : '—';
-  const avgSys     = sysCount     ? Math.round(sysSum/sysCount)    : '—';
-  const avgEnergia = energiaCount ? (energiaSum/energiaCount).toFixed(1) : '—';
-  const injColor   = totalInj>0 && doneInj===totalInj ? '#34c759' : doneInj>0 ? '#ff9500' : 'var(--text)';
-  const daysLogged = pesoCount;
+  const st = computeStats(days);
+  if (st.daysLogged === 0) return null; // settimana futura o senza dati: nessuna card
+
+  // Settimana precedente, solo per il delta peso/HRV
+  let prevSt = null;
+  if (wkIdx > 0) {
+    const prevDays = [];
+    if (wkIdx-1 === 0) { prevDays.push({id:'test_proto_0',dayIdx:-2}); prevDays.push({id:'test_proto_1',dayIdx:-1}); }
+    const pStart=(wkIdx-1)*7, pEnd=Math.min(pStart+7, TOTAL_DAYS2);
+    for (let i=pStart; i<pEnd; i++) prevDays.push({id:'p2_day_'+i, dayIdx:i});
+    prevSt = computeStats(prevDays);
+  }
+
+  const avgPeso  = st.pesoCount  ? st.pesoSum/st.pesoCount   : null;
+  const avgHrv   = st.hrvCount   ? st.hrvSum/st.hrvCount     : null;
+  const avgSonno = st.sonnoCount ? st.sonnoSum/st.sonnoCount : null;
+  const avgRpe   = st.rpeCount   ? (st.rpeSum/st.rpeCount).toFixed(1) : '—';
+  const avgSys   = st.sysCount   ? Math.round(st.sysSum/st.sysCount) : '—';
+
+  const prevAvgPeso = (prevSt && prevSt.pesoCount) ? prevSt.pesoSum/prevSt.pesoCount : null;
+  const prevAvgHrv  = (prevSt && prevSt.hrvCount)  ? prevSt.hrvSum/prevSt.hrvCount   : null;
+  const deltaPeso = (avgPeso!==null && prevAvgPeso!==null) ? (avgPeso-prevAvgPeso) : null;
+  const deltaHrv  = (avgHrv!==null && prevAvgHrv!==null)   ? (avgHrv-prevAvgHrv)   : null;
+
+  const injColor = st.totalInj>0 && st.doneInj===st.totalInj ? '#34c759' : st.doneInj>0 ? '#ff9500' : 'var(--text)';
+
+  // Aderenza complessiva: iniezioni + integratori + workout in un unico punteggio
+  const totalPossible = st.totalInj + st.suppPossible + st.totalWo;
+  const totalDone = st.doneInj + st.suppTaken + st.doneWo;
+  const aderenzaPct = totalPossible>0 ? Math.round(totalDone/totalPossible*100) : null;
+  const aderenzaColor = aderenzaPct===null ? 'var(--muted)' : aderenzaPct>=90 ? '#34c759' : aderenzaPct>=70 ? '#ff9500' : '#ff3b30';
+
+  // Barra progresso peso verso target (T0 DEXA 9 mag = 71.1kg, target medio 67kg)
+  const T0_WEIGHT=71.1, TARGET_MID=67;
+  const pesoProgressPct = avgPeso!==null ? Math.max(0, Math.min(100, (T0_WEIGHT-avgPeso)/(T0_WEIGHT-TARGET_MID)*100)) : null;
+
+  // Sparkline: valori giornalieri peso/HRV nell'ordine dei giorni della settimana
+  const sparkPeso=[], sparkHrv=[];
+  days.forEach(({id,dayIdx}) => {
+    if (dayIdx>=0 && dayIdx>elapsed) return;
+    const p=parseFloat(get(id,'peso')); if(!isNaN(p)) sparkPeso.push(p);
+    const hv=parseFloat(get(id,'hrv')); if(!isNaN(hv)) sparkHrv.push(hv);
+  });
+
+  function miniSparkline(data, color, w, h) {
+    w = w||110; h = h||32;
+    if (data.length<2) return `<div style="font-size:10px;color:var(--muted);height:${h}px;display:flex;align-items:center">dati insuff.</div>`;
+    const min=Math.min(...data), max=Math.max(...data), range=(max-min)||1;
+    const pts = data.map((v,i)=>`${(i/(data.length-1)*w).toFixed(1)},${(h-((v-min)/range*h)).toFixed(1)}`).join(' ');
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  }
+
+  function deltaBadge(delta, unit, higherIsBad) {
+    if (delta===null) return '';
+    if (Math.abs(delta) < (unit==='ms'?1:0.05)) return `<span style="font-size:11px;color:var(--muted);margin-left:5px">stabile</span>`;
+    const up = delta>0;
+    const good = higherIsBad ? !up : up;
+    const color = good ? '#34c759' : '#ff9500';
+    const sign = up?'+':'';
+    const val = unit==='ms' ? Math.round(delta) : delta.toFixed(1);
+    return `<span style="font-size:11px;color:${color};margin-left:5px">${sign}${val}${unit}</span>`;
+  }
+
+  const symptomBits = [];
+  if (st.ritenzioneGg>0) symptomBits.push(`${st.ritenzioneGg}gg ritenzione`);
+  if (st.formicolioGg>0) symptomBits.push(`${st.formicolioGg}gg formicolio`);
+  if (st.pienezzaGg>0)   symptomBits.push(`${st.pienezzaGg}gg pienezza add.`);
+  const symptomText = symptomBits.length ? symptomBits.join(' · ') : 'Nessun sintomo rilevante segnalato';
 
   const card = document.createElement('div');
   card.className = 'week-summary-card';
   card.id = 'week-summary2-'+wkIdx;
   card.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
-      <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Riepilogo settimana ${wkIdx+1}</div>
-      <div style="font-size:11px;color:var(--muted)">${daysLogged} gg registrati · ${getWeekRange2(wkIdx)}</div>
+      <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Riepilogo settimana ${wkIdx+1}${wkIdx===0?' <span style="text-transform:none;font-weight:400">(incl. 2gg test)</span>':''}</div>
+      <div style="font-size:11px;color:var(--muted)">${st.daysLogged} gg registrati · ${getWeekRange2(wkIdx)}</div>
     </div>
+
+    <div style="display:flex;gap:16px;margin-bottom:10px">
+      <div style="flex:1">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Peso</div>
+        ${miniSparkline(sparkPeso,'#0071e3')}
+      </div>
+      <div style="flex:1">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">HRV</div>
+        ${miniSparkline(sparkHrv,'#34c759')}
+      </div>
+    </div>
+
     <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr)">
-      <div class="ws-item"><div class="ws-val">${avgPeso}<span style="font-size:12px;font-weight:400"> kg</span></div><div class="ws-lbl">Peso medio</div></div>
-      <div class="ws-item"><div class="ws-val">${avgHrv}<span style="font-size:12px;font-weight:400"> ms</span></div><div class="ws-lbl">HRV medio</div></div>
-      <div class="ws-item"><div class="ws-val" style="color:${injColor}">${doneInj}/${totalInj}</div><div class="ws-lbl">Iniezioni</div></div>
-      <div class="ws-item"><div class="ws-val">${doneWo}/${totalWo}</div><div class="ws-lbl">Workout</div></div>
+      <div class="ws-item"><div class="ws-val">${avgPeso!==null?avgPeso.toFixed(1):'—'}<span style="font-size:12px;font-weight:400"> kg</span>${deltaBadge(deltaPeso,'kg',true)}</div><div class="ws-lbl">Peso medio</div></div>
+      <div class="ws-item"><div class="ws-val">${avgHrv!==null?Math.round(avgHrv):'—'}<span style="font-size:12px;font-weight:400"> ms</span>${deltaBadge(deltaHrv,'ms',false)}</div><div class="ws-lbl">HRV medio</div></div>
+      <div class="ws-item"><div class="ws-val">${avgSonno!==null?avgSonno.toFixed(1):'—'}<span style="font-size:12px;font-weight:400">h</span></div><div class="ws-lbl">Sonno medio</div></div>
+      <div class="ws-item"><div class="ws-val" style="color:${aderenzaColor}">${aderenzaPct!==null?aderenzaPct+'%':'—'}</div><div class="ws-lbl">Aderenza tot.</div></div>
     </div>
+
     <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+      <div class="ws-item"><div class="ws-val" style="color:${injColor}">${st.doneInj}/${st.totalInj}</div><div class="ws-lbl">Iniezioni</div></div>
+      <div class="ws-item"><div class="ws-val">${st.doneWo}/${st.totalWo}</div><div class="ws-lbl">Workout</div></div>
       <div class="ws-item"><div class="ws-val">${avgRpe}<span style="font-size:12px;font-weight:400">/10</span></div><div class="ws-lbl">RPE medio</div></div>
       <div class="ws-item"><div class="ws-val">${avgSys}<span style="font-size:12px;font-weight:400"> mmHg</span></div><div class="ws-lbl">Sistolica media</div></div>
-      <div class="ws-item"><div class="ws-val">${avgEnergia}<span style="font-size:12px;font-weight:400">/10</span></div><div class="ws-lbl">Energia media</div></div>
-      <div class="ws-item"><div class="ws-val">${kcalTotal>0?kcalTotal:'—'}<span style="font-size:12px;font-weight:400">${kcalTotal>0?' kcal':''}</span></div><div class="ws-lbl">Kcal totali</div></div>
-    </div>`;
+    </div>
+
+    ${pesoProgressPct!==null ? `
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
+        <span>Verso il target peso (66–68kg)</span><span>${Math.round(pesoProgressPct)}%</span>
+      </div>
+      <div style="height:6px;background:var(--surface2,#f0f0f0);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pesoProgressPct}%;background:linear-gradient(90deg,#0071e3,#34c759);border-radius:3px"></div>
+      </div>
+    </div>` : ''}
+
+    <div style="margin-top:10px;font-size:11.5px;color:var(--muted)">🩺 ${symptomText}</div>
+  `;
   return card;
 }
 
@@ -6874,7 +6979,7 @@ function buildProtoV2() {
         </div>
         <div class="week-hdr-row2">${ph.peptidi}${ph.note ? ' · <em>'+ph.note+'</em>' : ''}</div>`;
       container.appendChild(wh);
-      // Week summary (solo settimana corrente)
+      // Week summary (ogni settimana raggiunta tramite le tab WK1..WKn)
       const ws2 = buildWeekSummary2(container, wk-1);
       if (ws2) container.appendChild(ws2);
     }
