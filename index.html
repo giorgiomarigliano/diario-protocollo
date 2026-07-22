@@ -5349,6 +5349,43 @@ function getInjComplianceV2() {
   return {done,total,pct:total?Math.round((done/total)*100):0};
 }
 
+// ── Compliance integratori V2 ───────────────────────────────────
+function getSuppComplianceV2() {
+  const today=new Date(); today.setHours(0,0,0,0);
+  const start=new Date(START2); start.setHours(0,0,0,0);
+  const elapsed=Math.floor((today-start)/86400000);
+  if (elapsed<0) return {done:0,total:0,pct:0};
+  const suppFields = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm','ck_mag','ck_gly','ck_melatonina'];
+  let done=0,total=0;
+  for (let i=0;i<=Math.min(elapsed,TOTAL_DAYS2-1);i++) {
+    const rec=_lastData2['p2_day_'+i]||{};
+    suppFields.forEach(s=>{
+      if (rec[s+'_skip']) return; // skippato: non conta ne' a favore ne' contro
+      total++;
+      if (rec[s]==='1') done++;
+    });
+  }
+  return {done,total,pct:total?Math.round((done/total)*100):0};
+}
+
+// ── Compliance allenamenti V2 ────────────────────────────────────
+function getWorkoutComplianceV2() {
+  const today=new Date(); today.setHours(0,0,0,0);
+  const start=new Date(START2); start.setHours(0,0,0,0);
+  const elapsed=Math.floor((today-start)/86400000);
+  if (elapsed<0) return {done:0,total:0,pct:0};
+  let done=0,total=0;
+  for (let i=0;i<=Math.min(elapsed,TOTAL_DAYS2-1);i++) {
+    const wo = getWorkout2(i);
+    if (wo.type==='Riposo') continue; // i giorni di riposo non contano come workout mancato
+    total++;
+    const rec=_lastData2['p2_day_'+i]||{};
+    const kcal=parseFloat(rec.wo_kcal), vol=parseFloat(rec.wo_volume), rpe=parseFloat(rec.rpe);
+    if ((!isNaN(kcal)&&kcal>0) || (!isNaN(vol)&&vol>0) || !isNaN(rpe)) done++;
+  }
+  return {done,total,pct:total?Math.round((done/total)*100):0};
+}
+
 function buildDashboard() {
   const dash = document.getElementById('dash-view');
   if (dashBuilt) { requestAnimationFrame(()=>requestAnimationFrame(refreshDashCharts)); return; }
@@ -5375,12 +5412,17 @@ function buildDashboard() {
   const lBpS  = lastVal('bp_sys',60);
   const lBpD  = lastVal('bp_dia',60);
   const inj   = getInjComplianceV2();
+  const supp  = getSuppComplianceV2();
+  const wo2   = getWorkoutComplianceV2();
   const pctCiclo = inV2 ? Math.min(100,Math.round((elapsedV2/112)*100)) : 0;
 
-  // Delta peso vs T0 (DEXA: 71.1kg)
+  // Delta peso/HRV vs T0 (DEXA: 71.1kg) · sonno: media ultimi 7gg (nessun T0 di riferimento registrato)
   const T0_PESO = 71.1, T0_HRV = 37;
   const deltaPeso = lPeso ? (lPeso - T0_PESO).toFixed(1) : null;
   const deltaHrv  = lHrv  ? Math.round(lHrv - T0_HRV)  : null;
+  const sonno7 = getDayDataAll('ore_sonno', 7).filter(p=>p.value!==null).map(p=>p.value);
+  const avgSonno7 = sonno7.length ? (sonno7.reduce((a,b)=>a+b,0)/sonno7.length) : null;
+  const lSonno = lastVal('ore_sonno',60);
 
   dash.innerHTML = `<div class="dash-inner view-wrap">
 
@@ -5431,7 +5473,35 @@ function buildDashboard() {
           <div style="margin-top:8px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
             <div style="height:100%;width:${inj.pct}%;background:${inj.pct>=80?'#34c759':inj.pct>=60?'#ff9500':'#ff3b30'};border-radius:2px"></div>
           </div>
-        </div>`:''}
+        </div>` : ''}
+
+        <div class="kpi-box">
+          <span class="kpi-icon">😴</span>
+          <div class="kpi-val">${lSonno!==null?lSonno.toFixed(1):'—'}<span style="font-size:13px;font-weight:400">h</span></div>
+          <div class="kpi-lbl">Sonno</div>
+          <div class="kpi-delta neutral">${avgSonno7!==null?`Media 7gg: ${avgSonno7.toFixed(1)}h`:'Dati insufficienti'}</div>
+          <canvas class="kpi-spark" id="spark-sonno" style="margin-top:8px"></canvas>
+        </div>
+
+        ${inV2?`<div class="kpi-box">
+          <span class="kpi-icon">💊</span>
+          <div class="kpi-val">${supp.pct}<span style="font-size:13px;font-weight:400">%</span></div>
+          <div class="kpi-lbl">Compliance integratori</div>
+          <div class="kpi-delta neutral">${supp.done}/${supp.total} dosi</div>
+          <div style="margin-top:8px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${supp.pct}%;background:${supp.pct>=80?'#34c759':supp.pct>=60?'#ff9500':'#ff3b30'};border-radius:2px"></div>
+          </div>
+        </div>` : ''}
+
+        ${inV2?`<div class="kpi-box">
+          <span class="kpi-icon">🏋️</span>
+          <div class="kpi-val">${wo2.pct}<span style="font-size:13px;font-weight:400">%</span></div>
+          <div class="kpi-lbl">Compliance allenamenti</div>
+          <div class="kpi-delta neutral">${wo2.done}/${wo2.total} sessioni</div>
+          <div style="margin-top:8px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
+            <div style="height:100%;width:${wo2.pct}%;background:${wo2.pct>=80?'#34c759':wo2.pct>=60?'#ff9500':'#ff3b30'};border-radius:2px"></div>
+          </div>
+        </div>` : ''}
 
       </div>
     </div>
@@ -5716,6 +5786,7 @@ function refreshDashCharts() {
   const rhr60  = getDayDataAll('rhr',  60);
   const bpSys  = getDayDataAll('bp_sys',60);
   const bpDia  = getDayDataAll('bp_dia',60);
+  const sonno60= getDayDataAll('ore_sonno',60);
 
   // ── Soggettivo (30gg) ──────────────────────────────────────
   const energ = getDayDataAll('energia', 30);
@@ -5726,6 +5797,7 @@ function refreshDashCharts() {
   drawSparkline('spark-peso', peso60, '#0071e3');
   drawSparkline('spark-hrv',  hrv60,  '#34c759');
   drawSparkline('spark-rhr',  rhr60,  '#ff3b30');
+  drawSparkline('spark-sonno',sonno60,'#5856d6');
 
   // ── Grafici biometria ──────────────────────────────────────
   drawDashChart('dc-peso',[{data:peso60,color:'#0071e3'}],{height:110,minScale:0.98,maxScale:1.02,refLine:71.1});
@@ -5767,7 +5839,6 @@ function refreshDashCharts() {
   ], 30);
 
   // ── Sonno → HRV giorno dopo (60gg) ─────────────────────────
-  const sonno60 = getDayDataAll('ore_sonno', 60);
   const hrvAll60 = getDayDataAll('hrv', 60);
   const shPoints = [];
   for (let i=0; i<sonno60.length-1; i++) {
