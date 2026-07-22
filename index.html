@@ -5475,14 +5475,6 @@ function buildDashboard() {
           </div>
         </div>` : ''}
 
-        <div class="kpi-box">
-          <span class="kpi-icon">😴</span>
-          <div class="kpi-val">${lSonno!==null?lSonno.toFixed(1):'—'}<span style="font-size:13px;font-weight:400">h</span></div>
-          <div class="kpi-lbl">Sonno</div>
-          <div class="kpi-delta neutral">${avgSonno7!==null?`Media 7gg: ${avgSonno7.toFixed(1)}h`:'Dati insufficienti'}</div>
-          <canvas class="kpi-spark" id="spark-sonno" style="margin-top:8px"></canvas>
-        </div>
-
         ${inV2?`<div class="kpi-box">
           <span class="kpi-icon">💊</span>
           <div class="kpi-val">${supp.pct}<span style="font-size:13px;font-weight:400">%</span></div>
@@ -5502,6 +5494,14 @@ function buildDashboard() {
             <div style="height:100%;width:${wo2.pct}%;background:${wo2.pct>=80?'#34c759':wo2.pct>=60?'#ff9500':'#ff3b30'};border-radius:2px"></div>
           </div>
         </div>` : ''}
+
+        <div class="kpi-box">
+          <span class="kpi-icon">😴</span>
+          <div class="kpi-val">${lSonno!==null?lSonno.toFixed(1):'—'}<span style="font-size:13px;font-weight:400">h</span></div>
+          <div class="kpi-lbl">Sonno</div>
+          <div class="kpi-delta neutral">${avgSonno7!==null?`Media 7gg: ${avgSonno7.toFixed(1)}h`:'Dati insufficienti'}</div>
+          <canvas class="kpi-spark" id="spark-sonno" style="margin-top:8px"></canvas>
+        </div>
 
       </div>
     </div>
