@@ -1497,8 +1497,13 @@ function localDateStr(d) {
 }
 const TOTAL_DAYS = 112;
 const KEY = 'diary_daily_v1';
-const SB_URL = 'https://viarmvaukgwdoursfnwu.supabase.co';
-const SB_KEY = 'sb_publishable_lNztKvsZbTKIwjEWAGiBhg_zngxHt56';
+// Le chiamate REST passano attraverso una Edge Function proxy (diario-proxy)
+// invece che direttamente a Supabase: la chiave vera resta lato server nei
+// secret della funzione, mai nel codice sorgente pubblico di questo repo
+// (che i bot che scansionano GitHub potrebbero altrimenti trovare). Il proxy
+// ignora il valore di SB_KEY inviato qui e usa sempre la sua chiave segreta.
+const SB_URL = 'https://viarmvaukgwdoursfnwu.supabase.co/functions/v1/diario-proxy';
+const SB_KEY = 'public';
 const USER_ID = 'giorgio_protocollo_2026';
 
 const SPLIT = {
