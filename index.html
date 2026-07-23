@@ -5381,13 +5381,17 @@ function getSessionsV2(days) {
     const wo = getWorkout2(i);
     if (wo.type==='Riposo') continue;
     const rec = _lastData2['p2_day_'+i]||{};
-    const vol  = parseFloat(rec.wo_volume)||NaN;
+    // getWorkoutVolume2 gestisce anche il caso (ricorrente) in cui l'import di
+    // Motra non abbia salvato wo_volume esplicitamente: fa fallback sul JSON
+    // di motra_log se presente, cosi' il conteggio non risulta "mancante" per
+    // sessioni in realta' regolarmente svolte e loggate.
+    const vol  = getWorkoutVolume2(rec);
     const kcal = parseFloat(rec.wo_kcal)||NaN;
     const dur  = parseFloat(rec.wo_durata)||NaN;
     const rpe  = parseFloat(rec.rpe)||NaN;
     const d = new Date(START2); d.setDate(d.getDate()+i);
     sessions.push({ dayIdx:i, date:d, type:wo.type,
-      volume:isNaN(vol)?null:vol, kcal:isNaN(kcal)?null:kcal,
+      volume:vol, kcal:isNaN(kcal)?null:kcal,
       durata:isNaN(dur)?null:dur, rpe:isNaN(rpe)?null:rpe });
   }
   return sessions;
