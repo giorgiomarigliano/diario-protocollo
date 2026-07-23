@@ -9809,6 +9809,17 @@ function buildOrariView() {
     btn.style.display = window.scrollY > 300 ? 'flex' : 'none';
   }, { passive: true });
 })();
+
+// ── Timbro versione (build sha + data) ──────────────────────────────────
+(function() {
+  const BUILD_SHA  = 'BUILD_SHA_PLACEHOLDER';
+  const BUILD_DATE = '23 lug 2026';
+  const el = document.createElement('div');
+  el.id = 'build-stamp';
+  el.textContent = 'v' + BUILD_DATE + ' · ' + BUILD_SHA;
+  el.style.cssText = 'position:fixed;bottom:4px;left:8px;font-size:10px;color:var(--muted,#8e8e93);opacity:.55;z-index:9997;pointer-events:none;font-family:-apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.2px';
+  document.body.appendChild(el);
+})();
 </script>
 
 </body>
