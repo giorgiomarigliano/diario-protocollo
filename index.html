@@ -5403,8 +5403,8 @@ function getSessionsAll(days) {
       if (i>=0&&i<TOTAL_DAYS2) {
         const wo=getWorkout2(i); if (wo.type==='Riposo') continue;
         const rec=_lastData2['p2_day_'+i]||{};
-        const vol=parseFloat(rec.wo_volume)||NaN, rpe=parseFloat(rec.rpe)||NaN;
-        sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,phase:'v2'};
+        const vol=parseFloat(rec.wo_volume)||NaN, rpe=parseFloat(rec.rpe)||NaN, hrv=parseFloat(rec.hrv);
+        sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,phase:'v2'};
       }
     } else if (d>=startWU) {
       const i=Math.floor((d-startWU)/86400000);
@@ -5413,8 +5413,8 @@ function getSessionsAll(days) {
         const rec=_lastData['day_'+i]||{};
         let rawVol=parseFloat(rec.wo_volume);
         if (isNaN(rawVol)){const el=document.querySelector(`[data-id="day_${i}"][data-f="wo_volume"]`);if(el)rawVol=parseFloat(el.value);}
-        const vol=isNaN(rawVol)?NaN:rawVol, rpe=parseFloat(rec.wo_rpe)||NaN;
-        sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,phase:'wu'};
+        const vol=isNaN(rawVol)?NaN:rawVol, rpe=parseFloat(rec.wo_rpe)||NaN, hrv=parseFloat(rec.hrv);
+        sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,phase:'wu'};
       }
     }
     if (sess) sessions.push(sess);
@@ -5987,20 +5987,16 @@ function refreshDashCharts() {
         </div>`).join('');
     }
 
-    // Riepilogo sessioni (tabella: data, tipo, vol, HRV, RPE)
-    const sessionRows = [];
-    for (let i = 0; i < TOTAL_DAYS; i++) {
-      const rec = _lastData['day_'+i]||{};
-      const hrv = parseFloat(rec.hrv);
-      const vol = parseFloat(rec.wo_volume);
-      const rpe = parseFloat(rec.wo_rpe||rec.rpe);
-      const wo  = getWorkout(i);
-      if (wo.type === 'Riposo') continue;
-      if (!isNaN(hrv) || !isNaN(vol)) {
-        const d = new Date(START); d.setDate(d.getDate()+i);
-        sessionRows.push({date:d.toLocaleDateString('it-IT',{day:'2-digit',month:'short'}), type:wo.type, hrv, vol, rpe});
-      }
-    }
+    // Riepilogo sessioni (tabella: data, tipo, vol, HRV, RPE) — usa lo stesso
+    // array 'sessions' (WU+V2, ultimi 60gg) del breakdown/volume qui sopra,
+    // cosi' le sessioni del ciclo v2 non spariscono dalla tabella (bug corretto
+    // 23/07/2026: prima ricalcolava solo su day_0..day_N, mai su p2_day_N).
+    const sessionRows = sessions
+      .filter(s => s.volume!==null || s.hrv!==null)
+      .map(s => ({
+        date: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'short'}),
+        type: s.type, hrv: s.hrv, vol: s.volume, rpe: s.rpe
+      }));
     const tblEl = document.getElementById('dc-scatter-table');
     if (tblEl) {
       const C = {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'};
@@ -6011,9 +6007,9 @@ function refreshDashCharts() {
         </tr></thead><tbody>${sessionRows.map(r=>`<tr style="border-bottom:1px solid var(--border)">
           <td style="padding:4px 6px;color:var(--muted)">${r.date}</td>
           <td style="padding:4px 6px;font-weight:600;color:${C[r.type]||'#6e6e73'}">${r.type}</td>
-          <td style="padding:4px 6px;text-align:right">${isNaN(r.vol)?'—':(r.vol/1000).toFixed(1)}</td>
-          <td style="padding:4px 6px;text-align:right">${isNaN(r.hrv)?'—':Math.round(r.hrv)}</td>
-          <td style="padding:4px 6px;text-align:right">${isNaN(r.rpe)?'—':r.rpe}</td>
+          <td style="padding:4px 6px;text-align:right">${r.vol===null?'—':(r.vol/1000).toFixed(1)}</td>
+          <td style="padding:4px 6px;text-align:right">${r.hrv===null?'—':Math.round(r.hrv)}</td>
+          <td style="padding:4px 6px;text-align:right">${r.rpe===null?'—':r.rpe}</td>
         </tr>`).join('')}</tbody></table>`
         : '<div style="font-size:11px;color:var(--muted);padding:12px">Nessuna sessione</div>';
     }
