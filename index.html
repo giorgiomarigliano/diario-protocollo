@@ -243,6 +243,17 @@ body {
 .chart-label { font-size: 11px; color: var(--muted); margin-bottom: 5px; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
 canvas.mini-chart { width: 100%; height: 64px; display: block; }
 
+/* ── Lotto 2: aderenza iniezioni per composto + peso/volume doppio asse ── */
+.adh-list { display: flex; flex-direction: column; gap: 10px; }
+.adh-row { display: flex; align-items: center; gap: 10px; }
+.adh-label { flex: 0 0 118px; font-size: 12px; color: var(--text); font-weight: 500; }
+.adh-bar-track { flex: 1; height: 8px; border-radius: 4px; background: var(--card-bg,#eee); overflow: hidden; }
+.adh-bar-fill { height: 100%; border-radius: 4px; }
+.adh-pct { flex: 0 0 38px; text-align: right; font-size: 12px; font-weight: 600; color: var(--text); }
+.chart-legend { display: flex; gap: 14px; margin-top: 6px; }
+.chart-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.chart-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
 /* Week header */
 .week-hdr {
   display: flex;
@@ -6544,6 +6555,179 @@ function buildCharts2(container) {
   }, 100);
 }
 
+// ── LOTTO 2: aderenza iniezioni per composto + peso/volume doppio asse ────
+
+// Estrae il volume di allenamento di un giorno: preferisce il campo wo_volume
+// (numerico), altrimenti fa fallback sul parsing di motra_log.volume (stringa
+// tipo "11,4K kg") — stessa logica di importMotra(), cosi' il grafico funziona
+// anche per giorni dove il campo derivato non e' stato salvato esplicitamente.
+function getWorkoutVolume2(rec) {
+  if (!rec) return null;
+  if (rec.wo_volume) {
+    const v = parseFloat(rec.wo_volume);
+    if (!isNaN(v) && v > 0) return v;
+  }
+  if (rec.motra_log) {
+    try {
+      const m = JSON.parse(rec.motra_log);
+      if (m.volume) {
+        const mm = String(m.volume).match(/([\d,\.]+)([Kk])?/);
+        if (mm) {
+          let val = parseFloat(mm[1].replace(',', '.'));
+          if (mm[2]) val *= 1000;
+          if (!isNaN(val) && val > 0) return Math.round(val);
+        }
+      }
+    } catch (e) {}
+  }
+  return null;
+}
+
+// Canonicalizza il nome campo iniezione (es. "Fragment 176-191 250mcg") nel
+// nome del composto per l'aggregazione dell'aderenza (dx/sx dell'IGF-1 DES
+// contano come lo stesso composto).
+function canonInjectionCompound2(fieldName) {
+  if (fieldName.startsWith('Fragment'))    return 'Fragment 176-191';
+  if (fieldName.startsWith('BPC-157'))     return 'BPC-157';
+  if (fieldName.startsWith('Tesamorelin')) return 'Tesamorelin';
+  if (fieldName.startsWith('Ipamorelin'))  return 'Ipamorelin';
+  if (fieldName.startsWith('TB-500'))      return 'TB-500';
+  if (fieldName.startsWith('IGF-1 DES'))   return 'IGF-1 DES';
+  return null;
+}
+
+function drawWeightVolumeChart(id, pesoData, volumeData) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const H = 64;
+  canvas.width = rect.width * dpr; canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+  const W = rect.width;
+  const n = pesoData.length;
+  const pesoPts = pesoData.map((v, i) => v !== null ? { i, v } : null).filter(Boolean);
+  if (pesoPts.length < 2) {
+    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.fillText('Dati insufficienti', 8, 32);
+    return;
+  }
+  const TOP_PAD = 18, BOTTOM_PAD = 10, RIGHT_PAD = 32, LEFT_PAD = 2;
+  const plotW = W - RIGHT_PAD - LEFT_PAD - 4;
+
+  // Volume (asse destro) — barre, dietro alla linea del peso
+  const volPts = volumeData.map((v, i) => v !== null ? { i, v } : null).filter(Boolean);
+  if (volPts.length) {
+    const volMax = Math.max(...volPts.map(p => p.v)) * 1.15 || 1;
+    const barW = Math.max(4, (plotW / n) * 0.5);
+    volPts.forEach(p => {
+      const x = LEFT_PAD + (n > 1 ? p.i / (n - 1) * plotW : plotW / 2);
+      const h = (p.v / volMax) * (H - TOP_PAD - BOTTOM_PAD);
+      ctx.fillStyle = '#ff950050';
+      ctx.fillRect(x - barW / 2, H - BOTTOM_PAD - h, barW, h);
+    });
+  }
+
+  // Peso (asse sinistro) — linea + punti, in primo piano
+  const mn = Math.min(...pesoPts.map(p => p.v)) * 0.995, mx = Math.max(...pesoPts.map(p => p.v)) * 1.005, rng = mx - mn || 1;
+  const coords = pesoPts.map(p => ({
+    x: LEFT_PAD + (n > 1 ? p.i / (n - 1) * plotW : plotW / 2),
+    y: H - BOTTOM_PAD - ((p.v - mn) / rng) * (H - TOP_PAD - BOTTOM_PAD),
+    v: p.v
+  }));
+  ctx.beginPath();
+  coords.forEach((c, idx) => { if (idx === 0) ctx.moveTo(c.x, c.y); else ctx.lineTo(c.x, c.y); });
+  ctx.strokeStyle = '#0071e3'; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+  coords.forEach(c => { ctx.beginPath(); ctx.arc(c.x, c.y, 2.5, 0, Math.PI * 2); ctx.fillStyle = '#0071e3'; ctx.fill(); });
+
+  const last = coords[coords.length - 1];
+  ctx.font = '500 11px -apple-system'; ctx.fillStyle = '#0071e3';
+  const label = last.v.toFixed(1);
+  const tw = ctx.measureText(label).width;
+  let lx = last.x + 4; if (lx + tw > W - 2) lx = last.x - tw - 4;
+  lx = Math.max(2, Math.min(lx, W - tw - 2));
+  let ly = last.y - 6; if (ly - 11 < TOP_PAD) ly = last.y + 13;
+  ctx.fillText(label, lx, ly);
+}
+
+function buildAdherenceAndVolumeCharts2(container) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const start = new Date(START2); start.setHours(0, 0, 0, 0);
+  const elapsed = Math.floor((today - start) / 86400000);
+  if (elapsed < 2) return;
+
+  // ── Aderenza iniezioni per composto (dal giorno 0 a oggi) ──
+  const compoundOrder = ['Fragment 176-191', 'BPC-157', 'Tesamorelin', 'Ipamorelin', 'TB-500', 'IGF-1 DES'];
+  const compounds = {};
+  compoundOrder.forEach(c => { compounds[c] = { done: 0, total: 0 }; });
+  for (let i = 0; i <= elapsed && i < TOTAL_DAYS2; i++) {
+    const rec = _lastData2['p2_day_' + i] || {};
+    const slots = getInjectionSlots2(i);
+    slots.forEach(s => {
+      s.fields.forEach(f => {
+        const c = canonInjectionCompound2(f);
+        if (!c) return;
+        const key = 'inj_' + s.n + '_' + f.replace(/[\s\-]/g, '_');
+        compounds[c].total++;
+        if (rec[key] === 'fatto') compounds[c].done++;
+      });
+    });
+  }
+  const adhColors = { 'Fragment 176-191': '#0071e3', 'BPC-157': '#34c759', 'Tesamorelin': '#ff9500', 'Ipamorelin': '#af52de', 'TB-500': '#ff3b30', 'IGF-1 DES': '#5ac8fa' };
+  const adhRows = compoundOrder.map(c => {
+    const { done, total } = compounds[c];
+    if (total === 0) return '';
+    const pct = Math.round((done / total) * 100);
+    return `<div class="adh-row">
+      <div class="adh-label">${c}</div>
+      <div class="adh-bar-track"><div class="adh-bar-fill" style="width:${pct}%;background:${adhColors[c]}"></div></div>
+      <div class="adh-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  // ── Peso vs Volume, ultimi 14gg (stessa finestra del grafico Lotto 1) ──
+  const from = Math.max(0, elapsed - 13);
+  const pesoData = [], volumeData = [];
+  for (let i = from; i <= elapsed && i < TOTAL_DAYS2; i++) {
+    const rec = _lastData2['p2_day_' + i] || {};
+    pesoData.push(rec.peso ? parseFloat(rec.peso) : null);
+    volumeData.push(getWorkoutVolume2(rec));
+  }
+  const hasPeso = pesoData.some(v => v !== null);
+  const hasVolume = volumeData.some(v => v !== null);
+  if (!adhRows && !hasPeso) return;
+
+  const card = document.createElement('div');
+  card.className = 'charts-card'; card.id = 'charts-card2b';
+  card.innerHTML = `
+    <div class="charts-card-title">Aderenza & allenamento</div>
+    <div class="charts-grid">
+      <div>
+        <div class="chart-label">Aderenza iniezioni per composto</div>
+        <div class="adh-list">${adhRows || '<div style="font-size:12px;color:var(--muted)">Nessun dato ancora</div>'}</div>
+      </div>
+      <div>
+        <div class="chart-label">Peso vs Volume allenamento</div>
+        <canvas class="mini-chart" id="chart2-pesovol" height="64"></canvas>
+        <div class="chart-legend">
+          <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#0071e3"></span>Peso kg</div>
+          <div class="chart-legend-item"><span class="chart-legend-dot" style="background:#ff9500"></span>Volume kg (gg allenamento)</div>
+        </div>
+      </div>
+    </div>`;
+
+  const existingCard2 = document.getElementById('charts-card2');
+  if (existingCard2 && existingCard2.parentNode) {
+    existingCard2.parentNode.insertBefore(card, existingCard2.nextSibling);
+  } else {
+    container.appendChild(card);
+  }
+
+  if (hasVolume) setTimeout(() => drawWeightVolumeChart('chart2-pesovol', pesoData, volumeData), 100);
+  else setTimeout(() => drawChart('chart2-pesovol', pesoData, '#0071e3'), 100);
+}
+
 // ── RIQUADRO PROTOCOLLO SEREGNI ───────────────────────────────────────────
 function buildProtoHeader2(container) {
   const div = document.createElement('div');
@@ -7090,6 +7274,9 @@ function buildProtoV2() {
 
   // 3. Charts ultimi 14gg
   buildCharts2(container);
+
+  // 3b. Lotto 2: aderenza iniezioni per composto + peso/volume doppio asse
+  buildAdherenceAndVolumeCharts2(container);
 
   // 4. Riquadro protocollo Seregni
   buildProtoHeader2(container);
