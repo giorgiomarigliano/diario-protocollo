@@ -8005,6 +8005,35 @@ function buildStockView2() {
   const bkkSyringesTotal = bkkSyringesSC + bkkSyringesIM;
   const bkkSyringesMargin = Math.round(bkkSyringesTotal * 1.15);
 
+  // ── Proiezione vial in uso al momento della partenza (100% compliance dal primo
+  // giorno reale di dosaggio, TEST_PROTO_START) — determina quanto composto resta nel
+  // vial che si sta usando quel giorno, e quindi quanti vial SIGILLATI extra servono
+  // oltre a quello (gia' ricomposto) che si porta comunque con se'.
+  const _protoStartD = new Date(TEST_PROTO_START); _protoStartD.setHours(0,0,0,0);
+  const _daysToDeparture = Math.round((BKK_START - _protoStartD)/86400000) + 1;
+  let _trainingDaysToDeparture = 0;
+  for (let i=0;i<_daysToDeparture;i++){
+    const d = new Date(_protoStartD); d.setDate(d.getDate()+i);
+    const dow = d.getDay();
+    if (dow!==1 && dow!==4) _trainingDaysToDeparture++;
+  }
+  compounds.forEach(c => {
+    if (c.bkkMg === undefined) return;
+    const onlyTraining = (c.id === 'igf');
+    const nDaysHome = onlyTraining ? _trainingDaysToDeparture : _daysToDeparture;
+    const vialMg = c.defaultMg || 10;
+    const vialMcg = vialMg * 1000;
+    const consumedMcg = c.dose_mcg * nDaysHome;
+    const resto = consumedMcg % vialMcg;
+    const residuoMcg = resto === 0 ? vialMcg : (vialMcg - resto);
+    c.bkkResiduoMg = Math.round(residuoMcg/1000*100)/100;
+    const extraMg = Math.max(0, Math.round((c.bkkMg - c.bkkResiduoMg)*100)/100);
+    c.bkkExtraVials = extraMg > 0 ? Math.ceil(extraMg / vialMg) : 0;
+    c.bkkExtraBac = c.bkkExtraVials * (c.defaultBac || 2);
+  });
+  const bkkTotalExtraVials = compounds.reduce((s,c) => s + (c.bkkExtraVials||0), 0);
+  const bkkTotalExtraBac = Math.round(compounds.reduce((s,c) => s + (c.bkkExtraBac||0), 0) * 10) / 10;
+
   function stSty(s) {
     const M = { intatto:{dot:'#34c759',text:'Intatto',bg:'rgba(52,199,89,.10)',c:'#1d6e32'},
       in_uso:{dot:'#0071e3',text:'In uso',bg:'rgba(0,113,227,.10)',c:'#0058b8'},
@@ -8378,10 +8407,16 @@ function buildStockView2() {
         ${['tesa','fragment','ipa','bpc','tb500','igf'].map(id => {
           const c = compounds.find(x => x.id === id);
           if (!c || c.bkkMg === undefined) return '';
+          const extra = c.bkkExtraVials || 0;
+          const extraLine = extra > 0
+            ? `<div style="font-size:10px;font-weight:700;color:#c0392b;margin-top:4px">+${extra} vial sigillat${extra===1?'o':'i'} da portare</div>`
+            : `<div style="font-size:10px;color:#1a7a3a;margin-top:4px">✓ copre il vial in uso</div>`;
           return `<div style="background:${c.bg};border-left:3px solid ${c.color};border-radius:8px;padding:9px 12px">
             <div style="font-size:11px;font-weight:600;color:var(--text)">${c.emoji} ${c.name}</div>
             <div style="font-size:16px;font-weight:700;color:${c.color};margin:2px 0">${c.bkkMg}mg</div>
             <div style="font-size:10px;color:var(--muted)">${c.bkkSyringes} siringhe${id==='igf'?' (bilat.)':''}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:4px">Vial in uso alla partenza: ~${c.bkkResiduoMg}mg residui</div>
+            ${extraLine}
           </div>`;
         }).join('')}
       </div>
@@ -8391,10 +8426,13 @@ function buildStockView2() {
         <span>Totale minimo: <b style="color:var(--text)">${bkkSyringesTotal}</b></span>
         <span>Con margine 15%: <b style="color:#1a7a3a">${bkkSyringesMargin}</b></span>
       </div>
+      <div style="background:rgba(255,59,48,.08);border:0.5px solid rgba(255,59,48,.3);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text);margin-bottom:12px">
+        <b style="color:#c0392b">🧳 Da mettere in valigia:</b> ${compounds.filter(c=>c.bkkMg!==undefined).length} vial già in uso (li porti così come sono, li stai già usando fino alla partenza)${bkkTotalExtraVials>0 ? ` + <b>${bkkTotalExtraVials} vial sigillat${bkkTotalExtraVials===1?'o':'i'}</b> da ricostituire durante il viaggio` : ''}${bkkTotalExtraBac>0 ? ` · almeno <b>${bkkTotalExtraBac}mL di acqua batteriostatica</b> in più per quelle ricostituzioni in loco` : ''}.
+      </div>
       <div style="background:rgba(175,82,222,.08);border:0.5px solid rgba(175,82,222,.3);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--text)">
         <b style="color:#af52de">💪 IGF-1 DES — stabilità:</b> secondo indicazione del medico (dato il dosaggio), la soluzione ricostituita dura circa 30–40+ giorni in frigo — ampiamente sufficiente per i ${bkkTotalDays} giorni di viaggio con un'unica ricostituzione fatta prima della partenza. Verifica comunque l'aspetto della soluzione (limpida, senza particolato) prima di ogni uso.
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:10px">mg calcolati sulle dosi già stabilite dal protocollo (non nuovi dosaggi) · siringhe calcolate 1 per composto per slot, nessun mix nella stessa siringa · verifica di avere BAC water sufficiente per eventuali ricostituzioni in loco.</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:10px">mg calcolati sulle dosi già stabilite dal protocollo (non nuovi dosaggi) · residui nel vial in uso proiettati dal ${TEST_PROTO_START.toLocaleDateString('it-IT',{day:'numeric',month:'short'})} (primo giorno reale di dosaggio) assumendo 100% compliance e successione automatica dei vial · siringhe calcolate 1 per composto per slot, nessun mix nella stessa siringa.</div>
     </div>
   </div>`;
 
