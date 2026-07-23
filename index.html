@@ -7956,9 +7956,19 @@ function buildStockView2() {
   el._reconCompounds = compounds;
 
   // ── Calcoli aggregati derivati dai vial per fornitore ──
-  function vialMg(c, v) { return parseFloat(v.mg) || c.defaultMg; }
+  // IMPORTANTE: controlla prima lo stato REALE del vial (da vd, aggiornato
+  // dall'utente tramite i pulsanti stato) e solo se assente ricade sullo stato
+  // di partenza hardcoded nell'array statico. Prima veniva controllato solo
+  // v.stato (statico) — un vial segnato "esaurito" dall'utente continuava a
+  // contare come disponibile, falsando i calcoli di copertura ed esaurimento.
+  function vialMg(c, v, sv) { return parseFloat(sv&&sv.mg) || parseFloat(v.mg) || c.defaultMg; }
   function supplierMg(c, sup) {
-    return sup.vials.reduce((s,v) => s + (['intatto','in_uso','congelato'].includes(v.stato) ? vialMg(c,v) : 0), 0);
+    return sup.vials.reduce((s,v) => {
+      const k = c.id+'_'+sup.key+'_v'+v.n;
+      const sv = vd[k]||{};
+      const stato = sv.stato || v.stato;
+      return s + (['intatto','in_uso','congelato'].includes(stato) ? vialMg(c,v,sv) : 0);
+    }, 0);
   }
   function compoundMg(c) {
     if (!c.suppliers) return 0;
@@ -7972,6 +7982,46 @@ function buildStockView2() {
       c.gap = diff >= 0 ? `Coperto · +${diff}mg di margine` : `Mancano ${Math.abs(diff)}mg`;
     }
   });
+
+  // ── Proiezione esaurimento scorte (Lotto 3, 23/07/2026) ──
+  // Consumo medio giornaliero sul ritmo di casa: composti "ogni giorno" al 100%
+  // delle dosi; IGF-1 DES solo nei gg di allenamento (5/7 nello split standard
+  // mar/mer/ven/sab/dom, lun/gio riposo). Nota: durante Bangkok (tutti i gg
+  // allenamento) il consumo di IGF-1 DES sale temporaneamente — vedi card BKK
+  // dedicata per quel periodo specifico.
+  const TRAINING_DAYS_RATIO = 5/7;
+  compounds.forEach(c => {
+    if (c.offProtocol || !c.dose_mcg) { c.dailyRateMg = null; c.exhaustDays = null; c.exhaustDate = null; return; }
+    const rateMcgDay = c.id === 'igf' ? c.dose_mcg * TRAINING_DAYS_RATIO : c.dose_mcg;
+    c.dailyRateMg = Math.round((rateMcgDay/1000) * 1000) / 1000;
+    if (c.dailyRateMg > 0 && c.disponibile !== null) {
+      c.exhaustDays = Math.floor(c.disponibile / c.dailyRateMg);
+      const ed = new Date(); ed.setHours(0,0,0,0); ed.setDate(ed.getDate() + c.exhaustDays);
+      c.exhaustDate = ed;
+    }
+  });
+
+  // ── Timeline scadenze vial attivi (Lotto 3, 23/07/2026) ──
+  // Raccoglie ogni vial in_uso/congelato (quindi gia' ricostituito, con una
+  // scadenza reale) su tutti i composti/fornitori, per un colpo d'occhio
+  // unico invece di dover aprire ogni card separatamente.
+  const activeVialExpiries = [];
+  compounds.forEach(c => {
+    if (!c.suppliers || !c.stabilityDays) return;
+    c.suppliers.forEach(sup => {
+      sup.vials.forEach(v => {
+        const k = c.id+'_'+sup.key+'_v'+v.n;
+        const sv = vd[k]||{};
+        const stato = sv.stato||v.stato;
+        if (stato!=='in_uso' && stato!=='congelato') return;
+        if (!sv.reco) return;
+        const exp = calcExpiry(sv.reco, c.stabilityDays);
+        if (exp.daysLeft===null) return;
+        activeVialExpiries.push({ compound:c.name, emoji:c.emoji, color:c.color, vialN:v.n, stato, reco:sv.reco, expText:exp.text, daysLeft:exp.daysLeft });
+      });
+    });
+  });
+  activeVialExpiries.sort((a,b) => a.daysLeft - b.daysLeft);
 
   // ── Fabbisogno viaggio Bangkok (7-21 agosto, date fisse confermate) ──
   // Calcolato sul tempo REALE fuori casa (giorno di partenza e rientro inclusi),
@@ -8438,6 +8488,46 @@ function buildStockView2() {
       </div>
       <div style="font-size:11px;color:var(--muted);margin-top:10px">mg calcolati sulle dosi già stabilite dal protocollo (non nuovi dosaggi) · residui nel vial in uso proiettati dal ${TEST_PROTO_START.toLocaleDateString('it-IT',{day:'numeric',month:'short'})} (primo giorno reale di dosaggio) assumendo 100% compliance e successione automatica dei vial · siringhe calcolate 1 per composto per slot, nessun mix nella stessa siringa.</div>
     </div>
+
+    <div style="background:var(--surface,#fff);border-radius:12px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 4px rgba(0,0,0,.06);padding:14px 16px;margin-top:14px">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">📉 Proiezione esaurimento scorte</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Al ritmo di consumo di casa (100% compliance) · quando finirebbe ogni composto se non si ricostituissero altri vial</div>
+      ${['tesa','fragment','ipa','bpc','tb500','igf'].map(id => {
+        const c = compounds.find(x => x.id === id);
+        if (!c || c.exhaustDays===null) return '';
+        const urg = c.exhaustDays<14 ? '#ff3b30' : c.exhaustDays<30 ? '#ff9500' : '#34c759';
+        const pctBar = Math.max(4, Math.min(100, Math.round((c.exhaustDays/60)*100)));
+        const dateStr = c.exhaustDate.toLocaleDateString('it-IT',{day:'numeric',month:'short',year:'numeric'});
+        return `<div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font-size:12px;font-weight:600;color:var(--text)">${c.emoji} ${c.name}</span>
+            <span style="font-size:11px;color:${urg};font-weight:700">${c.exhaustDays} gg · ${dateStr}</span>
+          </div>
+          <div style="height:6px;background:var(--surface2,#f5f5f7);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pctBar}%;background:${urg};border-radius:3px"></div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${c.disponibile}mg disponibili · ${c.dailyRateMg}mg/die${id==='igf'?' (media su gg allenamento)':''}</div>
+        </div>`;
+      }).join('')}
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Proiezione lineare sul ritmo di casa (IGF-1 DES mediato su 5/7 gg di allenamento) · non tiene conto del periodo Bangkok (vedi card dedicata sopra) né di eventuali cambi di dosaggio futuri.</div>
+    </div>
+
+    ${activeVialExpiries.length ? `<div style="background:var(--surface,#fff);border-radius:12px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 4px rgba(0,0,0,.06);padding:14px 16px;margin-top:14px">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">⏳ Timeline scadenze vial attivi</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">Tutti i vial già ricostituiti (in uso o congelati), ordinati per scadenza più vicina</div>
+      ${activeVialExpiries.map(e => {
+        const urg = e.daysLeft<0 ? '#ff3b30' : e.daysLeft<=5 ? '#ff9500' : '#34c759';
+        const st = stSty(e.stato);
+        return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border,#e8e8ed)">
+          <div style="width:8px;height:8px;border-radius:50%;background:${urg};flex-shrink:0"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;color:var(--text)">${e.emoji} ${e.compound} · Vial ${e.vialN}</div>
+            <div style="font-size:10px;color:var(--muted)">${st.text} · ricostituito ${new Date(e.reco).toLocaleDateString('it-IT',{day:'numeric',month:'short'})}</div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:${urg};white-space:nowrap;text-align:right">${e.expText}</div>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
   </div>`;
 
   el.innerHTML = html;
