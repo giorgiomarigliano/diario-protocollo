@@ -2957,6 +2957,8 @@ const VALIDATION_RANGES = {
   bp_sys:    [70, 220],   // mmHg
   bp_dia:    [40, 140],   // mmHg
   ore_sonno: [0, 14],     // ore (formato H.MM, es. "5.27")
+  sonno_veglia_min: [0, 300],  // minuti di veglia notturna (da grafico fasi sonno)
+  sonno_risvegli:   [0, 20],   // numero di risvegli/spike di veglia visibili nel grafico
 };
 function validateBiometrics(dataV1, dataV2){
   const errors=[];
@@ -7423,6 +7425,10 @@ function buildProtoV2() {
           <div class="bio-box"><input type="number" placeholder="120"  data-id="${id}" data-f="bp_sys"><div class="bio-lbl">Sistolica</div></div>
           <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="bp_dia"><div class="bio-lbl">Diastolica</div></div>
           <div class="bio-box"><input type="number" placeholder="6.5"  data-id="${id}" data-f="ore_sonno" oninput="onInput(this,'${id}','ore_sonno')"><div class="bio-lbl">Ore sonno</div></div>
+        </div>
+        <div class="bio-grid" style="margin-top:6px">
+          <div class="bio-box"><input type="number" placeholder="14"   data-id="${id}" data-f="sonno_veglia_min"><div class="bio-lbl">Veglia notturna<br><span style="font-weight:400;text-transform:none;letter-spacing:0">min, da grafico fasi sonno</span></div></div>
+          <div class="bio-box"><input type="number" placeholder="4"    data-id="${id}" data-f="sonno_risvegli"><div class="bio-lbl">N. risvegli<br><span style="font-weight:400;text-transform:none;letter-spacing:0">spike di veglia nel grafico</span></div></div>
         </div>
         ${d.getDay()===1 ? `
         <div class="bio-grid" style="margin-top:6px">
