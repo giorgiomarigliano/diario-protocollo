@@ -5831,10 +5831,23 @@ function buildDashboard() {
       </div>
     </div>
 
-    <!-- ══ SEZ. COMPLIANCE CICLO ══════════════════════════════ -->
+    <!-- ══ SEZ. ANDAMENTO SONNO ══════════════════════════════ -->
     ${inV2?`<div class="dash-section">
-      <div class="dash-section-title">Compliance protocollo v2</div>
-      <div class="compliance-grid" id="comp-grid"></div>
+      <div class="dash-section-title">Andamento sonno · dal Test Protocollo</div>
+      <div class="dash-three-col">
+        <div class="charts-card">
+          <div class="dash-card-title">Ore totali</div>
+          <canvas class="dash-chart" id="dc-sleep-hours" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">Minuti veglia</div>
+          <canvas class="dash-chart" id="dc-sleep-wakemin" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">Numero risvegli</div>
+          <canvas class="dash-chart" id="dc-sleep-wakecount" height="90"></canvas>
+        </div>
+      </div>
     </div>`:''}
 
     <!-- ══ SEZ. SISTEMA ══════════════════════════════════════════ -->
@@ -6100,37 +6113,16 @@ function refreshDashCharts() {
   dc('dc-calf',     'calf',     '#34c759', null);
   dc('dc-legcurl',  'legcurl',  '#ff9500', null);
 
-  // ── Compliance ring iniezioni ──────────────────────────────
-  const compGrid=document.getElementById('comp-grid');
-  if(compGrid){
-    const inj=getInjComplianceV2();
-    const woSessions=getSessionsV2(112);
-    const woDone=woSessions.filter(s=>s.volume).length;
-    const woTot=woSessions.length;
-    const items=[
-      {label:'Iniezioni',pct:inj.pct,detail:`${inj.done}/${inj.total}`,color:'#34c759'},
-      {label:'Workout',  pct:woTot?Math.round((woDone/woTot)*100):0,detail:`${woDone}/${woTot}`,color:'#0071e3'},
-    ];
-    compGrid.innerHTML=items.map(item=>`
-      <div class="comp-card">
-        <div class="comp-ring">
-          <canvas id="cr-${item.label}" width="60" height="60"></canvas>
-          <div class="comp-ring-label"><span class="comp-ring-pct">${item.pct}%</span></div>
-        </div>
-        <div class="comp-title">${item.label}</div>
-        <div class="comp-sub">${item.detail}</div>
-      </div>`).join('');
-    items.forEach(item=>{
-      const canvas=document.getElementById('cr-'+item.label);
-      if(!canvas) return;
-      const ctx=canvas.getContext('2d');
-      const C=2*Math.PI*22,off=C*(1-item.pct/100);
-      ctx.clearRect(0,0,60,60);
-      ctx.beginPath();ctx.arc(30,30,22,0,Math.PI*2);ctx.strokeStyle='#f5f5f7';ctx.lineWidth=5;ctx.stroke();
-      ctx.beginPath();ctx.arc(30,30,22,-Math.PI/2,-Math.PI/2+C*(item.pct/100),false);
-      ctx.strokeStyle=item.color;ctx.lineWidth=5;ctx.lineCap='round';ctx.stroke();
-    });
+  // ── Andamento sonno (dal Test Protocollo, 18/7) ────────────
+  // Finestra ampia a sufficienza per coprire da TEST_PROTO_START a oggi;
+  // getDayDataAll gestisce gia' Test Protocollo (test_proto_N) + v2 (p2_day_N).
+  function sleepChart(id, field, color) {
+    const pts = getDayDataAll(field, 120).filter(p => p.value !== null);
+    drawDashChart(id, [{data: pts, color}], {height: 90, minPts: 1});
   }
+  sleepChart('dc-sleep-hours',     'ore_sonno',        '#5856d6');
+  sleepChart('dc-sleep-wakemin',   'sonno_veglia_min', '#ff9500');
+  sleepChart('dc-sleep-wakecount', 'sonno_risvegli',   '#ff3b30');
 }
 
 function buildMotraSection(dayId) {
