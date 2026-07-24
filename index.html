@@ -5272,6 +5272,33 @@ function getDayDataAll(field, days) {
   return result;
 }
 
+// ── Conversione ore_sonno: H.MM -> decimale ────────────────────────────
+// Storicamente il campo ore_sonno viene inserito in notazione "H.MM" (es.
+// "6.04" per 6h04min, "5.48" per 5h48min) — riflette come le schermate di
+// Salute mostrano "Xh Ymin". Un calcolo che tratti il valore come decimale
+// puro (6.04 = 6h02.4min) sarebbe leggermente impreciso. Questa funzione
+// interpreta la parte dopo il punto come minuti quando e' un valore valido
+// (0-59); se non lo e' (es. ".75"), assume che il valore fosse gia' un vero
+// decimale (5.75 = 5h45min, dove "75" non avrebbe senso come minuti).
+function parseSonnoHours(raw) {
+  if (raw === null || raw === undefined || raw === '') return NaN;
+  const s = String(raw).trim();
+  const m = s.match(/^(\d+)\.(\d{1,2})$/);
+  if (!m) return parseFloat(s);
+  const h = parseInt(m[1], 10);
+  let mm = m[2];
+  if (mm.length === 1) mm += '0';
+  const mins = parseInt(mm, 10);
+  if (mins >= 0 && mins <= 59) return h + mins/60;
+  return parseFloat(s);
+}
+function getSonnoOreAll(days) {
+  return getDayDataAll('ore_sonno', days).map(p => ({
+    date: p.date,
+    value: p.value === null ? null : parseSonnoHours(p.value)
+  }));
+}
+
 
 // ── Striscia sintomi GH-correlati (scale corte 0-3 / 0-1) ────────────────
 // Le linee non funzionano bene su scale a 2-4 livelli: qui una cella per giorno,
@@ -5523,9 +5550,10 @@ function buildDashboard() {
   const T0_PESO = 71.1, T0_HRV = 37;
   const deltaPeso = lPeso ? (lPeso - T0_PESO).toFixed(1) : null;
   const deltaHrv  = lHrv  ? Math.round(lHrv - T0_HRV)  : null;
-  const sonno7 = getDayDataAll('ore_sonno', 7).filter(p=>p.value!==null).map(p=>p.value);
+  const sonno7 = getSonnoOreAll(7).filter(p=>p.value!==null).map(p=>p.value);
   const avgSonno7 = sonno7.length ? (sonno7.reduce((a,b)=>a+b,0)/sonno7.length) : null;
-  const lSonno = lastVal('ore_sonno',60);
+  const _sonnoRecent = getSonnoOreAll(60).filter(p=>p.value!==null);
+  const lSonno = _sonnoRecent.length ? _sonnoRecent[_sonnoRecent.length-1].value : null;
 
   dash.innerHTML = `<div class="dash-inner view-wrap">
 
@@ -5902,7 +5930,7 @@ function refreshDashCharts() {
   const rhr60  = getDayDataAll('rhr',  60);
   const bpSys  = getDayDataAll('bp_sys',60);
   const bpDia  = getDayDataAll('bp_dia',60);
-  const sonno60= getDayDataAll('ore_sonno',60);
+  const sonno60= getSonnoOreAll(60);
 
   // ── Soggettivo (30gg) ──────────────────────────────────────
   const energ = getDayDataAll('energia', 30);
@@ -6116,11 +6144,12 @@ function refreshDashCharts() {
   // ── Andamento sonno (dal Test Protocollo, 18/7) ────────────
   // Finestra ampia a sufficienza per coprire da TEST_PROTO_START a oggi;
   // getDayDataAll gestisce gia' Test Protocollo (test_proto_N) + v2 (p2_day_N).
-  function sleepChart(id, field, color) {
-    const pts = getDayDataAll(field, 120).filter(p => p.value !== null);
+  function sleepChart(id, field, color, transform) {
+    let pts = getDayDataAll(field, 120).filter(p => p.value !== null);
+    if (transform) pts = pts.map(p => ({date:p.date, value:transform(p.value)}));
     drawDashChart(id, [{data: pts, color}], {height: 90, minPts: 1});
   }
-  sleepChart('dc-sleep-hours',     'ore_sonno',        '#5856d6');
+  sleepChart('dc-sleep-hours',     'ore_sonno',        '#5856d6', parseSonnoHours);
   sleepChart('dc-sleep-wakemin',   'sonno_veglia_min', '#ff9500');
   sleepChart('dc-sleep-wakecount', 'sonno_risvegli',   '#ff3b30');
 }
@@ -6810,7 +6839,7 @@ function buildWeekSummary2(container, wkIdx) {
 
       const peso = parseFloat(get(id,'peso'));   if(!isNaN(peso))  { pesoSum+=peso;   pesoCount++; }
       const hrv  = parseFloat(get(id,'hrv'));    if(!isNaN(hrv))   { hrvSum+=hrv;     hrvCount++; }
-      const sonno= parseFloat(get(id,'ore_sonno'));if(!isNaN(sonno)){ sonnoSum+=sonno; sonnoCount++; }
+      const sonno= parseSonnoHours(get(id,'ore_sonno'));if(!isNaN(sonno)){ sonnoSum+=sonno; sonnoCount++; }
       const sys  = parseFloat(get(id,'bp_sys'));  if(!isNaN(sys))   { sysSum+=sys;     sysCount++; }
       const en   = parseFloat(get(id,'energia')); if(!isNaN(en))    { energiaSum+=en;  energiaCount++; }
       const kcal2= parseFloat(get(id,'wo_kcal')); if(!isNaN(kcal2)) kcalTotal+=kcal2;
