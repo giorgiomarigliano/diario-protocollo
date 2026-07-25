@@ -2700,6 +2700,19 @@ function checkMissingYesterday(data) {
     view = 'diary'; cardId = 'card-day_' + dayIdx;
   }
 
+  if (entry && (entry.wo_durata || entry.motra_log)) {
+    // Controllo di coerenza: un allenamento loggato (motra_log/wo_*) deve
+    // avere sempre una entry gemella in history_sessions (v1, array top-level
+    // separato) — altrimenti la card "Sessioni Riepilogo" e la lista storico
+    // non lo mostrano mai, anche se tutto il resto e' corretto. Bug capitato
+    // due volte (24-25/07/2026) prima che questo controllo esistesse.
+    const dateStr = yesterday.getFullYear() + '-' + String(yesterday.getMonth()+1).padStart(2,'0') + '-' + String(yesterday.getDate()).padStart(2,'0');
+    const hs = (data && data.history_sessions) || [];
+    if (!hs.some(s => s.date === dateStr)) {
+      missing.push('Sessione allenamento non salvata in Storico (history_sessions) — la card "Sessioni Riepilogo" non la mostrerà');
+    }
+  }
+
   if (!missing || !missing.length) {
     // Un ricontrollo successivo (dopo che i dati cloud sono arrivati) puo'
     // scoprire che in realta' non manca nulla: se un popup era gia' visibile
