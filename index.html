@@ -3160,6 +3160,15 @@ async function loadFromCloud(){
     }
     setTimeout(refreshCharts,200);
     setTimeout(refreshDashChartsIfBuilt,200);
+    // Ricostruisce il tab Protocollo v2 se era gia' stato aperto: senza questo,
+    // card come "Riepilogo Settimana" restano congelate allo stato di quando
+    // sono state costruite la prima volta, anche dopo un Sync riuscito (bug
+    // scoperto il 27/07/2026 -- Sync aggiornava i dati ma non ridisegnava la
+    // card, mostrando conteggi di aderenza non aggiornati).
+    if (typeof _proto2Built !== 'undefined' && _proto2Built) {
+      const c2 = document.getElementById('container2');
+      if (c2) { _proto2Built = false; c2.innerHTML=''; buildProtoV2(); }
+    }
   }catch(e){
     const lr=localStorage.getItem(KEY);
     if(lr){try{const p=JSON.parse(lr);_lastData=p.data||p;applyAll(_lastData);}catch(e2){}}
