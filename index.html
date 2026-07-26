@@ -3182,13 +3182,18 @@ async function loadFromCloud(){
   refreshWeekSummary();
 }
 
-// Aggiorna i grafici del tab Dashboard SOLO se sono già stati costruiti
-// (garantisce che ogni sync — anche mentre l'utente è già sul tab Dashboard —
-// li ridisegni con i dati appena arrivati dal cloud, invece di lasciarli
-// fermi ai dati con cui erano stati costruiti l'ultima volta)
+// Aggiorna il tab Dashboard SOLO se è già stato costruito (garantisce che ogni
+// sync — anche mentre l'utente è già sul tab Dashboard — lo ridisegni con i
+// dati appena arrivati dal cloud, invece di lasciarlo fermo ai dati con cui
+// era stato costruito l'ultima volta). IMPORTANTE (scoperto il 27/07/2026,
+// stesso bug di _proto2Built): chiamare solo refreshDashCharts() aggiornava i
+// grafici canvas ma NON le card KPI in cima (Peso attuale, Compliance
+// iniezioni/allenamenti, Sonno medio), che sono scritte una volta sola dentro
+// buildDashboard() e mai più aggiornate — serve una ricostruzione completa.
 function refreshDashChartsIfBuilt(){
-  if (typeof dashBuilt !== 'undefined' && dashBuilt && typeof refreshDashCharts === 'function') {
-    refreshDashCharts();
+  if (typeof dashBuilt !== 'undefined' && dashBuilt) {
+    const dash = document.getElementById('dash-view');
+    if (dash) { dashBuilt = false; dash.innerHTML=''; buildDashboard(); }
   }
 }
 
