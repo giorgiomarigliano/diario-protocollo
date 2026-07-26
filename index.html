@@ -6093,12 +6093,16 @@ function refreshDashCharts() {
     // array 'sessions' (WU+V2, ultimi 60gg) del breakdown/volume qui sopra,
     // cosi' le sessioni del ciclo v2 non spariscono dalla tabella (bug corretto
     // 23/07/2026: prima ricalcolava solo su day_0..day_N, mai su p2_day_N).
+    // Ordine invertito (piu' recenti per prime): il riquadro ha altezza fissa
+    // con scroll, mostrare prima le piu' vecchie nascondeva le sessioni recenti
+    // dietro lo scroll (bug scoperto 27/07/2026 con 31 sessioni accumulate).
     const sessionRows = sessions
       .filter(s => s.volume!==null || s.hrv!==null)
       .map(s => ({
         date: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'short'}),
         type: s.type, hrv: s.hrv, vol: s.volume, rpe: s.rpe
-      }));
+      }))
+      .reverse();
     const tblEl = document.getElementById('dc-scatter-table');
     if (tblEl) {
       const C = {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'};
