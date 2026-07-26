@@ -3024,11 +3024,39 @@ async function saveData(){
   Object.entries(all).forEach(([id,f])=>{
     if(id.startsWith('p2_day_')||id.startsWith('test_proto_')) dataV2[id]=f; else dataV1[id]=f;
   });
-  // Preserva chiavi top-level non editabili da form (history_sessions, muscle_volume_summary,
-  // ready_to_progress, history_sentinels, dexa_t0/t1, lab_*) — collectAll() le ignora perché non
-  // hanno un campo [data-id][data-f] nel DOM, quindi vanno riportate esplicitamente o si perdono.
-  Object.entries(_lastData||{}).forEach(([k,v])=>{ if(!k.startsWith('day_')&&!(k in dataV1)) dataV1[k]=v; });
-  Object.entries(_lastData2||{}).forEach(([k,v])=>{ if(!k.startsWith('p2_day_')&&!(k in dataV2)) dataV2[k]=v; });
+
+  // ── Preserva chiavi top-level non editabili da form (history_sessions,
+  // muscle_volume_summary, ready_to_progress, history_sentinels, dexa_t0/t1,
+  // lab_*, stock_v2_vials, ecc.) — collectAll() le ignora perché non hanno un
+  // campo [data-id][data-f] nel DOM, quindi vanno riportate esplicitamente o
+  // si perdono. IMPORTANTE (bug scoperto il 26/07/2026): vanno lette da un
+  // FETCH FRESCO su Supabase, MAI dalla cache locale (_lastData/_lastData2) —
+  // se la cache e' precedente a una scrittura esterna diretta (es. da Claude
+  // via API), riportare i valori cache avrebbe cancellato quella scrittura
+  // silenziosamente. Un fetch fresco garantisce che queste chiavi non vengano
+  // mai perse, indipendentemente da quanto sia vecchia la sessione del browser.
+  async function fetchFreshTopLevel(userId, prefix){
+    try{
+      const r=await fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+userId+'&select=data',
+        {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
+      if(!r.ok) return {};
+      const rows=await r.json();
+      if(!rows||!rows[0]||!rows[0].data) return {};
+      const fresh={};
+      Object.entries(rows[0].data).forEach(([k,v])=>{ if(!k.startsWith(prefix)) fresh[k]=v; });
+      return fresh;
+    }catch(e){ return {}; }
+  }
+  const [freshTop1, freshTop2] = await Promise.all([
+    fetchFreshTopLevel(USER_ID, 'day_'),
+    fetchFreshTopLevel(USER_ID2, 'p2_day_'),
+  ]);
+  // Fallback sulla cache locale SOLO se il fetch fresco fallisce (es. offline):
+  // meglio dati leggermente vecchi che nessun dato, ma solo come ultima risorsa.
+  const fallback1 = Object.keys(freshTop1).length ? freshTop1 : Object.fromEntries(Object.entries(_lastData||{}).filter(([k])=>!k.startsWith('day_')));
+  const fallback2 = Object.keys(freshTop2).length ? freshTop2 : Object.fromEntries(Object.entries(_lastData2||{}).filter(([k])=>!k.startsWith('p2_day_')));
+  Object.entries(fallback1).forEach(([k,v])=>{ if(!(k in dataV1)) dataV1[k]=v; });
+  Object.entries(fallback2).forEach(([k,v])=>{ if(!(k in dataV2)) dataV2[k]=v; });
 
   // Validazione range biometrici — blocca il salvataggio se qualcosa è palesemente fuori range
   const validationErrors=validateBiometrics(dataV1,dataV2);
