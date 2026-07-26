@@ -5485,6 +5485,8 @@ function getSessionsAll(days) {
   const today = new Date(); today.setHours(0,0,0,0);
   const startWU = new Date(START);  startWU.setHours(0,0,0,0);
   const startV2 = new Date(START2); startV2.setHours(0,0,0,0);
+  const testStart = new Date(TEST_PROTO_START); testStart.setHours(0,0,0,0);
+  const testEnd = new Date(testStart); testEnd.setDate(testEnd.getDate()+TEST_PROTO_DAYS-1);
   const sessions = [];
   for (let offset=days-1; offset>=0; offset--) {
     const d = new Date(today); d.setDate(d.getDate()-offset); d.setHours(0,0,0,0);
@@ -5498,6 +5500,17 @@ function getSessionsAll(days) {
         const vol=parseFloat(rec.wo_volume)||NaN, rpe=parseFloat(rec.rpe)||NaN, hrv=parseFloat(rec.hrv);
         sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,phase:'v2'};
       }
+    } else if (d>=testStart && d<=testEnd) {
+      // Buco strutturale scoperto il 27/07/2026: i 2gg di Test Protocollo (18-19/7)
+      // cadono cronologicamente PRIMA di startV2 ma DOPO l'ultimo giorno warm-up
+      // (day_39 = 17/7) — nessuno dei due rami sotto li copriva, escludendoli
+      // sempre dal conteggio sessioni (Push/Legs mancavano di conseguenza).
+      const t = Math.round((d-testStart)/86400000);
+      const wo = getWorkout2(t - TEST_PROTO_DAYS); // stessa convenzione indici negativi usata altrove per i giorni test
+      if (wo.type==='Riposo') continue;
+      const rec=_lastData2['test_proto_'+t]||{};
+      const vol=parseFloat(rec.wo_volume)||NaN, rpe=parseFloat(rec.rpe)||NaN, hrv=parseFloat(rec.hrv);
+      sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,phase:'test'};
     } else if (d>=startWU) {
       const i=Math.floor((d-startWU)/86400000);
       if (i>=0&&i<TOTAL_DAYS) {
