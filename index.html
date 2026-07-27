@@ -5365,40 +5365,28 @@ function getDayDataV2(field, days) {
 
 // ── Dati unificati WU + V2 (ultimi N giorni) ──────────────────
 function getDayDataAll(field, days) {
+  // D5 (Fase D, 28/07/2026): migrata a resolveDay() -- ultima delle 4
+  // migrazioni del Gruppo 2. Nessun bug qui: gestiva gia' correttamente
+  // tutti e 3 i periodi fin dall'inizio. Puro consolidamento.
   const today = new Date(); today.setHours(0,0,0,0);
-  const startWU = new Date(START);  startWU.setHours(0,0,0,0);
-  const startV2 = new Date(START2); startV2.setHours(0,0,0,0);
   const result = [];
   for (let offset = days-1; offset >= 0; offset--) {
     const d = new Date(today); d.setDate(d.getDate()-offset); d.setHours(0,0,0,0);
     let v = null;
-    const _tStart = new Date(TEST_PROTO_START); _tStart.setHours(0,0,0,0);
-    const _tEnd = new Date(_tStart); _tEnd.setDate(_tEnd.getDate()+TEST_PROTO_DAYS-1);
-    if (d >= _tStart && d <= _tEnd) {
-      // Giorni Test Protocollo (18-19 lug): vivono in _lastData2.test_proto_N
-      const t = Math.round((d-_tStart)/86400000);
-      const rec = (_lastData2||{})['test_proto_'+t]||{};
+    const rd = resolveDay(d);
+    if (rd.period==='test_proto' || rd.period==='v2') {
+      const rec = (_lastData2||{})[rd.id]||{};
       const fv = parseFloat(rec[field]);
       if (!isNaN(fv)) v=fv;
-    } else if (d >= startV2) {
-      const i = Math.floor((d-startV2)/86400000);
-      if (i>=0 && i<TOTAL_DAYS2) {
-        const rec = _lastData2['p2_day_'+i]||{};
-        const fv = parseFloat(rec[field]);
-        if (!isNaN(fv)) v=fv;
+    } else if (rd.period==='warmup') {
+      // Legge prima da cache _lastData, poi DOM come fallback
+      const rec = _lastData[rd.id]||{};
+      let fv = parseFloat(rec[field]);
+      if (isNaN(fv)) {
+        const el = document.querySelector(`[data-id="${rd.id}"][data-f="${field}"]`);
+        if (el) fv = parseFloat(el.value);
       }
-    } else if (d >= startWU) {
-      const i = Math.floor((d-startWU)/86400000);
-      if (i>=0 && i<TOTAL_DAYS) {
-        // Legge prima da cache _lastData, poi DOM come fallback
-        const rec = _lastData['day_'+i]||{};
-        let fv = parseFloat(rec[field]);
-        if (isNaN(fv)) {
-          const el = document.querySelector(`[data-id="day_${i}"][data-f="${field}"]`);
-          if (el) fv = parseFloat(el.value);
-        }
-        if (!isNaN(fv)) v=fv;
-      }
+      if (!isNaN(fv)) v=fv;
     }
     result.push({date:d, value:v});
   }
