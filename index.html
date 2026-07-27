@@ -2254,6 +2254,7 @@ function buildDays(){
       </div>`;
     container.appendChild(card);
   }
+  trackDirtyFields(container); // D3: tracciamento campi toccati, solo accumulo
 }
 
 function toggleDay(id){ document.getElementById('card-'+id).classList.toggle('open'); }
@@ -2956,6 +2957,37 @@ function updateLabBadges(data) {
 
 let _saving=false;
 let _lastData={};  // cache ultima applyAll per riepilogo
+
+// ═══════════════════════════════════════════════════════════════
+// D3 (Fase D, Gruppo 1, 27/07/2026) — tracciamento campi "dirty".
+//
+// Accumula quali campi [data-id][data-f] l'utente ha DAVVERO toccato in
+// questa sessione del browser, agganciandosi (in aggiunta, non in
+// sostituzione) ai listener input/change esistenti su ogni campo.
+//
+// SOLO accumulo, per ora: saveData()/saveProto2Data() restano ESATTAMENTE
+// come sono, non leggono ancora questo Set. Servirà nelle sessioni D8/D9
+// per il merge granulare (fetch fresco + sovrascrittura solo dei campi
+// davvero editati in sessione, mai l'intera cache locale).
+//
+// Verificabile da console browser con: window._dirtyFieldsDebug()
+let _dirtyFields = new Set();
+
+function trackDirtyFields(container) {
+  if (!container) return;
+  container.querySelectorAll('[data-id][data-f]').forEach(el => {
+    const key = el.dataset.id + '::' + el.dataset.f;
+    const mark = () => { _dirtyFields.add(key); };
+    el.addEventListener('input', mark);
+    el.addEventListener('change', mark);
+  });
+}
+// Helper di debug per verifica manuale da console (nessun uso interno):
+// stampa l'elenco corrente dei campi toccati in questa sessione.
+window._dirtyFieldsDebug = function() {
+  console.log(`_dirtyFields (${_dirtyFields.size} campi toccati in sessione):`, [..._dirtyFields]);
+  return [..._dirtyFields];
+};
 
 // ── Validazione input biometrici (range check al salvataggio) ────────────
 // Blocca il salvataggio (non silenzioso) se un valore è palesemente fuori
@@ -7755,6 +7787,7 @@ function buildProtoV2() {
     el.addEventListener('change', () => { saveProto2Data(); colorInjSelects(container); });
     if (el.tagName==='TEXTAREA'||el.type==='number') el.addEventListener('input', () => saveProto2Data());
   });
+  trackDirtyFields(container); // D3: tracciamento campi toccati, solo accumulo
 }
 
 function colorInjSelects(root) {
