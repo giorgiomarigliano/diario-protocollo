@@ -5561,45 +5561,28 @@ function getSessionsV2(days) {
 
 // ── Sessioni allenamento WU + V2 ──────────────────────────────
 function getSessionsAll(days) {
+  // D4 (Fase D, 28/07/2026): migrata a resolveDay() -- nessun bug da
+  // correggere qui (il buco Test Protocollo era gia' stato corretto a mano
+  // il 27/07), solo consolidamento per ridurre la duplicazione della logica
+  // di risoluzione data→id in giro per il codice.
   const today = new Date(); today.setHours(0,0,0,0);
-  const startWU = new Date(START);  startWU.setHours(0,0,0,0);
-  const startV2 = new Date(START2); startV2.setHours(0,0,0,0);
-  const testStart = new Date(TEST_PROTO_START); testStart.setHours(0,0,0,0);
-  const testEnd = new Date(testStart); testEnd.setDate(testEnd.getDate()+TEST_PROTO_DAYS-1);
   const sessions = [];
   for (let offset=days-1; offset>=0; offset--) {
     const d = new Date(today); d.setDate(d.getDate()-offset); d.setHours(0,0,0,0);
     if (d > today) continue; // non contare sessioni future
+    const rd = resolveDay(d);
+    if (!rd.id || !rd.workout || rd.workout.type==='Riposo') continue;
     let sess = null;
-    if (d>=startV2) {
-      const i=Math.floor((d-startV2)/86400000);
-      if (i>=0&&i<TOTAL_DAYS2) {
-        const wo=getWorkout2(i); if (wo.type==='Riposo') continue;
-        const rec=_lastData2['p2_day_'+i]||{};
-        const vol=parseFloat(rec.wo_volume)||NaN, rpe=parseFloat(rec.rpe)||NaN, hrv=parseFloat(rec.hrv);
-        sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,phase:'v2'};
-      }
-    } else if (d>=testStart && d<=testEnd) {
-      // Buco strutturale scoperto il 27/07/2026: i 2gg di Test Protocollo (18-19/7)
-      // cadono cronologicamente PRIMA di startV2 ma DOPO l'ultimo giorno warm-up
-      // (day_39 = 17/7) — nessuno dei due rami sotto li copriva, escludendoli
-      // sempre dal conteggio sessioni (Push/Legs mancavano di conseguenza).
-      const t = Math.round((d-testStart)/86400000);
-      const wo = getWorkout2(t - TEST_PROTO_DAYS); // stessa convenzione indici negativi usata altrove per i giorni test
-      if (wo.type==='Riposo') continue;
-      const rec=_lastData2['test_proto_'+t]||{};
+    if (rd.period==='v2' || rd.period==='test_proto') {
+      const rec=_lastData2[rd.id]||{};
       const vol=parseFloat(rec.wo_volume)||NaN, rpe=parseFloat(rec.rpe)||NaN, hrv=parseFloat(rec.hrv);
-      sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,phase:'test'};
-    } else if (d>=startWU) {
-      const i=Math.floor((d-startWU)/86400000);
-      if (i>=0&&i<TOTAL_DAYS) {
-        const wo=getWorkout(i); if (wo.type==='Riposo') continue;
-        const rec=_lastData['day_'+i]||{};
-        let rawVol=parseFloat(rec.wo_volume);
-        if (isNaN(rawVol)){const el=document.querySelector(`[data-id="day_${i}"][data-f="wo_volume"]`);if(el)rawVol=parseFloat(el.value);}
-        const vol=isNaN(rawVol)?NaN:rawVol, rpe=parseFloat(rec.wo_rpe)||NaN, hrv=parseFloat(rec.hrv);
-        sess={date:d,type:wo.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,phase:'wu'};
-      }
+      sess={date:d,type:rd.workout.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,phase:rd.period==='v2'?'v2':'test'};
+    } else if (rd.period==='warmup') {
+      const rec=_lastData[rd.id]||{};
+      let rawVol=parseFloat(rec.wo_volume);
+      if (isNaN(rawVol)){const el=document.querySelector(`[data-id="${rd.id}"][data-f="wo_volume"]`);if(el)rawVol=parseFloat(el.value);}
+      const vol=isNaN(rawVol)?NaN:rawVol, rpe=parseFloat(rec.wo_rpe)||NaN, hrv=parseFloat(rec.hrv);
+      sess={date:d,type:rd.workout.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,phase:'wu'};
     }
     if (sess) sessions.push(sess);
   }
