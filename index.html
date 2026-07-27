@@ -6522,6 +6522,57 @@ function getWorkout2(dayIdx) {
   return {type, badge:badges[type]||'badge-rest', label:type.toUpperCase()};
 }
 
+// ═══════════════════════════════════════════════════════════════
+// D1 (Fase D, Gruppo 1, 27/07/2026) — funzione centralizzata per
+// risolvere una data qualsiasi nell'id/indice/fase del diario.
+//
+// SOLO creata e testata isolatamente: nessun punto esistente la richiama
+// ancora (zero rischio). La migrazione dei 6-7 punti che oggi calcolano
+// data→id per conto proprio è pianificata nelle sessioni successive (D4-D7).
+//
+// Replica la STESSA logica di branching già in uso in più punti del codice
+// (es. getSessionsAll, checkMissingYesterday): controlla prima se la data
+// cade nel ciclo v2, poi nel Test Protocollo, poi nel warm-up, in questo
+// ordine esatto — l'ordine conta perché i range si toccano per costruzione
+// (il Test Protocollo è cronologicamente prima di START2 ma dopo l'ultimo
+// giorno warm-up utile, 17/7).
+//
+// Ritorna: { date, period, id, index, workout }
+//   period: 'before_start' | 'warmup' | 'test_proto' | 'v2' | 'after_end' | 'gap'
+//   id:     'day_N' | 'test_proto_N' | 'p2_day_N' | null
+//   workout: stesso oggetto {type,badge,label} di getWorkout()/getWorkout2(), o null
+function resolveDay(date) {
+  const d = new Date(date); d.setHours(0,0,0,0);
+
+  const startWU = new Date(START); startWU.setHours(0,0,0,0);
+  const startV2 = new Date(START2); startV2.setHours(0,0,0,0);
+  const testStart = new Date(TEST_PROTO_START); testStart.setHours(0,0,0,0);
+  const testEnd = new Date(testStart); testEnd.setDate(testEnd.getDate()+TEST_PROTO_DAYS-1);
+
+  if (d < startWU) {
+    return { date:d, period:'before_start', id:null, index:null, workout:null };
+  }
+  if (d >= startV2) {
+    const i = Math.floor((d-startV2)/86400000);
+    if (i < TOTAL_DAYS2) {
+      return { date:d, period:'v2', id:'p2_day_'+i, index:i, workout:getWorkout2(i) };
+    }
+    return { date:d, period:'after_end', id:null, index:i, workout:null };
+  }
+  if (d >= testStart && d <= testEnd) {
+    const t = Math.round((d-testStart)/86400000);
+    // stessa convenzione a indici negativi già in uso altrove per i giorni test:
+    // t=0 -> dayIdx=-2 (18/7), t=1 -> dayIdx=-1 (19/7)
+    return { date:d, period:'test_proto', id:'test_proto_'+t, index:t, workout:getWorkout2(t-TEST_PROTO_DAYS) };
+  }
+  // warm-up: qualunque data tra startWU e (testStart-1)
+  const i = Math.floor((d-startWU)/86400000);
+  if (i>=0 && i<TOTAL_DAYS) {
+    return { date:d, period:'warmup', id:'day_'+i, index:i, workout:getWorkout(i) };
+  }
+  return { date:d, period:'gap', id:null, index:i, workout:null };
+}
+
 function getDotColor2(type) {
   const m = {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3',Riposo:'#c7c7cc','Allenamento BKK':'#c0392b'};
   return m[type]||'#c7c7cc';
