@@ -5607,15 +5607,22 @@ function getSessionsAll(days) {
 }
 
 // ── Compliance iniezioni V2 ────────────────────────────────────
+// D7 (Fase D, 28/07/2026): migrata a resolveDay(), iterando per DATA dal
+// primo giorno di Test Protocollo invece che per indice da p2_day_0 — risolve
+// un bug attivo condiviso dalle 3 funzioni di compliance: i 2gg di Test
+// Protocollo (18-19/7) non venivano mai contati, sottostimando leggermente
+// le percentuali mostrate nelle card KPI della Dashboard.
 function getInjComplianceV2() {
   const today=new Date(); today.setHours(0,0,0,0);
-  const start=new Date(START2); start.setHours(0,0,0,0);
-  const elapsed=Math.floor((today-start)/86400000);
-  if (elapsed<0) return {done:0,total:0,pct:0};
+  const testStart=new Date(TEST_PROTO_START); testStart.setHours(0,0,0,0);
+  if (today<testStart) return {done:0,total:0,pct:0};
   let done=0,total=0;
-  for (let i=0;i<=Math.min(elapsed,TOTAL_DAYS2-1);i++) {
-    const rec=_lastData2['p2_day_'+i]||{};
-    const slots=getInjectionSlots2(i);
+  for (let d=new Date(testStart); d<=today; d.setDate(d.getDate()+1)) {
+    const rd = resolveDay(d);
+    if (rd.period!=='test_proto' && rd.period!=='v2') continue;
+    const rec=_lastData2[rd.id]||{};
+    const woIdx = rd.period==='test_proto' ? rd.index-TEST_PROTO_DAYS : rd.index;
+    const slots=getInjectionSlots2(woIdx);
     slots.forEach(s=>s.fields.forEach(f=>{
       total++;
       const k='inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_');
@@ -5628,13 +5635,14 @@ function getInjComplianceV2() {
 // ── Compliance integratori V2 ───────────────────────────────────
 function getSuppComplianceV2() {
   const today=new Date(); today.setHours(0,0,0,0);
-  const start=new Date(START2); start.setHours(0,0,0,0);
-  const elapsed=Math.floor((today-start)/86400000);
-  if (elapsed<0) return {done:0,total:0,pct:0};
+  const testStart=new Date(TEST_PROTO_START); testStart.setHours(0,0,0,0);
+  if (today<testStart) return {done:0,total:0,pct:0};
   const suppFields = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm','ck_mag','ck_gly','ck_melatonina'];
   let done=0,total=0;
-  for (let i=0;i<=Math.min(elapsed,TOTAL_DAYS2-1);i++) {
-    const rec=_lastData2['p2_day_'+i]||{};
+  for (let d=new Date(testStart); d<=today; d.setDate(d.getDate()+1)) {
+    const rd = resolveDay(d);
+    if (rd.period!=='test_proto' && rd.period!=='v2') continue;
+    const rec=_lastData2[rd.id]||{};
     suppFields.forEach(s=>{
       if (rec[s+'_skip']) return; // skippato: non conta ne' a favore ne' contro
       total++;
@@ -5647,15 +5655,15 @@ function getSuppComplianceV2() {
 // ── Compliance allenamenti V2 ────────────────────────────────────
 function getWorkoutComplianceV2() {
   const today=new Date(); today.setHours(0,0,0,0);
-  const start=new Date(START2); start.setHours(0,0,0,0);
-  const elapsed=Math.floor((today-start)/86400000);
-  if (elapsed<0) return {done:0,total:0,pct:0};
+  const testStart=new Date(TEST_PROTO_START); testStart.setHours(0,0,0,0);
+  if (today<testStart) return {done:0,total:0,pct:0};
   let done=0,total=0;
-  for (let i=0;i<=Math.min(elapsed,TOTAL_DAYS2-1);i++) {
-    const wo = getWorkout2(i);
-    if (wo.type==='Riposo') continue; // i giorni di riposo non contano come workout mancato
+  for (let d=new Date(testStart); d<=today; d.setDate(d.getDate()+1)) {
+    const rd = resolveDay(d);
+    if (rd.period!=='test_proto' && rd.period!=='v2') continue;
+    if (rd.workout.type==='Riposo') continue; // i giorni di riposo non contano come workout mancato
     total++;
-    const rec=_lastData2['p2_day_'+i]||{};
+    const rec=_lastData2[rd.id]||{};
     const kcal=parseFloat(rec.wo_kcal), vol=parseFloat(rec.wo_volume), rpe=parseFloat(rec.rpe);
     if ((!isNaN(kcal)&&kcal>0) || (!isNaN(vol)&&vol>0) || !isNaN(rpe)) done++;
   }
