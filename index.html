@@ -3059,34 +3059,60 @@ async function saveData(){
 
   // ── Preserva chiavi top-level non editabili da form (history_sessions,
   // muscle_volume_summary, ready_to_progress, history_sentinels, dexa_t0/t1,
-  // lab_*, stock_v2_vials, ecc.) — collectAll() le ignora perché non hanno un
-  // campo [data-id][data-f] nel DOM, quindi vanno riportate esplicitamente o
-  // si perdono. IMPORTANTE (bug scoperto il 26/07/2026): vanno lette da un
-  // FETCH FRESCO su Supabase, MAI dalla cache locale (_lastData/_lastData2) —
-  // se la cache e' precedente a una scrittura esterna diretta (es. da Claude
-  // via API), riportare i valori cache avrebbe cancellato quella scrittura
-  // silenziosamente. Un fetch fresco garantisce che queste chiavi non vengano
-  // mai perse, indipendentemente da quanto sia vecchia la sessione del browser.
-  async function fetchFreshTopLevel(userId, prefix){
+  // lab_*, stock_v2_vials, ecc.) E fa il merge granulare dei giorni day_N/
+  // p2_day_N (D8/D9, Fase D, 27-28/07/2026): un SOLO fetch fresco dell'intero
+  // record serve per entrambe le cose, invece di scartare i giorni come
+  // faceva la versione precedente (26/07/2026) che leggeva SOLO le chiavi
+  // top-level e ributtava via il resto del fetch.
+  //
+  // MERGE GRANULARE DAY_N (D8, v1): base = dati freschi da Supabase per ogni
+  // day_N; vengono sovrascritti SOLO i campi presenti nel Set _dirtyFields
+  // (D3) per quello specifico giorno — mai l'intera cache/DOM locale. Questo
+  // e' il fix definitivo al bug ricorrente (23-27/07/2026, capitato almeno
+  // 5 volte) per cui un salvataggio con cache vecchia cancellava scritture
+  // esterne dirette (Claude via API) su campi non toccati dall'utente in
+  // sessione. p2_day_N/test_proto_N (v2) restano col vecchio comportamento
+  // per ora — merge granulare analogo pianificato in D9.
+  async function fetchFreshFull(userId){
     try{
       const r=await fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+userId+'&select=data',
         {headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}});
-      if(!r.ok) return {};
+      if(!r.ok) return null;
       const rows=await r.json();
-      if(!rows||!rows[0]||!rows[0].data) return {};
-      const fresh={};
-      Object.entries(rows[0].data).forEach(([k,v])=>{ if(!k.startsWith(prefix)) fresh[k]=v; });
-      return fresh;
-    }catch(e){ return {}; }
+      if(!rows||!rows[0]||!rows[0].data) return null;
+      return rows[0].data;
+    }catch(e){ return null; }
   }
-  const [freshTop1, freshTop2] = await Promise.all([
-    fetchFreshTopLevel(USER_ID, 'day_'),
-    fetchFreshTopLevel(USER_ID2, 'p2_day_'),
+  const [fresh1, fresh2] = await Promise.all([
+    fetchFreshFull(USER_ID),
+    fetchFreshFull(USER_ID2),
   ]);
+  const freshTop1 = fresh1 ? Object.fromEntries(Object.entries(fresh1).filter(([k])=>!k.startsWith('day_'))) : {};
+  const freshTop2 = fresh2 ? Object.fromEntries(Object.entries(fresh2).filter(([k])=>!k.startsWith('p2_day_'))) : {};
   // Fallback sulla cache locale SOLO se il fetch fresco fallisce (es. offline):
   // meglio dati leggermente vecchi che nessun dato, ma solo come ultima risorsa.
   const fallback1 = Object.keys(freshTop1).length ? freshTop1 : Object.fromEntries(Object.entries(_lastData||{}).filter(([k])=>!k.startsWith('day_')));
   const fallback2 = Object.keys(freshTop2).length ? freshTop2 : Object.fromEntries(Object.entries(_lastData2||{}).filter(([k])=>!k.startsWith('p2_day_')));
+
+  // Separa i day_N raccolti dal DOM (candidati) prima di sostituire dataV1
+  const domDaysV1 = dataV1; // { day_N: {campo:valore, ...} } letto dal DOM/collectAll
+  if (fresh1 !== null) {
+    // Fetch riuscito: base = giorni freschi da Supabase, sovrascritti solo dai campi dirty
+    const freshDays1 = Object.fromEntries(Object.entries(fresh1).filter(([k])=>k.startsWith('day_')));
+    const merged1 = {};
+    Object.entries(freshDays1).forEach(([id, fields]) => { merged1[id] = {...fields}; });
+    Object.entries(domDaysV1).forEach(([id, fields]) => {
+      if (!merged1[id]) merged1[id] = {}; // giorno nuovo, mai salvato prima
+      Object.entries(fields).forEach(([f, v]) => {
+        if (_dirtyFields.has(id+'::'+f)) merged1[id][f] = v;
+      });
+    });
+    Object.keys(dataV1).forEach(k => delete dataV1[k]);
+    Object.assign(dataV1, merged1);
+  }
+  // Se il fetch fresco fallisce, dataV1 resta quella dal DOM (comportamento
+  // precedente) — rischio residuo noto ma preferibile a perdere dati offline.
+
   Object.entries(fallback1).forEach(([k,v])=>{ if(!(k in dataV1)) dataV1[k]=v; });
   Object.entries(fallback2).forEach(([k,v])=>{ if(!(k in dataV2)) dataV2[k]=v; });
 
