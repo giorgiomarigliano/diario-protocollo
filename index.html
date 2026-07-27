@@ -6215,21 +6215,26 @@ function refreshDashCharts() {
 
   // ── Sentinel lifts (dati da DOM e _lastData/_lastData2) ────
   function sentData(fieldId, days) {
+    // D6 (Fase D, 28/07/2026): migrata a resolveDay() invece della logica
+    // scritta a mano — risolve anche un bug attivo mai scoperto prima: il
+    // ramo Test Protocollo (18-19/7) mancava completamente, quindi un
+    // sentinel lift loggato quei 2 giorni spariva silenziosamente dal grafico.
     const result=[];
     const today=new Date(); today.setHours(0,0,0,0);
-    const startWU=new Date(START); startWU.setHours(0,0,0,0);
-    const startV2=new Date(START2); startV2.setHours(0,0,0,0);
     const hist = (_lastData && _lastData.history_sentinels) || {};
     for(let offset=days-1;offset>=0;offset--){
       const d=new Date(today);d.setDate(d.getDate()-offset);d.setHours(0,0,0,0);
       let v=null;
-      if(d>=startV2){
-        const i=Math.floor((d-startV2)/86400000);
-        if(i>=0&&i<TOTAL_DAYS2){const rec=_lastData2['p2_day_'+i]||{};const fv=parseFloat(rec['sl_'+fieldId+'_kg'])||parseFloat(rec['sent_'+fieldId]);if(!isNaN(fv))v=fv;}
-      } else if(d>=startWU){
-        const i=Math.floor((d-startWU)/86400000);
-        if(i>=0&&i<TOTAL_DAYS){const rec=_lastData['day_'+i]||{};const fv=parseFloat(rec['sl_'+fieldId+'_kg'])||parseFloat(rec['sent_'+fieldId]);if(!isNaN(fv))v=fv;}
-      } else {
+      const rd = resolveDay(d);
+      if (rd.period==='v2' || rd.period==='test_proto') {
+        const rec=_lastData2[rd.id]||{};
+        const fv=parseFloat(rec['sl_'+fieldId+'_kg'])||parseFloat(rec['sent_'+fieldId]);
+        if(!isNaN(fv))v=fv;
+      } else if (rd.period==='warmup') {
+        const rec=_lastData[rd.id]||{};
+        const fv=parseFloat(rec['sl_'+fieldId+'_kg'])||parseFloat(rec['sent_'+fieldId]);
+        if(!isNaN(fv))v=fv;
+      } else if (rd.period==='before_start') {
         // Dati storici pre-warm-up (sessioni Motra importate, keyed by data reale YYYY-MM-DD)
         const dstr = localDateStr(d);
         const rec = hist[dstr];
