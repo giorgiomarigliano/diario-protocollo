@@ -3071,8 +3071,12 @@ async function saveData(){
   // e' il fix definitivo al bug ricorrente (23-27/07/2026, capitato almeno
   // 5 volte) per cui un salvataggio con cache vecchia cancellava scritture
   // esterne dirette (Claude via API) su campi non toccati dall'utente in
-  // sessione. p2_day_N/test_proto_N (v2) restano col vecchio comportamento
-  // per ora — merge granulare analogo pianificato in D9.
+  // sessione.
+  // MERGE GRANULARE P2_DAY_N/TEST_PROTO_N (D9, v2, 28/07/2026): stesso
+  // identico principio applicato al Protocollo v2 — dove è capitato il 90%
+  // degli incidenti registrati finora. Unica differenza rispetto a D8: qui
+  // ci sono DUE prefissi da riconoscere come "giorno" (p2_day_ e test_proto_),
+  // non uno solo.
   async function fetchFreshFull(userId){
     try{
       const r=await fetch(SB_URL+'/rest/v1/diary?user_id=eq.'+userId+'&select=data',
@@ -3087,12 +3091,13 @@ async function saveData(){
     fetchFreshFull(USER_ID),
     fetchFreshFull(USER_ID2),
   ]);
+  const isV2DayKey = k => k.startsWith('p2_day_') || k.startsWith('test_proto_');
   const freshTop1 = fresh1 ? Object.fromEntries(Object.entries(fresh1).filter(([k])=>!k.startsWith('day_'))) : {};
-  const freshTop2 = fresh2 ? Object.fromEntries(Object.entries(fresh2).filter(([k])=>!k.startsWith('p2_day_'))) : {};
+  const freshTop2 = fresh2 ? Object.fromEntries(Object.entries(fresh2).filter(([k])=>!isV2DayKey(k))) : {};
   // Fallback sulla cache locale SOLO se il fetch fresco fallisce (es. offline):
   // meglio dati leggermente vecchi che nessun dato, ma solo come ultima risorsa.
   const fallback1 = Object.keys(freshTop1).length ? freshTop1 : Object.fromEntries(Object.entries(_lastData||{}).filter(([k])=>!k.startsWith('day_')));
-  const fallback2 = Object.keys(freshTop2).length ? freshTop2 : Object.fromEntries(Object.entries(_lastData2||{}).filter(([k])=>!k.startsWith('p2_day_')));
+  const fallback2 = Object.keys(freshTop2).length ? freshTop2 : Object.fromEntries(Object.entries(_lastData2||{}).filter(([k])=>!isV2DayKey(k)));
 
   // Separa i day_N raccolti dal DOM (candidati) prima di sostituire dataV1
   const domDaysV1 = dataV1; // { day_N: {campo:valore, ...} } letto dal DOM/collectAll
@@ -3110,8 +3115,24 @@ async function saveData(){
     Object.keys(dataV1).forEach(k => delete dataV1[k]);
     Object.assign(dataV1, merged1);
   }
-  // Se il fetch fresco fallisce, dataV1 resta quella dal DOM (comportamento
-  // precedente) — rischio residuo noto ma preferibile a perdere dati offline.
+  // Stesso principio per il Protocollo v2 (D9)
+  const domDaysV2 = dataV2;
+  if (fresh2 !== null) {
+    const freshDays2 = Object.fromEntries(Object.entries(fresh2).filter(([k])=>isV2DayKey(k)));
+    const merged2 = {};
+    Object.entries(freshDays2).forEach(([id, fields]) => { merged2[id] = {...fields}; });
+    Object.entries(domDaysV2).forEach(([id, fields]) => {
+      if (!merged2[id]) merged2[id] = {};
+      Object.entries(fields).forEach(([f, v]) => {
+        if (_dirtyFields.has(id+'::'+f)) merged2[id][f] = v;
+      });
+    });
+    Object.keys(dataV2).forEach(k => delete dataV2[k]);
+    Object.assign(dataV2, merged2);
+  }
+  // Se il fetch fresco fallisce, dataV1/dataV2 restano quelle dal DOM
+  // (comportamento precedente) — rischio residuo noto ma preferibile a
+  // perdere dati offline.
 
   Object.entries(fallback1).forEach(([k,v])=>{ if(!(k in dataV1)) dataV1[k]=v; });
   Object.entries(fallback2).forEach(([k,v])=>{ if(!(k in dataV2)) dataV2[k]=v; });
