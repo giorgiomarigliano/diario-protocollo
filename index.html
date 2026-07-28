@@ -4938,6 +4938,37 @@ function drawDashChart(canvasId, datasets, options = {}) {
     ctx.fillText(lbl, lx, ly);
     ctx.textAlign = 'left';
     lastValueLabelYs.push(ly);
+
+    // Linea di tendenza (regressione lineare sul lungo periodo) — tratteggiata,
+    // sovrapposta ai dati puntuali con opacità ridotta per non competere
+    // visivamente con la linea principale. Richiede almeno 5 punti validi
+    // per avere senso come "tendenza" (28/07/2026, richiesta esplicita utente).
+    if (options.showTrend && nv >= 5) {
+      const n = nv;
+      const sumX = pts.reduce((s,p,i)=>s+i,0);
+      const sumY = pts.reduce((s,p)=>s+p.v,0);
+      const sumXY = pts.reduce((s,p,i)=>s+i*p.v,0);
+      const sumXX = pts.reduce((s,p,i)=>s+i*i,0);
+      const denom = n*sumXX - sumX*sumX;
+      if (denom !== 0) {
+        const slope = (n*sumXY - sumX*sumY) / denom;
+        const intercept = (sumY - slope*sumX) / n;
+        const yStart = intercept;
+        const yEnd = slope*(n-1) + intercept;
+        const pyStart = MT + CH - ((yStart - mn) / rng) * CH;
+        const pyEnd = MT + CH - ((yEnd - mn) / rng) * CH;
+        ctx.save();
+        ctx.setLineDash([5,4]);
+        ctx.strokeStyle = ds.color;
+        ctx.globalAlpha = 0.45;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pyStart);
+        ctx.lineTo(pts[pts.length-1].x, pyEnd);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
   });
 
   // Etichetta "T0" — disegnata per ultima, spostata se coinciderebbe con un valore attuale
@@ -6294,7 +6325,7 @@ function refreshDashCharts() {
   function sleepChart(id, field, color, transform) {
     let pts = getDayDataAll(field, 120).filter(p => p.value !== null);
     if (transform) pts = pts.map(p => ({date:p.date, value:transform(p.value)}));
-    drawDashChart(id, [{data: pts, color}], {height: 90, minPts: 1});
+    drawDashChart(id, [{data: pts, color}], {height: 90, minPts: 1, showTrend: true});
   }
   sleepChart('dc-sleep-hours',     'ore_sonno',        '#5856d6', parseSonnoHours);
   sleepChart('dc-sleep-wakemin',   'sonno_veglia_min', '#ff9500');
