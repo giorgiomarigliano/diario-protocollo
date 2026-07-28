@@ -4722,6 +4722,7 @@ function drawSparkline(canvasId, data, color) {
 }
 
 function drawDashChart(canvasId, datasets, options = {}) {
+  let trendResult = null; // valorizzato durante il disegno, restituito a fine funzione
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -4953,6 +4954,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
       if (denom !== 0) {
         const slope = (n*sumXY - sumX*sumY) / denom;
         const intercept = (sumY - slope*sumX) / n;
+        if (trendResult === null) trendResult = { slope, weekly: slope*7 }; // solo primo dataset
         const yStart = intercept;
         const yEnd = slope*(n-1) + intercept;
         const pyStart = MT + CH - ((yStart - mn) / rng) * CH;
@@ -4982,6 +4984,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
     ctx.fillText('T0', lx, ty);
     ctx.textAlign = 'left';
   }
+  return trendResult;
 }
 
 function drawComplianceRing(canvasId, pct, color) {
@@ -6006,15 +6009,24 @@ function buildDashboard() {
       <div class="dash-section-title">Andamento sonno · dal Test Protocollo</div>
       <div class="dash-three-col">
         <div class="charts-card">
-          <div class="dash-card-title">Ore totali</div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Ore totali</div>
+            <div id="dc-sleep-hours-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+          </div>
           <canvas class="dash-chart" id="dc-sleep-hours" height="90"></canvas>
         </div>
         <div class="charts-card">
-          <div class="dash-card-title">Minuti veglia</div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Minuti veglia</div>
+            <div id="dc-sleep-wakemin-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+          </div>
           <canvas class="dash-chart" id="dc-sleep-wakemin" height="90"></canvas>
         </div>
         <div class="charts-card">
-          <div class="dash-card-title">Numero risvegli</div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Numero risvegli</div>
+            <div id="dc-sleep-wakecount-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+          </div>
           <canvas class="dash-chart" id="dc-sleep-wakecount" height="90"></canvas>
         </div>
       </div>
@@ -6322,14 +6334,25 @@ function refreshDashCharts() {
   // ── Andamento sonno (dal Test Protocollo, 18/7) ────────────
   // Finestra ampia a sufficienza per coprire da TEST_PROTO_START a oggi;
   // getDayDataAll gestisce gia' Test Protocollo (test_proto_N) + v2 (p2_day_N).
-  function sleepChart(id, field, color, transform) {
+  function sleepChart(id, field, color, transform, unit) {
     let pts = getDayDataAll(field, 120).filter(p => p.value !== null);
     if (transform) pts = pts.map(p => ({date:p.date, value:transform(p.value)}));
-    drawDashChart(id, [{data: pts, color}], {height: 90, minPts: 1, showTrend: true});
+    const isDesktop = window.innerWidth >= 1024;
+    const trend = drawDashChart(id, [{data: pts, color}], {height: isDesktop ? 160 : 90, minPts: 1, showTrend: true});
+    const lblEl = document.getElementById(id + '-trend');
+    if (lblEl) {
+      if (trend) {
+        const w = trend.weekly;
+        const sign = w > 0 ? '+' : '';
+        lblEl.textContent = `Tendenza: ${sign}${w.toFixed(unit==='h'?2:1)}${unit}/sett`;
+      } else {
+        lblEl.textContent = '';
+      }
+    }
   }
-  sleepChart('dc-sleep-hours',     'ore_sonno',        '#5856d6', parseSonnoHours);
-  sleepChart('dc-sleep-wakemin',   'sonno_veglia_min', '#ff9500');
-  sleepChart('dc-sleep-wakecount', 'sonno_risvegli',   '#ff3b30');
+  sleepChart('dc-sleep-hours',     'ore_sonno',        '#5856d6', parseSonnoHours, 'h');
+  sleepChart('dc-sleep-wakemin',   'sonno_veglia_min', '#ff9500', null, 'min');
+  sleepChart('dc-sleep-wakecount', 'sonno_risvegli',   '#ff3b30', null, '');
 }
 
 function buildMotraSection(dayId) {
