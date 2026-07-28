@@ -5961,6 +5961,13 @@ function buildDashboard() {
           <div id="dc-scatter-table" style="overflow-x:auto;max-height:160px;overflow-y:auto"></div>
         </div>
       </div>
+
+      <!-- Lotto 4 (28/07/2026): confronto medie per fase -->
+      <div class="charts-card" style="margin-top:10px">
+        <div class="dash-card-title">Confronto medie per fase</div>
+        <div class="dash-card-sub" style="font-size:11px;color:var(--muted);margin-top:-2px;margin-bottom:8px">Warm-up · Test Protocollo · Fasi del ciclo v2 — le fasi future compaiono automaticamente quando iniziano</div>
+        <div id="dc-phase-compare" style="overflow-x:auto"></div>
+      </div>
     </div>
 
     <!-- ══ SEZ. ANDAMENTO SONNO ══════════════════════════════ -->
@@ -6172,6 +6179,33 @@ function refreshDashCharts() {
           <td style="padding:4px 6px;text-align:right">${r.rpe===null?'—':r.rpe}</td>
         </tr>`).join('')}</tbody></table>`
         : '<div style="font-size:11px;color:var(--muted);padding:12px">Nessuna sessione</div>';
+    }
+
+    // Lotto 4 (28/07/2026): confronto medie per fase
+    const pcEl = document.getElementById('dc-phase-compare');
+    if (pcEl) {
+      const phases = getPhaseAverages();
+      const fmt = (v, dec=1) => v===null ? '—' : v.toFixed(dec);
+      const fmtPct = v => v===null ? '—' : v+'%';
+      pcEl.innerHTML = phases.length ? `<table style="width:100%;border-collapse:collapse;font-size:11.5px;white-space:nowrap">
+        <thead><tr style="color:var(--muted);font-size:10px;border-bottom:1px solid var(--border)">
+          <th style="text-align:left;padding:5px 8px">Fase</th><th style="text-align:right;padding:5px 8px">gg</th>
+          <th style="text-align:right;padding:5px 8px">Peso</th><th style="text-align:right;padding:5px 8px">HRV</th>
+          <th style="text-align:right;padding:5px 8px">RHR</th><th style="text-align:right;padding:5px 8px">Sonno</th>
+          <th style="text-align:right;padding:5px 8px">Vol/sess.</th><th style="text-align:right;padding:5px 8px">Iniez.</th>
+          <th style="text-align:right;padding:5px 8px">Allen.</th>
+        </tr></thead><tbody>${phases.map(p=>`<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:5px 8px;font-weight:600">${p.label}</td>
+          <td style="padding:5px 8px;text-align:right;color:var(--muted)">${p.giorni}</td>
+          <td style="padding:5px 8px;text-align:right">${fmt(p.peso)}kg</td>
+          <td style="padding:5px 8px;text-align:right">${fmt(p.hrv,0)}</td>
+          <td style="padding:5px 8px;text-align:right">${fmt(p.rhr,0)}</td>
+          <td style="padding:5px 8px;text-align:right">${fmt(p.sonno)}h</td>
+          <td style="padding:5px 8px;text-align:right">${p.volume===null?'—':(p.volume/1000).toFixed(1)+'t'}</td>
+          <td style="padding:5px 8px;text-align:right">${fmtPct(p.injPct)}</td>
+          <td style="padding:5px 8px;text-align:right">${fmtPct(p.woPct)}</td>
+        </tr>`).join('')}</tbody></table>`
+        : '<div style="font-size:11px;color:var(--muted);padding:12px">Dati insufficienti</div>';
     }
   }
 
@@ -6533,6 +6567,75 @@ function getPhase2(dayIdx) {
   if (wk<=8)  return {label:'Fase 2',  peptidi, badge:'p2',  note:bkkNote};
   if (wk<=12) return {label:'Fase 3',  peptidi, badge:'p3',  note:bkkNote};
   return             {label:'Fase 4',  peptidi, badge:'p4b', note:bkkNote};
+}
+
+// Lotto 4 (28/07/2026): confronto medie per fase. Bucket ogni giorno da inizio
+// warm-up a oggi in Warm-up/Test Protocollo/Fase 1-4, riusando resolveDay()/
+// getPhase2() (Fase D) invece di ricalcolare la logica data→fase. Le fasi
+// ancora nel futuro (senza dati) vengono omesse automaticamente dall'elenco.
+function getPhaseAverages() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const startWU = new Date(START); startWU.setHours(0,0,0,0);
+  const buckets = {};
+
+  function ensureBucket(label) {
+    if (!buckets[label]) buckets[label] = {peso:[],hrv:[],rhr:[],sonno:[],volume:[],injDone:0,injTotal:0,woDone:0,woTotal:0};
+    return buckets[label];
+  }
+
+  for (let d = new Date(startWU); d <= today; d.setDate(d.getDate()+1)) {
+    const rd = resolveDay(d);
+    let label = null;
+    if (rd.period === 'warmup') label = 'Warm-up';
+    else if (rd.period === 'test_proto') label = 'Test Protocollo';
+    else if (rd.period === 'v2') label = getPhase2(rd.index).label;
+    if (!label) continue;
+
+    const b = ensureBucket(label);
+    const rec = (rd.period === 'warmup') ? (_lastData[rd.id]||{}) : (_lastData2[rd.id]||{});
+
+    const peso = parseFloat(rec.peso); if (!isNaN(peso)) b.peso.push(peso);
+    const hrv = parseFloat(rec.hrv); if (!isNaN(hrv)) b.hrv.push(hrv);
+    const rhr = parseFloat(rec.rhr); if (!isNaN(rhr)) b.rhr.push(rhr);
+    if (rec.ore_sonno !== undefined && rec.ore_sonno !== '') {
+      const sh = parseSonnoHours(rec.ore_sonno);
+      if (!isNaN(sh)) b.sonno.push(sh);
+    }
+
+    if (rd.workout && rd.workout.type !== 'Riposo') {
+      b.woTotal++;
+      const vol = parseFloat(rec.wo_volume);
+      const rpe = parseFloat(rd.period==='warmup' ? rec.wo_rpe : rec.rpe);
+      const kcal = parseFloat(rec.wo_kcal);
+      const woDone = (!isNaN(vol)&&vol>0) || !isNaN(rpe) || (!isNaN(kcal)&&kcal>0);
+      if (woDone) b.woDone++;
+      if (!isNaN(vol) && vol>0) b.volume.push(vol);
+    }
+
+    // Compliance iniezioni: solo test_proto/v2 (il tracciamento v1 è inattivo, vedi D11)
+    if (rd.period === 'test_proto' || rd.period === 'v2') {
+      const woIdx = rd.period==='test_proto' ? rd.index-TEST_PROTO_DAYS : rd.index;
+      const slots = getInjectionSlots2(woIdx);
+      slots.forEach(s => s.fields.forEach(f => {
+        b.injTotal++;
+        const k = 'inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_');
+        if ((rec[k]||'')==='fatto') b.injDone++;
+      }));
+    }
+  }
+
+  const avg = arr => arr.length ? arr.reduce((x,y)=>x+y,0)/arr.length : null;
+  const order = ['Warm-up','Test Protocollo','Fase 1','Fase 2','Fase 3','Fase 4'];
+  return order.filter(l => buckets[l]).map(label => {
+    const b = buckets[label];
+    return {
+      label,
+      giorni: Math.max(b.peso.length, b.woTotal, b.injTotal>0?1:0),
+      peso: avg(b.peso), hrv: avg(b.hrv), rhr: avg(b.rhr), sonno: avg(b.sonno), volume: avg(b.volume),
+      injPct: b.injTotal ? Math.round((b.injDone/b.injTotal)*100) : null,
+      woPct: b.woTotal ? Math.round((b.woDone/b.woTotal)*100) : null,
+    };
+  });
 }
 
 function getNextEvent2(elapsed) {
