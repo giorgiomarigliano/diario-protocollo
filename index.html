@@ -8081,6 +8081,34 @@ function buildStockView2() {
   if (el.dataset.built) return;
   el.dataset.built = '1';
 
+  // Conta le dosi effettivamente somministrate per un composto da una data di
+  // ricostituzione a oggi, riusando resolveDay()/getInjectionSlots2() (Fase D)
+  // invece di duplicare la logica data→slot. compoundName deve combaciare col
+  // prefisso usato in getInjectionSlots2 (es. 'Tesamorelin', 'BPC-157').
+  // Per IGF-1 DES (bilaterale, dx+sx tracciati come due campi separati da
+  // 25mcg ciascuno) ogni campo conta per META' del dose_mcg dichiarato (50),
+  // cosi' una coppia dx+sx fatta insieme equivale a 1 dose intera del vial.
+  function countVialDosesUsed(compoundName, compoundId, doseMcg, recoStr) {
+    if (!recoStr || !doseMcg) return null;
+    const recoDate = new Date(recoStr); recoDate.setHours(0,0,0,0);
+    const today = new Date(); today.setHours(0,0,0,0);
+    if (recoDate > today) return 0;
+    let mcgUsed = 0;
+    for (let d = new Date(recoDate); d <= today; d.setDate(d.getDate()+1)) {
+      const rd = resolveDay(d);
+      if (rd.period !== 'test_proto' && rd.period !== 'v2') continue;
+      const rec = _lastData2[rd.id] || {};
+      const woIdx = rd.period==='test_proto' ? rd.index-TEST_PROTO_DAYS : rd.index;
+      const slots = getInjectionSlots2(woIdx);
+      slots.forEach(s => s.fields.forEach(f => {
+        if (!f.startsWith(compoundName)) return;
+        const k = 'inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_');
+        if ((rec[k]||'') === 'fatto') mcgUsed += (compoundId==='igf') ? doseMcg/2 : doseMcg;
+      }));
+    }
+    return mcgUsed / doseMcg;
+  }
+
   const vd = stockGetVd();
   // Migrazione one-time: se il browser ha dati locali da prima di questo aggiornamento
   // e il cloud non li ha ancora, sincronizzali subito (altrimenti resterebbero visibili
@@ -8484,6 +8512,27 @@ function buildStockView2() {
             <div style="height:100%;width:${pctLife}%;background:${lifeC};border-radius:2px"></div>
           </div></div>`;
       }
+      // Dosi fatte/rimanenti sul QUESTO vial specifico (non la proiezione generale
+      // di esaurimento composto già presente nel Lotto 3 — questa è puntuale sul
+      // singolo vial aperto, richiesta esplicita dell'utente il 27-28/07/2026).
+      let doseBar = '';
+      if (sv.reco && c.dose_mcg) {
+        const totalDoses = Math.floor((mg*1000)/c.dose_mcg);
+        const dosesUsedRaw = countVialDosesUsed(c.name, c.id, c.dose_mcg, sv.reco);
+        if (dosesUsedRaw !== null) {
+          const dosesUsed = Math.round(dosesUsedRaw);
+          const dosesLeft = Math.max(0, totalDoses - dosesUsed);
+          const pctDose = totalDoses>0 ? Math.min(100, Math.round((dosesUsed/totalDoses)*100)) : 0;
+          const doseC = pctDose>=90?'#ff3b30':pctDose>=70?'#ff9500':'#34c759';
+          doseBar = `<div style="margin:6px 0 4px">
+            <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px">
+              <span>Dosi su questo vial</span><span>${dosesUsed} fatte · ${dosesLeft} rimanenti / ${totalDoses}</span>
+            </div>
+            <div style="height:4px;background:var(--surface3,#e8e8ed);border-radius:2px;overflow:hidden">
+              <div style="height:100%;width:${pctDose}%;background:${doseC};border-radius:2px"></div>
+            </div></div>`;
+        }
+      }
       const statoBtns = ['intatto','in_uso','esaurito','perso','congelato'].map(s => {
         const ss = stSty(s); const active = stato===s;
         return `<button onclick="stockSetStato('${c.id}','${sup.key}',${v.n},'${s}')" style="font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;border:1px solid ${active?ss.c:'var(--border,#e8e8ed)'};background:${active?ss.bg:'transparent'};color:${active?ss.c:'var(--muted)'};cursor:pointer;font-family:inherit">${ss.text}</button>`;
@@ -8526,6 +8575,7 @@ function buildStockView2() {
             <div style="font-size:13px;font-weight:600;color:${expColor};box-sizing:border-box;height:36px;display:flex;align-items:center;padding:0 8px;background:var(--surface2,#f5f5f7);border:1px solid var(--border,#e8e8ed);border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${exp.text}</div>
           </div>
           ${lifeBar}
+          ${doseBar}
           <div>
             <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Note</div>
             <input type="text" id="note-${k}" value="${(sv.note||'').replace(/"/g,'&quot;')}" placeholder="es. 10mg + 2ml BAC · frigo A" onblur="stockSaveNote('${c.id}','${sup.key}',${v.n},this.value)" style="width:100%;font-size:11px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:5px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">
