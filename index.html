@@ -5652,7 +5652,7 @@ function buildDashboard() {
   const inj   = getInjComplianceV2();
   const supp  = getSuppComplianceV2();
   const wo2   = getWorkoutComplianceV2();
-  const pctCiclo = inV2 ? Math.min(100,Math.round((elapsedV2/112)*100)) : 0;
+  const pctCiclo = inV2 ? Math.min(100,Math.round((elapsedV2/CICLO1_DAYS)*100)) : 0;
 
   // Delta peso/HRV vs T0 (DEXA: 71.1kg) · sonno: media ultimi 7gg (nessun T0 di riferimento registrato)
   const T0_PESO = 71.1, T0_HRV = 37;
@@ -5697,8 +5697,8 @@ function buildDashboard() {
         <div class="kpi-box">
           <span class="kpi-icon">🧬</span>
           <div class="kpi-val" style="font-size:${inV2?'18px':'14px'}">${inV2?`WK${wkV2}`:'Pre-ciclo'}</div>
-          <div class="kpi-lbl">${inV2?`Giorno ${elapsedV2+1}/112`:`Giorno ${elapsedWU+1}/21 warm-up`}</div>
-          ${inV2?`<div class="kpi-delta neutral">${112-elapsedV2-1} gg al termine</div>`:`<div class="kpi-delta neutral">Ciclo v2 tra ${Math.abs(elapsedV2)} gg</div>`}
+          <div class="kpi-lbl">${inV2?`Giorno ${elapsedV2+1}/${CICLO1_DAYS}`:`Giorno ${elapsedWU+1}/21 warm-up`}</div>
+          ${inV2?`<div class="kpi-delta neutral">${CICLO1_DAYS-elapsedV2-1} gg al termine</div>`:`<div class="kpi-delta neutral">Ciclo v2 tra ${Math.abs(elapsedV2)} gg</div>`}
           <div style="margin-top:8px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
             <div style="height:100%;width:${pctCiclo}%;background:#0071e3;border-radius:2px"></div>
           </div>
@@ -6537,7 +6537,21 @@ function importMotra(dayId) {
 
 // ── PROTO V2 ─────────────────────────────────────────────────────────────────
 const START2      = new Date('2026-07-20'); // CONFERMATA il 16/07/2026 (lunedi' - inizio ciclo ufficiale conteggiato; 18-19/7 sono Test Protocollo a parte, vedi TEST_PROTO_START)
-const TOTAL_DAYS2 = 112;
+// TOTAL_DAYS2 alzato da 112 a 500 il 28/07/2026 (era il limite esatto del
+// "Ciclo 1" di 112gg/16 settimane) — l'utente ha chiesto di non far bloccare
+// strutturalmente l'app all'8 novembre 2026 (fine Ciclo 1) mentre decide come
+// continuare (stesso ciclo esteso, nuova struttura composti, eventuale TRT).
+// 500gg = ~16 mesi di margine. Nessuna decisione sulla struttura del "dopo"
+// è stata presa — è solo un'assicurazione tecnica per non fermarsi di colpo.
+// Promemoria: rivalutare con l'utente entro ottobre 2026, prima che il Ciclo 1
+// finisca davvero, come strutturare il proseguimento (vedi memoria/KB).
+//
+// IMPORTANTE: TOTAL_DAYS2 e' solo il limite STRUTTURALE (bound di loop/array),
+// non il traguardo reale. Per le etichette/percentuali mostrate all'utente
+// ("Giorno X/112", "% ciclo", "gg al termine") si usa CICLO1_DAYS=112, che
+// resta il vero riferimento del piano attuale finche' non viene ridefinito.
+const TOTAL_DAYS2 = 500;
+const CICLO1_DAYS = 112;
 const KEY2        = 'diary_proto2_v1';
 const USER_ID2    = 'giorgio_proto2_2026';
 let   _lastData2  = {};
