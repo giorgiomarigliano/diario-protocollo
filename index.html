@@ -4686,44 +4686,8 @@ function getComplianceData() {
   return { injPrev, injDone, woPrev, woDone, stackDays, stackDone, woCounts, woDones };
 }
 
-function drawSparkline(canvasId, data, color) {
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-  const vals = data.filter(d => d.value !== null).map(d => d.value);
-  if (vals.length < 2) return;
-  let W = 0; let el = canvas.parentElement;
-  while (el && W === 0) { W = el.clientWidth || el.offsetWidth || 0; el = el.parentElement; }
-  if (W === 0) { requestAnimationFrame(() => drawSparkline(canvasId, data, color)); return; }
-  const H = 32;
-  canvas.width = W * 2; canvas.height = H * 2;
-  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-  const ctx = canvas.getContext('2d');
-  ctx.scale(2, 2);
-  const min = Math.min(...vals), max = Math.max(...vals);
-  const range = max - min || 1;
-  const xStep = W / (vals.length - 1);
-  const pts = vals.map((v, i) => [i * xStep, H - 4 - ((v - min) / range) * (H - 8)]);
-  // Fill
-  ctx.beginPath();
-  ctx.moveTo(pts[0][0], H);
-  pts.forEach(([x, y]) => ctx.lineTo(x, y));
-  ctx.lineTo(pts[pts.length-1][0], H);
-  ctx.closePath();
-  ctx.fillStyle = color.replace(')', ',.12)').replace('rgb', 'rgba').replace('#', 'rgba(').replace('rgba(', 'rgba(') + (color.startsWith('#') ? ',0.12)' : '');
-  // simpler fill
-  const r = parseInt(color.slice(1,3),16), g = parseInt(color.slice(3,5),16), b = parseInt(color.slice(5,7),16);
-  ctx.fillStyle = `rgba(${r},${g},${b},0.1)`;
-  ctx.fill();
-  // Line
-  ctx.beginPath();
-  pts.forEach(([x, y], i) => i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y));
-  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
-  ctx.stroke();
-  // Last dot
-  const [lx, ly] = pts[pts.length - 1];
-  ctx.beginPath(); ctx.arc(lx, ly, 2.5, 0, Math.PI * 2);
-  ctx.fillStyle = color; ctx.fill();
-}
+// drawSparkline rimossa il 29/07/2026: sostituita da drawDashChart in modalità
+// compact, per uniformità visiva con tutto il resto dell'app (vedi buildDashboard).
 
 function drawDashChart(canvasId, datasets, options = {}) {
   let trendResult = null; // valorizzato durante il disegno, restituito a fine funzione
@@ -4739,11 +4703,16 @@ function drawDashChart(canvasId, datasets, options = {}) {
     return;
   }
 
-  // Margins per assi
-  const ML = 34; // left margin per asse Y
-  const MB = 18; // bottom margin per asse X
-  const MR = 36; // right margin — spazio per label ultimo valore
-  const MT = 10;
+  // Margins per assi. Modalità 'compact' (29/07/2026, per unificare le 4
+  // mini-sparkline delle card KPI Dashboard su drawDashChart): margini minimi,
+  // niente assi/griglia/etichette — il numero grande è già mostrato sopra
+  // nella card, qui serve solo l'andamento a colpo d'occhio. Puramente
+  // additiva: senza options.compact il comportamento resta identico a prima.
+  const compact = !!options.compact;
+  const ML = compact ? 2  : 34; // left margin per asse Y
+  const MB = compact ? 2  : 18; // bottom margin per asse X
+  const MR = compact ? (options.hideLabel ? 2 : 30) : 36; // right margin — spazio per label ultimo valore
+  const MT = compact ? 2  : 10;
   const CW = W - ML - MR;  // chart width (esclude spazio label dx)
   const CH = H - MB - MT;  // chart height
 
@@ -4821,34 +4790,36 @@ function drawDashChart(canvasId, datasets, options = {}) {
   const yTicks = [];
   for (let v = yStart; v <= mx; v += yStep) yTicks.push(Math.round(v * 10)/10);
 
-  // Asse Y — linea
-  ctx.strokeStyle = axisColor; ctx.lineWidth = 0.5;
-  ctx.beginPath(); ctx.moveTo(ML, MT); ctx.lineTo(ML, MT + CH); ctx.stroke();
-
-  // Asse X — linea
-  ctx.beginPath(); ctx.moveTo(ML, MT + CH); ctx.lineTo(ML + CW, MT + CH); ctx.stroke();
-
-  // Grid lines + Y labels
-  ctx.font = '9px -apple-system'; ctx.fillStyle = labelColor; ctx.textAlign = 'right';
-  yTicks.forEach(v => {
-    const y = MT + CH - ((v - mn) / rng) * CH;
-    if (y < MT || y > MT + CH) return;
-    // grid
-    ctx.strokeStyle = gridColor; ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(ML + 1, y); ctx.lineTo(ML + CW, y); ctx.stroke();
-    // tick
+  if (!compact) {
+    // Asse Y — linea
     ctx.strokeStyle = axisColor; ctx.lineWidth = 0.5;
-    ctx.beginPath(); ctx.moveTo(ML - 3, y); ctx.lineTo(ML, y); ctx.stroke();
-    // label
-    ctx.fillStyle = labelColor;
-    ctx.fillText(v % 1 === 0 ? v : v.toFixed(1), ML - 5, y + 3);
-  });
-  ctx.textAlign = 'left';
+    ctx.beginPath(); ctx.moveTo(ML, MT); ctx.lineTo(ML, MT + CH); ctx.stroke();
+
+    // Asse X — linea
+    ctx.beginPath(); ctx.moveTo(ML, MT + CH); ctx.lineTo(ML + CW, MT + CH); ctx.stroke();
+
+    // Grid lines + Y labels
+    ctx.font = '9px -apple-system'; ctx.fillStyle = labelColor; ctx.textAlign = 'right';
+    yTicks.forEach(v => {
+      const y = MT + CH - ((v - mn) / rng) * CH;
+      if (y < MT || y > MT + CH) return;
+      // grid
+      ctx.strokeStyle = gridColor; ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(ML + 1, y); ctx.lineTo(ML + CW, y); ctx.stroke();
+      // tick
+      ctx.strokeStyle = axisColor; ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(ML - 3, y); ctx.lineTo(ML, y); ctx.stroke();
+      // label
+      ctx.fillStyle = labelColor;
+      ctx.fillText(v % 1 === 0 ? v : v.toFixed(1), ML - 5, y + 3);
+    });
+    ctx.textAlign = 'left';
+  }
 
   // X ticks — mostra date distribuite, con spaziatura minima garantita per evitare sovrapposizioni
   const allValidPts = datasets[0].data.filter(p => p.value !== null);
   const nv = allValidPts.length;
-  if (nv >= 2) {
+  if (!compact && nv >= 2) {
     const maxXLabels = Math.min(nv, CW > 200 ? 5 : 3);
     const pxPerPt = CW / (nv - 1);
     const minLabelPx = 26; // larghezza minima "dd/mm" + margine, per non sovrapporsi
@@ -4932,17 +4903,19 @@ function drawDashChart(canvasId, datasets, options = {}) {
       ctx.strokeStyle = ds.color; ctx.lineWidth = 1.5; ctx.stroke();
     });
 
-    // Last value label — nel margine destro (MR), allineato al punto Y
-    ctx.font = '500 10px -apple-system'; ctx.fillStyle = ds.color;
-    const lbl = lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1);
-    const lx = ML + CW + 5; // sempre nel margine destro, fuori dal plot
-    let ly = lp.y;
-    // clamp verticale: non uscire dal canvas
-    ly = Math.max(MT + 8, Math.min(ly + 4, H - MB - 2));
-    ctx.textAlign = 'left';
-    ctx.fillText(lbl, lx, ly);
-    ctx.textAlign = 'left';
-    lastValueLabelYs.push(ly);
+    if (!options.hideLabel) {
+      // Last value label — nel margine destro (MR), allineato al punto Y
+      ctx.font = '500 10px -apple-system'; ctx.fillStyle = ds.color;
+      const lbl = lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1);
+      const lx = ML + CW + 5; // sempre nel margine destro, fuori dal plot
+      let ly = lp.y;
+      // clamp verticale: non uscire dal canvas
+      ly = Math.max(MT + 8, Math.min(ly + 4, H - MB - 2));
+      ctx.textAlign = 'left';
+      ctx.fillText(lbl, lx, ly);
+      ctx.textAlign = 'left';
+      lastValueLabelYs.push(ly);
+    }
 
     // Linea di tendenza (regressione lineare sul lungo periodo) — tratteggiata,
     // sovrapposta ai dati puntuali con opacità ridotta per non competere
@@ -6096,10 +6069,14 @@ function refreshDashCharts() {
   const umore = getDayDataAll('umore',   30);
 
   // ── Sparkline KPI ──────────────────────────────────────────
-  drawSparkline('spark-peso', peso60, '#0071e3');
-  drawSparkline('spark-hrv',  hrv60,  '#34c759');
-  drawSparkline('spark-rhr',  rhr60,  '#ff3b30');
-  drawSparkline('spark-sonno',sonno60,'#5856d6');
+  // Unificate su drawDashChart (29/07/2026, modalita' compact) al posto della
+  // vecchia drawSparkline, una quarta implementazione parallela stilisticamente
+  // diversa dal resto dell'app. hideLabel:true perche' il valore e' gia'
+  // mostrato in grande sopra ogni sparkline (kpi-val).
+  drawDashChart('spark-peso', [{data:peso60,color:'#0071e3'}], {height:32,minPts:1,compact:true,hideLabel:true});
+  drawDashChart('spark-hrv',  [{data:hrv60, color:'#34c759'}], {height:32,minPts:1,compact:true,hideLabel:true});
+  drawDashChart('spark-rhr',  [{data:rhr60, color:'#ff3b30'}], {height:32,minPts:1,compact:true,hideLabel:true});
+  drawDashChart('spark-sonno',[{data:sonno60,color:'#5856d6'}],{height:32,minPts:1,compact:true,hideLabel:true});
 
   // ── Grafici biometria ──────────────────────────────────────
   drawDashChart('dc-peso',[{data:peso60,color:'#0071e3'}],{height:110,minScale:0.98,maxScale:1.02,refLine:71.1});
