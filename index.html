@@ -9548,7 +9548,23 @@ function buildProtocolloTimeline() {
     {lb:'Peak',n:2,c:'#10b981'},{lb:'Mantenimento',n:4,c:'#f59e0b'},{lb:'Fine ciclo',n:4,c:'#ef4444'}
   ];
 
+  // Apre direttamente sulla settimana corrente invece che sempre sulla
+  // Settimana 1 (29/07/2026, richiesta esplicita utente). Il numero di
+  // settimana si calcola dagli stessi giorni trascorsi da START2 usati altrove
+  // (getPhase2, getBKKWeekInfo) — coerente col resto del codice.
   let aMol = 'all', aWk = 0;
+  {
+    const today0 = new Date(); today0.setHours(0,0,0,0);
+    const startV2_0 = new Date(START2); startV2_0.setHours(0,0,0,0);
+    const elapsedV2_0 = Math.floor((today0 - startV2_0) / 86400000);
+    const currentWeek = elapsedV2_0 >= 0 ? Math.floor(elapsedV2_0/7) + 1 : 0;
+    const idx = WW.findIndex(w => {
+      const nums = w.w.split(/[–-]/).map(Number);
+      const wStart = nums[0], wEnd = nums.length > 1 ? nums[1] : nums[0];
+      return currentWeek >= wStart && currentWeek <= wEnd;
+    });
+    if (idx !== -1) aWk = idx; // fuori range (prima del ciclo o oltre sett. 16): resta su 0
+  }
 
   function renderTL() {
     const d = WW[aWk];
@@ -9622,7 +9638,7 @@ function buildProtocolloTimeline() {
   let wnav = '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:1.25rem">';
   WW.forEach((w,i) => {
     const isP = i === 4;
-    wnav += `<button id="tlw-${i}" style="font-size:11px;min-width:42px;padding:4px 8px;border-radius:6px;border:0.5px solid ${w.pc};background:${i===0?w.pc:'transparent'};color:${i===0?'#fff':w.pc};cursor:pointer" onclick="tlWk(${i})">S${w.w}</button>`;
+    wnav += `<button id="tlw-${i}" style="font-size:11px;min-width:42px;padding:4px 8px;border-radius:6px;border:0.5px solid ${w.pc};background:${i===aWk?w.pc:'transparent'};color:${i===aWk?'#fff':w.pc};cursor:pointer" onclick="tlWk(${i})">S${w.w}</button>`;
   });
   wnav += '</div>';
 
