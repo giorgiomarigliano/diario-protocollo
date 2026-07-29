@@ -4921,8 +4921,12 @@ function drawDashChart(canvasId, datasets, options = {}) {
     pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
     ctx.strokeStyle = ds.color; ctx.lineWidth = 1.8; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
 
-    // Dots
-    pts.forEach(p => {
+    // Dots — in modalità compact solo l'ultimo punto (come la vecchia
+    // drawSparkline, pulita), altrimenti uno per ogni punto crea un effetto
+    // "collana di perline" su dataset densi (60gg) in card piccole (28/07/2026,
+    // regressione trovata dall'utente subito dopo l'unificazione dei KPI).
+    const dotsToShow = compact ? [pts[pts.length - 1]] : pts;
+    dotsToShow.forEach(p => {
       ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
       ctx.fillStyle = '#fff'; ctx.fill();
       ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
