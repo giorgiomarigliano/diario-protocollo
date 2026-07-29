@@ -12,16 +12,30 @@
 <style>
 /* Apple-style design system */
 :root {
+  /* V1 (censimento tipografico, 29/07/2026): la scala originale aveva dei
+     "buchi" — 9px, 10px, 14px, 16px, 18px, 20px sono valori usati a mano
+     decine/centinaia di volte in giro per il codice, senza un token
+     corrispondente. Aggiunti qui sotto per colmarli, prima di iniziare le
+     sostituzioni vere e proprie (V3 in poi). Naming: semantico dove si
+     inserisce nella scala esistente (xs/sm/body/md/lg/xl), numerico per i
+     valori intermedi nuovi, per non dover rinominare quelli già in uso. */
+  --fs-3xs:  9px;
+  --fs-2xs:  10px;
   --fs-xs:   11px;
   --fs-sm:   12px;
   --fs-body: 13px;
+  --fs-14:   14px;
   --fs-md:   15px;
+  --fs-16:   16px;
   --fs-lg:   17px;
+  --fs-18:   18px;
+  --fs-20:   20px;
   --fs-xl:   22px;
   --fs-2xl:  28px;
   --fw-reg:  400;
   --fw-med:  500;
   --fw-semi: 600;
+  --fw-bold: 700;
   --bg: #f5f5f7;
   --surface: #ffffff;
   --surface2: #f5f5f7;
