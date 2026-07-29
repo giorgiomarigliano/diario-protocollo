@@ -6717,7 +6717,7 @@ function getNextEvent2(elapsed) {
   if (wk<=4)  { return `Fase 2 tra ${28-elapsed} giorni (sett. 5)`; }
   if (wk<=8)  { return `Fase 3 tra ${56-elapsed} giorni (sett. 9)`; }
   if (wk<=12) { return `Fase 4 tra ${84-elapsed} giorni (sett. 13)`; }
-  return `Fine ciclo tra ${TOTAL_DAYS2-elapsed} giorni · DEXA T1 + panel sangue`;
+  return `Fine ciclo tra ${CICLO1_DAYS-elapsed} giorni · DEXA T1 + panel sangue`;
 }
 
 function getWorkout2(dayIdx) {
@@ -6851,13 +6851,13 @@ function buildCycleCard2(container) {
       <circle cx="36" cy="36" r="30" fill="none" stroke="#e8e8ed" stroke-width="5"/>
     </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">—</span><span class="cycle-ring-sub">ciclo</span></div>`;
     infoHtml = `<h3>Protocollo peptidico · Ciclo 1</h3><p>Inizio tra <b>${daysTo}</b> giorni · 20 lug 2026 (confermato)</p><div class="cycle-next">⟶ Composti arrivati, in attesa di inizio</div>`;
-  } else if (elapsed >= TOTAL_DAYS2) {
+  } else if (elapsed >= CICLO1_DAYS) {
     ringHtml = `<svg width="72" height="72" viewBox="0 0 72 72">
       <circle cx="36" cy="36" r="30" fill="none" stroke="#34c759" stroke-width="5"/>
     </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">✓</span><span class="cycle-ring-sub">fine</span></div>`;
     infoHtml = `<h3>Ciclo 1 completato</h3><p>112 giorni · 20 lug – 8 nov 2026</p>`;
   } else {
-    pct = Math.min(100, Math.round((elapsed/TOTAL_DAYS2)*100));
+    pct = Math.min(100, Math.round((elapsed/CICLO1_DAYS)*100));
     wk  = Math.floor(elapsed/7)+1;
     ph  = getPhase2(elapsed);
     nextEv = getNextEvent2(elapsed);
@@ -6867,7 +6867,7 @@ function buildCycleCard2(container) {
       <circle cx="36" cy="36" r="30" fill="none" stroke="#0071e3" stroke-width="5"
         stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" stroke-linecap="round"/>
     </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">${pct}%</span><span class="cycle-ring-sub">ciclo</span></div>`;
-    infoHtml = `<h3>Settimana ${wk} · ${ph.label}</h3><p>Giorno ${elapsed+1} di ${TOTAL_DAYS2} · ${TOTAL_DAYS2-elapsed-1} giorni al termine</p><div class="cycle-next">⟶ ${nextEv}</div>`;
+    infoHtml = `<h3>Settimana ${wk} · ${ph.label}</h3><p>Giorno ${elapsed+1} di ${CICLO1_DAYS} · ${CICLO1_DAYS-elapsed-1} giorni al termine</p><div class="cycle-next">⟶ ${nextEv}</div>`;
   }
 
   const card = document.createElement('div');
@@ -7629,7 +7629,7 @@ function buildProtoV2() {
   progWrap.className = 'prog-wrap';
   const start2h = new Date(START2); start2h.setHours(0,0,0,0);
   const elapsed2h = Math.floor((today - start2h)/86400000);
-  const pct2 = Math.max(0, Math.min(100, Math.round((elapsed2h/TOTAL_DAYS2)*100)));
+  const pct2 = Math.max(0, Math.min(100, Math.round((elapsed2h/CICLO1_DAYS)*100)));
   progWrap.innerHTML = `<div class="prog-bar" style="width:${pct2}%"></div>`;
   container.appendChild(progWrap);
 
