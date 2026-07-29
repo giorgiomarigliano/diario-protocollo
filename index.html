@@ -10051,27 +10051,47 @@ function buildHistoryTab() {
   function computeAdherence() {
     const dates = new Set(sessions.map(s => s.date));
     const today = new Date(); today.setHours(0,0,0,0);
-
-    // Streak record: cerca la sequenza più lunga di giorni consecutivi allenati
-    // su TUTTO lo storico disponibile (non solo le settimane mostrate).
     const sortedDates = sessions.map(s => s.date).sort();
-    let recordStreak = 0, run = 0, prevD = null;
-    sortedDates.forEach(dstr => {
-      const d = new Date(dstr + 'T00:00:00');
-      if (prevD) {
-        const diffDays = Math.round((d - prevD) / 86400000);
-        run = (diffDays === 1) ? run + 1 : 1;
-      } else { run = 1; }
-      recordStreak = Math.max(recordStreak, run);
-      prevD = d;
-    });
 
-    // Streak attuale: parte da oggi (o da ieri se oggi non ancora allenato) e
-    // conta all'indietro finché trova giorni consecutivi allenati.
+    // Streak (Opzione 2, 29/07/2026): i riposi pianificati (Lun/Gio) non
+    // rompono più la catena — non contano né a favore né contro, si passa
+    // oltre. La catena si interrompe SOLO quando un giorno di allenamento
+    // davvero previsto viene saltato. Prima (Opzione 1) contava i giorni di
+    // calendario letterali, rendendo lo streak quasi sempre basso (1-3) per
+    // costruzione con uno split 5gg/7 a riposo fisso — non rifletteva la
+    // costanza reale sui giorni che contano davvero.
+
+    // Streak record: cammina giorno per giorno dal primo giorno tracciato a
+    // oggi, saltando i riposi pianificati, azzerando la catena solo quando un
+    // giorno previsto risulta non allenato.
+    let recordStreak = 0;
+    if (sortedDates.length) {
+      const earliest = new Date(sortedDates[0] + 'T00:00:00');
+      let run = 0;
+      for (let d = new Date(earliest); d <= today; d.setDate(d.getDate()+1)) {
+        const dow = (d.getDay() + 6) % 7;
+        if (SCHED_REST_DOW.includes(dow)) continue; // riposo pianificato: non tocca la catena
+        run = dates.has(localDateStr(d)) ? run + 1 : 0;
+        recordStreak = Math.max(recordStreak, run);
+      }
+    }
+
+    // Streak attuale: cammina all'indietro da oggi, saltando i riposi
+    // pianificati. Se oggi è un giorno di allenamento previsto ma non ancora
+    // fatto (giornata in corso), non conta come rottura — si parte da ieri.
+    const todayDow = (today.getDay() + 6) % 7;
+    const todayIsRest = SCHED_REST_DOW.includes(todayDow);
+    const todayTrained = dates.has(localDateStr(today));
     let cursor = new Date(today);
-    if (!dates.has(localDateStr(cursor))) cursor.setDate(cursor.getDate() - 1);
+    if (!todayIsRest && !todayTrained) cursor.setDate(cursor.getDate() - 1);
+    const earliestGuard = sortedDates.length ? new Date(sortedDates[0] + 'T00:00:00') : today;
     let currentStreak = 0;
-    while (dates.has(localDateStr(cursor))) { currentStreak++; cursor.setDate(cursor.getDate() - 1); }
+    while (cursor >= earliestGuard) {
+      const dow = (cursor.getDay() + 6) % 7;
+      if (SCHED_REST_DOW.includes(dow)) { cursor.setDate(cursor.getDate() - 1); continue; }
+      if (dates.has(localDateStr(cursor))) { currentStreak++; cursor.setDate(cursor.getDate() - 1); }
+      else break;
+    }
 
     // Lunedì della settimana corrente (contiene "oggi") — è sempre l'ultima
     // settimana mostrata, mai una settimana futura non ancora iniziata.
