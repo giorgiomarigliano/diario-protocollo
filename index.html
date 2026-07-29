@@ -53,6 +53,18 @@
   --orange: #ff9500;
   --purple: #af52de;
   --teal: #5ac8fa;
+  /* V2 (censimento colore, 29/07/2026): --green-dark/--red-dark ufficializzano
+     un pattern già in uso ma mai tokenizzato — badge/chip a sfondo chiaro con
+     testo scuro per contrasto (es. .badge-pull, .badge-push, indicatori
+     "buono/cattivo" nei delta). Non sono "colori sbagliati" da sostituire:
+     sono il compagno scuro intenzionale di --green/--red. Le tonalità delle
+     mappe MC (per-composto) e delle categorie alimenti restano deliberatamente
+     separate — servono a distinguere contenuti diversi, non vanno consolidate
+     qui (vedi KB sezione 18 per il ragionamento completo). */
+  --green-dark:  #1a7a3a;
+  --green-light: #e8f8ed;
+  --red-dark:  #cc2200;
+  --red-light: #feeeec;
   --push: #ff3b30;
   --pull: #34c759;
   --legs: #ff9500;
