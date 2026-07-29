@@ -7246,11 +7246,15 @@ function buildWeekSummary2(container, wkIdx) {
   });
 
   function miniSparkline(data, color, w, h) {
-    w = w||110; h = h||32;
+    // Larghezza resa responsive (29/07/2026): prima era un SVG a 110px fisso
+    // dentro un contenitore flex:1 molto più largo, lasciando tanto spazio
+    // bianco a destra — ora riempie tutta la colonna disponibile. L'altezza
+    // resta fissa in px per un ritmo verticale coerente col resto della card.
+    w = w||110; h = h||40;
     if (data.length<2) return `<div style="font-size:10px;color:var(--muted);height:${h}px;display:flex;align-items:center">dati insuff.</div>`;
     const min=Math.min(...data), max=Math.max(...data), range=(max-min)||1;
     const pts = data.map((v,i)=>`${(i/(data.length-1)*w).toFixed(1)},${(h-((v-min)/range*h)).toFixed(1)}`).join(' ');
-    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    return `<svg width="100%" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="display:block"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   }
 
   function deltaBadge(delta, unit, higherIsBad) {
