@@ -1115,6 +1115,8 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 
 /* Timeline grafica card Protocollo (30/07/2026 sera, v2 — grafica non testuale) */
 .ct-wrap{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.ct-events-labels{position:relative;height:14px;margin-bottom:3px}
+.ct-event-label{position:absolute;bottom:0;transform:translateX(-50%);font-size:9px;font-weight:700;white-space:nowrap}
 .ct-bar{position:relative;height:10px;border-radius:5px;background:var(--surface2);overflow:visible}
 .ct-seg{position:absolute;top:0;bottom:0}
 .ct-seg:first-child{border-radius:5px 0 0 5px}
@@ -5253,6 +5255,39 @@ function drawRichKpiChart(canvasId, points, options = {}) {
     ctx.fillStyle = color; ctx.fill();
   });
 
+  // Linea di tendenza (regressione lineare) — tratteggiata, opacità ridotta,
+  // stessa identica logica di drawDashChart (30/07/2026 sera, richiesta di
+  // Giorgio di estenderla anche a queste 4 card). Richiede >=5 punti validi.
+  if (options.showTrend) {
+    const validPx = pxPoints.filter(p => p.y !== null);
+    if (validPx.length >= 5) {
+      const n = validPx.length;
+      const sumX = validPx.reduce((s,p,i)=>s+i,0);
+      const sumY = validPx.reduce((s,p)=>s+p.v,0);
+      const sumXY = validPx.reduce((s,p,i)=>s+i*p.v,0);
+      const sumXX = validPx.reduce((s,p,i)=>s+i*i,0);
+      const denom = n*sumXX - sumX*sumX;
+      if (denom !== 0) {
+        const slope = (n*sumXY - sumX*sumY) / denom;
+        const intercept = (sumY - slope*sumX) / n;
+        const yStart = intercept;
+        const yEnd = slope*(n-1) + intercept;
+        const pyStart = MT + CH - ((yStart - mn) / rng) * CH;
+        const pyEnd = MT + CH - ((yEnd - mn) / rng) * CH;
+        ctx.save();
+        ctx.setLineDash([5,4]);
+        ctx.strokeStyle = color;
+        ctx.globalAlpha = 0.45;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(validPx[0].x, pyStart);
+        ctx.lineTo(validPx[validPx.length-1].x, pyEnd);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
   // MAX / MIN — linea tratteggiata + etichetta
   let maxP = null, minP = null;
   pxPoints.forEach(p => {
@@ -5670,7 +5705,7 @@ let dashBuilt = false;
 // sera, richiesta esplicita di Giorgio: badge "7 giorni" cliccabile per
 // vedere un periodo più lungo/diverso). Sonno e Compliance integratori non
 // sono in questo elenco: badge fisso a 7gg, non richiesto per quelle due.
-let richKpiRangeDays = { peso: 7, hrv: 7, rhr: 7, sonno: 7, supp: 7 };
+let richKpiRangeDays = { peso: 7, hrv: 7, rhr: 7, sonno: 7 };
 function setRichKpiRange(key, days) {
   richKpiRangeDays[key] = parseInt(days, 10);
   dashBuilt = false;
@@ -6060,7 +6095,9 @@ function buildDashboard() {
   // sugli ultimi 7gg, per la nuova card con grafico dedicato.
   // Stesso principio del fix RHR sopra: il giorno odierno è sempre null (in
   // corso), quindi la finestra finisce su ieri per non sprecare l'ultimo slot.
-  const suppDaily7 = inV2 ? getSuppComplianceDaily(richKpiRangeDays.supp + 1).slice(0, -1) : [];
+  // (getSuppComplianceDaily resta definita più sotto, non più usata qui dopo
+  // la rimozione della card "Compliance integratori" del 30/07/2026 sera —
+  // Giorgio l'ha giudicata di scarso valore in questa versione.)
 
   // ── Helper: card KPI "ricca" — grafico 7gg con assi, MAX/MIN e riepilogo
   // Min/Max/Media (30/07/2026, sostituisce le vecchie mini-sparkline compact
@@ -6235,8 +6272,20 @@ function buildDashboard() {
     }).join('');
     const phaseLabels = PEPTIDE_PHASES.map(ph => `<span style="color:${ph.c}">${ph.lb}</span>`).join('');
 
+    const bkkMid = (bkk.left + bkk.width/2);
+    const mallMid = (mallorca.left + mallorca.width/2);
+    const clampLabel = p => Math.max(6, Math.min(94, p));
+    const eventLabelsHtml = `
+      <div class="ct-events-labels">
+        <span class="ct-event-label" style="left:${clampLabel(bkkMid)}%;color:#af52de">Bangkok</span>
+        <span class="ct-event-label" style="left:${clampLabel(mallMid)}%;color:#af52de">Mallorca</span>
+        <span class="ct-event-label" style="left:${clampLabel(t1.left)}%;color:#0071e3">T1</span>
+        <span class="ct-event-label" style="left:${clampLabel(t2.left)}%;color:#0071e3">T2</span>
+      </div>`;
+
     const timelineHtml = `
       <div class="ct-wrap">
+        ${eventLabelsHtml}
         <div class="ct-bar">
           ${phaseSegs}
           <div class="ct-event" style="left:${bkk.left}%;width:${bkk.width}%"></div>
@@ -6306,7 +6355,6 @@ function buildDashboard() {
         ${richKpiCard({series7:hrv7, label:'HRV', icon:'💓', iconBg:'#fde7ef', unit:'ms', decimals:0, accent:'#34c759', t0:T0_HRV, t0Suffix:'ms', canvasId:'rk-hrv', zoneBar:{lo:40,hi:45}, rangeKey:'hrv', rangeDays:richKpiRangeDays.hrv})}
         ${richKpiCard({series7:rhr7, label:'RHR (FC a riposo)', icon:'❤️', iconBg:'#fde7e7', unit:'bpm', decimals:0, accent:'#ff3b30', canvasId:'rk-rhr', extraHtml: (lBpS&&lBpD)?`PA: ${Math.round(lBpS)}/${Math.round(lBpD)} mmHg`:null, rangeKey:'rhr', rangeDays:richKpiRangeDays.rhr})}
         ${richKpiCard({series7:sonno7Series, label:'Sonno', icon:'😴', iconBg:'#ece7fb', unit:'h', decimals:1, accent:'#5856d6', canvasId:'rk-sonno', extraHtml:sleepBreakdownHtml(), rangeKey:'sonno', rangeDays:richKpiRangeDays.sonno})}
-        ${inV2?richKpiCard({series7:suppDaily7, label:'Compliance integratori', icon:'💊', iconBg:'#fdf0e3', unit:'%', decimals:0, accent:'#34c759', canvasId:'rk-supp', noLine2:true, rangeKey:'supp', rangeDays:richKpiRangeDays.supp}):''}
       </div>
     </div>
 
@@ -6663,13 +6711,10 @@ function refreshDashCharts() {
   // sera) — niente di miracoloso: un grafico annotato ha bisogno di un
   // minimo di spazio verticale, ma su mobile lo teniamo più compatto.
   const _dashChartH = window.innerWidth <= 600 ? 100 : 130;
-  drawRichKpiChart('rk-peso',  getDayDataAll('peso', richKpiRangeDays.peso), {height:_dashChartH, color:'#0071e3', decimals:1});
-  drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  richKpiRangeDays.hrv),  {height:_dashChartH, color:'#34c759', decimals:0});
-  drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  richKpiRangeDays.rhr + 1).slice(0, -1),  {height:_dashChartH, color:'#ff3b30', decimals:0});
-  drawRichKpiChart('rk-sonno', getSonnoOreAll(richKpiRangeDays.sonno), {height:_dashChartH, color:'#5856d6', decimals:1});
-  if (document.getElementById('rk-supp')) {
-    drawRichKpiChart('rk-supp', getSuppComplianceDaily(richKpiRangeDays.supp + 1).slice(0, -1), {height:_dashChartH, color:'#ff9500', decimals:0});
-  }
+  drawRichKpiChart('rk-peso',  getDayDataAll('peso', richKpiRangeDays.peso), {height:_dashChartH, color:'#0071e3', decimals:1, showTrend:true});
+  drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  richKpiRangeDays.hrv),  {height:_dashChartH, color:'#34c759', decimals:0, showTrend:true});
+  drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  richKpiRangeDays.rhr + 1).slice(0, -1),  {height:_dashChartH, color:'#ff3b30', decimals:0, showTrend:true});
+  drawRichKpiChart('rk-sonno', getSonnoOreAll(richKpiRangeDays.sonno), {height:_dashChartH, color:'#5856d6', decimals:1, showTrend:true});
 
   // ── Grafici biometria ──────────────────────────────────────
   // Linee di trend aggiunte su richiesta di Giorgio (30/07/2026 sera), stessa
