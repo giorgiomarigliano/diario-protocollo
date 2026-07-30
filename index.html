@@ -599,8 +599,8 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 5px 26px 5px 8px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-med);
   font-family: inherit;
   color: var(--text);
   cursor: pointer;
@@ -613,21 +613,21 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
   transition: border-color .12s;
 }
 .inj-fields select:focus, .inj-grid select:focus { border-color: var(--blue); }
-.inj-grid select[value="fatto"], .inj-grid select option[value="fatto"] { color: #34c759; }
+.inj-grid select[value="fatto"], .inj-grid select option[value="fatto"] { color: var(--green); }
 .inj-grid select[value="skip"], .inj-grid select option[value="skip"] { color: var(--muted); }
 
 .sent-tab {
-  font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px;
+  font-size: var(--fs-xs); font-weight: var(--fw-med); padding: 3px 9px; border-radius: 20px;
   border: 1px solid var(--border); background: var(--surface2); color: var(--muted);
   cursor: pointer; transition: all .15s;
 }
 .sent-tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
 .sent-tab:hover:not(.active) { background: var(--surface3, #e8e8ed); }
 .comp-bar-row { display:flex; align-items:center; gap:8px; }
-.comp-bar-label { font-size:12px; font-weight:500; color:var(--text); min-width:72px; }
+.comp-bar-label { font-size: var(--fs-sm); font-weight: var(--fw-med); color:var(--text); min-width:72px; }
 .comp-bar-track { flex:1; height:7px; background:var(--border); border-radius:4px; overflow:hidden; }
 .comp-bar-fill { height:100%; border-radius:4px; transition: width .4s ease; }
-.comp-bar-pct { font-size:11px; color:var(--muted); min-width:36px; text-align:right; }
+.comp-bar-pct { font-size: var(--fs-xs); color:var(--muted); min-width:36px; text-align:right; }
 /* Workout box */
 .wo-box {
   background: var(--surface2);
@@ -1299,8 +1299,8 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 .pre-proto-toggle:hover { background: var(--surface2); }
 .pre-proto-toggle-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
 .pre-proto-badge {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
   letter-spacing: .08em;
   color: var(--muted);
   background: var(--surface2);
@@ -1311,21 +1311,21 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   flex-shrink: 0;
 }
 .pre-proto-title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semi);
   color: var(--text);
   white-space: nowrap;
   flex-shrink: 0;
 }
 .pre-proto-sub {
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .pre-proto-chev {
-  font-size: 18px;
+  font-size: var(--fs-18);
   color: var(--faint);
   flex-shrink: 0;
   transition: transform .2s;
@@ -1342,15 +1342,15 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 #container2.container { padding-top: 20px; }
 @media (max-width: 600px) {
   .pre-proto-sub { display: none; }
-  .pre-proto-title { font-size: 14px; }
+  .pre-proto-title { font-size: var(--fs-14); }
 }
 
 /* Soggettivo select — stile coerente con bio-box input */
 .bio-box select {
   width: 100%;
   text-align: center;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semi);
   letter-spacing: -.01em;
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
@@ -1379,19 +1379,19 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   min-width: 80px;
 }
 .subj-lbl {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   line-height: 1.3;
   min-height: 28px;
   display: flex;
   align-items: flex-end;
   color: var(--muted);
-  font-weight: 500;
+  font-weight: var(--fw-med);
   margin-bottom: 4px;
 }
 .subj-sel {
   width: 100%;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-med);
   font-family: inherit;
   color: var(--text);
   background: var(--surface2);
@@ -1416,48 +1416,48 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   color: #fff;
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-semi);
   font-family: inherit;
   cursor: pointer;
   transition: background .12s;
 }
 .proto2-save-btn:hover { background: var(--blue-hover, #0077ed); }
 /* Rimuovi override bio-box select (era troppo grande) */
-.bio-box select { font-size: 14px; font-weight: 600; }
+.bio-box select { font-size: var(--fs-14); font-weight: var(--fw-semi); }
 
 /* Uniforma font buildProtoV2 a buildDays */
 #container2 .day-date {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semi);
   color: var(--text);
 }
 #container2 .day-info .day-name {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semi);
   color: var(--text);
 }
 #container2 .day-badge {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semi);
 }
 #container2 .dq-v {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-14);
+  font-weight: var(--fw-semi);
   letter-spacing: -.01em;
 }
 #container2 .dq-l {
-  font-size: 10px;
+  font-size: var(--fs-2xs);
   color: var(--muted);
 }
 #container2 .week-hdr h2 {
-  font-size: 17px;
+  font-size: var(--fs-lg);
 }
 #container2 .week-phase {
-  font-size: 11px;
+  font-size: var(--fs-xs);
 }
 #container2 .week-range {
-  font-size: 12px;
+  font-size: var(--fs-sm);
 }
 
 /* Pre-proto collasso */
@@ -8353,7 +8353,7 @@ function buildProtoV2() {
     const slotHTML = slots.map(s => {
       const muscleField = s.igfMuscle !== undefined ? `
         <div style="margin-top:8px">
-          <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare (IM)</div>
+          <div style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare (IM)</div>
           <select data-id="${id}" data-f="inj_${s.n}_distretto">
             <option value="" ${!s.igfMuscle?'selected':''}>— scegli distretto —</option>
             ${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m=>`<option value="${m}" ${m===s.igfMuscle?'selected':''}>${m}</option>`).join('')}
@@ -8362,12 +8362,12 @@ function buildProtoV2() {
       const scField = '';
       const slotClass = s.n === 1 ? 'inj-card-mattino' : s.n === 2 ? 'inj-card-pomeriggio' : s.igfMuscle !== undefined ? 'inj-card-postWO' : 'inj-card-sera';
       const slotIconMap = {
-        1: '<i class="ti ti-sunrise" style="font-size:15px;color:#0071e3"></i>',
-        2: '<i class="ti ti-sun" style="font-size:15px;color:#ff9500"></i>',
+        1: '<i class="ti ti-sunrise" style="font-size: var(--fs-md);color:var(--blue)"></i>',
+        2: '<i class="ti ti-sun" style="font-size: var(--fs-md);color:var(--orange)"></i>',
       };
       const slotIcon = s.igfMuscle !== undefined
-        ? '<i class="ti ti-barbell" style="font-size:15px;color:#af52de"></i>'
-        : slotIconMap[s.n] || '<i class="ti ti-moon" style="font-size:15px;color:#34c759"></i>';
+        ? '<i class="ti ti-barbell" style="font-size: var(--fs-md);color:var(--purple)"></i>'
+        : slotIconMap[s.n] || '<i class="ti ti-moon" style="font-size: var(--fs-md);color:var(--green)"></i>';
       return `
       <div class="inj-card ${slotClass}">
         <div class="inj-num">${slotIcon}</div>
@@ -8388,7 +8388,7 @@ function buildProtoV2() {
                 </select>` : '';
               return `
             <div style="display:flex;align-items:center;gap:8px;background:var(--surface,#fff);border-radius:8px;padding:6px 10px">
-              <span style="font-size:12px;font-weight:500;color:var(--text);flex:1">${f}</span>
+              <span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--text);flex:1">${f}</span>
               <select data-id="${id}" data-f="inj_${s.n}_${fkey}" style="flex-shrink:0;width:100px">
                 <option value="">— stato</option>
                 <option value="fatto">✅ Fatto</option>
@@ -8426,8 +8426,8 @@ function buildProtoV2() {
 
         ${isBkkDate(d) ? `
         <div style="background:rgba(192,57,43,.08);border:1px solid rgba(192,57,43,.25);border-radius:10px;padding:10px 12px;margin-bottom:14px">
-          <div style="font-size:11px;font-weight:600;color:#c0392b;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">🇹🇭 Trasferta BKK · split libero</div>
-          <select data-id="${id}" data-f="bkk_riposo" onchange="_proto2Built=false;const c2=document.getElementById('container2');if(c2){c2.innerHTML='';buildProtoV2();}" style="width:100%;font-size:13px;padding:7px 8px;border:1px solid var(--border,#e8e8ed);border-radius:6px;background:var(--surface,#fff);color:var(--text);font-family:inherit">
+          <div style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:#c0392b;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">🇹🇭 Trasferta BKK · split libero</div>
+          <select data-id="${id}" data-f="bkk_riposo" onchange="_proto2Built=false;const c2=document.getElementById('container2');if(c2){c2.innerHTML='';buildProtoV2();}" style="width:100%;font-size: var(--fs-body);padding:7px 8px;border:1px solid var(--border,#e8e8ed);border-radius:6px;background:var(--surface,#fff);color:var(--text);font-family:inherit">
             <option value="" ${(_lastData2[id]&&_lastData2[id].bkk_riposo)!=='1'?'selected':''}>Allenamento (default)</option>
             <option value="1" ${(_lastData2[id]&&_lastData2[id].bkk_riposo)==='1'?'selected':''}>Riposo</option>
           </select>
@@ -8448,7 +8448,7 @@ function buildProtoV2() {
           <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="sonno_rem_min"><div class="bio-lbl">Minuti REM</div></div>
           <div class="bio-box"><input type="number" placeholder="220"  data-id="${id}" data-f="sonno_principale_min"><div class="bio-lbl">Minuti sonno principale</div></div>
           <div class="bio-box"><input type="number" placeholder="35"   data-id="${id}" data-f="sonno_profondo_min"><div class="bio-lbl">Minuti sonno profondo</div></div>
-          ${d.getDay()===1 ? `<div class="bio-box"><input type="number" step="0.1" placeholder="82.0" data-id="${id}" data-f="circ_addome"><div class="bio-lbl">Circonf. addome cm<br><span style="font-weight:400;text-transform:none;letter-spacing:0">check settimanale lun</span></div></div>` : ''}
+          ${d.getDay()===1 ? `<div class="bio-box"><input type="number" step="0.1" placeholder="82.0" data-id="${id}" data-f="circ_addome"><div class="bio-lbl">Circonf. addome cm<br><span style="font-weight: var(--fw-reg);text-transform:none;letter-spacing:0">check settimanale lun</span></div></div>` : ''}
         </div>
 
         <div class="section-label" style="margin-top:14px">Stack mattutino</div>
