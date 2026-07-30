@@ -1113,6 +1113,13 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .rich-kpi-stat-lbl{font-size:10px;color:var(--muted);margin-top:3px}
 .rich-kpi-stat-sub{font-size:9px;color:var(--muted);margin-top:1px}
 
+/* Indicatori temporali card Protocollo (30/07/2026 sera) */
+.rich-kpi-timeline-mini{margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:7px}
+.rich-kpi-tl-row{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--muted)}
+.rich-kpi-tl-row b{color:var(--text);font-weight:600}
+.rich-kpi-tl-label{display:flex;align-items:center}
+.rich-kpi-tl-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:6px;flex-shrink:0}
+
 /* Ripartizione fasi sonno (30/07/2026) */
 .rich-kpi-sleepphases{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 .rich-kpi-sleepphase-item{font-size:11px;font-weight:500;color:var(--text)}
@@ -6159,6 +6166,21 @@ function buildDashboard() {
     const valueTxt = inV2 ? `WK${wkV2}` : 'Pre-ciclo';
     const subTxt = inV2 ? `Giorno ${elapsedV2+1}/${CICLO1_DAYS}` : `Giorno ${elapsedWU+1}/21 warm-up`;
     const remainTxt = inV2 ? `${CICLO1_DAYS-elapsedV2-1} gg al termine` : `Ciclo v2 tra ${Math.abs(elapsedV2)} gg`;
+
+    // Indicatori temporali (30/07/2026 sera, richiesta esplicita di Giorgio):
+    // inizio/fine ciclo calcolati da START2/CICLO1_DAYS (sempre corretti se
+    // le date del ciclo cambiassero); Bangkok e Mallorca sono viaggi fissi,
+    // stesse date già usate altrove (getBKKWeekInfo, timeline Referti).
+    const cycleEndDate = new Date(START2); cycleEndDate.setDate(cycleEndDate.getDate() + CICLO1_DAYS - 1);
+    const fmtDate = d => d.toLocaleDateString('it-IT', {day:'numeric', month:'short', year:'numeric'});
+    const timelineHtml = `
+      <div class="rich-kpi-timeline-mini">
+        <div class="rich-kpi-tl-row"><span class="rich-kpi-tl-label"><span class="rich-kpi-tl-dot" style="background:#5856d6"></span>Inizio ciclo</span><b>${fmtDate(START2)}</b></div>
+        <div class="rich-kpi-tl-row"><span class="rich-kpi-tl-label"><span class="rich-kpi-tl-dot" style="background:#5856d6"></span>Fine ciclo</span><b>${fmtDate(cycleEndDate)}</b></div>
+        <div class="rich-kpi-tl-row"><span class="rich-kpi-tl-label"><span class="rich-kpi-tl-dot" style="background:#af52de"></span>Bangkok</span><b>7–21 ago 2026</b></div>
+        <div class="rich-kpi-tl-row"><span class="rich-kpi-tl-label"><span class="rich-kpi-tl-dot" style="background:#af52de"></span>Mallorca</span><b>14–16 ott 2026</b></div>
+      </div>`;
+
     const statsHtml = inV2 ? `
       <div class="rich-kpi-stats3">
         <div class="rich-kpi-stat-item">
@@ -6193,7 +6215,8 @@ function buildDashboard() {
       </div>
       <div class="rich-kpi-delta-row neutral">${subTxt}</div>
       <div class="rich-kpi-delta-row neutral">${remainTxt}</div>
-      <div style="margin-top:10px">${statsHtml}</div>
+      ${timelineHtml}
+      <div style="margin-top:14px">${statsHtml}</div>
     </div>`;
   }
 
