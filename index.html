@@ -1097,6 +1097,20 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .rich-kpi-zonebar-labels{display:flex;justify-content:space-between}
 .rich-kpi-zonebar-labels div{text-align:center;flex:1;font-size:9px;color:var(--muted)}
 .rich-kpi-zonebar-labels div b{display:block;font-size:10px;color:var(--text);font-weight:600}
+.rich-kpi-extra{margin-top:10px;font-size:11px;color:var(--muted)}
+
+/* Card "Protocollo" consolidata (30/07/2026 sera) — sostituisce la vecchia
+   kpi-box Ciclo/Fase + le 3 kpi-box Compliance separate: stesso guscio
+   .rich-kpi-card/.rich-kpi-head, corpo diverso (barra progresso + 3 col). */
+.rich-kpi-progress-row{display:flex;align-items:center;gap:10px;margin:10px 0 4px}
+.rich-kpi-progress-track{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.rich-kpi-progress-fill{height:100%;border-radius:3px}
+.rich-kpi-progress-pct{font-size:14px;font-weight:700;color:var(--text);flex-shrink:0}
+.rich-kpi-stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.rich-kpi-stat-item{text-align:center}
+.rich-kpi-stat-pct{font-size:17px;font-weight:700;color:var(--text);line-height:1}
+.rich-kpi-stat-lbl{font-size:10px;color:var(--muted);margin-top:3px}
+.rich-kpi-stat-sub{font-size:9px;color:var(--muted);margin-top:1px}
 
 /* Charts */
 .chart-wrap{position:relative;width:100%;margin-bottom:8px}
@@ -5893,6 +5907,38 @@ function getSuppComplianceV2() {
   return {done,total,pct:total?Math.round((done/total)*100):0};
 }
 
+// ── Compliance integratori V2 — andamento giornaliero (30/07/2026 sera) ──
+// A differenza di getSuppComplianceV2() (cumulativa da inizio ciclo), questa
+// restituisce la % di UN singolo giorno per volta, per il grafico 7gg della
+// nuova card "Compliance integratori" nel mockup. Stessa lista campi/lo
+// stesso criterio skip di getSuppComplianceV2(), solo applicato giorno per
+// giorno invece che sommato sull'intero ciclo.
+function getSuppComplianceDaily(days) {
+  const suppFields = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm','ck_mag','ck_gly','ck_melatonina'];
+  const today = new Date(); today.setHours(0,0,0,0);
+  const testStart = new Date(TEST_PROTO_START); testStart.setHours(0,0,0,0);
+  const result = [];
+  for (let offset = days - 1; offset >= 0; offset--) {
+    const d = new Date(today); d.setDate(d.getDate() - offset); d.setHours(0,0,0,0);
+    let value = null;
+    if (d >= testStart) {
+      const rd = resolveDay(d);
+      if (rd.period === 'test_proto' || rd.period === 'v2') {
+        const rec = (_lastData2 || {})[rd.id] || {};
+        let done = 0, total = 0;
+        suppFields.forEach(s => {
+          if (rec[s + '_skip']) return;
+          total++;
+          if (rec[s] === '1') done++;
+        });
+        if (total > 0) value = Math.round((done / total) * 100);
+      }
+    }
+    result.push({ date: d, value });
+  }
+  return result;
+}
+
 // ── Compliance allenamenti V2 ────────────────────────────────────
 function getWorkoutComplianceV2() {
   const today=new Date(); today.setHours(0,0,0,0);
@@ -5943,6 +5989,17 @@ function buildDashboard() {
   const _sonnoValid = sonno7Series.filter(p=>p.value!==null);
   const lSonno = _sonnoValid.length ? _sonnoValid[_sonnoValid.length-1].value : null;
 
+  // PA più recente, per la riga extra sotto la card RHR (com'era prima della
+  // migrazione al formato ricco — reintrodotta su segnalazione di Giorgio).
+  const _bpS = getDayDataAll('bp_sys', 60).filter(p=>p.value!==null);
+  const _bpD = getDayDataAll('bp_dia', 60).filter(p=>p.value!==null);
+  const lBpS = _bpS.length ? _bpS[_bpS.length-1].value : null;
+  const lBpD = _bpD.length ? _bpD[_bpD.length-1].value : null;
+
+  // Andamento giornaliero (non cumulativo) della compliance integratori
+  // sugli ultimi 7gg, per la nuova card con grafico dedicato.
+  const suppDaily7 = inV2 ? getSuppComplianceDaily(7) : [];
+
   // ── Helper: card KPI "ricca" — grafico 7gg con assi, MAX/MIN e riepilogo
   // Min/Max/Media (30/07/2026, sostituisce le vecchie mini-sparkline compact
   // per Peso/HRV/RHR/Sonno su richiesta esplicita di Giorgio, per allinearsi
@@ -5969,14 +6026,16 @@ function buildDashboard() {
     }
 
     const line1 = deltaRow(deltaIeri, 'vs ieri', yestVal!==null ? fmt(yestVal) : null);
-    let line2;
-    if (cfg.t0 !== undefined && cfg.t0 !== null) {
-      const deltaT0 = last!==null ? (last-cfg.t0) : null;
-      line2 = deltaRow(deltaT0, 'vs T0', `${fmt(cfg.t0)}${cfg.t0Suffix||''}`);
-    } else {
-      line2 = avgV!==null
-        ? `<div class="rich-kpi-delta-row neutral">Media 7gg: ${fmt(avgV)} ${cfg.unit}</div>`
-        : `<div class="rich-kpi-delta-row neutral">Dati insufficienti</div>`;
+    let line2 = '';
+    if (!cfg.noLine2) {
+      if (cfg.t0 !== undefined && cfg.t0 !== null) {
+        const deltaT0 = last!==null ? (last-cfg.t0) : null;
+        line2 = deltaRow(deltaT0, 'vs T0', `${fmt(cfg.t0)}${cfg.t0Suffix||''}`);
+      } else {
+        line2 = avgV!==null
+          ? `<div class="rich-kpi-delta-row neutral">Media 7gg: ${fmt(avgV)} ${cfg.unit}</div>`
+          : `<div class="rich-kpi-delta-row neutral">Dati insufficienti</div>`;
+      }
     }
 
     const zoneHtml = cfg.zoneBar ? `
@@ -5988,6 +6047,7 @@ function buildDashboard() {
           <div><b>&gt; ${cfg.zoneBar.hi}</b>Ottimale</div>
         </div>
       </div>` : '';
+    const extraHtml = cfg.extraHtml ? `<div class="rich-kpi-extra">${cfg.extraHtml}</div>` : '';
 
     return `<div class="rich-kpi-card">
       <div class="rich-kpi-head">
@@ -5995,7 +6055,7 @@ function buildDashboard() {
           <span class="rich-kpi-icon" style="background:${cfg.iconBg}">${cfg.icon}</span>
           <span class="rich-kpi-lbl">${cfg.label}</span>
         </div>
-        <span class="rich-kpi-badge">7gg</span>
+        <span class="rich-kpi-badge">7 giorni</span>
       </div>
       <div class="rich-kpi-value">${fmt(last)}<span> ${cfg.unit}</span></div>
       ${line1}
@@ -6007,6 +6067,56 @@ function buildDashboard() {
         <span>Media <b>${fmt(avgV)}</b></span>
       </div>
       ${zoneHtml}
+      ${extraHtml}
+    </div>`;
+  }
+
+  // ── Card "Protocollo" consolidata (30/07/2026 sera) — sostituisce la vecchia
+  // kpi-box Ciclo/Fase + le 3 kpi-box Compliance separate, su richiesta
+  // esplicita di Giorgio di replicare esattamente il nuovo mockup: stesso
+  // guscio .rich-kpi-card/.rich-kpi-head delle altre, corpo diverso (barra
+  // di avanzamento ciclo + riepilogo compliance iniezioni/integratori/
+  // allenamenti in 3 colonne, invece del grafico 7gg).
+  function protocolloCard() {
+    const weeks = Math.round(CICLO1_DAYS / 7);
+    const valueTxt = inV2 ? `WK${wkV2}` : 'Pre-ciclo';
+    const subTxt = inV2 ? `Giorno ${elapsedV2+1}/${CICLO1_DAYS}` : `Giorno ${elapsedWU+1}/21 warm-up`;
+    const remainTxt = inV2 ? `${CICLO1_DAYS-elapsedV2-1} gg al termine` : `Ciclo v2 tra ${Math.abs(elapsedV2)} gg`;
+    const statsHtml = inV2 ? `
+      <div class="rich-kpi-stats3">
+        <div class="rich-kpi-stat-item">
+          <div class="rich-kpi-stat-pct">${inj.pct}%</div>
+          <div class="rich-kpi-stat-lbl">Iniezioni</div>
+          <div class="rich-kpi-stat-sub">${inj.done}/${inj.total} dosi</div>
+        </div>
+        <div class="rich-kpi-stat-item">
+          <div class="rich-kpi-stat-pct">${supp.pct}%</div>
+          <div class="rich-kpi-stat-lbl">Integratori</div>
+          <div class="rich-kpi-stat-sub">${supp.done}/${supp.total} dosi</div>
+        </div>
+        <div class="rich-kpi-stat-item">
+          <div class="rich-kpi-stat-pct">${wo2.pct}%</div>
+          <div class="rich-kpi-stat-lbl">Allenamenti</div>
+          <div class="rich-kpi-stat-sub">${wo2.done}/${wo2.total} sessioni</div>
+        </div>
+      </div>` : '';
+
+    return `<div class="rich-kpi-card">
+      <div class="rich-kpi-head">
+        <div class="rich-kpi-head-left">
+          <span class="rich-kpi-icon" style="background:#ece7fb">🧬</span>
+          <span class="rich-kpi-lbl">Protocollo (Tesamorelin)</span>
+        </div>
+        <span class="rich-kpi-badge">${weeks} settimane</span>
+      </div>
+      <div class="rich-kpi-value">${valueTxt}</div>
+      <div class="rich-kpi-delta-row neutral">${subTxt}</div>
+      <div class="rich-kpi-delta-row neutral">${remainTxt}</div>
+      <div class="rich-kpi-progress-row">
+        <div class="rich-kpi-progress-track"><div class="rich-kpi-progress-fill" style="width:${pctCiclo}%;background:#5856d6"></div></div>
+        <span class="rich-kpi-progress-pct">${pctCiclo}%</span>
+      </div>
+      ${statsHtml}
     </div>`;
   }
 
@@ -6019,52 +6129,10 @@ function buildDashboard() {
       <div class="rich-kpi-grid">
         ${richKpiCard({series7:peso7, label:'Peso attuale', icon:'⚖️', iconBg:'#eaf1fb', unit:'kg', decimals:1, accent:'#ff3b30', t0:T0_PESO, canvasId:'rk-peso'})}
         ${richKpiCard({series7:hrv7, label:'HRV', icon:'💓', iconBg:'#fde7ef', unit:'ms', decimals:0, accent:'#34c759', t0:T0_HRV, t0Suffix:'ms', canvasId:'rk-hrv', zoneBar:{lo:40,hi:45}})}
-        ${richKpiCard({series7:rhr7, label:'RHR', icon:'❤️', iconBg:'#fde7e7', unit:'bpm', decimals:0, accent:'#ff3b30', canvasId:'rk-rhr'})}
+        ${richKpiCard({series7:rhr7, label:'RHR (FC a riposo)', icon:'❤️', iconBg:'#fde7e7', unit:'bpm', decimals:0, accent:'#ff3b30', canvasId:'rk-rhr', extraHtml: (lBpS&&lBpD)?`PA: ${Math.round(lBpS)}/${Math.round(lBpD)} mmHg`:null})}
+        ${protocolloCard()}
         ${richKpiCard({series7:sonno7Series, label:'Sonno', icon:'😴', iconBg:'#ece7fb', unit:'h', decimals:1, accent:'#5856d6', canvasId:'rk-sonno'})}
-      </div>
-
-      <div class="kpi-grid">
-
-        <div class="kpi-box">
-          <span class="kpi-icon">🧬</span>
-          <div class="kpi-val" style="font-size:${inV2?'18px':'14px'}">${inV2?`WK${wkV2}`:'Pre-ciclo'}</div>
-          <div class="kpi-lbl">${inV2?`Giorno ${elapsedV2+1}/${CICLO1_DAYS}`:`Giorno ${elapsedWU+1}/21 warm-up`}</div>
-          ${inV2?`<div class="kpi-delta neutral">${CICLO1_DAYS-elapsedV2-1} gg al termine</div>`:`<div class="kpi-delta neutral">Ciclo v2 tra ${Math.abs(elapsedV2)} gg</div>`}
-          <div style="margin-top:8px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
-            <div style="height:100%;width:${pctCiclo}%;background:#0071e3;border-radius:2px"></div>
-          </div>
-        </div>
-
-        ${inV2?`<div class="kpi-box">
-          <span class="kpi-icon">💉</span>
-          <div class="kpi-val">${inj.pct}<span style="font-size:13px;font-weight:400">%</span></div>
-          <div class="kpi-lbl">Compliance iniezioni</div>
-          <div class="kpi-delta neutral">${inj.done}/${inj.total} dosi</div>
-          <div style="margin-top:8px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
-            <div style="height:100%;width:${inj.pct}%;background:${inj.pct>=80?'#34c759':inj.pct>=60?'#ff9500':'#ff3b30'};border-radius:2px"></div>
-          </div>
-        </div>` : ''}
-
-        ${inV2?`<div class="kpi-box">
-          <span class="kpi-icon">💊</span>
-          <div class="kpi-val">${supp.pct}<span style="font-size:13px;font-weight:400">%</span></div>
-          <div class="kpi-lbl">Compliance integratori</div>
-          <div class="kpi-delta neutral">${supp.done}/${supp.total} dosi</div>
-          <div style="margin-top:8px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
-            <div style="height:100%;width:${supp.pct}%;background:${supp.pct>=80?'#34c759':supp.pct>=60?'#ff9500':'#ff3b30'};border-radius:2px"></div>
-          </div>
-        </div>` : ''}
-
-        ${inV2?`<div class="kpi-box">
-          <span class="kpi-icon">🏋️</span>
-          <div class="kpi-val">${wo2.pct}<span style="font-size:13px;font-weight:400">%</span></div>
-          <div class="kpi-lbl">Compliance allenamenti</div>
-          <div class="kpi-delta neutral">${wo2.done}/${wo2.total} sessioni</div>
-          <div style="margin-top:8px;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
-            <div style="height:100%;width:${wo2.pct}%;background:${wo2.pct>=80?'#34c759':wo2.pct>=60?'#ff9500':'#ff3b30'};border-radius:2px"></div>
-          </div>
-        </div>` : ''}
-
+        ${inV2?richKpiCard({series7:suppDaily7, label:'Compliance integratori', icon:'💊', iconBg:'#fdf0e3', unit:'%', decimals:0, accent:'#34c759', canvasId:'rk-supp', noLine2:true}):''}
       </div>
     </div>
 
@@ -6389,6 +6457,9 @@ function refreshDashCharts() {
   drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  7), {height:130, color:'#34c759', decimals:0});
   drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  7), {height:130, color:'#ff3b30', decimals:0});
   drawRichKpiChart('rk-sonno', getSonnoOreAll(7),        {height:130, color:'#5856d6', decimals:1});
+  if (document.getElementById('rk-supp')) {
+    drawRichKpiChart('rk-supp', getSuppComplianceDaily(7), {height:130, color:'#ff9500', decimals:0});
+  }
 
   // ── Grafici biometria ──────────────────────────────────────
   drawDashChart('dc-peso',[{data:peso60,color:'#0071e3'}],{height:110,minScale:0.98,maxScale:1.02,refLine:71.1});
