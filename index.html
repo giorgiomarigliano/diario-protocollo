@@ -1030,7 +1030,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .app-view-inner{width:100%;box-sizing:border-box;padding:24px 20px 120px;margin:0 auto}
 .dash-two-col{display:grid;grid-template-columns:1fr;gap:0}
 .dash-three-col{display:grid;grid-template-columns:1fr;gap:10px}
-.dash-section-label{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 6px}
+.dash-section-label{font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 6px}
 @media(min-width:768px){.dash-three-col{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:1024px){
   .dash-two-col{grid-template-columns:1fr 1fr;gap:24px;align-items:stretch}
@@ -1039,39 +1039,39 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .med-view.visible{display:block}
 .med-panel{background:var(--surface1,#f5f5f7);border-radius:14px;padding:18px;margin-bottom:18px}
 .med-panel-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:6px}
-.med-panel-title{font-size:15px;font-weight:600}
-.med-panel-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.med-panel-title{font-size: var(--fs-md);font-weight: var(--fw-semi)}
+.med-panel-sub{font-size: var(--fs-sm);color:var(--muted);margin-top:2px}
 .med-cat{margin-bottom:14px}
-.med-cat-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
+.med-cat-label{font-size: var(--fs-xs);font-weight: var(--fw-semi);text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:6px}
 .med-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:5px}
 .med-item{border-radius:8px;padding:8px 10px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.med-item-name{font-size:12px;font-weight:500;line-height:1.4}
-.med-item-note{font-size:11px;color:var(--muted)}
-.med-item-val{font-size:13px;font-weight:600;text-align:right;flex-shrink:0;line-height:1.4}
-.med-item-ref{font-size:10px;color:var(--muted);font-weight:400}
+.med-item-name{font-size: var(--fs-sm);font-weight: var(--fw-med);line-height:1.4}
+.med-item-note{font-size: var(--fs-xs);color:var(--muted)}
+.med-item-val{font-size: var(--fs-body);font-weight: var(--fw-semi);text-align:right;flex-shrink:0;line-height:1.4}
+.med-item-ref{font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-reg)}
 .diary-view{display:block;width:100%;padding:0}
 .diary-view.hidden{display:none}
 .dash-view{padding-top:0}
 
 .dash-section{margin-bottom:28px}
-.dash-section-title{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.dash-section-title{font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
 .dash-card{background:var(--surface);border-radius:var(--radius-sm);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:10px}
-.dash-card-title{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:14px}
+.dash-card-title{font-size: var(--fs-sm);font-weight: var(--fw-semi);color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:14px}
 
 /* Legenda grafici — riga separata dal titolo, mai inline/compressa, va sempre a capo su mobile */
 .chart-legend{display:flex;flex-wrap:wrap;gap:12px 16px;margin:-6px 0 12px}
-.chart-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:var(--text-secondary,var(--muted));text-transform:none;letter-spacing:normal;white-space:nowrap;line-height:1.2}
+.chart-legend-item{display:flex;align-items:center;gap:6px;font-size: var(--fs-xs);font-weight: var(--fw-med);color:var(--text-secondary,var(--muted));text-transform:none;letter-spacing:normal;white-space:nowrap;line-height:1.2}
 .chart-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block}
 .chart-legend-line{width:16px;height:3px;border-radius:2px;flex-shrink:0;display:inline-block}
 
 /* KPI row */
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
 .kpi-box{background:var(--surface);border-radius:var(--radius-sm);padding:14px 16px;box-shadow:var(--shadow);text-align:center;position:relative;overflow:hidden}
-.kpi-icon{font-size:22px;margin-bottom:6px;display:block;line-height:1}
-.kpi-val{font-size:20px;font-weight:600;letter-spacing:-0.03em;color:var(--text);line-height:1;word-break:break-all}
-.kpi-lbl{font-size:10px;color:var(--muted);margin-top:4px}
-.kpi-delta{font-size:11px;font-weight:500;margin-top:3px}
-.kpi-delta.up{color:#34c759}.kpi-delta.down{color:#ff3b30}.kpi-delta.neutral{color:var(--muted)}
+.kpi-icon{font-size: var(--fs-xl);margin-bottom:6px;display:block;line-height:1}
+.kpi-val{font-size: var(--fs-20);font-weight: var(--fw-semi);letter-spacing:-0.03em;color:var(--text);line-height:1;word-break:break-all}
+.kpi-lbl{font-size: var(--fs-2xs);color:var(--muted);margin-top:4px}
+.kpi-delta{font-size: var(--fs-xs);font-weight: var(--fw-med);margin-top:3px}
+.kpi-delta.up{color:var(--green)}.kpi-delta.down{color:var(--red)}.kpi-delta.neutral{color:var(--muted)}
 .kpi-spark{margin-top:8px;height:28px;width:100%}
 
 /* Rich KPI cards (30/07/2026) — formato esteso per Peso/HRV/RHR/Sonno nella
@@ -1082,23 +1082,23 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .rich-kpi-card{background:var(--surface);border-radius:var(--radius-sm);padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
 .rich-kpi-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:6px}
 .rich-kpi-head-left{display:flex;align-items:center;gap:7px;min-width:0;flex:1}
-.rich-kpi-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
-.rich-kpi-lbl{font-size:13px;font-weight:600;color:var(--text);line-height:1.15;word-break:normal}
-.rich-kpi-badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--muted);flex-shrink:0;white-space:nowrap}
+.rich-kpi-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size: var(--fs-14);flex-shrink:0}
+.rich-kpi-lbl{font-size: var(--fs-body);font-weight: var(--fw-semi);color:var(--text);line-height:1.15;word-break:normal}
+.rich-kpi-badge{font-size: var(--fs-2xs);font-weight: var(--fw-semi);padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--muted);flex-shrink:0;white-space:nowrap}
 .rich-kpi-range-select{appearance:none;-webkit-appearance:none;border:none;cursor:pointer;font-family:inherit}
-.rich-kpi-value{font-size:28px;font-weight:700;letter-spacing:-0.02em;color:var(--text);line-height:1;margin-bottom:6px}
-.rich-kpi-value span{font-size:13px;font-weight:400}
-.rich-kpi-delta-row{font-size:11px;font-weight:500;margin-top:2px;display:flex;align-items:center;gap:3px}
-.rich-kpi-delta-row.up{color:#34c759}.rich-kpi-delta-row.down{color:#ff3b30}.rich-kpi-delta-row.neutral{color:var(--muted)}
+.rich-kpi-value{font-size: var(--fs-2xl);font-weight: var(--fw-bold);letter-spacing:-0.02em;color:var(--text);line-height:1;margin-bottom:6px}
+.rich-kpi-value span{font-size: var(--fs-body);font-weight: var(--fw-reg)}
+.rich-kpi-delta-row{font-size: var(--fs-xs);font-weight: var(--fw-med);margin-top:2px;display:flex;align-items:center;gap:3px}
+.rich-kpi-delta-row.up{color:var(--green)}.rich-kpi-delta-row.down{color:var(--red)}.rich-kpi-delta-row.neutral{color:var(--muted)}
 .rich-kpi-chart{display:block;width:100%;margin-top:6px}
-.rich-kpi-summary{display:flex;justify-content:space-between;margin-top:6px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
-.rich-kpi-summary b{color:var(--text);font-weight:600}
+.rich-kpi-summary{display:flex;justify-content:space-between;margin-top:6px;padding-top:8px;border-top:1px solid var(--border);font-size: var(--fs-xs);color:var(--muted)}
+.rich-kpi-summary b{color:var(--text);font-weight: var(--fw-semi)}
 .rich-kpi-zonebar{margin-top:10px}
-.rich-kpi-zonebar-bar{height:4px;border-radius:2px;background:linear-gradient(to right,#ff3b30,#ff3b30 33%,#ff9500 33%,#ff9500 66%,#34c759 66%);margin-bottom:4px}
+.rich-kpi-zonebar-bar{height:4px;border-radius:2px;background:linear-gradient(to right,var(--red),var(--red) 33%,var(--orange) 33%,var(--orange) 66%,var(--green) 66%);margin-bottom:4px}
 .rich-kpi-zonebar-labels{display:flex;justify-content:space-between}
-.rich-kpi-zonebar-labels div{text-align:center;flex:1;font-size:9px;color:var(--muted)}
-.rich-kpi-zonebar-labels div b{display:block;font-size:10px;color:var(--text);font-weight:600}
-.rich-kpi-extra{margin-top:10px;font-size:11px;color:var(--muted)}
+.rich-kpi-zonebar-labels div{text-align:center;flex:1;font-size: var(--fs-3xs);color:var(--muted)}
+.rich-kpi-zonebar-labels div b{display:block;font-size: var(--fs-2xs);color:var(--text);font-weight: var(--fw-semi)}
+.rich-kpi-extra{margin-top:10px;font-size: var(--fs-xs);color:var(--muted)}
 
 /* Card "Protocollo" consolidata (30/07/2026 sera) — sostituisce la vecchia
    kpi-box Ciclo/Fase + le 3 kpi-box Compliance separate: stesso guscio
@@ -1106,41 +1106,41 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .rich-kpi-progress-row{display:flex;align-items:center;gap:10px;margin:10px 0 4px}
 .rich-kpi-progress-track{flex:1;height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
 .rich-kpi-progress-fill{height:100%;border-radius:3px}
-.rich-kpi-progress-pct{font-size:14px;font-weight:700;color:var(--text);flex-shrink:0}
+.rich-kpi-progress-pct{font-size: var(--fs-14);font-weight: var(--fw-bold);color:var(--text);flex-shrink:0}
 .rich-kpi-stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
 .rich-kpi-stat-item{text-align:center}
-.rich-kpi-stat-pct{font-size:17px;font-weight:700;color:var(--text);line-height:1}
-.rich-kpi-stat-lbl{font-size:10px;color:var(--muted);margin-top:3px}
-.rich-kpi-stat-sub{font-size:9px;color:var(--muted);margin-top:1px}
+.rich-kpi-stat-pct{font-size: var(--fs-lg);font-weight: var(--fw-bold);color:var(--text);line-height:1}
+.rich-kpi-stat-lbl{font-size: var(--fs-2xs);color:var(--muted);margin-top:3px}
+.rich-kpi-stat-sub{font-size: var(--fs-3xs);color:var(--muted);margin-top:1px}
 
 /* Timeline grafica card Protocollo (30/07/2026 sera, v2 — grafica non testuale) */
 .ct-wrap{margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
 .ct-events-labels{position:relative;height:14px;margin-bottom:3px}
-.ct-event-label{position:absolute;bottom:0;transform:translateX(-50%);font-size:9px;font-weight:700;white-space:nowrap}
+.ct-event-label{position:absolute;bottom:0;transform:translateX(-50%);font-size: var(--fs-3xs);font-weight: var(--fw-bold);white-space:nowrap}
 .ct-bar{position:relative;height:10px;border-radius:5px;background:var(--surface2);overflow:visible}
 .ct-seg{position:absolute;top:0;bottom:0}
 .ct-seg:first-child{border-radius:5px 0 0 5px}
 .ct-seg:last-child{border-radius:0 5px 5px 0}
-.ct-event{position:absolute;top:-3px;bottom:-3px;background:#af52de;border-radius:3px;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
-.ct-point{position:absolute;top:-5px;bottom:-5px;width:3px;background:#0071e3;border-radius:2px;border:1px solid #fff;transform:translateX(-1px)}
+.ct-event{position:absolute;top:-3px;bottom:-3px;background:var(--purple);border-radius:3px;border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.ct-point{position:absolute;top:-5px;bottom:-5px;width:3px;background:var(--blue);border-radius:2px;border:1px solid #fff;transform:translateX(-1px)}
 .ct-today{position:absolute;top:-6px;bottom:-6px;width:2px;background:var(--text);border-left:1px solid #fff;border-right:1px solid #fff;transform:translateX(-1px)}
 .ct-today::after{content:'';position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--text)}
-.ct-phase-row{display:flex;justify-content:space-between;margin-top:6px;font-size:9px;font-weight:700}
-.ct-ends-row{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:1px}
-.ct-events-row{margin-top:10px;display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--muted)}
+.ct-phase-row{display:flex;justify-content:space-between;margin-top:6px;font-size: var(--fs-3xs);font-weight: var(--fw-bold)}
+.ct-ends-row{display:flex;justify-content:space-between;font-size: var(--fs-3xs);color:var(--muted);margin-top:1px}
+.ct-events-row{margin-top:10px;display:flex;flex-direction:column;gap:5px;font-size: var(--fs-xs);color:var(--muted)}
 .ct-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:6px;background:#5856d6;flex-shrink:0}
 
 /* Ripartizione fasi sonno (30/07/2026) */
 .rich-kpi-sleepphases{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
-.rich-kpi-sleepphase-item{font-size:11px;font-weight:500;color:var(--text)}
+.rich-kpi-sleepphase-item{font-size: var(--fs-xs);font-weight: var(--fw-med);color:var(--text)}
 .rich-kpi-sleepphase-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
-.rich-kpi-sleepphase-min{font-size:12px;font-weight:600;color:var(--text);margin-top:3px}
-.rich-kpi-sleepphase-pct{font-size:10px;color:var(--muted);margin-top:1px}
+.rich-kpi-sleepphase-min{font-size: var(--fs-sm);font-weight: var(--fw-semi);color:var(--text);margin-top:3px}
+.rich-kpi-sleepphase-pct{font-size: var(--fs-2xs);color:var(--muted);margin-top:1px}
 .rich-kpi-card-wide{grid-column:1/-1}
 
 /* Charts */
 .chart-wrap{position:relative;width:100%;margin-bottom:8px}
-.chart-axis-label{font-size:9px;color:var(--faint);margin-bottom:4px;display:flex;justify-content:space-between}
+.chart-axis-label{font-size: var(--fs-3xs);color:var(--faint);margin-bottom:4px;display:flex;justify-content:space-between}
 canvas.dash-chart{width:100%;display:block;border-radius:6px}
 
 /* Compliance rings */
@@ -1149,10 +1149,10 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 .comp-ring{position:relative;width:56px;height:56px;margin:0 auto 6px;flex-shrink:0}
 .comp-ring canvas{width:56px!important;height:56px!important;display:block}
 .comp-ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.comp-ring-pct{font-size:13px;font-weight:600;letter-spacing:-0.02em;line-height:1}
+.comp-ring-pct{font-size: var(--fs-body);font-weight: var(--fw-semi);letter-spacing:-0.02em;line-height:1}
 .comp-ring-lbl{font-size:8px;color:var(--muted);margin-top:1px}
-.comp-title{font-size:11px;font-weight:500;color:var(--text);line-height:1.2}
-.comp-sub{font-size:9px;color:var(--muted);margin-top:2px}
+.comp-title{font-size: var(--fs-xs);font-weight: var(--fw-med);color:var(--text);line-height:1.2}
+.comp-sub{font-size: var(--fs-3xs);color:var(--muted);margin-top:2px}
 
 /* Timeline ciclo */
 .timeline-wrap{position:relative;padding:8px 0}
@@ -1160,45 +1160,45 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 .timeline-fill{height:8px;border-radius:4px;background:var(--blue);transition:width .4s ease}
 .timeline-phases{display:flex;gap:2px;margin-bottom:6px}
 .timeline-phase{height:4px;border-radius:2px;flex:1}
-.timeline-markers{display:flex;justify-content:space-between;font-size:9px;color:var(--muted)}
+.timeline-markers{display:flex;justify-content:space-between;font-size: var(--fs-3xs);color:var(--muted)}
 .phase-legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.phase-dot{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.phase-dot{display:flex;align-items:center;gap:5px;font-size: var(--fs-2xs);color:var(--muted)}
 .phase-dot-circle{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 
 /* Subjective chart */
 .subj-legend{display:flex;gap:16px;margin-bottom:8px}
-.subj-leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.subj-leg-item{display:flex;align-items:center;gap:5px;font-size: var(--fs-2xs);color:var(--muted)}
 .subj-leg-dot{width:8px;height:3px;border-radius:1.5px}
 
 /* Nav tabs for dashboard */
 .main-nav{background:rgba(255,255,255,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 8px;display:flex;flex-wrap:wrap;gap:0}
-.main-nav-tab{padding:8px 12px;font-size:12px;font-weight:400;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s;white-space:nowrap;flex-shrink:0}
+.main-nav-tab{padding:8px 12px;font-size: var(--fs-sm);font-weight: var(--fw-reg);color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s;white-space:nowrap;flex-shrink:0}
 .main-nav-tab:hover{color:var(--text)}
-.main-nav-tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:600}
+.main-nav-tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight: var(--fw-semi)}
 
 @media(max-width:600px){
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
   .rich-kpi-card{padding:11px}
   .rich-kpi-head{margin-bottom:8px}
-  .rich-kpi-value{font-size:22px;margin-bottom:3px}
-  .rich-kpi-icon{width:26px;height:26px;font-size:12px}
-  .rich-kpi-lbl{font-size:12px}
-  .rich-kpi-badge{font-size:9px;padding:2px 7px}
-  .rich-kpi-delta-row{font-size:10px;margin-top:1px}
+  .rich-kpi-value{font-size: var(--fs-xl);margin-bottom:3px}
+  .rich-kpi-icon{width:26px;height:26px;font-size: var(--fs-sm)}
+  .rich-kpi-lbl{font-size: var(--fs-sm)}
+  .rich-kpi-badge{font-size: var(--fs-3xs);padding:2px 7px}
+  .rich-kpi-delta-row{font-size: var(--fs-2xs);margin-top:1px}
   .rich-kpi-chart{margin-top:2px}
-  .rich-kpi-summary{margin-top:2px;padding-top:6px;font-size:10px}
+  .rich-kpi-summary{margin-top:2px;padding-top:6px;font-size: var(--fs-2xs)}
   .rich-kpi-extra,.rich-kpi-zonebar,.rich-kpi-sleepphases,.rich-kpi-stats3{margin-top:8px;padding-top:8px}
   .compliance-grid{grid-template-columns:repeat(3,1fr)}
   .cycle-card{gap:12px;padding:16px}
-  .cycle-info h3{font-size:14px}
-  .cycle-info p{font-size:11px}
-  .cycle-next{font-size:11px}
+  .cycle-info h3{font-size: var(--fs-14)}
+  .cycle-info p{font-size: var(--fs-xs)}
+  .cycle-next{font-size: var(--fs-xs)}
 
   .header{height:auto;min-height:48px;padding:0 14px}
   .h-subtitle{display:none}
-  .h-left h1{font-size:15px}
-  .h-btn{padding:4px 8px;font-size:13px}
-  .h-btn.primary{padding:6px 12px;font-size:13px}
+  .h-left h1{font-size: var(--fs-md)}
+  .h-btn{padding:4px 8px;font-size: var(--fs-body)}
+  .h-btn.primary{padding:6px 12px;font-size: var(--fs-body)}
   .sync-indicator span{display:none}
   .h-right{gap:6px}
 }
@@ -5114,7 +5114,7 @@ function drawRichKpiChart(canvasId, points, options = {}) {
     return;
   }
 
-  const color = options.color || '#0071e3';
+  const color = options.color || 'var(--blue)';
   const decimals = options.decimals !== undefined ? options.decimals : 1;
   const fmtV = v => decimals === 0 ? Math.round(v).toString() : v.toFixed(decimals);
 
@@ -5502,7 +5502,7 @@ function drawBarChart(canvasId, bars, options = {}) {
     ctx.lineTo(x, y + r2);
     ctx.quadraticCurveTo(x, y, x + r2, y);
     ctx.closePath();
-    ctx.fillStyle = b.color || '#0071e3';
+    ctx.fillStyle = b.color || 'var(--blue)';
     ctx.globalAlpha = b.alpha || 1;
     ctx.fill();
     ctx.globalAlpha = 1;
@@ -5554,7 +5554,7 @@ function drawStackedBarChart(canvasId, weeks, options = {}) {
   const labelH = 16, barAreaH = H - labelH - 4;
   const bw = Math.max(4, (W - 8) / weeks.length - 4);
   const gap = (W - 8 - bw * weeks.length) / Math.max(weeks.length - 1, 1);
-  const colors = { push:'#ff3b30', pull:'#34c759', legs:'#ff9500', upperSab:'#af52de', upperDom:'#0071e3' };
+  const colors = { push:'var(--red)', pull:'var(--green)', legs:'var(--orange)', upperSab:'var(--purple)', upperDom:'var(--blue)' };
 
   // Grid lines
   ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1;
@@ -5645,13 +5645,13 @@ function drawScatterChart(canvasId, points, options = {}) {
   ctx.beginPath();
   ctx.moveTo(toX(minH), toY(slope * minH + intercept));
   ctx.lineTo(toX(maxH), toY(slope * maxH + intercept));
-  ctx.strokeStyle = '#0071e322'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.strokeStyle = 'var(--blue)22'; ctx.lineWidth = 1.5; ctx.stroke();
 
   // Points
   points.forEach(p => {
     ctx.beginPath();
     ctx.arc(toX(p.hrv), toY(p.vol), 4, 0, Math.PI*2);
-    ctx.fillStyle = '#0071e3bb'; ctx.fill();
+    ctx.fillStyle = 'var(--blue)bb'; ctx.fill();
   });
 
   // Correlation label
@@ -5665,12 +5665,12 @@ function drawScatterChart(canvasId, points, options = {}) {
 
 // Sentinel lift group definitions for dashboard tabs — esercizi master
 const SENTINEL_GROUPS = {
-  chest:    { ids:['bench','incbench','pecfly'],      colors:['#0071e3','#5ac8fa','#34aadc'],              labels:['BB Bench Press','Mac Incline','Pec Fly'] },
-  back:     { ids:['lat','tbar','bbrow'],            colors:['#34c759','#30d158','#00b341'],              labels:['Lat Wide-Grip','T-Bar Row','BB Bent Row'] },
-  shoulder: { ids:['bbohp','dbpress','dblateral'],   colors:['#ff9500','#ff6b00','#ffcc02'],              labels:['BB OHP','DB Press','DB Lateral'] },
-  bicep:    { ids:['dbcurl','hammercurl'],            colors:['#ff9500','#ff3b30'],                        labels:['DB Curl','Hammer Curl'] },
-  tricep:   { ids:['tridown','triover'],              colors:['#af52de','#ff9f0a'],                        labels:['Rope Pushdown','Rope Overhead'] },
-  legs:     { ids:['legext','legpress','rdl','hipthrust','calf','legcurl'], colors:['#ff3b30','#ff6b6b','#0071e3','#ffcc02','#34c759','#ff9500'], labels:['Leg Ext','Leg Press','RDL','Hip Thrust','Calf','Leg Curl'] },
+  chest:    { ids:['bench','incbench','pecfly'],      colors:['var(--blue)','#5ac8fa','#34aadc'],              labels:['BB Bench Press','Mac Incline','Pec Fly'] },
+  back:     { ids:['lat','tbar','bbrow'],            colors:['var(--green)','#30d158','#00b341'],              labels:['Lat Wide-Grip','T-Bar Row','BB Bent Row'] },
+  shoulder: { ids:['bbohp','dbpress','dblateral'],   colors:['var(--orange)','#ff6b00','#ffcc02'],              labels:['BB OHP','DB Press','DB Lateral'] },
+  bicep:    { ids:['dbcurl','hammercurl'],            colors:['var(--orange)','var(--red)'],                        labels:['DB Curl','Hammer Curl'] },
+  tricep:   { ids:['tridown','triover'],              colors:['var(--purple)','#ff9f0a'],                        labels:['Rope Pushdown','Rope Overhead'] },
+  legs:     { ids:['legext','legpress','rdl','hipthrust','calf','legcurl'], colors:['var(--red)','#ff6b6b','var(--blue)','#ffcc02','var(--green)','var(--orange)'], labels:['Leg Ext','Leg Press','RDL','Hip Thrust','Calf','Leg Curl'] },
 };
 
 let _currentSentinelGroup = 'chest';
@@ -5807,18 +5807,18 @@ function renderSymptomStrip(containerId, rows, days) {
       return `<div title="${label}: ${row.labels[Math.min(row.labels.length-1, Math.round(p.value))]}" style="flex:1;height:16px;background:${PALETTE[idx]};border-radius:2px"></div>`;
     }).join('');
     html += `<div style="margin-bottom:8px">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:3px">${row.name}</div>
+      <div style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:3px">${row.name}</div>
       <div style="display:flex;gap:2px">${cells}</div>
     </div>`;
   });
 
-  el.innerHTML = anyData ? html + `<div style="display:flex;gap:10px;margin-top:8px;font-size:9px;color:var(--muted);flex-wrap:wrap">
+  el.innerHTML = anyData ? html + `<div style="display:flex;gap:10px;margin-top:8px;font-size: var(--fs-3xs);color:var(--muted);flex-wrap:wrap">
       <span><span style="display:inline-block;width:9px;height:9px;background:${PALETTE[0]};border-radius:2px;vertical-align:middle"></span> assente</span>
       <span><span style="display:inline-block;width:9px;height:9px;background:${PALETTE[1]};border-radius:2px;vertical-align:middle"></span> lieve</span>
       <span><span style="display:inline-block;width:9px;height:9px;background:${PALETTE[2]};border-radius:2px;vertical-align:middle"></span> moderato</span>
       <span><span style="display:inline-block;width:9px;height:9px;background:${PALETTE[3]};border-radius:2px;vertical-align:middle"></span> intenso</span>
     </div>`
-    : '<div style="font-size:11px;color:var(--muted);padding:8px 0">Nessun dato ancora — compila i campi nel diario</div>';
+    : '<div style="font-size: var(--fs-xs);color:var(--muted);padding:8px 0">Nessun dato ancora — compila i campi nel diario</div>';
 }
 
 // ── Scatter generico X/Y con retta di tendenza ───────────────────────────
@@ -5880,7 +5880,7 @@ function drawXYScatter(canvasId, points, opts = {}) {
 
   // Punti
   points.forEach(p => {
-    ctx.fillStyle = opts.color || '#34c759';
+    ctx.fillStyle = opts.color || 'var(--green)';
     ctx.beginPath(); ctx.arc(px(p.x), py(p.y), 3.5, 0, Math.PI*2); ctx.fill();
   });
 }
@@ -6128,13 +6128,13 @@ function buildDashboard() {
       const pctSleep = v => sleepTot>0 ? Math.round(v/sleepTot*100) : 0;
       const fmtMin = m => `${Math.floor(m/60)}h ${String(Math.round(m%60)).padStart(2,'0')}m`;
       return `<div class="rich-kpi-sleepphases">
-        <div class="rich-kpi-sleepphase-item"><span class="rich-kpi-sleepphase-dot" style="background:#ff9500"></span>Veglia<div class="rich-kpi-sleepphase-min">${fmtMin(veglia)}</div><div class="rich-kpi-sleepphase-pct">${pct(veglia)}%</div></div>
+        <div class="rich-kpi-sleepphase-item"><span class="rich-kpi-sleepphase-dot" style="background:var(--orange)"></span>Veglia<div class="rich-kpi-sleepphase-min">${fmtMin(veglia)}</div><div class="rich-kpi-sleepphase-pct">${pct(veglia)}%</div></div>
         <div class="rich-kpi-sleepphase-item"><span class="rich-kpi-sleepphase-dot" style="background:#5ac8fa"></span>REM<div class="rich-kpi-sleepphase-min">${fmtMin(rem)}</div><div class="rich-kpi-sleepphase-pct">${pctSleep(rem)}%</div></div>
-        <div class="rich-kpi-sleepphase-item"><span class="rich-kpi-sleepphase-dot" style="background:#0071e3"></span>Principale<div class="rich-kpi-sleepphase-min">${fmtMin(principale)}</div><div class="rich-kpi-sleepphase-pct">${pctSleep(principale)}%</div></div>
+        <div class="rich-kpi-sleepphase-item"><span class="rich-kpi-sleepphase-dot" style="background:var(--blue)"></span>Principale<div class="rich-kpi-sleepphase-min">${fmtMin(principale)}</div><div class="rich-kpi-sleepphase-pct">${pctSleep(principale)}%</div></div>
         <div class="rich-kpi-sleepphase-item"><span class="rich-kpi-sleepphase-dot" style="background:#2e2a6e"></span>Profondo<div class="rich-kpi-sleepphase-min">${fmtMin(profondo)}</div><div class="rich-kpi-sleepphase-pct">${pctSleep(profondo)}%</div></div>
       </div>`;
     }
-    return `<div style="font-size:11px;color:var(--muted)">Aggiungi i minuti REM/Principale/Profondo di stanotte per vedere qui la ripartizione delle fasi.</div>`;
+    return `<div style="font-size: var(--fs-xs);color:var(--muted)">Aggiungi i minuti REM/Principale/Profondo di stanotte per vedere qui la ripartizione delle fasi.</div>`;
   }
 
   function richKpiCard(cfg) {
@@ -6277,10 +6277,10 @@ function buildDashboard() {
     const clampLabel = p => Math.max(6, Math.min(94, p));
     const eventLabelsHtml = `
       <div class="ct-events-labels">
-        <span class="ct-event-label" style="left:${clampLabel(bkkMid)}%;color:#af52de">Bangkok</span>
-        <span class="ct-event-label" style="left:${clampLabel(mallMid)}%;color:#af52de">Mallorca</span>
-        <span class="ct-event-label" style="left:${clampLabel(t1.left)}%;color:#0071e3">T1</span>
-        <span class="ct-event-label" style="left:${clampLabel(t2.left)}%;color:#0071e3">T2</span>
+        <span class="ct-event-label" style="left:${clampLabel(bkkMid)}%;color:var(--purple)">Bangkok</span>
+        <span class="ct-event-label" style="left:${clampLabel(mallMid)}%;color:var(--purple)">Mallorca</span>
+        <span class="ct-event-label" style="left:${clampLabel(t1.left)}%;color:var(--blue)">T1</span>
+        <span class="ct-event-label" style="left:${clampLabel(t2.left)}%;color:var(--blue)">T2</span>
       </div>`;
 
     const timelineHtml = `
@@ -6297,10 +6297,10 @@ function buildDashboard() {
         <div class="ct-phase-row">${phaseLabels}</div>
         <div class="ct-ends-row"><span>${fmtDate(START2)}</span><span>${fmtDate(cycleEndDate)}</span></div>
         <div class="ct-events-row">
-          <div><span class="ct-dot" style="background:#af52de"></span>Bangkok 7–21 ago · ${bkk.status}</div>
-          <div><span class="ct-dot" style="background:#af52de"></span>Mallorca 14–16 ott · ${mallorca.status}</div>
-          <div><span class="ct-dot" style="background:#0071e3"></span>T1 · 5 set · ${t1.status}</div>
-          <div><span class="ct-dot" style="background:#0071e3"></span>T2 · 7 nov · ${t2.status}</div>
+          <div><span class="ct-dot" style="background:var(--purple)"></span>Bangkok 7–21 ago · ${bkk.status}</div>
+          <div><span class="ct-dot" style="background:var(--purple)"></span>Mallorca 14–16 ott · ${mallorca.status}</div>
+          <div><span class="ct-dot" style="background:var(--blue)"></span>T1 · 5 set · ${t1.status}</div>
+          <div><span class="ct-dot" style="background:var(--blue)"></span>T2 · 7 nov · ${t2.status}</div>
         </div>
       </div>`;
 
@@ -6351,9 +6351,9 @@ function buildDashboard() {
 
       <div class="rich-kpi-grid">
         ${protocolloCard()}
-        ${richKpiCard({series7:peso7, label:'Peso attuale', icon:'⚖️', iconBg:'#eaf1fb', unit:'kg', decimals:1, accent:'#ff3b30', t0:T0_PESO, canvasId:'rk-peso', rangeKey:'peso', rangeDays:richKpiRangeDays.peso})}
-        ${richKpiCard({series7:hrv7, label:'HRV', icon:'💓', iconBg:'#fde7ef', unit:'ms', decimals:0, accent:'#34c759', t0:T0_HRV, t0Suffix:'ms', canvasId:'rk-hrv', zoneBar:{lo:40,hi:45}, rangeKey:'hrv', rangeDays:richKpiRangeDays.hrv})}
-        ${richKpiCard({series7:rhr7, label:'RHR (FC a riposo)', icon:'❤️', iconBg:'#fde7e7', unit:'bpm', decimals:0, accent:'#ff3b30', canvasId:'rk-rhr', extraHtml: (lBpS&&lBpD)?`PA: ${Math.round(lBpS)}/${Math.round(lBpD)} mmHg`:null, rangeKey:'rhr', rangeDays:richKpiRangeDays.rhr})}
+        ${richKpiCard({series7:peso7, label:'Peso attuale', icon:'⚖️', iconBg:'#eaf1fb', unit:'kg', decimals:1, accent:'var(--red)', t0:T0_PESO, canvasId:'rk-peso', rangeKey:'peso', rangeDays:richKpiRangeDays.peso})}
+        ${richKpiCard({series7:hrv7, label:'HRV', icon:'💓', iconBg:'#fde7ef', unit:'ms', decimals:0, accent:'var(--green)', t0:T0_HRV, t0Suffix:'ms', canvasId:'rk-hrv', zoneBar:{lo:40,hi:45}, rangeKey:'hrv', rangeDays:richKpiRangeDays.hrv})}
+        ${richKpiCard({series7:rhr7, label:'RHR (FC a riposo)', icon:'❤️', iconBg:'#fde7e7', unit:'bpm', decimals:0, accent:'var(--red)', canvasId:'rk-rhr', extraHtml: (lBpS&&lBpD)?`PA: ${Math.round(lBpS)}/${Math.round(lBpD)} mmHg`:null, rangeKey:'rhr', rangeDays:richKpiRangeDays.rhr})}
         ${richKpiCard({series7:sonno7Series, label:'Sonno', icon:'😴', iconBg:'#ece7fb', unit:'h', decimals:1, accent:'#5856d6', canvasId:'rk-sonno', extraHtml:sleepBreakdownHtml(), rangeKey:'sonno', rangeDays:richKpiRangeDays.sonno})}
       </div>
     </div>
@@ -6365,15 +6365,15 @@ function buildDashboard() {
         <div>
           <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">Peso (kg) <span style="font-size:11px;color:var(--muted);font-weight:400">— target 66–68 · T0: 71.1</span></div>
-            <div id="dc-peso-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+            <div class="dash-card-title">Peso (kg) <span style="font-size: var(--fs-xs);color:var(--muted);font-weight: var(--fw-reg)">— target 66–68 · T0: 71.1</span></div>
+            <div id="dc-peso-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-peso" height="110"></canvas>
         </div>
           <div class="charts-card" style="margin-top:10px">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">HRV (ms) <span style="font-size:11px;color:var(--muted);font-weight:400">— T0: 37ms</span></div>
-            <div id="dc-hrv-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+            <div class="dash-card-title">HRV (ms) <span style="font-size: var(--fs-xs);color:var(--muted);font-weight: var(--fw-reg)">— T0: 37ms</span></div>
+            <div id="dc-hrv-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-hrv" height="110"></canvas>
         </div>
@@ -6382,18 +6382,18 @@ function buildDashboard() {
           <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">RHR (bpm)</div>
-            <div id="dc-rhr-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+            <div id="dc-rhr-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-rhr" height="110"></canvas>
         </div>
           <div class="charts-card" style="margin-top:10px">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Pressione arteriosa (mmHg)</div>
-            <div id="dc-bp-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+            <div id="dc-bp-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
             <div class="chart-legend">
-              <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#ff3b30"></span>Sistolica</span>
-              <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#0071e3"></span>Diastolica</span>
+              <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--red)"></span>Sistolica</span>
+              <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--blue)"></span>Diastolica</span>
             </div>
             <canvas class="dash-chart" id="dc-bp" height="110"></canvas>
           </div>
@@ -6407,9 +6407,9 @@ function buildDashboard() {
       <div class="charts-card">
         <div class="dash-card-title">Energia / Recupero / Umore (1–10)</div>
         <div class="chart-legend">
-          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#0071e3"></span>Energia</span>
-          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#34c759"></span>Recupero</span>
-          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#af52de"></span>Umore</span>
+          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--blue)"></span>Energia</span>
+          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--green)"></span>Recupero</span>
+          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--purple)"></span>Umore</span>
         </div>
         <canvas class="dash-chart" id="dc-subj" height="100"></canvas>
       </div>
@@ -6421,15 +6421,15 @@ function buildDashboard() {
       <div class="charts-card">
         <div class="dash-card-title">Appetito / Sonno percepito / Chiarezza / Libido (1–10)</div>
         <div class="chart-legend">
-          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#ff9500"></span>Appetito</span>
+          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--orange)"></span>Appetito</span>
           <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#5856d6"></span>Sonno perc.</span>
-          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#0071e3"></span>Chiarezza</span>
+          <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--blue)"></span>Chiarezza</span>
           <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#ff2d55"></span>Libido</span>
         </div>
         <canvas class="dash-chart" id="dc-peptide-subj" height="110"></canvas>
       </div>
       <div class="charts-card" style="margin-top:10px">
-        <div class="dash-card-title">Sintomi GH-correlati <span style="font-size:11px;color:var(--muted);font-weight:400">— una cella per giorno</span></div>
+        <div class="dash-card-title">Sintomi GH-correlati <span style="font-size: var(--fs-xs);color:var(--muted);font-weight: var(--fw-reg)">— una cella per giorno</span></div>
         <div id="dc-symptom-strip" style="margin-top:8px"></div>
       </div>
     </div>
@@ -6439,9 +6439,9 @@ function buildDashboard() {
       <div class="dash-section-title">Sonno e recupero</div>
       <div class="charts-card">
         <div class="dash-card-title">Ore di sonno → HRV del giorno dopo</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Ogni punto è una notte · linea tratteggiata = tendenza</div>
+        <div style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:6px">Ogni punto è una notte · linea tratteggiata = tendenza</div>
         <canvas class="dash-chart" id="dc-sleep-hrv" height="150"></canvas>
-        <div id="dc-sleep-hrv-note" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+        <div id="dc-sleep-hrv-note" style="font-size: var(--fs-xs);color:var(--muted);margin-top:6px"></div>
       </div>
     </div>
 
@@ -6452,42 +6452,42 @@ function buildDashboard() {
         <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Ore totali</div>
-            <div id="dc-sleep-hours-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+            <div id="dc-sleep-hours-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-sleep-hours" height="90"></canvas>
         </div>
         <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Minuti veglia</div>
-            <div id="dc-sleep-wakemin-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+            <div id="dc-sleep-wakemin-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-sleep-wakemin" height="90"></canvas>
         </div>
         <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Numero risvegli</div>
-            <div id="dc-sleep-wakecount-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+            <div id="dc-sleep-wakecount-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-sleep-wakecount" height="90"></canvas>
         </div>
         <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">REM</div>
-            <div id="dc-sleep-rem-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+            <div id="dc-sleep-rem-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-sleep-rem" height="90"></canvas>
         </div>
         <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Sonno principale</div>
-            <div id="dc-sleep-principale-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+            <div id="dc-sleep-principale-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-sleep-principale" height="90"></canvas>
         </div>
         <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Sonno profondo</div>
-            <div id="dc-sleep-profondo-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+            <div id="dc-sleep-profondo-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-sleep-profondo" height="90"></canvas>
         </div>
@@ -6501,11 +6501,11 @@ function buildDashboard() {
         <div class="charts-card">
           <div class="dash-card-title">Volume per sessione (tonnellate)</div>
           <div class="chart-legend">
-            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#ff3b30"></span>Push</span>
-            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#34c759"></span>Pull</span>
-            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#ff9500"></span>Legs</span>
-            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#af52de"></span>Upper Sab</span>
-            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#0071e3"></span>Upper Dom</span>
+            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--red)"></span>Push</span>
+            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--green)"></span>Pull</span>
+            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--orange)"></span>Legs</span>
+            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--purple)"></span>Upper Sab</span>
+            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--blue)"></span>Upper Dom</span>
           </div>
           <canvas class="dash-chart" id="dc-vol" height="120"></canvas>
         </div>
@@ -6577,15 +6577,15 @@ function buildDashboard() {
           <div class="charts-card">
             <div class="dash-card-title">Bicipiti</div>
             <div class="chart-legend">
-              <span class="chart-legend-item"><span class="chart-legend-line" style="background:#ff9500"></span>DB Curl</span>
-              <span class="chart-legend-item"><span class="chart-legend-line" style="background:#ff3b30"></span>Hammer Curl</span>
+              <span class="chart-legend-item"><span class="chart-legend-line" style="background:var(--orange)"></span>DB Curl</span>
+              <span class="chart-legend-item"><span class="chart-legend-line" style="background:var(--red)"></span>Hammer Curl</span>
             </div>
             <canvas class="dash-chart" id="dc-bicep" height="90"></canvas>
           </div>
           <div class="charts-card">
             <div class="dash-card-title">Tricipiti</div>
             <div class="chart-legend">
-              <span class="chart-legend-item"><span class="chart-legend-line" style="background:#af52de"></span>Rope Pushdown</span>
+              <span class="chart-legend-item"><span class="chart-legend-line" style="background:var(--purple)"></span>Rope Pushdown</span>
               <span class="chart-legend-item"><span class="chart-legend-line" style="background:#ff9f0a"></span>Rope Overhead</span>
             </div>
             <canvas class="dash-chart" id="dc-tricep" height="90"></canvas>
@@ -6639,7 +6639,7 @@ function buildDashboard() {
       <!-- Lotto 4 (28/07/2026): confronto medie per fase -->
       <div class="charts-card" style="margin-top:10px">
         <div class="dash-card-title">Confronto medie per fase</div>
-        <div class="dash-card-sub" style="font-size:11px;color:var(--muted);margin-top:-2px;margin-bottom:8px">Warm-up · Test Protocollo · Fasi del ciclo v2 — le fasi future compaiono automaticamente quando iniziano</div>
+        <div class="dash-card-sub" style="font-size: var(--fs-xs);color:var(--muted);margin-top:-2px;margin-bottom:8px">Warm-up · Test Protocollo · Fasi del ciclo v2 — le fasi future compaiono automaticamente quando iniziano</div>
         <div id="dc-phase-compare" style="overflow-x:auto"></div>
       </div>
     </div>
@@ -6685,8 +6685,8 @@ function refreshDashCharts() {
   if (_readyEl) {
     const flags = (_lastData && _lastData.ready_to_progress) || [];
     _readyEl.innerHTML = flags.length ? `<div style="background:rgba(52,199,89,.08);border:0.5px solid rgba(52,199,89,.3);border-radius:10px;padding:10px 14px;margin-bottom:14px">
-      <div style="font-size:11px;font-weight:600;color:#1a7a3a;margin-bottom:4px">💪 Pronti per aumentare il carico</div>
-      <div style="font-size:12px;color:var(--text-secondary)">${flags.map(f=>`<strong style="color:var(--text-primary)">${f.label}</strong> ${f.weight}kg`).join(' · ')}</div>
+      <div style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:#1a7a3a;margin-bottom:4px">💪 Pronti per aumentare il carico</div>
+      <div style="font-size: var(--fs-sm);color:var(--text-secondary)">${flags.map(f=>`<strong style="color:var(--text-primary)">${f.label}</strong> ${f.weight}kg`).join(' · ')}</div>
     </div>` : '';
   }
 
@@ -6711,9 +6711,9 @@ function refreshDashCharts() {
   // sera) — niente di miracoloso: un grafico annotato ha bisogno di un
   // minimo di spazio verticale, ma su mobile lo teniamo più compatto.
   const _dashChartH = window.innerWidth <= 600 ? 100 : 130;
-  drawRichKpiChart('rk-peso',  getDayDataAll('peso', richKpiRangeDays.peso), {height:_dashChartH, color:'#0071e3', decimals:1, showTrend:true});
-  drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  richKpiRangeDays.hrv),  {height:_dashChartH, color:'#34c759', decimals:0, showTrend:true});
-  drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  richKpiRangeDays.rhr + 1).slice(0, -1),  {height:_dashChartH, color:'#ff3b30', decimals:0, showTrend:true});
+  drawRichKpiChart('rk-peso',  getDayDataAll('peso', richKpiRangeDays.peso), {height:_dashChartH, color:'var(--blue)', decimals:1, showTrend:true});
+  drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  richKpiRangeDays.hrv),  {height:_dashChartH, color:'var(--green)', decimals:0, showTrend:true});
+  drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  richKpiRangeDays.rhr + 1).slice(0, -1),  {height:_dashChartH, color:'var(--red)', decimals:0, showTrend:true});
   drawRichKpiChart('rk-sonno', getSonnoOreAll(richKpiRangeDays.sonno), {height:_dashChartH, color:'#5856d6', decimals:1, showTrend:true});
 
   // ── Grafici biometria ──────────────────────────────────────
@@ -6729,13 +6729,13 @@ function refreshDashCharts() {
       el.textContent = '';
     }
   }
-  setTrendLabel('dc-peso-trend', drawDashChart('dc-peso',[{data:peso60,color:'#0071e3'}],{height:110,minScale:0.98,maxScale:1.02,refLine:71.1,showTrend:true}), 'kg', 2);
-  setTrendLabel('dc-hrv-trend',  drawDashChart('dc-hrv', [{data:hrv60, color:'#34c759'}],{height:110,refLine:37,showTrend:true}), 'ms', 1);
-  setTrendLabel('dc-rhr-trend',  drawDashChart('dc-rhr', [{data:rhr60, color:'#ff3b30'}],{height:110,showTrend:true}), 'bpm', 1);
+  setTrendLabel('dc-peso-trend', drawDashChart('dc-peso',[{data:peso60,color:'var(--blue)'}],{height:110,minScale:0.98,maxScale:1.02,refLine:71.1,showTrend:true}), 'kg', 2);
+  setTrendLabel('dc-hrv-trend',  drawDashChart('dc-hrv', [{data:hrv60, color:'var(--green)'}],{height:110,refLine:37,showTrend:true}), 'ms', 1);
+  setTrendLabel('dc-rhr-trend',  drawDashChart('dc-rhr', [{data:rhr60, color:'var(--red)'}],{height:110,showTrend:true}), 'bpm', 1);
 
   const allBp=[...bpSys,...bpDia].filter(p=>p.value!==null);
   if(allBp.length>=2) {
-    const bpTrend = drawDashChart('dc-bp',[{data:bpSys,color:'#ff3b30'},{data:bpDia,color:'#0071e3'}],{height:110,showTrend:true});
+    const bpTrend = drawDashChart('dc-bp',[{data:bpSys,color:'var(--red)'},{data:bpDia,color:'var(--blue)'}],{height:110,showTrend:true});
     const bpTrendEl = document.getElementById('dc-bp-trend');
     if (bpTrendEl) {
       bpTrendEl.textContent = bpTrend ? `Tendenza sistolica: ${bpTrend.weekly>0?'+':''}${bpTrend.weekly.toFixed(1)}/sett` : '';
@@ -6746,9 +6746,9 @@ function refreshDashCharts() {
   const hasSubj=[...energ,...recup,...umore].some(p=>p.value!==null);
   if(hasSubj)
     drawDashChart('dc-subj',[
-      {data:energ,color:'#0071e3'},
-      {data:recup,color:'#34c759'},
-      {data:umore,color:'#af52de'}
+      {data:energ,color:'var(--blue)'},
+      {data:recup,color:'var(--green)'},
+      {data:umore,color:'var(--purple)'}
     ],{height:100,minVal:1,maxVal:10});
 
   // ── Effetti peptidi: nuovi campi soggettivi (30gg) ─────────
@@ -6758,9 +6758,9 @@ function refreshDashCharts() {
   const libid = getDayDataAll('libido',     30);
   if ([...appet,...sonnS,...chiar,...libid].some(p=>p.value!==null)) {
     drawDashChart('dc-peptide-subj',[
-      {data:appet,color:'#ff9500'},
+      {data:appet,color:'var(--orange)'},
       {data:sonnS,color:'#5856d6'},
-      {data:chiar,color:'#0071e3'},
+      {data:chiar,color:'var(--blue)'},
       {data:libid,color:'#ff2d55'}
     ],{height:110,minVal:1,maxVal:10});
   }
@@ -6780,7 +6780,7 @@ function refreshDashCharts() {
     const h = hrvAll60[i+1] ? hrvAll60[i+1].value : null;  // HRV del giorno DOPO
     if (s!==null && h!==null) shPoints.push({x:s, y:h});
   }
-  drawXYScatter('dc-sleep-hrv', shPoints, {height:150, color:'#34c759', xLabel:'ore di sonno'});
+  drawXYScatter('dc-sleep-hrv', shPoints, {height:150, color:'var(--green)', xLabel:'ore di sonno'});
   const shNote = document.getElementById('dc-sleep-hrv-note');
   if (shNote) {
     if (shPoints.length < 3) {
@@ -6804,7 +6804,7 @@ function refreshDashCharts() {
     const volBars = sessions.filter(s=>s.volume).map(s=>({
       label: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}),
       value: s.volume/1000,
-      color: {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'}[s.type]||'#aeaeb2'
+      color: {Push:'var(--red)',Pull:'var(--green)',Legs:'var(--orange)','Upper Sab':'var(--purple)','Upper Dom':'var(--blue)'}[s.type]||'#aeaeb2'
     }));
     if(volBars.length) drawBarChart('dc-vol', volBars, {height:120, unit:'t'});
 
@@ -6812,14 +6812,14 @@ function refreshDashCharts() {
     const rpeData = sessions.filter(s=>s.rpe).map(s=>({
       date:s.date, value:s.rpe
     }));
-    if(rpeData.length) drawDashChart('dc-rpe',[{data:rpeData,color:'#ff9500'}],{height:120,minVal:1,maxVal:10});
+    if(rpeData.length) drawDashChart('dc-rpe',[{data:rpeData,color:'var(--orange)'}],{height:120,minVal:1,maxVal:10});
 
     // Breakdown tipo
     const breakdown = {};
     sessions.filter(s=>s.volume!==null).forEach(s=>{breakdown[s.type]=(breakdown[s.type]||0)+1;});
     const bdEl = document.getElementById('dc-breakdown');
     if(bdEl){
-      const colors={Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'};
+      const colors={Push:'var(--red)',Pull:'var(--green)',Legs:'var(--orange)','Upper Sab':'var(--purple)','Upper Dom':'var(--blue)'};
       const tot=Object.values(breakdown).reduce((a,b)=>a+b,0);
       bdEl.innerHTML=Object.entries(breakdown).map(([type,n])=>`
         <div class="comp-bar-row">
@@ -6845,19 +6845,19 @@ function refreshDashCharts() {
       .reverse();
     const tblEl = document.getElementById('dc-scatter-table');
     if (tblEl) {
-      const C = {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'};
-      tblEl.innerHTML = sessionRows.length ? `<table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead><tr style="color:var(--muted);font-size:10px;border-bottom:1px solid var(--border)">
+      const C = {Push:'var(--red)',Pull:'var(--green)',Legs:'var(--orange)','Upper Sab':'var(--purple)','Upper Dom':'var(--blue)'};
+      tblEl.innerHTML = sessionRows.length ? `<table style="width:100%;border-collapse:collapse;font-size: var(--fs-sm)">
+        <thead><tr style="color:var(--muted);font-size: var(--fs-2xs);border-bottom:1px solid var(--border)">
           <th style="text-align:left;padding:4px 6px">Data</th><th style="text-align:left;padding:4px 6px">Tipo</th>
           <th style="text-align:right;padding:4px 6px">Vol t</th><th style="text-align:right;padding:4px 6px">HRV</th><th style="text-align:right;padding:4px 6px">RPE</th>
         </tr></thead><tbody>${sessionRows.map(r=>`<tr style="border-bottom:1px solid var(--border)">
           <td style="padding:4px 6px;color:var(--muted)">${r.date}</td>
-          <td style="padding:4px 6px;font-weight:600;color:${C[r.type]||'#6e6e73'}">${r.type}</td>
+          <td style="padding:4px 6px;font-weight: var(--fw-semi);color:${C[r.type]||'#6e6e73'}">${r.type}</td>
           <td style="padding:4px 6px;text-align:right">${r.vol===null?'—':(r.vol/1000).toFixed(1)}</td>
           <td style="padding:4px 6px;text-align:right">${r.hrv===null?'—':Math.round(r.hrv)}</td>
           <td style="padding:4px 6px;text-align:right">${r.rpe===null?'—':r.rpe}</td>
         </tr>`).join('')}</tbody></table>`
-        : '<div style="font-size:11px;color:var(--muted);padding:12px">Nessuna sessione</div>';
+        : '<div style="font-size: var(--fs-xs);color:var(--muted);padding:12px">Nessuna sessione</div>';
     }
 
     // Lotto 4 (28/07/2026): confronto medie per fase
@@ -6867,14 +6867,14 @@ function refreshDashCharts() {
       const fmt = (v, dec=1) => v===null ? '—' : v.toFixed(dec);
       const fmtPct = v => v===null ? '—' : v+'%';
       pcEl.innerHTML = phases.length ? `<table style="width:100%;border-collapse:collapse;font-size:11.5px;white-space:nowrap">
-        <thead><tr style="color:var(--muted);font-size:10px;border-bottom:1px solid var(--border)">
+        <thead><tr style="color:var(--muted);font-size: var(--fs-2xs);border-bottom:1px solid var(--border)">
           <th style="text-align:left;padding:5px 8px">Fase</th><th style="text-align:right;padding:5px 8px">gg</th>
           <th style="text-align:right;padding:5px 8px">Peso</th><th style="text-align:right;padding:5px 8px">HRV</th>
           <th style="text-align:right;padding:5px 8px">RHR</th><th style="text-align:right;padding:5px 8px">Sonno</th>
           <th style="text-align:right;padding:5px 8px">Vol/sess.</th><th style="text-align:right;padding:5px 8px">Iniez.</th>
           <th style="text-align:right;padding:5px 8px">Allen.</th>
         </tr></thead><tbody>${phases.map(p=>`<tr style="border-bottom:1px solid var(--border)">
-          <td style="padding:5px 8px;font-weight:600">${p.label}</td>
+          <td style="padding:5px 8px;font-weight: var(--fw-semi)">${p.label}</td>
           <td style="padding:5px 8px;text-align:right;color:var(--muted)">${p.giorni}</td>
           <td style="padding:5px 8px;text-align:right">${fmt(p.peso)}kg</td>
           <td style="padding:5px 8px;text-align:right">${fmt(p.hrv,0)}</td>
@@ -6884,7 +6884,7 @@ function refreshDashCharts() {
           <td style="padding:5px 8px;text-align:right">${fmtPct(p.injPct)}</td>
           <td style="padding:5px 8px;text-align:right">${fmtPct(p.woPct)}</td>
         </tr>`).join('')}</tbody></table>`
-        : '<div style="font-size:11px;color:var(--muted);padding:12px">Dati insufficienti</div>';
+        : '<div style="font-size: var(--fs-xs);color:var(--muted);padding:12px">Dati insufficienti</div>';
     }
   }
 
@@ -6941,31 +6941,31 @@ function refreshDashCharts() {
   }
 
   // PETTO
-  dc('dc-bench',    'bench',    '#0071e3', 55);
+  dc('dc-bench',    'bench',    'var(--blue)', 55);
   dc('dc-incbench', 'incbench', '#5ac8fa', null);
   dc('dc-pecfly',   'pecfly',   '#34aadc', null);
 
   // DORSO
-  dc('dc-lat',   'lat',   '#34c759', null);
+  dc('dc-lat',   'lat',   'var(--green)', null);
   dc('dc-tbar',  'tbar',  '#30d158', null);
   dc('dc-bbrow', 'bbrow', '#00b341', null);
 
   // SPALLE
-  dc('dc-bbohp',    'bbohp',    '#ff9500', 40);
+  dc('dc-bbohp',    'bbohp',    'var(--orange)', 40);
   dc('dc-dbpress',  'dbpress',  '#ff6b00', null);
   dc('dc-dblateral','dblateral','#ffcc02', 12);
 
   // BRACCIA
-  dc2('dc-bicep',  'dbcurl',   'hammercurl', '#ff9500','#ff3b30', null, null);
-  dc2('dc-tricep', 'tridown',  'triover',    '#af52de','#ff9f0a', 50,   35);
+  dc2('dc-bicep',  'dbcurl',   'hammercurl', 'var(--orange)','var(--red)', null, null);
+  dc2('dc-tricep', 'tridown',  'triover',    'var(--purple)','#ff9f0a', 50,   35);
 
   // GAMBE
-  dc('dc-legext',   'legext',   '#ff3b30', 80);
+  dc('dc-legext',   'legext',   'var(--red)', 80);
   dc('dc-legpress', 'legpress', '#ff6b6b', 117.5);
-  dc('dc-rdl',      'rdl',      '#0071e3', 60);
+  dc('dc-rdl',      'rdl',      'var(--blue)', 60);
   dc('dc-hipthrust','hipthrust','#ffcc02', 45);
-  dc('dc-calf',     'calf',     '#34c759', null);
-  dc('dc-legcurl',  'legcurl',  '#ff9500', null);
+  dc('dc-calf',     'calf',     'var(--green)', null);
+  dc('dc-legcurl',  'legcurl',  'var(--orange)', null);
 
   // ── Andamento sonno (dal Test Protocollo, 18/7) ────────────
   // Finestra ampia a sufficienza per coprire da TEST_PROTO_START a oggi;
@@ -6987,12 +6987,12 @@ function refreshDashCharts() {
     }
   }
   sleepChart('dc-sleep-hours',     'ore_sonno',        '#5856d6', parseSonnoHours, 'h');
-  sleepChart('dc-sleep-wakemin',   'sonno_veglia_min', '#ff9500', null, 'min');
-  sleepChart('dc-sleep-wakecount', 'sonno_risvegli',   '#ff3b30', null, '');
+  sleepChart('dc-sleep-wakemin',   'sonno_veglia_min', 'var(--orange)', null, 'min');
+  sleepChart('dc-sleep-wakecount', 'sonno_risvegli',   'var(--red)', null, '');
   // Fasi sonno dettagliate (30/07/2026) — dati retroattivi dal Test Protocollo
   // in poi, recuperati dagli screenshot "Tutti i dati salvati" di Salute.
   sleepChart('dc-sleep-rem',        'sonno_rem_min',        '#5ac8fa', null, 'min');
-  sleepChart('dc-sleep-principale', 'sonno_principale_min', '#0071e3', null, 'min');
+  sleepChart('dc-sleep-principale', 'sonno_principale_min', 'var(--blue)', null, 'min');
   sleepChart('dc-sleep-profondo',   'sonno_profondo_min',   '#2e2a6e', null, 'min');
 }
 
