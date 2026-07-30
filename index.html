@@ -1119,7 +1119,8 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .ct-seg{position:absolute;top:0;bottom:0}
 .ct-seg:first-child{border-radius:5px 0 0 5px}
 .ct-seg:last-child{border-radius:0 5px 5px 0}
-.ct-event{position:absolute;top:-2px;bottom:-2px;background:rgba(88,86,214,.55);border-radius:3px;border:1px solid rgba(88,86,214,.8)}
+.ct-event{position:absolute;top:-2px;bottom:-2px;background:rgba(175,82,222,.55);border-radius:3px;border:1px solid rgba(175,82,222,.85)}
+.ct-point{position:absolute;top:-4px;bottom:-4px;width:3px;background:#0071e3;border-radius:2px;transform:translateX(-1px)}
 .ct-today{position:absolute;top:-5px;bottom:-5px;width:2px;background:var(--text);transform:translateX(-1px)}
 .ct-today::after{content:'';position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--text)}
 .ct-phase-row{display:flex;justify-content:space-between;margin-top:6px;font-size:9px;font-weight:700}
@@ -6183,13 +6184,18 @@ function buildDashboard() {
     const subTxt = inV2 ? `Giorno ${elapsedV2+1}/${CICLO1_DAYS}` : `Giorno ${elapsedWU+1}/21 warm-up`;
     const remainTxt = inV2 ? `${CICLO1_DAYS-elapsedV2-1} gg al termine` : `Ciclo v2 tra ${Math.abs(elapsedV2)} gg`;
 
-    // Timeline GRAFICA del ciclo (30/07/2026 sera, v2 su richiesta di Giorgio:
-    // "non testuale ma grafica" — sostituisce la prima versione a righe di
-    // testo). Barra unica 0→CICLO1_DAYS: 4 fasi da 28gg colorate (stesse
-    // etichette Fase 1-4 di getPhase2/altri tab), bande evidenziate per
-    // Bangkok e Mallorca, marcatore "oggi". Le date evento sono le stesse
-    // già usate altrove (getBKKWeekInfo, timeline Referti) — se dovessero
-    // mai cambiare, aggiornarle anche lì.
+    // Timeline GRAFICA del ciclo — v3 (30/07/2026 sera). Cambi rispetto a v2,
+    // su richiesta esplicita di Giorgio:
+    // 1) le 4 fasce generiche "Fase 1-4" sono sostituite dalle 5 fasi REALI
+    //    già usate nella timeline "Effetti attesi" (Adattamento/Costruzione/
+    //    Peak/Mantenimento/Fine ciclo), stessa palette — vedi PEPTIDE_PHASES,
+    //    condivisa tra i due tab per non poter mai andare fuori sincrono.
+    // 2) aggiunti T1 (5 set) e T2 (7 nov) come marcatori puntuali (non bande,
+    //    sono eventi di un giorno solo) — blu, stesso colore già usato per
+    //    questi due appuntamenti nella timeline eventi del tab Referti.
+    //    Bangkok/Mallorca restano viola (viaggi), stesso criterio del tab
+    //    Referti: colore = categoria dell'evento (clinico vs viaggio), non
+    //    decorativo.
     const cycleEndDate = new Date(START2); cycleEndDate.setDate(cycleEndDate.getDate() + CICLO1_DAYS - 1);
     const fmtDate = d => d.toLocaleDateString('it-IT', {day:'numeric', month:'short'});
     const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
@@ -6198,8 +6204,9 @@ function buildDashboard() {
 
     const bkkStart = new Date('2026-08-07'), bkkEnd = new Date('2026-08-21');
     const mallStart = new Date('2026-10-14'), mallEnd = new Date('2026-10-16');
+    const t1Date = new Date('2026-09-05'), t2Date = new Date('2026-11-07');
 
-    function eventInfo(start, end, label) {
+    function eventInfo(start, end) {
       const startIdx = dayIdx(start), endIdx = dayIdx(end) + 1; // +1 = fine giornata inclusa
       const daysTo = Math.round((start - todayMidnight) / 86400000);
       let status;
@@ -6208,28 +6215,43 @@ function buildDashboard() {
       else status = 'in corso';
       return { left: pct(startIdx), width: Math.max(pct(endIdx) - pct(startIdx), 0.8), status };
     }
-    const bkk = eventInfo(bkkStart, bkkEnd, 'Bangkok');
-    const mallorca = eventInfo(mallStart, mallEnd, 'Mallorca');
+    function pointInfo(d) {
+      const daysTo = Math.round((d - todayMidnight) / 86400000);
+      const status = daysTo > 0 ? `tra ${daysTo}gg` : daysTo === 0 ? 'oggi' : 'concluso';
+      return { left: pct(dayIdx(d)), status };
+    }
+    const bkk = eventInfo(bkkStart, bkkEnd);
+    const mallorca = eventInfo(mallStart, mallEnd);
+    const t1 = pointInfo(t1Date);
+    const t2 = pointInfo(t2Date);
     const todayPct = pct(inV2 ? elapsedV2 : 0);
+
+    let cumWeeks = 0;
+    const phaseSegs = PEPTIDE_PHASES.map(ph => {
+      const leftPct = cumWeeks*7 / CICLO1_DAYS * 100;
+      const widthPct = ph.n*7 / CICLO1_DAYS * 100;
+      cumWeeks += ph.n;
+      return `<div class="ct-seg" style="left:${leftPct}%;width:${widthPct}%;background:${ph.c}24"></div>`;
+    }).join('');
+    const phaseLabels = PEPTIDE_PHASES.map(ph => `<span style="color:${ph.c}">${ph.lb}</span>`).join('');
 
     const timelineHtml = `
       <div class="ct-wrap">
         <div class="ct-bar">
-          <div class="ct-seg" style="left:0%;width:25%;background:rgba(0,113,227,.14)"></div>
-          <div class="ct-seg" style="left:25%;width:25%;background:rgba(52,199,89,.14)"></div>
-          <div class="ct-seg" style="left:50%;width:25%;background:rgba(255,149,0,.14)"></div>
-          <div class="ct-seg" style="left:75%;width:25%;background:rgba(175,82,222,.14)"></div>
+          ${phaseSegs}
           <div class="ct-event" style="left:${bkk.left}%;width:${bkk.width}%"></div>
           <div class="ct-event" style="left:${mallorca.left}%;width:${mallorca.width}%"></div>
+          <div class="ct-point" style="left:${t1.left}%"></div>
+          <div class="ct-point" style="left:${t2.left}%"></div>
           ${inV2 ? `<div class="ct-today" style="left:${todayPct}%"></div>` : ''}
         </div>
-        <div class="ct-phase-row">
-          <span style="color:#0071e3">Fase 1</span><span style="color:#34c759">Fase 2</span><span style="color:#ff9500">Fase 3</span><span style="color:#af52de">Fase 4</span>
-        </div>
+        <div class="ct-phase-row">${phaseLabels}</div>
         <div class="ct-ends-row"><span>${fmtDate(START2)}</span><span>${fmtDate(cycleEndDate)}</span></div>
         <div class="ct-events-row">
-          <div><span class="ct-dot"></span>Bangkok 7–21 ago · ${bkk.status}</div>
-          <div><span class="ct-dot"></span>Mallorca 14–16 ott · ${mallorca.status}</div>
+          <div><span class="ct-dot" style="background:#af52de"></span>Bangkok 7–21 ago · ${bkk.status}</div>
+          <div><span class="ct-dot" style="background:#af52de"></span>Mallorca 14–16 ott · ${mallorca.status}</div>
+          <div><span class="ct-dot" style="background:#0071e3"></span>T1 · 5 set · ${t1.status}</div>
+          <div><span class="ct-dot" style="background:#0071e3"></span>T2 · 7 nov · ${t2.status}</div>
         </div>
       </div>`;
 
@@ -7165,6 +7187,17 @@ function importMotra(dayId) {
 
 // ── PROTO V2 ─────────────────────────────────────────────────────────────────
 const START2      = new Date('2026-07-20'); // CONFERMATA il 16/07/2026 (lunedi' - inizio ciclo ufficiale conteggiato; 18-19/7 sono Test Protocollo a parte, vedi TEST_PROTO_START)
+
+// Fasi narrative "effetti peptidi" (Adattamento/Costruzione/Peak/Mantenimento/
+// Fine ciclo), spostate qui da buildProtocolloTimeline() il 30/07/2026 sera
+// per essere condivise anche dalla timeline grafica della card Protocollo in
+// Dashboard — stessa palette, stesse settimane, un solo posto da aggiornare
+// se mai cambiassero (richiesta esplicita di Giorgio: coerenza cromatica tra
+// tab, non re-inventare ogni volta).
+const PEPTIDE_PHASES = [
+  {lb:'Adattamento',n:2,c:'#6366f1'},{lb:'Costruzione',n:4,c:'#3b82f6'},
+  {lb:'Peak',n:2,c:'#10b981'},{lb:'Mantenimento',n:4,c:'#f59e0b'},{lb:'Fine ciclo',n:4,c:'#ef4444'}
+];
 // TOTAL_DAYS2 alzato da 112 a 500 il 28/07/2026 (era il limite esatto del
 // "Ciclo 1" di 112gg/16 settimane) — l'utente ha chiesto di non far bloccare
 // strutturalmente l'app all'8 novembre 2026 (fine Ciclo 1) mentre decide come
@@ -10127,10 +10160,7 @@ function buildProtocolloTimeline() {
     w._bkkOverlap = !(bkkInfo.wkEnd < wStart || bkkInfo.wkStart > wEnd);
   });
 
-  const PHASES = [
-    {lb:'Adattamento',n:2,c:'#6366f1'},{lb:'Costruzione',n:4,c:'#3b82f6'},
-    {lb:'Peak',n:2,c:'#10b981'},{lb:'Mantenimento',n:4,c:'#f59e0b'},{lb:'Fine ciclo',n:4,c:'#ef4444'}
-  ];
+  const PHASES = PEPTIDE_PHASES;
 
   // Apre direttamente sulla settimana corrente invece che sempre sulla
   // Settimana 1 (29/07/2026, richiesta esplicita utente). Il numero di
