@@ -4840,6 +4840,18 @@ function drawDashChart(canvasId, datasets, options = {}) {
       ctx.fillText(v % 1 === 0 ? v : v.toFixed(1), ML - 5, y + 3);
     });
     ctx.textAlign = 'left';
+  } else {
+    // Modalità compact (30/07/2026): niente assi/griglia, ma l'utente ha
+    // segnalato che senza NESSUN numero la linea nuda non si legge — aggiunge
+    // min/max reali del periodo come piccole etichette agli estremi verticali,
+    // via di mezzo tra "niente" (illeggibile) e "un'etichetta per punto"
+    // (l'effetto "collana di perline" già corretto sopra).
+    const realMin = Math.min(...allVals), realMax = Math.max(...allVals);
+    const fmtCompact = v => v % 1 === 0 ? v.toFixed(0) : v.toFixed(1);
+    ctx.font = '500 9px -apple-system'; ctx.textAlign = 'left';
+    ctx.fillStyle = labelColor;
+    ctx.fillText(fmtCompact(realMax), ML, MT + 7);
+    ctx.fillText(fmtCompact(realMin), ML, MT + CH);
   }
 
   // X ticks — mostra date distribuite, con spaziatura minima garantita per evitare sovrapposizioni
