@@ -1983,7 +1983,7 @@ function drawChart(id,data,color){
   ctx.scale(dpr,dpr);
   const W=rect.width,H=64;
   const pts=data.filter(v=>v!==null);
-  if(pts.length<2){ ctx.font='11px -apple-system'; ctx.fillStyle='#aeaeb2'; ctx.fillText('Dati insufficienti',8,32); return; }
+  if(pts.length<2){ ctx.font='11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle='#aeaeb2'; ctx.fillText('Dati insufficienti',8,32); return; }
   const TOP_PAD=18, BOTTOM_PAD=10, RIGHT_PAD=28;
   const mn=Math.min(...pts)*0.995, mx=Math.max(...pts)*1.005, rng=mx-mn||1;
   const valid=data.map((v,i)=>v!==null?{x:i/(data.length-1)*(W-RIGHT_PAD-4)+2, y:H-BOTTOM_PAD-((v-mn)/rng)*(H-TOP_PAD-BOTTOM_PAD), v}:null);
@@ -2001,7 +2001,7 @@ function drawChart(id,data,color){
   valid.forEach(p=>{ if(!p)return; ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,Math.PI*2); ctx.fillStyle=color; ctx.fill(); });
   // Last value — posizionamento adattivo: misura testo, sceglie quadrante libero
   if(lp){
-    ctx.font='500 11px -apple-system'; ctx.fillStyle=color;
+    ctx.font='500 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle=color;
     const label=lp.v.toFixed(1);
     const tw=ctx.measureText(label).width;
     const th=11; // altezza font approx
@@ -4843,7 +4843,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
 
   // Empty state
   if (allVals.length < 1) {
-    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#aeaeb2';
     ctx.fillText('Dati insufficienti — continua a compilare il diario', ML + 4, H/2);
     return;
   }
@@ -4855,22 +4855,22 @@ function drawDashChart(canvasId, datasets, options = {}) {
     const pt = allPts[0];
     ctx.beginPath(); ctx.arc(ML + CW/2, MT + CH/2, 4, 0, Math.PI*2);
     ctx.fillStyle = color; ctx.fill();
-    ctx.font = '500 11px -apple-system'; ctx.fillStyle = color;
+    ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = color;
     ctx.textAlign = 'center';
     ctx.fillText(v.toFixed(v % 1 === 0 ? 0 : 1) + ' kg', ML + CW/2, MT + CH/2 - 10);
     if (pt && pt.date) {
       const d = pt.date;
       const dateStr = d.getDate() + '/' + (d.getMonth()+1);
-      ctx.font = '9px -apple-system'; ctx.fillStyle = labelColor;
+      ctx.font = '9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = labelColor;
       ctx.fillText(dateStr, ML + CW/2, H - 3);
     }
-    ctx.fillStyle = '#aeaeb2'; ctx.font = '10px -apple-system';
+    ctx.fillStyle = '#aeaeb2'; ctx.font = '10px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif';
     ctx.fillText('1 rilevazione', ML + CW/2, MT + CH/2 + 16);
     ctx.textAlign = 'left';
     return;
   }
   if (allVals.length < 2) {
-    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#aeaeb2';
     ctx.fillText('Dati insufficienti — continua a compilare il diario', ML + 4, H/2);
     return;
   }
@@ -4906,7 +4906,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
     ctx.beginPath(); ctx.moveTo(ML, MT + CH); ctx.lineTo(ML + CW, MT + CH); ctx.stroke();
 
     // Grid lines + Y labels
-    ctx.font = '9px -apple-system'; ctx.fillStyle = labelColor; ctx.textAlign = 'right';
+    ctx.font = '9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = labelColor; ctx.textAlign = 'right';
     yTicks.forEach(v => {
       const y = MT + CH - ((v - mn) / rng) * CH;
       if (y < MT || y > MT + CH) return;
@@ -4929,7 +4929,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
     // (l'effetto "collana di perline" già corretto sopra).
     const realMin = Math.min(...allVals), realMax = Math.max(...allVals);
     const fmtCompact = v => v % 1 === 0 ? v.toFixed(0) : v.toFixed(1);
-    ctx.font = '500 9px -apple-system'; ctx.textAlign = 'left';
+    ctx.font = '500 9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.textAlign = 'left';
     ctx.fillStyle = labelColor;
     ctx.fillText(fmtCompact(realMax), ML, MT + 7);
     ctx.fillText(fmtCompact(realMin), ML, MT + CH);
@@ -4952,7 +4952,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
       else xIdxs.push(lastIdx);
     }
 
-    ctx.font = '9px -apple-system'; ctx.fillStyle = labelColor; ctx.textAlign = 'center';
+    ctx.font = '9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = labelColor; ctx.textAlign = 'center';
     let lastLabelX = -Infinity;
     xIdxs.forEach(i => {
       const pt = allValidPts[i];
@@ -5028,7 +5028,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
 
     if (!options.hideLabel) {
       // Last value label — nel margine destro (MR), allineato al punto Y
-      ctx.font = '500 10px -apple-system'; ctx.fillStyle = ds.color;
+      ctx.font = '500 10px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = ds.color;
       const lbl = lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1);
       const lx = ML + CW + 5; // sempre nel margine destro, fuori dal plot
       let ly = lp.y;
@@ -5080,7 +5080,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
     const minGap = 9;
     // se troppo vicina a un'etichetta di valore già disegnata, spostala di lato (sopra la linea)
     while (lastValueLabelYs.some(y => Math.abs(y - ty) < minGap)) ty -= minGap;
-    ctx.font = '8px -apple-system'; ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.textAlign = 'left';
+    ctx.font = '8px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.textAlign = 'left';
     ctx.fillText('T0', lx, ty);
     ctx.textAlign = 'left';
   }
@@ -5138,7 +5138,7 @@ function drawRichKpiChart(canvasId, points, options = {}) {
 
   const validPts = points.filter(p => p.value !== null);
   if (validPts.length < 2) {
-    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#aeaeb2';
     ctx.fillText('Dati insufficienti', ML + 4, H / 2);
     return;
   }
@@ -5168,7 +5168,7 @@ function drawRichKpiChart(canvasId, points, options = {}) {
   ctx.beginPath(); ctx.moveTo(ML, MT); ctx.lineTo(ML, MT + CH); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(ML, MT + CH); ctx.lineTo(ML + CW, MT + CH); ctx.stroke();
 
-  ctx.font = '9px -apple-system'; ctx.textAlign = 'right';
+  ctx.font = '9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.textAlign = 'right';
   yTicks.forEach(v => {
     const y = MT + CH - ((v - mn) / rng) * CH;
     if (y < MT || y > MT + CH) return;
@@ -5204,7 +5204,7 @@ function drawRichKpiChart(canvasId, points, options = {}) {
   }
   const shownSet = new Set(shownIdx);
 
-  ctx.font = '9px -apple-system'; ctx.textAlign = 'center';
+  ctx.font = '9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.textAlign = 'center';
   points.forEach((p, i) => {
     const x = xPos(i);
     ctx.strokeStyle = axisColor; ctx.lineWidth = 0.5;
@@ -5299,13 +5299,13 @@ function drawRichKpiChart(canvasId, points, options = {}) {
     ctx.setLineDash([2, 2]); ctx.strokeStyle = axisColor; ctx.lineWidth = 0.7;
     ctx.beginPath(); ctx.moveTo(maxP.x, maxP.y); ctx.lineTo(maxP.x, MT + 2); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.font = '600 9px -apple-system'; ctx.fillStyle = color; ctx.textAlign = 'center';
+    ctx.font = '600 9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = color; ctx.textAlign = 'center';
     ctx.fillText('MAX ' + fmtV(maxP.v), Math.max(ML + 20, Math.min(maxP.x, ML + CW - 20)), MT - 9);
 
     ctx.setLineDash([2, 2]); ctx.strokeStyle = axisColor; ctx.lineWidth = 0.7;
     ctx.beginPath(); ctx.moveTo(minP.x, minP.y); ctx.lineTo(minP.x, MT + CH - 2); ctx.stroke();
     ctx.setLineDash([]);
-    ctx.font = '600 9px -apple-system'; ctx.fillStyle = color;
+    ctx.font = '600 9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = color;
     ctx.fillText('MIN ' + fmtV(minP.v), Math.max(ML + 20, Math.min(minP.x, ML + CW - 20)), Math.min(MT + CH - 4, minP.y + 13));
     ctx.textAlign = 'left';
   }
@@ -5318,7 +5318,7 @@ function drawRichKpiChart(canvasId, points, options = {}) {
     ctx.beginPath(); ctx.arc(lastValid.x, lastValid.y, 4, 0, Math.PI * 2);
     ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
 
-    ctx.font = '600 11px -apple-system'; ctx.fillStyle = color; ctx.textAlign = 'left';
+    ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = color; ctx.textAlign = 'left';
     const ly = Math.max(MT + 8, Math.min(lastValid.y + 4, MT + CH - 2));
     ctx.fillText(fmtV(lastValid.v), ML + CW + 5, ly);
     ctx.textAlign = 'left';
@@ -5469,7 +5469,7 @@ function drawBarChart(canvasId, bars, options = {}) {
 
   const vals = bars.map(b => b.value).filter(v => v != null && v > 0);
   if (vals.length < 1) {
-    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#aeaeb2';
     ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2); return;
   }
   const maxV = Math.max(...vals);
@@ -5509,7 +5509,7 @@ function drawBarChart(canvasId, bars, options = {}) {
 
     // Value on top if fits
     if (bh > 18 && options.showValues !== false) {
-      ctx.font = '500 9px -apple-system'; ctx.fillStyle = '#fff';
+      ctx.font = '500 9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#fff';
       ctx.textAlign = 'center';
       ctx.fillText(options.valFormat ? options.valFormat(b.value) : Math.round(b.value), x + bw/2, y + 11);
       ctx.textAlign = 'left';
@@ -5519,7 +5519,7 @@ function drawBarChart(canvasId, bars, options = {}) {
     // Misura la larghezza reale del testo invece di stimarla: con molte barre
     // le date "dd/mm" finivano appiccicate e illeggibili.
     if (b.label) {
-      ctx.font = '9px -apple-system';
+      ctx.font = '9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif';
       const cx = x + bw/2;
       const halfW = ctx.measureText(b.label).width / 2;
       if (cx - halfW >= lastLabelRight + 6 && cx + halfW <= W) {
@@ -5548,7 +5548,7 @@ function drawStackedBarChart(canvasId, weeks, options = {}) {
 
   const maxV = Math.max(...weeks.map(w => w.total || 0));
   if (maxV === 0) {
-    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#aeaeb2';
     ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2); return;
   }
   const labelH = 16, barAreaH = H - labelH - 4;
@@ -5579,12 +5579,12 @@ function drawStackedBarChart(canvasId, weeks, options = {}) {
       const totalH = (wk.total / maxV) * (barAreaH - 4);
       const topY = barAreaH + 2 - totalH;
       if (totalH > 18) {
-        ctx.font = '500 8px -apple-system'; ctx.fillStyle = '#fff';
+        ctx.font = '500 8px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.fillText((wk.total/1000).toFixed(1)+'t', x + bw/2, topY + 10);
       }
     }
-    ctx.font = '9px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.font = '9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#aeaeb2';
     ctx.textAlign = 'center';
     ctx.fillText('W' + wk.week, x + bw/2, H - 1);
     ctx.textAlign = 'left';
@@ -5604,7 +5604,7 @@ function drawScatterChart(canvasId, points, options = {}) {
   const W = rect.width;
 
   if (points.length < 3) {
-    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#aeaeb2';
     ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2); return;
   }
 
@@ -5616,7 +5616,7 @@ function drawScatterChart(canvasId, points, options = {}) {
   const rngH = maxH - minH || 1, rngV = maxV - minV || 1;
 
   // Axis labels
-  ctx.font = '9px -apple-system'; ctx.fillStyle = '#aeaeb2';
+  ctx.font = '9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#aeaeb2';
   ctx.textAlign = 'center';
   ctx.fillText('HRV (ms)', W/2, H - 1);
   ctx.save(); ctx.translate(10, H/2); ctx.rotate(-Math.PI/2);
@@ -5657,7 +5657,7 @@ function drawScatterChart(canvasId, points, options = {}) {
   // Correlation label
   const corrNum = (n*sumXY - sumX*sumY) / Math.sqrt((n*sumX2 - sumX*sumX) * (n*volVals.reduce((a,b)=>a+b*b,0) - sumY*sumY));
   if (!isNaN(corrNum)) {
-    ctx.font = '10px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.font = '10px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#aeaeb2';
     ctx.fillText('r = ' + corrNum.toFixed(2), W - 44, 16);
   }
 }
@@ -5837,7 +5837,7 @@ function drawXYScatter(canvasId, points, opts = {}) {
   ctx.clearRect(0, 0, W, H);
 
   if (points.length < 3) {
-    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#aeaeb2';
     ctx.fillText('Servono almeno 3 giorni con entrambi i valori', 8, H/2);
     return;
   }
@@ -5854,7 +5854,7 @@ function drawXYScatter(canvasId, points, opts = {}) {
   ctx.strokeStyle = 'rgba(142,142,147,.3)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(padL, padT); ctx.lineTo(padL, H-padB); ctx.lineTo(W-padR, H-padB); ctx.stroke();
 
-  ctx.font = '9px -apple-system'; ctx.fillStyle = '#aeaeb2';
+  ctx.font = '9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#aeaeb2';
   ctx.fillText(minY.toFixed(0), 4, H-padB);
   ctx.fillText(maxY.toFixed(0), 4, padT+8);
   ctx.fillText(minX.toFixed(1), padL, H-padB+14);
@@ -7624,7 +7624,7 @@ function drawWeightVolumeChart(id, pesoData, volumeData) {
   const n = pesoData.length;
   const pesoPts = pesoData.map((v, i) => v !== null ? { i, v } : null).filter(Boolean);
   if (pesoPts.length < 2) {
-    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.font = '11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#aeaeb2';
     ctx.fillText('Dati insufficienti', 8, 32);
     return;
   }
@@ -7657,7 +7657,7 @@ function drawWeightVolumeChart(id, pesoData, volumeData) {
   coords.forEach(c => { ctx.beginPath(); ctx.arc(c.x, c.y, 2.5, 0, Math.PI * 2); ctx.fillStyle = '#0071e3'; ctx.fill(); });
 
   const last = coords[coords.length - 1];
-  ctx.font = '500 11px -apple-system'; ctx.fillStyle = '#0071e3';
+  ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#0071e3';
   const label = last.v.toFixed(1);
   const tw = ctx.measureText(label).width;
   let lx = last.x + 4; if (lx + tw > W - 2) lx = last.x - tw - 4;
