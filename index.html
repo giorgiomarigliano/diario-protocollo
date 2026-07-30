@@ -4570,6 +4570,10 @@ function buildMedView() {
         <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sab 5 set 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T1 mid-ciclo + DEXA T1 · Santagostino / CRA</div><div class="med-tl-sub">08:00 Panel Santagostino (Galleria Corso Vercelli 23, cod. 00K24KC2) · 09:30 DEXA Centro Radiologico Ambrosiano (Via Selvanesco 77, MOC/21603) · confronto vs T0 · ~8 settimane dall'inizio reale delle iniezioni (18 lug, incl. Test Protocollo)</div></div>
       </div>
       <div class="med-tl-item">
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(175,82,222,.08);border:2px dashed #af52de">🏖️</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:#af52de;font-weight:600">14–16 ott 2026 — PIANIFICATO</div><div class="med-tl-title">Mallorca (viaggio)</div><div class="med-tl-sub">3 giorni fuori — da valutare impatto su iniezioni/allenamenti dei giorni di viaggio, come per Bangkok</div></div>
+      </div>
+      <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed #0071e3">🔬</div></div>
         <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sab 7 nov 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T2 fine ciclo + DEXA T2 · Santagostino</div><div class="med-tl-sub">Fine ciclo ufficiale (112gg dal 20 lug = 8 nov) — appuntamento sul sabato più vicino, stesse condizioni T0</div></div>
       </div>
@@ -5650,7 +5654,7 @@ let dashBuilt = false;
 // sera, richiesta esplicita di Giorgio: badge "7 giorni" cliccabile per
 // vedere un periodo più lungo/diverso). Sonno e Compliance integratori non
 // sono in questo elenco: badge fisso a 7gg, non richiesto per quelle due.
-let richKpiRangeDays = { peso: 7, hrv: 7, rhr: 7 };
+let richKpiRangeDays = { peso: 7, hrv: 7, rhr: 7, sonno: 7, supp: 7 };
 function setRichKpiRange(key, days) {
   richKpiRangeDays[key] = parseInt(days, 10);
   dashBuilt = false;
@@ -6019,7 +6023,7 @@ function buildDashboard() {
   const peso7 = getDayDataAll('peso', richKpiRangeDays.peso);
   const hrv7  = getDayDataAll('hrv',  richKpiRangeDays.hrv);
   const rhr7  = getDayDataAll('rhr',  richKpiRangeDays.rhr);
-  const sonno7Series = getSonnoOreAll(7);
+  const sonno7Series = getSonnoOreAll(richKpiRangeDays.sonno);
   const _sonnoValid = sonno7Series.filter(p=>p.value!==null);
   const lSonno = _sonnoValid.length ? _sonnoValid[_sonnoValid.length-1].value : null;
 
@@ -6032,7 +6036,7 @@ function buildDashboard() {
 
   // Andamento giornaliero (non cumulativo) della compliance integratori
   // sugli ultimi 7gg, per la nuova card con grafico dedicato.
-  const suppDaily7 = inV2 ? getSuppComplianceDaily(7) : [];
+  const suppDaily7 = inV2 ? getSuppComplianceDaily(richKpiRangeDays.supp) : [];
 
   // ── Helper: card KPI "ricca" — grafico 7gg con assi, MAX/MIN e riepilogo
   // Min/Max/Media (30/07/2026, sostituisce le vecchie mini-sparkline compact
@@ -6183,13 +6187,13 @@ function buildDashboard() {
         <span class="rich-kpi-badge">${weeks} settimane</span>
       </div>
       <div class="rich-kpi-value">${valueTxt}</div>
-      <div class="rich-kpi-delta-row neutral">${subTxt}</div>
-      <div class="rich-kpi-delta-row neutral">${remainTxt}</div>
       <div class="rich-kpi-progress-row">
         <div class="rich-kpi-progress-track"><div class="rich-kpi-progress-fill" style="width:${pctCiclo}%;background:#5856d6"></div></div>
         <span class="rich-kpi-progress-pct">${pctCiclo}%</span>
       </div>
-      ${statsHtml}
+      <div class="rich-kpi-delta-row neutral">${subTxt}</div>
+      <div class="rich-kpi-delta-row neutral">${remainTxt}</div>
+      <div style="margin-top:10px">${statsHtml}</div>
     </div>`;
   }
 
@@ -6200,12 +6204,12 @@ function buildDashboard() {
       <div class="dash-section-title">Stato ciclo</div>
 
       <div class="rich-kpi-grid">
+        ${protocolloCard()}
         ${richKpiCard({series7:peso7, label:'Peso attuale', icon:'⚖️', iconBg:'#eaf1fb', unit:'kg', decimals:1, accent:'#ff3b30', t0:T0_PESO, canvasId:'rk-peso', rangeKey:'peso', rangeDays:richKpiRangeDays.peso})}
         ${richKpiCard({series7:hrv7, label:'HRV', icon:'💓', iconBg:'#fde7ef', unit:'ms', decimals:0, accent:'#34c759', t0:T0_HRV, t0Suffix:'ms', canvasId:'rk-hrv', zoneBar:{lo:40,hi:45}, rangeKey:'hrv', rangeDays:richKpiRangeDays.hrv})}
         ${richKpiCard({series7:rhr7, label:'RHR (FC a riposo)', icon:'❤️', iconBg:'#fde7e7', unit:'bpm', decimals:0, accent:'#ff3b30', canvasId:'rk-rhr', extraHtml: (lBpS&&lBpD)?`PA: ${Math.round(lBpS)}/${Math.round(lBpD)} mmHg`:null, rangeKey:'rhr', rangeDays:richKpiRangeDays.rhr})}
-        ${protocolloCard()}
-        ${richKpiCard({series7:sonno7Series, label:'Sonno', icon:'😴', iconBg:'#ece7fb', unit:'h', decimals:1, accent:'#5856d6', canvasId:'rk-sonno', extraHtml:sleepBreakdownHtml()})}
-        ${inV2?richKpiCard({series7:suppDaily7, label:'Compliance integratori', icon:'💊', iconBg:'#fdf0e3', unit:'%', decimals:0, accent:'#34c759', canvasId:'rk-supp', noLine2:true}):''}
+        ${richKpiCard({series7:sonno7Series, label:'Sonno', icon:'😴', iconBg:'#ece7fb', unit:'h', decimals:1, accent:'#5856d6', canvasId:'rk-sonno', extraHtml:sleepBreakdownHtml(), rangeKey:'sonno', rangeDays:richKpiRangeDays.sonno})}
+        ${inV2?richKpiCard({series7:suppDaily7, label:'Compliance integratori', icon:'💊', iconBg:'#fdf0e3', unit:'%', decimals:0, accent:'#34c759', canvasId:'rk-supp', noLine2:true, rangeKey:'supp', rangeDays:richKpiRangeDays.supp}):''}
       </div>
     </div>
 
@@ -6532,9 +6536,9 @@ function refreshDashCharts() {
   drawRichKpiChart('rk-peso',  getDayDataAll('peso', richKpiRangeDays.peso), {height:_dashChartH, color:'#0071e3', decimals:1});
   drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  richKpiRangeDays.hrv),  {height:_dashChartH, color:'#34c759', decimals:0});
   drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  richKpiRangeDays.rhr),  {height:_dashChartH, color:'#ff3b30', decimals:0});
-  drawRichKpiChart('rk-sonno', getSonnoOreAll(7),        {height:_dashChartH, color:'#5856d6', decimals:1});
+  drawRichKpiChart('rk-sonno', getSonnoOreAll(richKpiRangeDays.sonno), {height:_dashChartH, color:'#5856d6', decimals:1});
   if (document.getElementById('rk-supp')) {
-    drawRichKpiChart('rk-supp', getSuppComplianceDaily(7), {height:_dashChartH, color:'#ff9500', decimals:0});
+    drawRichKpiChart('rk-supp', getSuppComplianceDaily(richKpiRangeDays.supp), {height:_dashChartH, color:'#ff9500', decimals:0});
   }
 
   // ── Grafici biometria ──────────────────────────────────────
