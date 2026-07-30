@@ -531,16 +531,16 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .med-tl-icon {
   width: 34px; height: 34px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 16px; flex-shrink: 0; z-index: 1;
+  font-size: var(--fs-16); flex-shrink: 0; z-index: 1;
 }
 .med-tl-connector {
   width: 2px; flex: 1; background: var(--border); margin-top: 3px;
 }
 .med-tl-item:last-child .med-tl-connector { display: none; }
 .med-tl-content { flex: 1; padding-top: 4px; }
-.med-tl-date { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
-.med-tl-title { font-size: 13px; font-weight: 600; color: var(--text); }
-.med-tl-sub { font-size: 12px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.med-tl-date { font-size: var(--fs-xs); color: var(--muted); margin-bottom: 2px; }
+.med-tl-title { font-size: var(--fs-body); font-weight: var(--fw-semi); color: var(--text); }
+.med-tl-sub { font-size: var(--fs-sm); color: var(--muted); margin-top: 2px; line-height: 1.4; }
 .note-ta {
   width: 100%;
   box-sizing: border-box;
@@ -548,7 +548,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: var(--fs-body);
   color: var(--text);
   font-family: inherit;
   resize: vertical;
@@ -569,16 +569,16 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .inj-num {
   width: 22px; height: 22px;
   border-radius: 50%;
-  font-size: 11px; font-weight: 700;
+  font-size: var(--fs-xs); font-weight: var(--fw-bold);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 .inj-title {
-  font-size: 12px; font-weight: 600; color: var(--text);
+  font-size: var(--fs-sm); font-weight: var(--fw-semi); color: var(--text);
   letter-spacing: -0.01em; flex: 1;
 }
 .inj-timing {
-  font-size: 11px; color: var(--muted);
+  font-size: var(--fs-xs); color: var(--muted);
   background: var(--surface3, #e8e8ed);
   padding: 2px 8px; border-radius: 10px;
   flex-shrink: 0;
@@ -3933,9 +3933,9 @@ function buildMedView() {
   // ── HELPER ──────────────────────────────────────────────────────────────
   function flag(ok, severity) {
     // severity: 'warn' | 'alert' | auto
-    if (ok) return { color:'#34c759', bg:'rgba(52,199,89,.08)' };
-    if (severity==='alert') return { color:'#ff3b30', bg:'rgba(255,59,48,.08)' };
-    return { color:'#ff9500', bg:'rgba(255,149,0,.08)' };
+    if (ok) return { color:'var(--green)', bg:'rgba(52,199,89,.08)' };
+    if (severity==='alert') return { color:'var(--red)', bg:'rgba(255,59,48,.08)' };
+    return { color:'var(--orange)', bg:'rgba(255,149,0,.08)' };
   }
   function renderPanel(p) {
     let h = `<div class="med-panel">
@@ -4524,102 +4524,102 @@ function buildMedView() {
     </div></div>
 
     <!-- ESAMI COMPLETATI -->
-    <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Esami completati (10 apr 2026 – 14 lug 2026)</div>
+    <div style="font-size: var(--fs-2xs);font-weight: var(--fw-semi);color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Esami completati (10 apr 2026 – 14 lug 2026)</div>
     <div class="med-timeline" style="margin-bottom:20px">
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid #34c759">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">14 lug 2026 · 09:23</div><div class="med-tl-title">Visita endocrinologica (Dr. Seregni CDI)</div><div class="med-tl-sub"><strong>Biometria:</strong> Peso 72kg (BMI 24.91) · PA 120/80 · FC 66bpm | <strong>Diagnosi:</strong> Ipotrofia testicolare sx · Ipergonadotropismo (FSH 24.27↑↑ LH 14.24↑↑) | <strong>Follow-up:</strong> T totale + SHBG tra 6–8 mesi · <strong>🟢 Autorizzazione:</strong> Protocollo peptidico sotto controllo medico di base</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid var(--green)">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--green);font-weight: var(--fw-semi)">14 lug 2026 · 09:23</div><div class="med-tl-title">Visita endocrinologica (Dr. Seregni CDI)</div><div class="med-tl-sub"><strong>Biometria:</strong> Peso 72kg (BMI 24.91) · PA 120/80 · FC 66bpm | <strong>Diagnosi:</strong> Ipotrofia testicolare sx · Ipergonadotropismo (FSH 24.27↑↑ LH 14.24↑↑) | <strong>Follow-up:</strong> T totale + SHBG tra 6–8 mesi · <strong>🟢 Autorizzazione:</strong> Protocollo peptidico sotto controllo medico di base</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid #34c759">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">13 lug 2026 · 14:00</div><div class="med-tl-title">Echo-doppler arterie renali (Bionics CDI, Dott. Corsi)</div><div class="med-tl-sub">Risultati: Normali · Aorta 1.7 cm · Arterie renali 5.0/5.2 mm · PSV 100/110 · Indici ok</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid var(--green)">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--green);font-weight: var(--fw-semi)">13 lug 2026 · 14:00</div><div class="med-tl-title">Echo-doppler arterie renali (Bionics CDI, Dott. Corsi)</div><div class="med-tl-sub">Risultati: Normali · Aorta 1.7 cm · Arterie renali 5.0/5.2 mm · PSV 100/110 · Indici ok</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid #34c759">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">13 lug 2026 · 08:32 — COMPLETATO 14/07</div><div class="med-tl-title">Panel T0 Santagostino (codice 00K24KC2)</div><div class="med-tl-sub"><strong>Ematologia:</strong> RBC 4.01↓ · Hb 118.0↓ · Emato ok altrimenti | <strong>Chimica:</strong> Glucosio 82 · Creatinina 1.28↑ · TG 50 · HDL 32↓ · LDL 49 · PCR &lt;0.40 | <strong>Immunologia:</strong> LH 14.24↑ · FSH 24.27↑ · E2 &lt;24 · Testosterone 526.20 · T.lib 18.80 · SHBG 54.10 · IGF-1 86.00 · Insulina 3.6<br><span style="color:#ff3b30;font-weight:600">⚠️ Discrepanze vs CDI:</span> <strong>LH:</strong> 10.9 (03/07) → 14.24 (13/07) = +30% ↑↑ | <strong>FSH:</strong> 21.2 (03/07) → 24.27 (13/07) = +14% ↑ | <strong>SHBG:</strong> 72.80 (03/07) → 54.10 (13/07) = -26% ↓↓ | <strong>IGF-1:</strong> 94 (20/05) → 86.00 (13/07) = -8.5% ↓ | <strong>Hb:</strong> stabile bassa (119→118)</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid var(--green)">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--green);font-weight: var(--fw-semi)">13 lug 2026 · 08:32 — COMPLETATO 14/07</div><div class="med-tl-title">Panel T0 Santagostino (codice 00K24KC2)</div><div class="med-tl-sub"><strong>Ematologia:</strong> RBC 4.01↓ · Hb 118.0↓ · Emato ok altrimenti | <strong>Chimica:</strong> Glucosio 82 · Creatinina 1.28↑ · TG 50 · HDL 32↓ · LDL 49 · PCR &lt;0.40 | <strong>Immunologia:</strong> LH 14.24↑ · FSH 24.27↑ · E2 &lt;24 · Testosterone 526.20 · T.lib 18.80 · SHBG 54.10 · IGF-1 86.00 · Insulina 3.6<br><span style="color:var(--red);font-weight: var(--fw-semi)">⚠️ Discrepanze vs CDI:</span> <strong>LH:</strong> 10.9 (03/07) → 14.24 (13/07) = +30% ↑↑ | <strong>FSH:</strong> 21.2 (03/07) → 24.27 (13/07) = +14% ↑ | <strong>SHBG:</strong> 72.80 (03/07) → 54.10 (13/07) = -26% ↓↓ | <strong>IGF-1:</strong> 94 (20/05) → 86.00 (13/07) = -8.5% ↓ | <strong>Hb:</strong> stabile bassa (119→118)</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid #34c759">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">6 lug 2026</div><div class="med-tl-title">Urine ACR + Cortisolo libero urinario (24h) CDI</div><div class="med-tl-sub">ACR 5 mg/g (normoalbuminuria ✅) · dU-Cortisolo 58.45 µg/24h (borderline alto, in range)</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid var(--green)">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--green);font-weight: var(--fw-semi)">6 lug 2026</div><div class="med-tl-title">Urine ACR + Cortisolo libero urinario (24h) CDI</div><div class="med-tl-sub">ACR 5 mg/g (normoalbuminuria ✅) · dU-Cortisolo 58.45 µg/24h (borderline alto, in range)</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid #34c759">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">3 lug 2026</div><div class="med-tl-title">Panel ormonale + renale CDI</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid var(--green)">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--green);font-weight: var(--fw-semi)">3 lug 2026</div><div class="med-tl-title">Panel ormonale + renale CDI</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid #34c759">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">29 giu 2026</div><div class="med-tl-title">Visita urologica (Dr.ssa Maccagnano)</div><div class="med-tl-sub">Richiesta follow-up echo-doppler renale 13/07</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid var(--green)">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--green);font-weight: var(--fw-semi)">29 giu 2026</div><div class="med-tl-title">Visita urologica (Dr.ssa Maccagnano)</div><div class="med-tl-sub">Richiesta follow-up echo-doppler renale 13/07</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid #34c759">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">9 giu 2026</div><div class="med-tl-title">Check-up CDI Bicocca</div><div class="med-tl-sub">Ecocardiogramma (FE 63% ok) · ECG stress (negativo) · Eco addome · Visita prostata</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid var(--green)">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--green);font-weight: var(--fw-semi)">9 giu 2026</div><div class="med-tl-title">Check-up CDI Bicocca</div><div class="med-tl-sub">Ecocardiogramma (FE 63% ok) · ECG stress (negativo) · Eco addome · Visita prostata</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid #34c759">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">27 mag 2026</div><div class="med-tl-title">Eco-doppler scrotale</div><div class="med-tl-sub">Varicocele sin gr.3 · Testicolo sin ridotto · Idrocele bilat</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid var(--green)">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--green);font-weight: var(--fw-semi)">27 mag 2026</div><div class="med-tl-title">Eco-doppler scrotale</div><div class="med-tl-sub">Varicocele sin gr.3 · Testicolo sin ridotto · Idrocele bilat</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid #34c759">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">20 mag 2026</div><div class="med-tl-title">Panel CDI ematochimico</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid var(--green)">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--green);font-weight: var(--fw-semi)">20 mag 2026</div><div class="med-tl-title">Panel CDI ematochimico</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid #34c759">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">9 mag 2026</div><div class="med-tl-title">DEXA T0 + Biometria</div><div class="med-tl-sub">Peso 71.1kg · BF 18.2% · Lean 55.4kg · VAT 72cm²</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid var(--green)">✅</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--green);font-weight: var(--fw-semi)">9 mag 2026</div><div class="med-tl-title">DEXA T0 + Biometria</div><div class="med-tl-sub">Peso 71.1kg · BF 18.2% · Lean 55.4kg · VAT 72cm²</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid #34c759">✅</div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#34c759;font-weight:600">10 apr 2026</div><div class="med-tl-title">Panel CDI Bicocca (baseline)</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(52,199,89,.12);border:2px solid var(--green)">✅</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--green);font-weight: var(--fw-semi)">10 apr 2026</div><div class="med-tl-title">Panel CDI Bicocca (baseline)</div></div>
       </div>
     </div>
 
     <!-- PROSSIMI EVENTI -->
-    <div style="font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Prossimi esami e visite (ordine cronologico)</div>
+    <div style="font-size: var(--fs-2xs);font-weight: var(--fw-semi);color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Prossimi esami e visite (ordine cronologico)</div>
     <div class="med-timeline" style="margin-bottom:20px">
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(175,82,222,.08);border:2px dashed #af52de">📊</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#af52de;font-weight:600">7–21 ago 2026 — PIANIFICATO</div><div class="med-tl-title">Bangkok: 15 giorni allenamenti WO (split muscolare da definire)</div><div class="med-tl-sub">IGF-1 DES bilaterale confermato tutti i giorni</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(175,82,222,.08);border:2px dashed var(--purple)">📊</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--purple);font-weight: var(--fw-semi)">7–21 ago 2026 — PIANIFICATO</div><div class="med-tl-title">Bangkok: 15 giorni allenamenti WO (split muscolare da definire)</div><div class="med-tl-sub">IGF-1 DES bilaterale confermato tutti i giorni</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.12);border:2px solid #0071e3">🩺</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">27 ago 2026 · 10:00 — CONFERMATO</div><div class="med-tl-title">Visita nefrologica · Dr.ssa Meroni Mietta · CDI Bicocca</div><div class="med-tl-sub">Follow-up da echo-doppler 13/07 · Creatinina in trend · eGFR in calo · ACR urinario normale · spostata dal 30/7 (16€, sportello)</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.12);border:2px solid var(--blue)">🩺</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--blue);font-weight: var(--fw-semi)">27 ago 2026 · 10:00 — CONFERMATO</div><div class="med-tl-title">Visita nefrologica · Dr.ssa Meroni Mietta · CDI Bicocca</div><div class="med-tl-sub">Follow-up da echo-doppler 13/07 · Creatinina in trend · eGFR in calo · ACR urinario normale · spostata dal 30/7 (16€, sportello)</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed #0071e3">🔬</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sab 5 set 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T1 mid-ciclo + DEXA T1 · Santagostino / CRA</div><div class="med-tl-sub">08:00 Panel Santagostino (Galleria Corso Vercelli 23, cod. 00K24KC2) · 09:30 DEXA Centro Radiologico Ambrosiano (Via Selvanesco 77, MOC/21603) · confronto vs T0 · ~8 settimane dall'inizio reale delle iniezioni (18 lug, incl. Test Protocollo)</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed var(--blue)">🔬</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--blue);font-weight: var(--fw-semi)">Sab 5 set 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T1 mid-ciclo + DEXA T1 · Santagostino / CRA</div><div class="med-tl-sub">08:00 Panel Santagostino (Galleria Corso Vercelli 23, cod. 00K24KC2) · 09:30 DEXA Centro Radiologico Ambrosiano (Via Selvanesco 77, MOC/21603) · confronto vs T0 · ~8 settimane dall'inizio reale delle iniezioni (18 lug, incl. Test Protocollo)</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(175,82,222,.08);border:2px dashed #af52de">🏖️</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#af52de;font-weight:600">14–16 ott 2026 — PIANIFICATO</div><div class="med-tl-title">Mallorca (viaggio)</div><div class="med-tl-sub">3 giorni fuori — da valutare impatto su iniezioni/allenamenti dei giorni di viaggio, come per Bangkok</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(175,82,222,.08);border:2px dashed var(--purple)">🏖️</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--purple);font-weight: var(--fw-semi)">14–16 ott 2026 — PIANIFICATO</div><div class="med-tl-title">Mallorca (viaggio)</div><div class="med-tl-sub">3 giorni fuori — da valutare impatto su iniezioni/allenamenti dei giorni di viaggio, come per Bangkok</div></div>
       </div>
       <div class="med-tl-item">
-        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed #0071e3">🔬</div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:#0071e3;font-weight:600">Sab 7 nov 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T2 fine ciclo + DEXA T2 · Santagostino</div><div class="med-tl-sub">Fine ciclo ufficiale (112gg dal 20 lug = 8 nov) — appuntamento sul sabato più vicino, stesse condizioni T0</div></div>
+        <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed var(--blue)">🔬</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--blue);font-weight: var(--fw-semi)">Sab 7 nov 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T2 fine ciclo + DEXA T2 · Santagostino</div><div class="med-tl-sub">Fine ciclo ufficiale (112gg dal 20 lug = 8 nov) — appuntamento sul sabato più vicino, stesse condizioni T0</div></div>
       </div>
     </div>
 
 
   </div>
-  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px;font-size:12px">
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#34c759;display:inline-block"></span>Nella norma</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#ff9500;display:inline-block"></span>Attenzione / borderline</span>
-    <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#ff3b30;display:inline-block"></span>Fuori range</span>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px;font-size: var(--fs-sm)">
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block"></span>Nella norma</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--orange);display:inline-block"></span>Attenzione / borderline</span>
+    <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block"></span>Fuori range</span>
   </div>
 
   <!-- Indice panel -->
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px">
-    <a href="#panel-seregni-14lug" style="background:rgba(52,199,89,.12);color:#34c759;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">👨‍⚕️ Visita Seregni 14 lug 2026</a>
-    <a href="#panel-t0-sant" style="background:rgba(255,59,48,.12);color:#ff3b30;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none">🔴 T0 Santagostino 13 lug 2026</a>
-    <a href="#panel-jul6-2026" style="background:rgba(52,199,89,.12);color:#34c759;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🧪 Urine ACR + Cortisolo 6 lug 2026</a>
-    <a href="#panel-jul2026" style="background:rgba(255,149,0,.12);color:#ff9500;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🩸 Ormonale+renale 3 lug 2026</a>
-    <a href="#panel-bionics-jun2026" style="background:rgba(0,113,227,.12);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🧪 Lab Bionics 9 giu 2026</a>
-    <a href="#panel-jun2026" style="background:rgba(52,199,89,.12);color:#34c759;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">✅ Check-up 9 giu 2026</a>
-    <a href="#panel-may21-2026" style="background:rgba(0,0,0,.06);color:var(--text);padding:5px 12px;border-radius:20px;font-size:12px;text-decoration:none">Clearance 21 mag 2026</a>
-    <a href="#panel-may2026" style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">🎯 T0 Mag 2026</a>
-    <a href="#panel-apr2026" style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;text-decoration:none">Apr 2026</a>
-    <a href="#panel-feb2025" style="background:rgba(0,0,0,.06);color:var(--text);padding:5px 12px;border-radius:20px;font-size:12px;text-decoration:none">Feb 2025</a>
-    <a href="#panel-jan2024" style="background:rgba(0,0,0,.06);color:var(--text);padding:5px 12px;border-radius:20px;font-size:12px;text-decoration:none">Gen 2024</a>
-    <a href="#panel-nov2022" style="background:rgba(0,0,0,.06);color:var(--text);padding:5px 12px;border-radius:20px;font-size:12px;text-decoration:none">Nov 2022</a>
-    <a href="#panel-oct2020" style="background:rgba(0,0,0,.06);color:var(--text);padding:5px 12px;border-radius:20px;font-size:12px;text-decoration:none">Ott 2020</a>
+    <a href="#panel-seregni-14lug" style="background:rgba(52,199,89,.12);color:var(--green);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm);font-weight: var(--fw-semi);text-decoration:none">👨‍⚕️ Visita Seregni 14 lug 2026</a>
+    <a href="#panel-t0-sant" style="background:rgba(255,59,48,.12);color:var(--red);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm);font-weight: var(--fw-bold);text-decoration:none">🔴 T0 Santagostino 13 lug 2026</a>
+    <a href="#panel-jul6-2026" style="background:rgba(52,199,89,.12);color:var(--green);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm);font-weight: var(--fw-semi);text-decoration:none">🧪 Urine ACR + Cortisolo 6 lug 2026</a>
+    <a href="#panel-jul2026" style="background:rgba(255,149,0,.12);color:var(--orange);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm);font-weight: var(--fw-semi);text-decoration:none">🩸 Ormonale+renale 3 lug 2026</a>
+    <a href="#panel-bionics-jun2026" style="background:rgba(0,113,227,.12);color:var(--blue);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm);font-weight: var(--fw-semi);text-decoration:none">🧪 Lab Bionics 9 giu 2026</a>
+    <a href="#panel-jun2026" style="background:rgba(52,199,89,.12);color:var(--green);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm);font-weight: var(--fw-semi);text-decoration:none">✅ Check-up 9 giu 2026</a>
+    <a href="#panel-may21-2026" style="background:rgba(0,0,0,.06);color:var(--text);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm);text-decoration:none">Clearance 21 mag 2026</a>
+    <a href="#panel-may2026" style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm);font-weight: var(--fw-semi);text-decoration:none">🎯 T0 Mag 2026</a>
+    <a href="#panel-apr2026" style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm);font-weight: var(--fw-semi);text-decoration:none">Apr 2026</a>
+    <a href="#panel-feb2025" style="background:rgba(0,0,0,.06);color:var(--text);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm);text-decoration:none">Feb 2025</a>
+    <a href="#panel-jan2024" style="background:rgba(0,0,0,.06);color:var(--text);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm);text-decoration:none">Gen 2024</a>
+    <a href="#panel-nov2022" style="background:rgba(0,0,0,.06);color:var(--text);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm);text-decoration:none">Nov 2022</a>
+    <a href="#panel-oct2020" style="background:rgba(0,0,0,.06);color:var(--text);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm);text-decoration:none">Ott 2020</a>
   </div>`;
 
   // Panel più recente prima
@@ -4652,16 +4652,16 @@ function buildMedView() {
     </div></div>`;
   trends.forEach(t => {
     html += `<div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
-        <span style="font-weight:500">${t.marker}</span>
+      <div style="display:flex;justify-content:space-between;font-size: var(--fs-sm);margin-bottom:5px">
+        <span style="font-weight: var(--fw-med)">${t.marker}</span>
         <span style="color:var(--muted)">target: ${t.target}</span>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">`;
     t.pts.forEach(pt => {
-      const c = t.ok(pt.v) ? '#34c759' : '#ff9500';
-      html += `<div style="background:rgba(0,0,0,.05);border-radius:6px;padding:4px 9px;font-size:11px">
+      const c = t.ok(pt.v) ? 'var(--green)' : 'var(--orange)';
+      html += `<div style="background:rgba(0,0,0,.05);border-radius:6px;padding:4px 9px;font-size: var(--fs-xs)">
         <span style="color:var(--muted)">${pt.d}: </span>
-        <span style="font-weight:700;color:${c}">${pt.v}</span>
+        <span style="font-weight: var(--fw-bold);color:${c}">${pt.v}</span>
       </div>`;
     });
     html += `</div></div>`;
@@ -4677,9 +4677,9 @@ function buildMedView() {
     <div style="display:grid;gap:8px">`;
   azioni.forEach(a => {
     const bg = a.col==='ok' ? 'rgba(52,199,89,.08)' : a.col==='alert' ? 'rgba(255,59,48,.08)' : 'rgba(255,149,0,.08)';
-    const tc = a.col==='ok' ? '#34c759' : a.col==='alert' ? '#ff3b30' : '#ff9500';
-    html += `<div style="padding:9px 12px;background:${bg};border-radius:8px;font-size:13px">
-      <span style="font-weight:600;color:${tc}">${a.label}</span>
+    const tc = a.col==='ok' ? 'var(--green)' : a.col==='alert' ? 'var(--red)' : 'var(--orange)';
+    html += `<div style="padding:9px 12px;background:${bg};border-radius:8px;font-size: var(--fs-body)">
+      <span style="font-weight: var(--fw-semi);color:${tc}">${a.label}</span>
       <span style="color:var(--muted)"> — ${a.text}</span>
     </div>`;
   });
@@ -4692,7 +4692,7 @@ function buildMedView() {
       <div class="med-panel-sub">T0 · T1 (sett. 8) · T2 (fine ciclo) · Santagostino · Da concordare con Dr. Seregni</div>
     </div></div>
     <div style="display:flex;flex-wrap:wrap;gap:7px">
-      ${miniPanel.map(m=>`<span style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px">${m}</span>`).join('')}
+      ${miniPanel.map(m=>`<span style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm)">${m}</span>`).join('')}
     </div>
   </div>`;
 
