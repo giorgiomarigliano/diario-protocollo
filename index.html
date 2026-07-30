@@ -8830,7 +8830,7 @@ function buildStockView2() {
   }
 
   const compounds = [
-    { id:'tesa',    name:'Tesamorelin',      emoji:'🧬', color:'#0071e3', bg:'rgba(0,113,227,.08)',
+    { id:'tesa',    name:'Tesamorelin',      emoji:'🧬', color:'var(--blue)', bg:'rgba(0,113,227,.08)',
       dose:'2mg/sera · SC',           dose_mcg:2000, mgNeeded:224, fab_detail:'112gg × 2mg/die',
       stabilityDays:21, stabilityNote:'21 gg frigo · sensibile alla luce',
       mgOptions:[2,5,10], bacOptions:[0.5,1.0,2.0], defaultMg:10, defaultBac:2.0,
@@ -8838,28 +8838,28 @@ function buildStockView2() {
         { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(24,'intatto') },
         { key:'limitless', vials:[{n:1,stato:'perso'},{n:2,stato:'perso'},{n:3,stato:'intatto'},{n:4,stato:'intatto'},{n:5,stato:'intatto'},{n:6,stato:'intatto'},{n:7,stato:'intatto'},{n:8,stato:'intatto'},{n:9,stato:'intatto'},{n:10,stato:'intatto'},{n:11,stato:'intatto'},{n:12,stato:'intatto'}] },
       ] },
-    { id:'fragment',name:'Fragment 176-191', emoji:'🔥', color:'#ff3b30', bg:'rgba(255,59,48,.08)',
+    { id:'fragment',name:'Fragment 176-191', emoji:'🔥', color:'var(--red)', bg:'rgba(255,59,48,.08)',
       dose:'250mcg × 2/die · SC',     dose_mcg:250,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
       stabilityDays:30, stabilityNote:'30 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
       suppliers:[
         { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(6,'intatto') },
       ] },
-    { id:'ipa',     name:'Ipamorelin',        emoji:'⚡', color:'#34c759', bg:'rgba(52,199,89,.08)',
+    { id:'ipa',     name:'Ipamorelin',        emoji:'⚡', color:'var(--green)', bg:'rgba(52,199,89,.08)',
       dose:'100mcg/sera · SC',        dose_mcg:100,  mgNeeded:11.2,fab_detail:'112gg × 100mcg/die',
       stabilityDays:30, stabilityNote:'30 gg frigo',
       mgOptions:[2,5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
       suppliers:[
         { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(4,'intatto') },
       ] },
-    { id:'igf',     name:'IGF-1 DES',         emoji:'💪', color:'#af52de', bg:'rgba(175,82,222,.08)',
+    { id:'igf',     name:'IGF-1 DES',         emoji:'💪', color:'var(--purple)', bg:'rgba(175,82,222,.08)',
       dose:'50mcg post-WO · IM bilat',dose_mcg:50,   mgNeeded:4,   fab_detail:'80gg WO × 50mcg/die',
       stabilityDays:30, stabilityNote:'30–40+ gg frigo (indicato dal medico, dato il dosaggio · verificare aspetto prima di ogni uso)',
       mgOptions:[2,5], bacOptions:[0.5,1.0,2.0,3.0], defaultMg:2, defaultBac:3.0,
       suppliers:[
         { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(4,'intatto') },
       ] },
-    { id:'bpc',     name:'BPC-157',            emoji:'🔧', color:'#ff9500', bg:'rgba(255,149,0,.08)',
+    { id:'bpc',     name:'BPC-157',            emoji:'🔧', color:'var(--orange)', bg:'rgba(255,149,0,.08)',
       dose:'250mcg × 2/die · SC',     dose_mcg:250,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
       stabilityDays:28, stabilityNote:'28 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
@@ -9024,10 +9024,10 @@ function buildStockView2() {
   const bkkTotalExtraBac = Math.round(compounds.reduce((s,c) => s + (c.bkkExtraBac||0), 0) * 10) / 10;
 
   function stSty(s) {
-    const M = { intatto:{dot:'#34c759',text:'Intatto',bg:'rgba(52,199,89,.10)',c:'#1d6e32'},
-      in_uso:{dot:'#0071e3',text:'In uso',bg:'rgba(0,113,227,.10)',c:'#0058b8'},
-      esaurito:{dot:'#ff3b30',text:'Esaurito',bg:'rgba(255,59,48,.10)',c:'#c0392b'},
-      perso:{dot:'#ff9500',text:'Perso',bg:'rgba(255,149,0,.10)',c:'#a05a00'},
+    const M = { intatto:{dot:'var(--green)',text:'Intatto',bg:'rgba(52,199,89,.10)',c:'#1d6e32'},
+      in_uso:{dot:'var(--blue)',text:'In uso',bg:'rgba(0,113,227,.10)',c:'#0058b8'},
+      esaurito:{dot:'var(--red)',text:'Esaurito',bg:'rgba(255,59,48,.10)',c:'#c0392b'},
+      perso:{dot:'var(--orange)',text:'Perso',bg:'rgba(255,149,0,.10)',c:'#a05a00'},
       congelato:{dot:'#5ac8fa',text:'Congelato',bg:'rgba(90,200,250,.10)',c:'#006fa6'},
       attesa:{dot:'#8e8e93',text:'In arrivo',bg:'rgba(142,142,147,.12)',c:'#636366'} };
     return M[s] || {dot:'#aeaeb2',text:s,bg:'#f5f5f7',c:'#6e6e73'};
@@ -9058,66 +9058,66 @@ function buildStockView2() {
       .stock-vchip summary::marker{content:''}
       .stock-vchip[open] summary{border-radius:8px 8px 0 0}
     </style>
-    <div style="font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.02em;margin-bottom:4px">Stock peptidi · Ciclo 1</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">20 lug – 8 nov 2026 · 112 giorni</div>
+    <div style="font-size:var(--fs-20);font-weight:var(--fw-bold);color:var(--text);letter-spacing:-.02em;margin-bottom:4px">Stock peptidi · Ciclo 1</div>
+    <div style="font-size:var(--fs-sm);color:var(--muted);margin-bottom:16px">20 lug – 8 nov 2026 · 112 giorni</div>
 
     <div style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);padding:16px;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">🧮 Unit Converter</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Volume di prelievo su siringa da insulina U-100</div>
+      <div style="font-size:var(--fs-14);font-weight:var(--fw-bold);color:var(--text);margin-bottom:2px">🧮 Unit Converter</div>
+      <div style="font-size:var(--fs-xs);color:var(--muted);margin-bottom:14px">Volume di prelievo su siringa da insulina U-100</div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px">
         <div>
-          <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Peptide</div>
-          <select id="uc-peptide" onchange="ucFillDefaults(this.value)" style="width:100%;font-size:12px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">${ucOpts}</select>
+          <div style="font-size:var(--fs-3xs);color:var(--muted);font-weight:var(--fw-semi);margin-bottom:3px;text-transform:uppercase">Peptide</div>
+          <select id="uc-peptide" onchange="ucFillDefaults(this.value)" style="width:100%;font-size:var(--fs-sm);border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit">${ucOpts}</select>
         </div>
         <div>
-          <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Quantità vial</div>
-          <div style="position:relative"><input type="number" id="uc-mg" value="10" step="0.1" min="0" oninput="ucUpdate()" style="width:100%;font-size:12px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 24px 7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted)">mg</span></div>
+          <div style="font-size:var(--fs-3xs);color:var(--muted);font-weight:var(--fw-semi);margin-bottom:3px;text-transform:uppercase">Quantità vial</div>
+          <div style="position:relative"><input type="number" id="uc-mg" value="10" step="0.1" min="0" oninput="ucUpdate()" style="width:100%;font-size:var(--fs-sm);border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 24px 7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:var(--fs-2xs);color:var(--muted)">mg</span></div>
         </div>
         <div>
-          <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Acqua BAC</div>
-          <div style="position:relative"><input type="number" id="uc-bac" value="2" step="0.1" min="0" oninput="ucUpdate()" style="width:100%;font-size:12px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 24px 7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted)">ml</span></div>
+          <div style="font-size:var(--fs-3xs);color:var(--muted);font-weight:var(--fw-semi);margin-bottom:3px;text-transform:uppercase">Acqua BAC</div>
+          <div style="position:relative"><input type="number" id="uc-bac" value="2" step="0.1" min="0" oninput="ucUpdate()" style="width:100%;font-size:var(--fs-sm);border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 24px 7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:var(--fs-2xs);color:var(--muted)">ml</span></div>
         </div>
         <div>
-          <div style="font-size:9px;color:var(--muted);font-weight:600;margin-bottom:3px;text-transform:uppercase">Dose target</div>
-          <div style="position:relative"><input type="number" id="uc-target" value="250" step="1" min="0" oninput="ucUpdate()" style="width:100%;font-size:12px;border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 30px 7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted)">mcg</span></div>
+          <div style="font-size:var(--fs-3xs);color:var(--muted);font-weight:var(--fw-semi);margin-bottom:3px;text-transform:uppercase">Dose target</div>
+          <div style="position:relative"><input type="number" id="uc-target" value="250" step="1" min="0" oninput="ucUpdate()" style="width:100%;font-size:var(--fs-sm);border:1px solid var(--border,#e8e8ed);border-radius:6px;padding:7px 30px 7px 6px;background:var(--surface2,#f5f5f7);color:var(--text);outline:none;font-family:inherit"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:var(--fs-2xs);color:var(--muted)">mcg</span></div>
         </div>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:10px;align-items:stretch">
         <div style="background:var(--surface2,#f5f5f7);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase">Concentrazione</div>
-          <div id="uc-conc" style="font-size:18px;font-weight:700;color:var(--text);margin:2px 0">—</div>
-          <div style="font-size:9px;color:var(--muted)">mcg/ml</div>
+          <div style="font-size:var(--fs-3xs);color:var(--muted);font-weight:var(--fw-semi);text-transform:uppercase">Concentrazione</div>
+          <div id="uc-conc" style="font-size:var(--fs-18);font-weight:var(--fw-bold);color:var(--text);margin:2px 0">—</div>
+          <div style="font-size:var(--fs-3xs);color:var(--muted)">mcg/ml</div>
         </div>
         <div style="background:rgba(0,113,227,.08);border:1px solid rgba(0,113,227,.25);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:9px;color:var(--blue);font-weight:600;text-transform:uppercase">Volume da prelevare</div>
-          <div id="uc-draw" style="font-size:22px;font-weight:800;color:var(--blue);margin:2px 0">—</div>
-          <div style="font-size:9px;color:var(--blue)">unità (UI)</div>
+          <div style="font-size:var(--fs-3xs);color:var(--blue);font-weight:var(--fw-semi);text-transform:uppercase">Volume da prelevare</div>
+          <div id="uc-draw" style="font-size:var(--fs-xl);font-weight:800;color:var(--blue);margin:2px 0">—</div>
+          <div style="font-size:var(--fs-3xs);color:var(--blue)">unità (UI)</div>
         </div>
         <div style="background:var(--surface2,#f5f5f7);border-radius:10px;padding:10px;text-align:center">
-          <div style="font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase">Dosi/vial</div>
-          <div id="uc-doses" style="font-size:18px;font-weight:700;color:var(--text);margin:2px 0">—</div>
-          <div style="font-size:9px;color:var(--muted)">dosi</div>
+          <div style="font-size:var(--fs-3xs);color:var(--muted);font-weight:var(--fw-semi);text-transform:uppercase">Dosi/vial</div>
+          <div id="uc-doses" style="font-size:var(--fs-18);font-weight:var(--fw-bold);color:var(--text);margin:2px 0">—</div>
+          <div style="font-size:var(--fs-3xs);color:var(--muted)">dosi</div>
         </div>
       </div>
-      <div id="uc-bilat" style="display:none;font-size:11px;color:var(--blue);font-weight:600;text-align:center;margin-top:8px"></div>
-      <div style="font-size:9px;color:var(--muted);margin-top:10px;text-align:center">Solo conversione di unità · non sostituisce indicazione medica</div>
+      <div id="uc-bilat" style="display:none;font-size:var(--fs-xs);color:var(--blue);font-weight:var(--fw-semi);text-align:center;margin-top:8px"></div>
+      <div style="font-size:var(--fs-3xs);color:var(--muted);margin-top:10px;text-align:center">Solo conversione di unità · non sostituisce indicazione medica</div>
     </div>
 
     <div style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);padding:16px;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px">🧪 Tabella Ricostituzione</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Diluizione effettiva dei vial ricostituiti · modifica vial/BAC per aggiornare i calcoli</div>
+      <div style="font-size:var(--fs-14);font-weight:var(--fw-bold);color:var(--text);margin-bottom:2px">🧪 Tabella Ricostituzione</div>
+      <div style="font-size:var(--fs-xs);color:var(--muted);margin-bottom:12px">Diluizione effettiva dei vial ricostituiti · modifica vial/BAC per aggiornare i calcoli</div>
       <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs)">
         <thead>
           <tr style="border-bottom:1.5px solid var(--border,#e8e8ed)">
-            <th style="text-align:left;padding:6px 4px;color:var(--muted);font-weight:600">Peptide</th>
-            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:600">Vial</th>
-            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:600">BAC</th>
-            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:600">Conc.</th>
-            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:600">UI da tirare</th>
-            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:600">Ricostituito</th>
+            <th style="text-align:left;padding:6px 4px;color:var(--muted);font-weight:var(--fw-semi)">Peptide</th>
+            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:var(--fw-semi)">Vial</th>
+            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:var(--fw-semi)">BAC</th>
+            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:var(--fw-semi)">Conc.</th>
+            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:var(--fw-semi)">UI da tirare</th>
+            <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:var(--fw-semi)">Ricostituito</th>
           </tr>
         </thead>
         <tbody id="recon-table-body">${renderReconRows(compounds)}</tbody>
@@ -9130,42 +9130,42 @@ function buildStockView2() {
         const dispMg = c.disponibile || 0;
         const pctDisp = c.mgNeeded ? Math.min(100,Math.round((dispMg/c.mgNeeded)*100)) : 0;
         const surplus = Math.round((dispMg - c.mgNeeded)*10)/10;
-        const col = pctDisp>=100?'#34c759':pctDisp>0?'#0071e3':'#ff3b30';
+        const col = pctDisp>=100?'var(--green)':pctDisp>0?'var(--blue)':'var(--red)';
         return `<div style="background:var(--surface,#fff);border:1px solid var(--border,#e8e8ed);border-radius:12px;padding:10px 12px">
-          <div style="font-size:10px;font-weight:700;color:${c.color};margin-bottom:4px">${c.emoji} ${c.name}</div>
+          <div style="font-size:var(--fs-2xs);font-weight:var(--fw-bold);color:${c.color};margin-bottom:4px">${c.emoji} ${c.name}</div>
           <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
-            <span style="font-size:16px;font-weight:700;color:var(--text)">${dispMg}</span>
-            <span style="font-size:10px;color:var(--muted)">/ ${c.mgNeeded}mg</span>
+            <span style="font-size:var(--fs-16);font-weight:var(--fw-bold);color:var(--text)">${dispMg}</span>
+            <span style="font-size:var(--fs-2xs);color:var(--muted)">/ ${c.mgNeeded}mg</span>
           </div>
           <div style="height:4px;background:var(--border,#e8e8ed);border-radius:2px;margin-bottom:4px;overflow:hidden">
             <div style="height:100%;width:${pctDisp}%;background:${col};border-radius:2px;transition:width .3s"></div>
           </div>
-          <div style="font-size:9px;color:var(--muted)">
-            ${pctDisp>=100?`<span style="color:#34c759;font-weight:600">✓ coperto (+${surplus}mg)</span>`:pctDisp>0?`<span style="color:${col};font-weight:600">${pctDisp}% coperto</span>`:'<span style="color:#ff3b30;font-weight:600">0 in stock</span>'}
+          <div style="font-size:var(--fs-3xs);color:var(--muted)">
+            ${pctDisp>=100?`<span style="color:var(--green);font-weight:var(--fw-semi)">✓ coperto (+${surplus}mg)</span>`:pctDisp>0?`<span style="color:${col};font-weight:var(--fw-semi)">${pctDisp}% coperto</span>`:'<span style="color:var(--red);font-weight:var(--fw-semi)">0 in stock</span>'}
           </div>
         </div>`;
       }).join('')}
     </div>
-    <div style="background:rgba(52,199,89,.08);border:1px solid rgba(52,199,89,.25);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#1d6e32">
+    <div style="background:rgba(52,199,89,.08);border:1px solid rgba(52,199,89,.25);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:var(--fs-sm);color:#1d6e32">
       <b style="color:#1d6e32">✓ Consegna Bachem arrivata (15 lug) · </b>tutti i composti del Ciclo 1 ora coperti. Ipamorelin in forte surplus (40mg vs 11.2mg necessari) — verificare se è un taglio minimo di confezione del fornitore.
     </div>
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;overflow-x:auto;padding-bottom:4px">
       <button onclick="document.getElementById('stock-anchor-tesa').scrollIntoView({behavior:'smooth',block:'start'})"
-        style="padding:7px 16px;border-radius:980px;border:1.5px solid #0071e3;background:#0071e3;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🧬 Tesamorelin</button>
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid var(--blue);background:var(--blue);color:#fff;font-size:var(--fs-sm);font-weight:var(--fw-semi);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🧬 Tesamorelin</button>
       <button onclick="document.getElementById('stock-anchor-fragment').scrollIntoView({behavior:'smooth',block:'start'})"
-        style="padding:7px 16px;border-radius:980px;border:1.5px solid #ff3b30;background:transparent;color:#ff3b30;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🔥 Fragment</button>
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid var(--red);background:transparent;color:var(--red);font-size:var(--fs-sm);font-weight:var(--fw-semi);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🔥 Fragment</button>
       <button onclick="document.getElementById('stock-anchor-ipa').scrollIntoView({behavior:'smooth',block:'start'})"
-        style="padding:7px 16px;border-radius:980px;border:1.5px solid #34c759;background:transparent;color:#34c759;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">⚡ Ipamorelin</button>
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid var(--green);background:transparent;color:var(--green);font-size:var(--fs-sm);font-weight:var(--fw-semi);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">⚡ Ipamorelin</button>
       <button onclick="document.getElementById('stock-anchor-igf').scrollIntoView({behavior:'smooth',block:'start'})"
-        style="padding:7px 16px;border-radius:980px;border:1.5px solid #af52de;background:transparent;color:#af52de;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">💪 IGF-1 DES</button>
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid var(--purple);background:transparent;color:var(--purple);font-size:var(--fs-sm);font-weight:var(--fw-semi);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">💪 IGF-1 DES</button>
       <button onclick="document.getElementById('stock-anchor-bpc').scrollIntoView({behavior:'smooth',block:'start'})"
-        style="padding:7px 16px;border-radius:980px;border:1.5px solid #ff9500;background:transparent;color:#ff9500;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🔧 BPC-157</button>
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid var(--orange);background:transparent;color:var(--orange);font-size:var(--fs-sm);font-weight:var(--fw-semi);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🔧 BPC-157</button>
       <button onclick="document.getElementById('stock-anchor-tb500').scrollIntoView({behavior:'smooth',block:'start'})"
-        style="padding:7px 16px;border-radius:980px;border:1.5px solid #ff2d55;background:transparent;color:#ff2d55;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🛡️ TB-500</button>
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid #ff2d55;background:transparent;color:#ff2d55;font-size:var(--fs-sm);font-weight:var(--fw-semi);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🛡️ TB-500</button>
       <button onclick="document.getElementById('stock-anchor-motsc').scrollIntoView({behavior:'smooth',block:'start'})"
-        style="padding:7px 16px;border-radius:980px;border:1.5px solid #8e8e93;background:transparent;color:#8e8e93;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🔋 MOTS-C</button>
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid #8e8e93;background:transparent;color:#8e8e93;font-size:var(--fs-sm);font-weight:var(--fw-semi);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🔋 MOTS-C</button>
       <button onclick="document.getElementById('stock-anchor-ghkcu').scrollIntoView({behavior:'smooth',block:'start'})"
-        style="padding:7px 16px;border-radius:980px;border:1.5px solid #8e8e93;background:transparent;color:#8e8e93;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🔬 GHK-Cu</button>
+        style="padding:7px 16px;border-radius:980px;border:1.5px solid #8e8e93;background:transparent;color:#8e8e93;font-size:var(--fs-sm);font-weight:var(--fw-semi);cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">🔬 GHK-Cu</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-bottom:16px">`;
 
