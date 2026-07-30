@@ -5127,26 +5127,40 @@ function drawRichKpiChart(canvasId, points, options = {}) {
   });
   ctx.textAlign = 'left';
 
-  // X labels — un trattino per ogni giorno; l'etichetta testuale invece
-  // viene disegnata solo se c'è spazio sufficiente rispetto alla precedente
-  // (bug segnalato da Giorgio il 30/07 sera: su card affiancate 2 per riga
-  // su mobile, 7 etichette "dd/mm" fisse si sovrapponevano in un blocco
-  // illeggibile tipo "24/025/026/027..."). L'ultima (oggi) è sempre mostrata.
+  // X labels — un trattino per ogni giorno; l'etichetta testuale solo per un
+  // sottoinsieme di indici scelto PRIMA di disegnare (due passate), così
+  // l'ultimo giorno (oggi) è garantito ma se collide con l'etichetta
+  // precedente la SOSTITUISCE invece di affiancarcisi — altrimenti "oggi"
+  // forzato a comparire comunque produceva un secondo accavallamento tipo
+  // "29 30/07" anche dopo il primo fix (bug rilevato da Giorgio il 30/07,
+  // seconda segnalazione). Stessa strategia già usata in drawDashChart.
   const n = points.length;
   const minLabelPx = 24;
-  let lastLabelX = -Infinity;
+  function xPos(i) { return ML + (n > 1 ? i / (n - 1) * CW : CW / 2); }
+  function clampX(x) { return Math.max(ML + 12, Math.min(x, ML + CW - 12)); }
+  const shownIdx = [];
+  let lastShownX = -Infinity;
+  for (let i = 0; i < n; i++) {
+    const cx = clampX(xPos(i));
+    if (cx - lastShownX >= minLabelPx) { shownIdx.push(i); lastShownX = cx; }
+  }
+  if (shownIdx[shownIdx.length - 1] !== n - 1) {
+    const cxLast = clampX(xPos(n - 1));
+    const cxPrevShown = clampX(xPos(shownIdx[shownIdx.length - 1]));
+    if (cxLast - cxPrevShown < minLabelPx) shownIdx[shownIdx.length - 1] = n - 1;
+    else shownIdx.push(n - 1);
+  }
+  const shownSet = new Set(shownIdx);
+
   ctx.font = '9px -apple-system'; ctx.textAlign = 'center';
   points.forEach((p, i) => {
-    const x = ML + (n > 1 ? i / (n - 1) * CW : CW / 2);
+    const x = xPos(i);
     ctx.strokeStyle = axisColor; ctx.lineWidth = 0.5;
     ctx.beginPath(); ctx.moveTo(x, MT + CH); ctx.lineTo(x, MT + CH + 3); ctx.stroke();
-    const isLast = i === n - 1;
-    const clampedX = Math.max(ML + 12, Math.min(x, ML + CW - 12));
-    if (!isLast && clampedX - lastLabelX < minLabelPx) return;
+    if (!shownSet.has(i)) return;
     const lbl = String(p.date.getDate()).padStart(2, '0') + '/' + String(p.date.getMonth() + 1).padStart(2, '0');
     ctx.fillStyle = labelColor;
-    ctx.fillText(lbl, clampedX, H - 3);
-    lastLabelX = clampedX;
+    ctx.fillText(lbl, clampX(x), H - 3);
   });
   ctx.textAlign = 'left';
 
