@@ -931,23 +931,23 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 /* Lab / DEXA sections */
 .milestone-card{background:var(--surface);border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)}
 .milestone-head{display:flex;align-items:center;padding:14px 18px;cursor:pointer;gap:12px;user-select:none}
-.milestone-badge{font-size:11px;font-weight:500;padding:4px 10px;border-radius:980px;white-space:nowrap}
+.milestone-badge{font-size: var(--fs-xs);font-weight: var(--fw-med);padding:4px 10px;border-radius:980px;white-space:nowrap}
 .milestone-body{display:none;padding:0 18px 18px;border-top:1px solid var(--border)}
 .milestone-card.open .milestone-body{display:block}
 .milestone-card.open .day-chev{transform:rotate(180deg)}
 
 .lab-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
 .lab-box{background:var(--surface2);border-radius:var(--radius-xs);padding:10px 10px 8px}
-.lab-box label{display:block;font-size:9px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:5px}
-.lab-box input{width:100%;background:transparent;border:none;outline:none;font-size:15px;font-weight:500;color:var(--text);font-family:inherit}
-.lab-box input::placeholder{color:var(--faint);font-size:13px}
-.lab-ref{font-size:9px;color:var(--faint);margin-top:2px}
-.lab-delta{font-size:10px;font-weight:500;margin-top:2px}
-.lab-delta.up{color:#34c759}.lab-delta.down{color:#ff3b30}.lab-delta.neutral{color:var(--muted)}
+.lab-box label{display:block;font-size: var(--fs-3xs);font-weight: var(--fw-semi);color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:5px}
+.lab-box input{width:100%;background:transparent;border:none;outline:none;font-size: var(--fs-md);font-weight: var(--fw-med);color:var(--text);font-family:inherit}
+.lab-box input::placeholder{color:var(--faint);font-size: var(--fs-body)}
+.lab-ref{font-size: var(--fs-3xs);color:var(--faint);margin-top:2px}
+.lab-delta{font-size: var(--fs-2xs);font-weight: var(--fw-med);margin-top:2px}
+.lab-delta.up{color:var(--green)}.lab-delta.down{color:var(--red)}.lab-delta.neutral{color:var(--muted)}
 
 .dexa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
 .dexa-compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
-.dexa-col h4{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px}
+.dexa-col h4{font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:8px}
 
 .check-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px}
 .check-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--radius-xs);padding:8px 12px;cursor:pointer;transition:background .12s}
@@ -955,26 +955,26 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .check-item input[type=checkbox]{appearance:none;-webkit-appearance:none;width:17px;height:17px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;flex-shrink:0;position:relative;transition:background .12s,border-color .12s}
 .check-item input[type=checkbox]:checked{background:var(--blue);border-color:var(--blue)}
 .check-item input[type=checkbox]:checked::after{content:'';position:absolute;left:4px;top:1.5px;width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(42deg)}
-.check-item label{font-size:13px;color:var(--text);cursor:pointer;user-select:none}
-.skip-toggle{margin-left:auto;font-size:10px;color:var(--faint,#c7c7cc);cursor:pointer;user-select:none;padding:2px 6px;border-radius:8px;white-space:nowrap;flex-shrink:0}
+.check-item label{font-size: var(--fs-body);color:var(--text);cursor:pointer;user-select:none}
+.skip-toggle{margin-left:auto;font-size: var(--fs-2xs);color:var(--faint,#c7c7cc);cursor:pointer;user-select:none;padding:2px 6px;border-radius:8px;white-space:nowrap;flex-shrink:0}
 .skip-toggle:hover{color:var(--muted);background:rgba(0,0,0,.05)}
-.skip-toggle.active{color:#ff9500;font-weight:600;background:rgba(255,149,0,.12)}
+.skip-toggle.active{color:var(--orange);font-weight: var(--fw-semi);background:rgba(255,149,0,.12)}
 .check-item.skipped{background:rgba(255,149,0,.08)}
-.check-item.skipped label{color:#ff9500;text-decoration:line-through;text-decoration-color:rgba(255,149,0,.5)}
+.check-item.skipped label{color:var(--orange);text-decoration:line-through;text-decoration-color:rgba(255,149,0,.5)}
 
 .week-summary-card{background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
 .week-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
 .ws-item{text-align:center}
 .ws-val{font-size:var(--fs-lg);font-weight:var(--fw-semi);color:var(--text);letter-spacing:-0.03em;line-height:1}
-.ws-lbl{font-size:10px;color:var(--muted);margin-top:3px}
-.ws-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.ws-lbl{font-size: var(--fs-2xs);color:var(--muted);margin-top:3px}
+.ws-sub{font-size: var(--fs-xs);color:var(--muted);margin-top:2px}
 
 .photo-note{background:var(--surface2);border-radius:var(--radius-xs);padding:10px 12px;margin-top:8px;display:flex;align-items:center;gap:10px}
-.photo-note-icon{font-size:20px;flex-shrink:0}
-.photo-note input{flex:1;background:transparent;border:none;outline:none;font-size:13px;color:var(--text);font-family:inherit}
+.photo-note-icon{font-size: var(--fs-20);flex-shrink:0}
+.photo-note input{flex:1;background:transparent;border:none;outline:none;font-size: var(--fs-body);color:var(--text);font-family:inherit}
 .photo-note input::placeholder{color:var(--faint)}
 
-.tag-pill{display:inline-block;font-size:10px;font-weight:500;padding:2px 8px;border-radius:980px;background:var(--blue-light);color:var(--blue);margin-right:4px}
+.tag-pill{display:inline-block;font-size: var(--fs-2xs);font-weight: var(--fw-med);padding:2px 8px;border-radius:980px;background:var(--blue-light);color:var(--blue);margin-right:4px}
 
 @media(max-width:600px){
   .lab-grid{grid-template-columns:repeat(2,1fr)}
@@ -987,17 +987,17 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 /* Extra sections */
 .milestone-card{background:var(--surface);border-radius:var(--radius-sm);margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow)}
 .milestone-head{display:flex;align-items:center;padding:14px 18px;cursor:pointer;gap:12px;user-select:none}
-.milestone-badge{font-size:11px;font-weight:500;padding:4px 10px;border-radius:980px;white-space:nowrap}
+.milestone-badge{font-size: var(--fs-xs);font-weight: var(--fw-med);padding:4px 10px;border-radius:980px;white-space:nowrap}
 .milestone-body{display:none;padding:0 18px 18px;border-top:1px solid var(--border)}
 .milestone-card.open .milestone-body{display:block}
 .milestone-card.open .ms-chev{transform:rotate(180deg)}
-.ms-chev{color:var(--faint);font-size:11px;transition:transform .2s;flex-shrink:0}
+.ms-chev{color:var(--faint);font-size: var(--fs-xs);transition:transform .2s;flex-shrink:0}
 .lab-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
 .lab-box{background:var(--surface2);border-radius:var(--radius-xs);padding:10px 10px 8px}
-.lab-box label{display:block;font-size:9px;font-weight:600;color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:5px}
-.lab-box input{width:100%;background:transparent;border:none;outline:none;font-size:15px;font-weight:500;color:var(--text);font-family:inherit}
-.lab-box input::placeholder{color:var(--faint);font-size:13px}
-.lab-ref{font-size:9px;color:var(--faint);margin-top:2px}
+.lab-box label{display:block;font-size: var(--fs-3xs);font-weight: var(--fw-semi);color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:5px}
+.lab-box input{width:100%;background:transparent;border:none;outline:none;font-size: var(--fs-md);font-weight: var(--fw-med);color:var(--text);font-family:inherit}
+.lab-box input::placeholder{color:var(--faint);font-size: var(--fs-body)}
+.lab-ref{font-size: var(--fs-3xs);color:var(--faint);margin-top:2px}
 .dexa-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
 .check-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
 .check-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border-radius:var(--radius-xs);padding:8px 12px;cursor:pointer;transition:background .12s}
@@ -1005,16 +1005,16 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .check-item input[type=checkbox]{appearance:none;-webkit-appearance:none;width:17px;height:17px;border-radius:5px;border:1.5px solid var(--border);background:var(--surface);cursor:pointer;flex-shrink:0;position:relative;transition:background .12s,border-color .12s}
 .check-item input[type=checkbox]:checked{background:var(--blue);border-color:var(--blue)}
 .check-item input[type=checkbox]:checked::after{content:'';position:absolute;left:4px;top:1.5px;width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(42deg)}
-.check-item label{font-size:13px;color:var(--text);cursor:pointer;user-select:none}
+.check-item label{font-size: var(--fs-body);color:var(--text);cursor:pointer;user-select:none}
 .photo-note{background:var(--surface2);border-radius:var(--radius-xs);padding:10px 12px;margin-top:6px;display:flex;align-items:center;gap:10px}
-.photo-note input{flex:1;background:transparent;border:none;outline:none;font-size:13px;color:var(--text);font-family:inherit}
+.photo-note input{flex:1;background:transparent;border:none;outline:none;font-size: var(--fs-body);color:var(--text);font-family:inherit}
 .photo-note input::placeholder{color:var(--faint)}
 .week-summary-card{background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;margin-bottom:12px;box-shadow:var(--shadow)}
 .week-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:10px}
 .ws-val{font-size:var(--fs-lg);font-weight:var(--fw-semi);color:var(--text);letter-spacing:-0.03em;line-height:1}
-.ws-lbl{font-size:10px;color:var(--muted);margin-top:3px}
-.bkk-banner{background:#e8f1fb;border-radius:var(--radius-xs);padding:10px 14px;margin-bottom:10px;font-size:12px;color:#0071e3;font-weight:500}
-.tag-pill{display:inline-block;font-size:10px;font-weight:500;padding:2px 8px;border-radius:980px;margin-right:4px;margin-top:2px}
+.ws-lbl{font-size: var(--fs-2xs);color:var(--muted);margin-top:3px}
+.bkk-banner{background:#e8f1fb;border-radius:var(--radius-xs);padding:10px 14px;margin-bottom:10px;font-size: var(--fs-sm);color:var(--blue);font-weight: var(--fw-med)}
+.tag-pill{display:inline-block;font-size: var(--fs-2xs);font-weight: var(--fw-med);padding:2px 8px;border-radius:980px;margin-right:4px;margin-top:2px}
 @media(max-width:600px){
   .lab-grid{grid-template-columns:repeat(2,1fr)}
   .dexa-grid{grid-template-columns:repeat(2,1fr)}
@@ -9784,7 +9784,7 @@ function buildMedDash() {
 
     const dots = pts.map((p,i) => {
       const ok = (refMin === undefined || p.v >= refMin) && (refMax === undefined || p.v <= refMax);
-      const dc = ok ? color : '#ff3b30';
+      const dc = ok ? color : 'var(--red)';
       return `<circle cx="${toX(i)}" cy="${toY(p.v)}" r="3" fill="${dc}" stroke="white" stroke-width="1.5"/>`;
     }).join('');
 
@@ -9804,11 +9804,11 @@ function buildMedDash() {
   function progressBar(current, target, max, color, label) {
     const pct = Math.min(100, (current/target)*100).toFixed(0);
     const warn = current < target;
-    const barColor = warn ? '#ff9500' : color;
+    const barColor = warn ? 'var(--orange)' : color;
     return `<div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
-        <span style="font-weight:500">${label}</span>
-        <span style="color:${warn?'#ff9500':'#34c759'};font-weight:600">${current} <span style="color:var(--muted);font-weight:400">/ target ${target}</span></span>
+      <div style="display:flex;justify-content:space-between;font-size: var(--fs-sm);margin-bottom:5px">
+        <span style="font-weight: var(--fw-med)">${label}</span>
+        <span style="color:${warn?'var(--orange)':'var(--green)'};font-weight: var(--fw-semi)">${current} <span style="color:var(--muted);font-weight: var(--fw-reg)">/ target ${target}</span></span>
       </div>
       <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden">
         <div style="background:${barColor};height:6px;width:${pct}%;border-radius:4px;transition:width .5s ease"></div>
@@ -9822,22 +9822,22 @@ function buildMedDash() {
     const prev = pts[pts.length-2];
     const delta = prev ? (last.v - prev.v) : null;
     const isOk = (refMin === undefined || last.v >= refMin) && (refMax === undefined || last.v <= refMax);
-    const valColor = isOk ? '#34c759' : (Math.abs(last.v - (refMin||refMax)) < (refMin||refMax)*0.15 ? '#ff9500' : '#ff3b30');
+    const valColor = isOk ? 'var(--green)' : (Math.abs(last.v - (refMin||refMax)) < (refMin||refMax)*0.15 ? 'var(--orange)' : 'var(--red)');
     const arrow = delta === null ? '' : delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
     const arrowColor = delta === null ? '' :
-      (refMin && delta > 0) || (refMax && delta < 0) ? '#34c759' : '#ff3b30';
+      (refMin && delta > 0) || (refMax && delta < 0) ? 'var(--green)' : 'var(--red)';
     const spark = sparkline(pts, 120, 50, color, refMin, refMax);
     return `<div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px">
       <div class="t-section-title" style="margin-bottom:6px">${label}</div>
       <div style="display:flex;align-items:flex-end;justify-content:space-between">
         <div>
           <span style="font-size:var(--fs-2xl);font-weight:var(--fw-semi);letter-spacing:-.03em;color:${valColor}">${last.v}</span>
-          <span style="font-size:12px;color:var(--muted);margin-left:3px">${unit}</span>
-          ${delta !== null ? `<span style="font-size:13px;font-weight:600;color:${arrowColor};margin-left:6px">${arrow}${Math.abs(delta).toFixed(delta%1===0?0:1)}</span>` : ''}
+          <span style="font-size: var(--fs-sm);color:var(--muted);margin-left:3px">${unit}</span>
+          ${delta !== null ? `<span style="font-size: var(--fs-body);font-weight: var(--fw-semi);color:${arrowColor};margin-left:6px">${arrow}${Math.abs(delta).toFixed(delta%1===0?0:1)}</span>` : ''}
         </div>
         <div>${spark}</div>
       </div>
-      <div style="font-size:var(--fs-xs);color:var(--muted)">${targetLabel} · ultimo: <span style="font-weight:500">${last.d}</span></div>
+      <div style="font-size:var(--fs-xs);color:var(--muted)">${targetLabel} · ultimo: <span style="font-weight: var(--fw-med)">${last.d}</span></div>
     </div>`;
   }
 
@@ -9893,7 +9893,7 @@ function buildMedDash() {
       lines += `<polyline points="${polyPts}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
       validPts.forEach(p => {
         const ok = (s.refMin===undefined||p.v>=s.refMin)&&(s.refMax===undefined||p.v<=s.refMax);
-        dots += `<circle cx="${toX(p.t)}" cy="${toY(p.v)}" r="3.5" fill="${ok?s.color:'#ff3b30'}" stroke="white" stroke-width="1.5"/>`;
+        dots += `<circle cx="${toX(p.t)}" cy="${toY(p.v)}" r="3.5" fill="${ok?s.color:'var(--red)'}" stroke="white" stroke-width="1.5"/>`;
       });
       // label ultimo valore
       const lastP = validPts[validPts.length-1];
@@ -9915,66 +9915,66 @@ function buildMedDash() {
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
     ${kpiCard('Creatinina', DATA.creatinina, 'mg/dL', undefined, 1.2, 'target ≤1.20', '#8e8e93')}
     ${kpiCard('eGFR', DATA.egfr, 'mL/min', 90, undefined, 'target ≥90', '#5856d6')}
-    ${kpiCard('ACR urinario', DATA.acr, 'mg/g cre', undefined, 30, 'target <30 (normoalbuminuria)', '#34c759')}
+    ${kpiCard('ACR urinario', DATA.acr, 'mg/g cre', undefined, 30, 'target <30 (normoalbuminuria)', 'var(--green)')}
   </div>
 
   <div class="section-label">⚖️ Asse gonadico</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
-    ${kpiCard('Testosterone tot.', DATA.testTotale, 'ng/dL', 127.18, 1020.36, 'range 127.18–1020.36 (Sant\'Agostino)', '#0071e3')}
-    ${kpiCard('Testosterone lib.', DATA.testLibero, 'pg/mL', 9.57, 40.60, 'range 9.57–40.60 (Sant\'Agostino)', '#0071e3')}
+    ${kpiCard('Testosterone tot.', DATA.testTotale, 'ng/dL', 127.18, 1020.36, 'range 127.18–1020.36 (Sant\'Agostino)', 'var(--blue)')}
+    ${kpiCard('Testosterone lib.', DATA.testLibero, 'pg/mL', 9.57, 40.60, 'range 9.57–40.60 (Sant\'Agostino)', 'var(--blue)')}
     ${kpiCard('SHBG', DATA.shbg, 'nmol/L', 11.20, 78.10, 'range 11.20–78.10 (Sant\'Agostino)', '#8e44ad')}
-    ${kpiCard('FSH', DATA.fsh, 'mIU/mL', 0.95, 11.95, 'range 0.95–11.95 (Sant\'Agostino)', '#ff3b30')}
-    ${kpiCard('LH', DATA.lh, 'mUI/mL', 0.57, 12.7, 'range 0.57–12.7 (Sant\'Agostino)', '#ff3b30')}
+    ${kpiCard('FSH', DATA.fsh, 'mIU/mL', 0.95, 11.95, 'range 0.95–11.95 (Sant\'Agostino)', 'var(--red)')}
+    ${kpiCard('LH', DATA.lh, 'mUI/mL', 0.57, 12.7, 'range 0.57–12.7 (Sant\'Agostino)', 'var(--red)')}
   </div>
 
   <div class="section-label">🫀 Lipidi</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
-    ${kpiCard('HDL', DATA.hdl, 'mg/dL', 40, undefined, 'target ≥40', '#ff9500')}
+    ${kpiCard('HDL', DATA.hdl, 'mg/dL', 40, undefined, 'target ≥40', 'var(--orange)')}
   </div>
 
   <div class="section-label">🔥 Infiammazione</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
-    ${kpiCard('Omocisteina', DATA.omocist, 'µmol/L', undefined, 13, 'target ≤13', '#0071e3')}
-    ${kpiCard('VES', DATA.ves, 'mm/h', undefined, 15, 'target ≤15', '#ff9500')}
+    ${kpiCard('Omocisteina', DATA.omocist, 'µmol/L', undefined, 13, 'target ≤13', 'var(--blue)')}
+    ${kpiCard('VES', DATA.ves, 'mm/h', undefined, 15, 'target ≤15', 'var(--orange)')}
     ${kpiCard('PCR', DATA.crp, 'mg/L', undefined, 3.3, 'target ≤3.3', '#8e8e93')}
   </div>
 
   <div class="section-label">🧬 Altro / quadro generale</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:28px">
-    ${kpiCard('IGF-1', DATA.igf1, 'µg/L', 115, 300, 'target 150–180+ (post Tesa)', '#af52de')}
-    ${kpiCard('Vitamina D', DATA.vitd, 'µg/L', 50, undefined, 'target ≥50', '#34c759')}
-    ${kpiCard('Emoglobina', DATA.emoglobina, 'g/L', 133, undefined, 'target ≥133', '#ff3b30')}
+    ${kpiCard('IGF-1', DATA.igf1, 'µg/L', 115, 300, 'target 150–180+ (post Tesa)', 'var(--purple)')}
+    ${kpiCard('Vitamina D', DATA.vitd, 'µg/L', 50, undefined, 'target ≥50', 'var(--green)')}
+    ${kpiCard('Emoglobina', DATA.emoglobina, 'g/L', 133, undefined, 'target ≥133', 'var(--red)')}
     ${kpiCard('Zinco', DATA.zinco, 'µg/dL', 60, 106, 'target 60–106', '#8e44ad')}
-    ${kpiCard('PSA', DATA.psa, 'µg/L', undefined, 4, 'target ≤4', '#34c759')}
-    ${kpiCard('Ferritina', DATA.ferritina, 'µg/L', 22, 322, 'target 22–322', '#ff9500')}
-    ${kpiCard('Cortisolo urinario 24h', DATA.cortisolUrin, 'µg/24h', 4.2, 60.0, 'range 4.2–60.0', '#ff9500')}
+    ${kpiCard('PSA', DATA.psa, 'µg/L', undefined, 4, 'target ≤4', 'var(--green)')}
+    ${kpiCard('Ferritina', DATA.ferritina, 'µg/L', 22, 322, 'target 22–322', 'var(--orange)')}
+    ${kpiCard('Cortisolo urinario 24h', DATA.cortisolUrin, 'µg/24h', 4.2, 60.0, 'range 4.2–60.0', 'var(--orange)')}
   </div>
 
   <!-- OBIETTIVI PROTOCOLLO -->
   <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
     <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px">🎯 Obiettivi protocollo — baseline vs target</div>
-    ${progressBar(94, 165, 300, '#af52de', 'IGF-1 (µg/L) · target 150–180+')}
-    ${progressBar(32, 40, 60, '#ff9500', 'HDL (mg/dL) · target ≥40')}
-    ${progressBar(22, 50, 100, '#34c759', 'Vitamina D (µg/L) · target ≥50')}
-    ${progressBar(17.5, 13, 25, '#0071e3', 'Omocisteina (µmol/L) · target ≤13 — barra inversa: più alta = peggio')}
-    ${progressBar(119, 133, 180, '#ff3b30', 'Emoglobina (g/L) · target ≥133')}
+    ${progressBar(94, 165, 300, 'var(--purple)', 'IGF-1 (µg/L) · target 150–180+')}
+    ${progressBar(32, 40, 60, 'var(--orange)', 'HDL (mg/dL) · target ≥40')}
+    ${progressBar(22, 50, 100, 'var(--green)', 'Vitamina D (µg/L) · target ≥50')}
+    ${progressBar(17.5, 13, 25, 'var(--blue)', 'Omocisteina (µmol/L) · target ≤13 — barra inversa: più alta = peggio')}
+    ${progressBar(119, 133, 180, 'var(--red)', 'Emoglobina (g/L) · target ≥133')}
     ${progressBar(50.3, 70, 106, '#8e44ad', 'Zinco (µg/dL) · target 70–80')}
   </div>
 
   <!-- GRAFICI LIPIDI -->
   <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
     <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">Profilo lipidico — storico</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">HDL ≥40 · LDL ≤115 · TG ≤150 · ColTot ≤190</div>
+    <div style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:14px">HDL ≥40 · LDL ≤115 · TG ≤150 · ColTot ≤190</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
-        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">HDL <span style="color:var(--muted);font-weight:400">target ≥40</span></div>
-        ${lineChart([{label:'HDL',pts:DATA.hdl,color:'#ff9500',refMin:40}], 400, 140)}
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">HDL <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≥40</span></div>
+        ${lineChart([{label:'HDL',pts:DATA.hdl,color:'var(--orange)',refMin:40}], 400, 140)}
       </div>
       <div>
-        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">LDL + Trigliceridi <span style="color:var(--muted);font-weight:400">target LDL ≤115 · TG ≤150</span></div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">LDL + Trigliceridi <span style="color:var(--muted);font-weight: var(--fw-reg)">target LDL ≤115 · TG ≤150</span></div>
         ${lineChart([
-          {label:'LDL',pts:DATA.ldl,color:'#0071e3',refMin:undefined,refMax:115},
-          {label:'TG',pts:DATA.tg,color:'#ff9500',refMin:undefined,refMax:150}
+          {label:'LDL',pts:DATA.ldl,color:'var(--blue)',refMin:undefined,refMax:115},
+          {label:'TG',pts:DATA.tg,color:'var(--orange)',refMin:undefined,refMax:150}
         ], 400, 140)}
       </div>
     </div>
@@ -9985,19 +9985,19 @@ function buildMedDash() {
     <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px">Asse ormonale & metabolico</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
-        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Emoglobina <span style="color:var(--muted);font-weight:400">target ≥133 g/L</span></div>
-        ${lineChart([{label:'Hb',pts:DATA.emoglobina,color:'#ff3b30',refMin:133}], 400, 120)}
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Emoglobina <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≥133 g/L</span></div>
+        ${lineChart([{label:'Hb',pts:DATA.emoglobina,color:'var(--red)',refMin:133}], 400, 120)}
       </div>
       <div>
-        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Omocisteina <span style="color:var(--muted);font-weight:400">target ≤13 µmol/L</span></div>
-        ${lineChart([{label:'Omocist',pts:DATA.omocist,color:'#0071e3',refMax:13}], 400, 120)}
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Omocisteina <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≤13 µmol/L</span></div>
+        ${lineChart([{label:'Omocist',pts:DATA.omocist,color:'var(--blue)',refMax:13}], 400, 120)}
       </div>
       <div>
-        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Vitamina D <span style="color:var(--muted);font-weight:400">target ≥50 µg/L</span></div>
-        ${lineChart([{label:'VitD',pts:DATA.vitd,color:'#34c759',refMin:50}], 400, 120)}
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Vitamina D <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≥50 µg/L</span></div>
+        ${lineChart([{label:'VitD',pts:DATA.vitd,color:'var(--green)',refMin:50}], 400, 120)}
       </div>
       <div>
-        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Zinco <span style="color:var(--muted);font-weight:400">target 60–106 µg/dL</span></div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Zinco <span style="color:var(--muted);font-weight: var(--fw-reg)">target 60–106 µg/dL</span></div>
         ${lineChart([{label:'Zinco',pts:DATA.zinco,color:'#8e44ad',refMin:60}], 400, 120)}
       </div>
     </div>
@@ -10008,20 +10008,20 @@ function buildMedDash() {
     <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px">Monitoraggio PSA & funzione renale</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
-        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">PSA totale <span style="color:var(--muted);font-weight:400">target ≤4 µg/L</span></div>
-        ${lineChart([{label:'PSA',pts:DATA.psa,color:'#34c759',refMax:4}], 400, 120)}
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">PSA totale <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≤4 µg/L</span></div>
+        ${lineChart([{label:'PSA',pts:DATA.psa,color:'var(--green)',refMax:4}], 400, 120)}
       </div>
       <div>
-        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Creatinina <span style="color:var(--muted);font-weight:400">target ≤1.20 mg/dL</span></div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Creatinina <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≤1.20 mg/dL</span></div>
         ${lineChart([{label:'Creat',pts:DATA.creatinina,color:'#8e8e93',refMax:1.2}], 400, 120)}
       </div>
       <div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
-        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">eGFR <span style="color:var(--muted);font-weight:400">target ≥90 mL/min/1.73mq</span></div>
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">eGFR <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≥90 mL/min/1.73mq</span></div>
         ${lineChart([{label:'eGFR',pts:DATA.egfr,color:'#5856d6',refMin:90}], 400, 120)}
       </div>
       <div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
-        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">FSH + LH <span style="color:var(--muted);font-weight:400">asse gonadico · range Sant'Agostino FSH 0.95–11.95 · LH 0.57–12.7</span></div>
-        ${lineChart([{label:'FSH',pts:DATA.fsh,color:'#ff3b30',refMax:11.95},{label:'LH',pts:DATA.lh,color:'#ff9500',refMax:12.7}], 400, 120)}
+        <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">FSH + LH <span style="color:var(--muted);font-weight: var(--fw-reg)">asse gonadico · range Sant'Agostino FSH 0.95–11.95 · LH 0.57–12.7</span></div>
+        ${lineChart([{label:'FSH',pts:DATA.fsh,color:'var(--red)',refMax:11.95},{label:'LH',pts:DATA.lh,color:'var(--orange)',refMax:12.7}], 400, 120)}
       </div>
     </div>
   </div>
@@ -10033,7 +10033,7 @@ function buildMedDash() {
       ${['IGF-1','Glucosio / Insulina / HOMA','HDL','Omocisteina','Vitamina D',
          'Testosterone libero / SHBG','CRP','Zinco','Folato / B12',
          'Emoglobina / MCHC','eGFR / Creatinina','VES','FSH / LH']
-        .map(m=>`<span style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size:12px">${m}</span>`).join('')}
+        .map(m=>`<span style="background:rgba(0,113,227,.1);color:var(--blue);padding:5px 12px;border-radius:20px;font-size: var(--fs-sm)">${m}</span>`).join('')}
     </div>
   </div>
 
@@ -10231,30 +10231,30 @@ function buildProtocolloTimeline() {
     const body = document.getElementById('tl-body');
     body.innerHTML = '';
     if (!mv.length) {
-      body.innerHTML = '<p style="font-size:13px;color:var(--text-muted);padding:2rem;text-align:center">Molecola non attiva in questa fase.</p>';
+      body.innerHTML = '<p style="font-size: var(--fs-body);color:var(--text-muted);padding:2rem;text-align:center">Molecola non attiva in questa fase.</p>';
       return;
     }
     // Chip mols
-    let chips = '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;align-items:center"><span style="font-size:11px;color:var(--text-muted)">Attive:</span>';
-    mv.forEach(m => { chips += `<span style="font-size:10px;padding:2px 8px;border-radius:10px;border:0.5px solid ${MC[m]};color:${MC[m]}">${ML[m]}</span>`; });
+    let chips = '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;align-items:center"><span style="font-size: var(--fs-xs);color:var(--text-muted)">Attive:</span>';
+    mv.forEach(m => { chips += `<span style="font-size: var(--fs-2xs);padding:2px 8px;border-radius:10px;border:0.5px solid ${MC[m]};color:${MC[m]}">${ML[m]}</span>`; });
     chips += '</div>';
     body.innerHTML += chips;
     // Phase badge
-    body.innerHTML += `<div style="margin-bottom:10px"><span style="font-size:11px;font-weight:500;padding:2px 9px;border-radius:10px;background:${d.pc}18;color:${d.pc};border:0.5px solid ${d.pc}40">${d.ph}</span></div>`;
+    body.innerHTML += `<div style="margin-bottom:10px"><span style="font-size: var(--fs-xs);font-weight: var(--fw-med);padding:2px 9px;border-radius:10px;background:${d.pc}18;color:${d.pc};border:0.5px solid ${d.pc}40">${d.ph}</span></div>`;
     // Card
     let card = `<div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1.25rem">`;
-    card += `<div style="font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:4px">${d.title}</div>`;
-    card += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px">${d.sub}</div>`;
+    card += `<div style="font-size: var(--fs-md);font-weight: var(--fw-med);color:var(--text-primary);margin-bottom:4px">${d.title}</div>`;
+    card += `<div style="font-size: var(--fs-sm);color:var(--text-muted);margin-bottom:12px">${d.sub}</div>`;
     if (d._bkkOverlap) {
       card += `<div style="margin-bottom:12px;background:rgba(192,57,43,.08);border:0.5px solid rgba(192,57,43,.3);border-radius:8px;padding:8px 12px">
-        <div style="font-size:12px;font-weight:600;color:#c0392b;margin-bottom:4px">🇹🇭 Bangkok · ${bkkInfo.label} · 7–21 ago 2026</div>
-        <div style="font-size:12px;color:var(--text-secondary);line-height:1.5">Heat stress: maggiore sudorazione, priorità idratazione · Caldo aumenta assorbimento SC, possibile variazione picco · Jet-lag: monitorare sonno e spike GH · Storage peptidi: frigorifero hotel 2–8°C, non lasciare in valigia · Portare 130–140 siringhe</div>
+        <div style="font-size: var(--fs-sm);font-weight: var(--fw-semi);color:#c0392b;margin-bottom:4px">🇹🇭 Bangkok · ${bkkInfo.label} · 7–21 ago 2026</div>
+        <div style="font-size: var(--fs-sm);color:var(--text-secondary);line-height:1.5">Heat stress: maggiore sudorazione, priorità idratazione · Caldo aumenta assorbimento SC, possibile variazione picco · Jet-lag: monitorare sonno e spike GH · Storage peptidi: frigorifero hotel 2–8°C, non lasciare in valigia · Portare 130–140 siringhe</div>
       </div>`;
     }
     // Trends
     const TS = {p:'background:#e8f8ed;color:#1a7a3a',n:'background:#f5f5f7;color:var(--text-muted)'};
     card += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">';
-    d.tr.forEach((t,i) => { card += `<span style="font-size:11px;padding:3px 10px;border-radius:20px;${TS[d.tc[i]]}">${t}</span>`; });
+    d.tr.forEach((t,i) => { card += `<span style="font-size: var(--fs-xs);padding:3px 10px;border-radius:20px;${TS[d.tc[i]]}">${t}</span>`; });
     card += '</div>';
     // Cats
     const cf = aMol === 'all' ? null : {fragment:['corpo','energia'],tesa:['corpo','lab'],ipam:['energia','lab'],igf1des:['corpo','energia','lab'],bpc:['energia','side'],tb500:['energia','corpo','side']}[aMol];
@@ -10262,13 +10262,13 @@ function buildProtocolloTimeline() {
     card += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:4px">';
     cats.forEach(cat => {
       card += `<div style="background:var(--surface-1);border-radius:8px;padding:12px 14px;border-left:3px solid ${cat.c}">`;
-      card += `<div style="font-size:12px;font-weight:500;color:${cat.c};margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">${cat.lb}</div><ul style="list-style:none;padding:0">`;
-      cat.it.forEach(i => { card += `<li style="font-size:13px;color:var(--text-secondary);padding:3px 0;display:flex;gap:6px;line-height:1.5"><span style="color:var(--text-muted);flex-shrink:0">·</span>${i}</li>`; });
+      card += `<div style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:${cat.c};margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">${cat.lb}</div><ul style="list-style:none;padding:0">`;
+      cat.it.forEach(i => { card += `<li style="font-size: var(--fs-body);color:var(--text-secondary);padding:3px 0;display:flex;gap:6px;line-height:1.5"><span style="color:var(--text-muted);flex-shrink:0">·</span>${i}</li>`; });
       card += '</ul></div>';
     });
     card += '</div>';
-    if (d.warn) card += `<div style="margin-top:10px;background:var(--bg-warning);border:0.5px solid var(--border-warning);border-radius:8px;padding:8px 12px"><p style="font-size:12px;color:var(--text-warning)"><strong>Nota:</strong> ${d.warn}</p></div>`;
-    if (aWk === 4) card += `<div style="margin-top:10px"><span style="font-size:12px;font-weight:500;color:var(--text-accent);background:var(--bg-accent);padding:2px 8px;border-radius:6px">Panel T1 mid-ciclo sett. 8 · Santagostino · 197.03 EUR · codice 00K24KC2 (+LH/FSH)</span></div>`;
+    if (d.warn) card += `<div style="margin-top:10px;background:var(--bg-warning);border:0.5px solid var(--border-warning);border-radius:8px;padding:8px 12px"><p style="font-size: var(--fs-sm);color:var(--text-warning)"><strong>Nota:</strong> ${d.warn}</p></div>`;
+    if (aWk === 4) card += `<div style="margin-top:10px"><span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--text-accent);background:var(--bg-accent);padding:2px 8px;border-radius:6px">Panel T1 mid-ciclo sett. 8 · Santagostino · 197.03 EUR · codice 00K24KC2 (+LH/FSH)</span></div>`;
     card += '</div>';
     body.innerHTML += card;
   }
@@ -10278,18 +10278,18 @@ function buildProtocolloTimeline() {
   PHASES.forEach(p => { for(let i=0;i<p.n;i++) pbar += `<div style="flex:1;background:${p.c}" title="${p.lb}"></div>`; });
   pbar += '</div>';
   let legend = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">';
-  PHASES.forEach(p => { legend += `<span style="font-size:10px;display:flex;align-items:center;gap:4px;color:var(--text-muted)"><span style="width:8px;height:8px;border-radius:50%;background:${p.c};display:inline-block"></span>${p.lb}</span>`; });
+  PHASES.forEach(p => { legend += `<span style="font-size: var(--fs-2xs);display:flex;align-items:center;gap:4px;color:var(--text-muted)"><span style="width:8px;height:8px;border-radius:50%;background:${p.c};display:inline-block"></span>${p.lb}</span>`; });
   legend += '</div>';
 
   // Mol filter buttons
   const molBtns = ['all','fragment','tesa','ipam','igf1des','bpc','tb500'];
-  let mfilter = '<div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span style="font-size:12px;color:var(--text-muted)">Molecola:</span>';
+  let mfilter = '<div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span style="font-size: var(--fs-sm);color:var(--text-muted)">Molecola:</span>';
   molBtns.forEach(m => {
     const lbl = m === 'all' ? 'Tutte' : ML[m];
     const col = m === 'all' ? '#636366' : MC[m];
     const bg = m === 'all' ? col : 'transparent';
     const fc = m === 'all' ? '#fff' : col;
-    mfilter += `<button id="tlm-${m}" style="font-size:11px;padding:3px 10px;border-radius:20px;border:0.5px solid ${col};background:${bg};color:${fc};cursor:pointer" onclick="tlMol('${m}')">${lbl}</button>`;
+    mfilter += `<button id="tlm-${m}" style="font-size: var(--fs-xs);padding:3px 10px;border-radius:20px;border:0.5px solid ${col};background:${bg};color:${fc};cursor:pointer" onclick="tlMol('${m}')">${lbl}</button>`;
   });
   mfilter += '</div>';
 
@@ -10297,7 +10297,7 @@ function buildProtocolloTimeline() {
   let wnav = '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:1.25rem">';
   WW.forEach((w,i) => {
     const isP = i === 4;
-    wnav += `<button id="tlw-${i}" style="font-size:11px;min-width:42px;padding:4px 8px;border-radius:6px;border:0.5px solid ${w.pc};background:${i===aWk?w.pc:'transparent'};color:${i===aWk?'#fff':w.pc};cursor:pointer" onclick="tlWk(${i})">S${w.w}</button>`;
+    wnav += `<button id="tlw-${i}" style="font-size: var(--fs-xs);min-width:42px;padding:4px 8px;border-radius:6px;border:0.5px solid ${w.pc};background:${i===aWk?w.pc:'transparent'};color:${i===aWk?'#fff':w.pc};cursor:pointer" onclick="tlWk(${i})">S${w.w}</button>`;
   });
   wnav += '</div>';
 
@@ -10637,7 +10637,7 @@ function buildHistoryTab() {
   const muscleVol = (_lastData && _lastData.muscle_volume_summary) || [];
 
   const TYPE_COLOR = {
-    Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#0071e3'
+    Push:'var(--red)', Pull:'var(--green)', Legs:'var(--orange)', 'Upper Sab':'var(--purple)', 'Upper Dom':'var(--blue)'
   };
   function guessType(title) {
     const t = title.toLowerCase();
@@ -10658,7 +10658,7 @@ function buildHistoryTab() {
       s.exercises.some(e => e.name.toLowerCase().includes(searchQ))
     ).slice().reverse(); // più recenti prima
 
-    if (!filtered.length) return '<p style="font-size:13px;color:var(--text-muted);padding:1rem 0">Nessuna sessione trovata.</p>';
+    if (!filtered.length) return '<p style="font-size: var(--fs-body);color:var(--text-muted);padding:1rem 0">Nessuna sessione trovata.</p>';
 
     return filtered.map((s) => {
       const realIdx = sessions.indexOf(s);
@@ -10671,21 +10671,21 @@ function buildHistoryTab() {
         <div onclick="hsToggle(${realIdx})" style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;background:var(--surface-2)">
           <div style="width:4px;height:32px;border-radius:2px;background:${color};flex-shrink:0"></div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.title}</div>
-            <div style="font-size:11px;color:var(--text-muted)">${dateLabel} · ${s.time}</div>
+            <div style="font-size: var(--fs-body);font-weight: var(--fw-med);color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.title}</div>
+            <div style="font-size: var(--fs-xs);color:var(--text-muted)">${dateLabel} · ${s.time}</div>
           </div>
           <div style="display:flex;gap:10px;flex-shrink:0;text-align:right">
-            <div><span style="font-size:12px;font-weight:500;color:var(--text-primary)">${s.duration_min}'</span></div>
-            <div><span style="font-size:12px;font-weight:500;color:var(--text-primary)">${((s.volume_kg||0)/1000).toFixed(1)}t</span></div>
-            <div><span style="font-size:12px;font-weight:500;color:var(--text-primary)">${s.kcal||'—'}</span><span style="font-size:9px;color:var(--text-muted)"> kcal</span></div>
+            <div><span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--text-primary)">${s.duration_min}'</span></div>
+            <div><span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--text-primary)">${((s.volume_kg||0)/1000).toFixed(1)}t</span></div>
+            <div><span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--text-primary)">${s.kcal||'—'}</span><span style="font-size: var(--fs-3xs);color:var(--text-muted)"> kcal</span></div>
           </div>
-          <div style="font-size:14px;color:var(--text-muted);transform:rotate(${isOpen?'90':'0'}deg);transition:transform .15s">›</div>
+          <div style="font-size: var(--fs-14);color:var(--text-muted);transform:rotate(${isOpen?'90':'0'}deg);transition:transform .15s">›</div>
         </div>
         ${isOpen ? `<div style="padding:10px 12px;background:var(--surface-1)">
           ${s.exercises.map(ex => {
             const setsStr = ex.sets.map(st => `${st.kg||'—'}×${st.reps||'—'}`).join('  ·  ');
-            return `<div style="padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px">
-              <span style="font-weight:500;color:var(--text-primary)">${ex.name}</span>
+            return `<div style="padding:5px 0;border-bottom:0.5px solid var(--border);font-size: var(--fs-sm)">
+              <span style="font-weight: var(--fw-med);color:var(--text-primary)">${ex.name}</span>
               <span style="color:var(--text-muted);float:right">${setsStr}</span>
             </div>`;
           }).join('')}
@@ -10700,19 +10700,19 @@ function buildHistoryTab() {
     const LABELS_IT = {shoulders:'Spalle', lats:'Dorso (lat)', chest:'Petto', triceps:'Tricipiti',
       quads:'Quadricipiti', glutes:'Glutei', traps:'Trapezi', biceps:'Bicipiti',
       hamstrings:'Femorali', calves:'Polpacci', lowerBack:'Lombari', unknown:'Altro'};
-    const COLORS = {shoulders:'#0071e3', lats:'#34c759', chest:'#ff3b30', triceps:'#af52de',
-      quads:'#ff9500', glutes:'#ff2d55', traps:'#5ac8fa', biceps:'#ffcc00',
+    const COLORS = {shoulders:'var(--blue)', lats:'var(--green)', chest:'var(--red)', triceps:'var(--purple)',
+      quads:'var(--orange)', glutes:'#ff2d55', traps:'#5ac8fa', biceps:'#ffcc00',
       hamstrings:'#34aadc', calves:'#8e8e93', lowerBack:'#a2845e', unknown:'#c7c7cc'};
     return muscleVol.map(m => {
       const pct = (m.volume_kg / max * 100).toFixed(0);
       const label = LABELS_IT[m.muscle] || m.muscle;
       const color = COLORS[m.muscle] || '#8e8e93';
       return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <div style="width:90px;font-size:11px;color:var(--text-secondary);flex-shrink:0;text-align:right">${label}</div>
+        <div style="width:90px;font-size: var(--fs-xs);color:var(--text-secondary);flex-shrink:0;text-align:right">${label}</div>
         <div style="flex:1;height:16px;background:var(--surface-1);border-radius:4px;overflow:hidden">
           <div style="width:${pct}%;height:100%;background:${color};border-radius:4px"></div>
         </div>
-        <div style="width:60px;font-size:11px;font-weight:500;color:var(--text-primary);flex-shrink:0">${(m.volume_kg/1000).toFixed(1)}t</div>
+        <div style="width:60px;font-size: var(--fs-xs);font-weight: var(--fw-med);color:var(--text-primary);flex-shrink:0">${(m.volume_kg/1000).toFixed(1)}t</div>
       </div>`;
     }).join('');
   }
@@ -10908,8 +10908,8 @@ function buildHistoryTab() {
     const flags = (_lastData && _lastData.ready_to_progress) || [];
     if (!flags.length) return '';
     return `<div style="background:rgba(52,199,89,.08);border:0.5px solid rgba(52,199,89,.3);border-radius:10px;padding:12px 14px;margin-bottom:14px">
-      <div style="font-size:12px;font-weight:600;color:#1a7a3a;margin-bottom:8px">💪 Pronti per aumentare il carico</div>
-      ${flags.map(f => `<div style="font-size:12px;color:var(--text-secondary);padding:2px 0">
+      <div style="font-size: var(--fs-sm);font-weight: var(--fw-semi);color:#1a7a3a;margin-bottom:8px">💪 Pronti per aumentare il carico</div>
+      ${flags.map(f => `<div style="font-size: var(--fs-sm);color:var(--text-secondary);padding:2px 0">
         <strong style="color:var(--text-primary)">${f.label}</strong> — ${f.weight}kg, min ${f.min_reps} reps su tutte le serie da ${f.sessions_at_weight} sessioni
       </div>`).join('')}
     </div>`;
@@ -10941,7 +10941,7 @@ function buildHistoryTab() {
 
       <div style="margin-bottom:10px;display:flex;gap:8px">
         <input type="text" id="hs-search" placeholder="Cerca per titolo o esercizio..."
-          style="flex:1;font-size:13px;padding:7px 12px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--surface-1);color:var(--text-primary)"
+          style="flex:1;font-size: var(--fs-body);padding:7px 12px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--surface-1);color:var(--text-primary)"
           oninput="hsSearch(this.value)">
       </div>
       <div id="hs-list">${renderSessionList()}</div>
