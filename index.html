@@ -1133,6 +1133,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .rich-kpi-sleepphase-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
 .rich-kpi-sleepphase-min{font-size:12px;font-weight:600;color:var(--text);margin-top:3px}
 .rich-kpi-sleepphase-pct{font-size:10px;color:var(--muted);margin-top:1px}
+.rich-kpi-card-wide{grid-column:1/-1}
 
 /* Charts */
 .chart-wrap{position:relative;width:100%;margin-bottom:8px}
@@ -6036,7 +6037,13 @@ function buildDashboard() {
   // ── Serie 7gg per le rich-kpi-card (Peso/HRV/RHR/Sonno) ─────────────────
   const peso7 = getDayDataAll('peso', richKpiRangeDays.peso);
   const hrv7  = getDayDataAll('hrv',  richKpiRangeDays.hrv);
-  const rhr7  = getDayDataAll('rhr',  richKpiRangeDays.rhr);
+  // RHR ha SEMPRE un ritardo di un giorno (convenzione Apple Watch già nota,
+  // vedi KB): l'ultimo giorno reale è sempre ieri, mai oggi. Prima la finestra
+  // finiva su oggi e l'ultimo slot restava vuoto — la card mostrava lo stesso
+  // ultimo valore (ieri) ma il grafico "sprecava" un giorno buono. Fix
+  // (30/07/2026 sera): la finestra ora finisce su ieri, così tutti i giorni
+  // richiesti sono effettivamente popolati.
+  const rhr7  = getDayDataAll('rhr',  richKpiRangeDays.rhr + 1).slice(0, -1);
   const sonno7Series = getSonnoOreAll(richKpiRangeDays.sonno);
   const _sonnoValid = sonno7Series.filter(p=>p.value!==null);
   const lSonno = _sonnoValid.length ? _sonnoValid[_sonnoValid.length-1].value : null;
@@ -6050,7 +6057,9 @@ function buildDashboard() {
 
   // Andamento giornaliero (non cumulativo) della compliance integratori
   // sugli ultimi 7gg, per la nuova card con grafico dedicato.
-  const suppDaily7 = inV2 ? getSuppComplianceDaily(richKpiRangeDays.supp) : [];
+  // Stesso principio del fix RHR sopra: il giorno odierno è sempre null (in
+  // corso), quindi la finestra finisce su ieri per non sprecare l'ultimo slot.
+  const suppDaily7 = inV2 ? getSuppComplianceDaily(richKpiRangeDays.supp + 1).slice(0, -1) : [];
 
   // ── Helper: card KPI "ricca" — grafico 7gg con assi, MAX/MIN e riepilogo
   // Min/Max/Media (30/07/2026, sostituisce le vecchie mini-sparkline compact
@@ -6243,7 +6252,7 @@ function buildDashboard() {
         </div>
       </div>` : '';
 
-    return `<div class="rich-kpi-card">
+    return `<div class="rich-kpi-card rich-kpi-card-wide">
       <div class="rich-kpi-head">
         <div class="rich-kpi-head-left">
           <span class="rich-kpi-icon" style="background:#ece7fb">🧬</span>
@@ -6285,21 +6294,33 @@ function buildDashboard() {
       <div class="dash-two-col">
         <div>
           <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Peso (kg) <span style="font-size:11px;color:var(--muted);font-weight:400">— target 66–68 · T0: 71.1</span></div>
-            <canvas class="dash-chart" id="dc-peso" height="110"></canvas>
+            <div id="dc-peso-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
           </div>
+          <canvas class="dash-chart" id="dc-peso" height="110"></canvas>
+        </div>
           <div class="charts-card" style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">HRV (ms) <span style="font-size:11px;color:var(--muted);font-weight:400">— T0: 37ms</span></div>
-            <canvas class="dash-chart" id="dc-hrv" height="110"></canvas>
+            <div id="dc-hrv-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
           </div>
+          <canvas class="dash-chart" id="dc-hrv" height="110"></canvas>
+        </div>
         </div>
         <div>
           <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">RHR (bpm)</div>
-            <canvas class="dash-chart" id="dc-rhr" height="110"></canvas>
+            <div id="dc-rhr-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
           </div>
+          <canvas class="dash-chart" id="dc-rhr" height="110"></canvas>
+        </div>
           <div class="charts-card" style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Pressione arteriosa (mmHg)</div>
+            <div id="dc-bp-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+          </div>
             <div class="chart-legend">
               <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#ff3b30"></span>Sistolica</span>
               <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#0071e3"></span>Diastolica</span>
@@ -6353,6 +6374,55 @@ function buildDashboard() {
         <div id="dc-sleep-hrv-note" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
       </div>
     </div>
+
+    <!-- ══ SEZ. ANDAMENTO SONNO ══════════════════════════════ -->
+    ${inV2?`<div class="dash-section">
+      <div class="dash-section-title">Andamento sonno · dal Test Protocollo</div>
+      <div class="dash-three-col">
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Ore totali</div>
+            <div id="dc-sleep-hours-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-hours" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Minuti veglia</div>
+            <div id="dc-sleep-wakemin-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-wakemin" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Numero risvegli</div>
+            <div id="dc-sleep-wakecount-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-wakecount" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">REM</div>
+            <div id="dc-sleep-rem-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-rem" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Sonno principale</div>
+            <div id="dc-sleep-principale-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-principale" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Sonno profondo</div>
+            <div id="dc-sleep-profondo-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-profondo" height="90"></canvas>
+        </div>
+      </div>
+    </div>`:''}
 
     <!-- ══ SEZ. ALLENAMENTO ═══════════════════════════════════ -->
     <div class="dash-section">
@@ -6504,55 +6574,6 @@ function buildDashboard() {
       </div>
     </div>
 
-    <!-- ══ SEZ. ANDAMENTO SONNO ══════════════════════════════ -->
-    ${inV2?`<div class="dash-section">
-      <div class="dash-section-title">Andamento sonno · dal Test Protocollo</div>
-      <div class="dash-three-col">
-        <div class="charts-card">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">Ore totali</div>
-            <div id="dc-sleep-hours-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
-          </div>
-          <canvas class="dash-chart" id="dc-sleep-hours" height="90"></canvas>
-        </div>
-        <div class="charts-card">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">Minuti veglia</div>
-            <div id="dc-sleep-wakemin-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
-          </div>
-          <canvas class="dash-chart" id="dc-sleep-wakemin" height="90"></canvas>
-        </div>
-        <div class="charts-card">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">Numero risvegli</div>
-            <div id="dc-sleep-wakecount-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
-          </div>
-          <canvas class="dash-chart" id="dc-sleep-wakecount" height="90"></canvas>
-        </div>
-        <div class="charts-card">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">REM</div>
-            <div id="dc-sleep-rem-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
-          </div>
-          <canvas class="dash-chart" id="dc-sleep-rem" height="90"></canvas>
-        </div>
-        <div class="charts-card">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">Sonno principale</div>
-            <div id="dc-sleep-principale-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
-          </div>
-          <canvas class="dash-chart" id="dc-sleep-principale" height="90"></canvas>
-        </div>
-        <div class="charts-card">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">Sonno profondo</div>
-            <div id="dc-sleep-profondo-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
-          </div>
-          <canvas class="dash-chart" id="dc-sleep-profondo" height="90"></canvas>
-        </div>
-      </div>
-    </div>`:''}
-
     <!-- ══ SEZ. SISTEMA ══════════════════════════════════════════ -->
     <div class="dash-section">
       <div class="dash-section-title">Sistema</div>
@@ -6622,20 +6643,37 @@ function refreshDashCharts() {
   const _dashChartH = window.innerWidth <= 600 ? 100 : 130;
   drawRichKpiChart('rk-peso',  getDayDataAll('peso', richKpiRangeDays.peso), {height:_dashChartH, color:'#0071e3', decimals:1});
   drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  richKpiRangeDays.hrv),  {height:_dashChartH, color:'#34c759', decimals:0});
-  drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  richKpiRangeDays.rhr),  {height:_dashChartH, color:'#ff3b30', decimals:0});
+  drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  richKpiRangeDays.rhr + 1).slice(0, -1),  {height:_dashChartH, color:'#ff3b30', decimals:0});
   drawRichKpiChart('rk-sonno', getSonnoOreAll(richKpiRangeDays.sonno), {height:_dashChartH, color:'#5856d6', decimals:1});
   if (document.getElementById('rk-supp')) {
-    drawRichKpiChart('rk-supp', getSuppComplianceDaily(richKpiRangeDays.supp), {height:_dashChartH, color:'#ff9500', decimals:0});
+    drawRichKpiChart('rk-supp', getSuppComplianceDaily(richKpiRangeDays.supp + 1).slice(0, -1), {height:_dashChartH, color:'#ff9500', decimals:0});
   }
 
   // ── Grafici biometria ──────────────────────────────────────
-  drawDashChart('dc-peso',[{data:peso60,color:'#0071e3'}],{height:110,minScale:0.98,maxScale:1.02,refLine:71.1});
-  drawDashChart('dc-hrv', [{data:hrv60, color:'#34c759'}],{height:110,refLine:37});
-  drawDashChart('dc-rhr', [{data:rhr60, color:'#ff3b30'}],{height:110});
+  // Linee di trend aggiunte su richiesta di Giorgio (30/07/2026 sera), stessa
+  // funzione già usata per i grafici sonno (regressione lineare, >=5 punti).
+  function setTrendLabel(elId, trend, unit, decimals) {
+    const el = document.getElementById(elId);
+    if (!el) return;
+    if (trend) {
+      const sign = trend.weekly > 0 ? '+' : '';
+      el.textContent = `Tendenza: ${sign}${trend.weekly.toFixed(decimals)}${unit}/sett`;
+    } else {
+      el.textContent = '';
+    }
+  }
+  setTrendLabel('dc-peso-trend', drawDashChart('dc-peso',[{data:peso60,color:'#0071e3'}],{height:110,minScale:0.98,maxScale:1.02,refLine:71.1,showTrend:true}), 'kg', 2);
+  setTrendLabel('dc-hrv-trend',  drawDashChart('dc-hrv', [{data:hrv60, color:'#34c759'}],{height:110,refLine:37,showTrend:true}), 'ms', 1);
+  setTrendLabel('dc-rhr-trend',  drawDashChart('dc-rhr', [{data:rhr60, color:'#ff3b30'}],{height:110,showTrend:true}), 'bpm', 1);
 
   const allBp=[...bpSys,...bpDia].filter(p=>p.value!==null);
-  if(allBp.length>=2)
-    drawDashChart('dc-bp',[{data:bpSys,color:'#ff3b30'},{data:bpDia,color:'#0071e3'}],{height:110});
+  if(allBp.length>=2) {
+    const bpTrend = drawDashChart('dc-bp',[{data:bpSys,color:'#ff3b30'},{data:bpDia,color:'#0071e3'}],{height:110,showTrend:true});
+    const bpTrendEl = document.getElementById('dc-bp-trend');
+    if (bpTrendEl) {
+      bpTrendEl.textContent = bpTrend ? `Tendenza sistolica: ${bpTrend.weekly>0?'+':''}${bpTrend.weekly.toFixed(1)}/sett` : '';
+    }
+  }
 
   // ── Soggettivo ─────────────────────────────────────────────
   const hasSubj=[...energ,...recup,...umore].some(p=>p.value!==null);
