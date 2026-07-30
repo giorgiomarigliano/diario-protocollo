@@ -1074,6 +1074,30 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .kpi-delta.up{color:#34c759}.kpi-delta.down{color:#ff3b30}.kpi-delta.neutral{color:var(--muted)}
 .kpi-spark{margin-top:8px;height:28px;width:100%}
 
+/* Rich KPI cards (30/07/2026) — formato esteso per Peso/HRV/RHR/Sonno nella
+   sezione "Stato ciclo": grafico 7gg con assi, annotazioni MAX/MIN, riepilogo
+   Min/Max/Media. Le altre card (Ciclo/Fase, Compliance) restano nel formato
+   kpi-box compatto esistente sopra — vedi buildDashboard(). */
+.rich-kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.rich-kpi-card{background:var(--surface);border-radius:var(--radius-sm);padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.rich-kpi-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.rich-kpi-head-left{display:flex;align-items:center;gap:8px;min-width:0}
+.rich-kpi-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.rich-kpi-lbl{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rich-kpi-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--surface2);color:var(--muted);flex-shrink:0}
+.rich-kpi-value{font-size:28px;font-weight:700;letter-spacing:-0.02em;color:var(--text);line-height:1;margin-bottom:6px}
+.rich-kpi-value span{font-size:13px;font-weight:400}
+.rich-kpi-delta-row{font-size:11px;font-weight:500;margin-top:2px;display:flex;align-items:center;gap:3px}
+.rich-kpi-delta-row.up{color:#34c759}.rich-kpi-delta-row.down{color:#ff3b30}.rich-kpi-delta-row.neutral{color:var(--muted)}
+.rich-kpi-chart{display:block;width:100%;margin-top:6px}
+.rich-kpi-summary{display:flex;justify-content:space-between;margin-top:6px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+.rich-kpi-summary b{color:var(--text);font-weight:600}
+.rich-kpi-zonebar{margin-top:10px}
+.rich-kpi-zonebar-bar{height:4px;border-radius:2px;background:linear-gradient(to right,#ff3b30,#ff3b30 33%,#ff9500 33%,#ff9500 66%,#34c759 66%);margin-bottom:4px}
+.rich-kpi-zonebar-labels{display:flex;justify-content:space-between}
+.rich-kpi-zonebar-labels div{text-align:center;flex:1;font-size:9px;color:var(--muted)}
+.rich-kpi-zonebar-labels div b{display:block;font-size:10px;color:var(--text);font-weight:600}
+
 /* Charts */
 .chart-wrap{position:relative;width:100%;margin-bottom:8px}
 .chart-axis-label{font-size:9px;color:var(--faint);margin-bottom:4px;display:flex;justify-content:space-between}
@@ -1114,6 +1138,8 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 
 @media(max-width:600px){
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .rich-kpi-card{padding:12px}
+  .rich-kpi-value{font-size:24px}
   .compliance-grid{grid-template-columns:repeat(3,1fr)}
   .cycle-card{gap:12px;padding:16px}
   .cycle-info h3{font-size:14px}
@@ -5006,6 +5032,187 @@ function drawDashChart(canvasId, datasets, options = {}) {
   return trendResult;
 }
 
+// ── drawRichKpiChart (30/07/2026) ───────────────────────────────────────────
+// Grafico per le rich-kpi-card di "Stato ciclo" (Peso/HRV/RHR/Sonno):
+// finestra FISSA a 7 giorni (i 7 slot X restano fissi anche se qualche giorno
+// manca — un buco resta un buco, non deforma la scala), assi Y/X sempre
+// visibili, annotazioni MAX/MIN con linea tratteggiata, punto finale
+// evidenziato con etichetta valore. Distinta da drawDashChart (grafici
+// 30/60gg più sotto e vecchia modalità compact): qui servono le annotazioni
+// MAX/MIN e la finestra è sempre di 7 punti, cose che l'altra non fa.
+function drawRichKpiChart(canvasId, points, options = {}) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const H = options.height || 130;
+  const parent = canvas.parentElement;
+  let W = 0;
+  if (parent) {
+    const cs = window.getComputedStyle(parent);
+    const padL = parseFloat(cs.paddingLeft) || 0;
+    const padR = parseFloat(cs.paddingRight) || 0;
+    W = Math.max(0, parent.clientWidth - padL - padR);
+  }
+  if (W <= 10) {
+    requestAnimationFrame(() => drawRichKpiChart(canvasId, points, options));
+    return;
+  }
+
+  const color = options.color || '#0071e3';
+  const decimals = options.decimals !== undefined ? options.decimals : 1;
+  const fmtV = v => decimals === 0 ? Math.round(v).toString() : v.toFixed(decimals);
+
+  const ML = 32, MR = 40, MT = 22, MB = 16;
+  const CW = W - ML - MR;
+  const CH = H - MB - MT;
+
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.display = 'block';
+  canvas.style.width   = '100%';
+  canvas.style.height  = H + 'px';
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const isDark = document.documentElement.classList.contains('dark') ||
+    (window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches);
+  const axisColor  = isDark ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.13)';
+  const labelColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.38)';
+  const gridColor  = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)';
+
+  const validPts = points.filter(p => p.value !== null);
+  if (validPts.length < 2) {
+    ctx.font = '11px -apple-system'; ctx.fillStyle = '#aeaeb2';
+    ctx.fillText('Dati insufficienti', ML + 4, H / 2);
+    return;
+  }
+
+  const vals = validPts.map(p => p.value);
+  let mn = Math.min(...vals), mx = Math.max(...vals);
+  if (mx - mn < 1) { const mid = (mx + mn) / 2; mn = mid - 1; mx = mid + 1; }
+  const pad = (mx - mn) * 0.2;
+  mn -= pad; mx += pad;
+  const rng = mx - mn || 1;
+
+  // Y ticks — step "pulito" (stessa euristica di drawDashChart)
+  function niceStep(range) {
+    const rough = range / 3;
+    const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+    const norm = rough / mag;
+    const nice = norm < 1.5 ? 1 : norm < 3 ? 2.5 : norm < 7 ? 5 : 10;
+    return nice * mag;
+  }
+  const yStep = niceStep(mx - mn);
+  const yStart = Math.ceil(mn / yStep) * yStep;
+  const yTicks = [];
+  for (let v = yStart; v <= mx; v += yStep) yTicks.push(Math.round(v * 10) / 10);
+
+  // Assi
+  ctx.strokeStyle = axisColor; ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(ML, MT); ctx.lineTo(ML, MT + CH); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ML, MT + CH); ctx.lineTo(ML + CW, MT + CH); ctx.stroke();
+
+  ctx.font = '9px -apple-system'; ctx.textAlign = 'right';
+  yTicks.forEach(v => {
+    const y = MT + CH - ((v - mn) / rng) * CH;
+    if (y < MT || y > MT + CH) return;
+    ctx.strokeStyle = gridColor; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(ML + 1, y); ctx.lineTo(ML + CW, y); ctx.stroke();
+    ctx.fillStyle = labelColor;
+    ctx.fillText(v % 1 === 0 ? v : v.toFixed(1), ML - 5, y + 3);
+  });
+  ctx.textAlign = 'left';
+
+  // X labels — uno slot fisso per ognuno dei 7 giorni della finestra
+  const n = points.length;
+  ctx.font = '9px -apple-system'; ctx.fillStyle = labelColor; ctx.textAlign = 'center';
+  points.forEach((p, i) => {
+    const x = ML + (n > 1 ? i / (n - 1) * CW : CW / 2);
+    ctx.strokeStyle = axisColor; ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(x, MT + CH); ctx.lineTo(x, MT + CH + 3); ctx.stroke();
+    const lbl = String(p.date.getDate()).padStart(2, '0') + '/' + String(p.date.getMonth() + 1).padStart(2, '0');
+    ctx.fillStyle = labelColor;
+    ctx.fillText(lbl, x, H - 3);
+  });
+  ctx.textAlign = 'left';
+
+  // Punti in pixel — posizione FISSA sullo slot del giorno (non compattati
+  // sui soli punti validi), così un giorno mancante resta un buco nella
+  // linea invece di deformare la spaziatura X.
+  const pxPoints = points.map((p, i) => ({
+    x: ML + (n > 1 ? i / (n - 1) * CW : CW / 2),
+    y: p.value === null ? null : MT + CH - ((p.value - mn) / rng) * CH,
+    v: p.value, date: p.date
+  }));
+
+  // Area riempita — solo sui segmenti con entrambi gli estremi validi
+  pxPoints.forEach((p, i) => {
+    if (i === 0 || p.y === null || pxPoints[i - 1].y === null) return;
+    const prev = pxPoints[i - 1];
+    ctx.beginPath();
+    ctx.moveTo(prev.x, MT + CH); ctx.lineTo(prev.x, prev.y);
+    ctx.lineTo(p.x, p.y); ctx.lineTo(p.x, MT + CH);
+    ctx.closePath();
+    const g = ctx.createLinearGradient(0, MT, 0, MT + CH);
+    g.addColorStop(0, color + '2a'); g.addColorStop(1, color + '00');
+    ctx.fillStyle = g; ctx.fill();
+  });
+
+  // Linea (interrotta sui buchi)
+  ctx.beginPath();
+  let started = false;
+  pxPoints.forEach(p => {
+    if (p.y === null) { started = false; return; }
+    if (!started) { ctx.moveTo(p.x, p.y); started = true; }
+    else ctx.lineTo(p.x, p.y);
+  });
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+
+  // Pallini sui punti validi
+  pxPoints.forEach(p => {
+    if (p.y === null) return;
+    ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+    ctx.fillStyle = color; ctx.fill();
+  });
+
+  // MAX / MIN — linea tratteggiata + etichetta
+  let maxP = null, minP = null;
+  pxPoints.forEach(p => {
+    if (p.v === null) return;
+    if (maxP === null || p.v > maxP.v) maxP = p;
+    if (minP === null || p.v < minP.v) minP = p;
+  });
+  if (maxP && minP && maxP !== minP) {
+    ctx.setLineDash([2, 2]); ctx.strokeStyle = axisColor; ctx.lineWidth = 0.7;
+    ctx.beginPath(); ctx.moveTo(maxP.x, maxP.y); ctx.lineTo(maxP.x, MT + 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = '600 9px -apple-system'; ctx.fillStyle = color; ctx.textAlign = 'center';
+    ctx.fillText('MAX ' + fmtV(maxP.v), Math.max(ML + 20, Math.min(maxP.x, ML + CW - 20)), MT - 9);
+
+    ctx.setLineDash([2, 2]); ctx.strokeStyle = axisColor; ctx.lineWidth = 0.7;
+    ctx.beginPath(); ctx.moveTo(minP.x, minP.y); ctx.lineTo(minP.x, MT + CH - 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = '600 9px -apple-system'; ctx.fillStyle = color;
+    ctx.fillText('MIN ' + fmtV(minP.v), Math.max(ML + 20, Math.min(minP.x, ML + CW - 20)), Math.min(MT + CH - 4, minP.y + 13));
+    ctx.textAlign = 'left';
+  }
+
+  // Punto finale — cerchio evidenziato + valore a destra (fuori dal plot)
+  const lastValid = [...pxPoints].reverse().find(p => p.y !== null);
+  if (lastValid) {
+    ctx.beginPath(); ctx.arc(lastValid.x, lastValid.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(lastValid.x, lastValid.y, 4, 0, Math.PI * 2);
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+
+    ctx.font = '600 11px -apple-system'; ctx.fillStyle = color; ctx.textAlign = 'left';
+    const ly = Math.max(MT + 8, Math.min(lastValid.y + 4, MT + CH - 2));
+    ctx.fillText(fmtV(lastValid.v), ML + CW + 5, ly);
+    ctx.textAlign = 'left';
+  }
+}
+
 function drawComplianceRing(canvasId, pct, color) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
@@ -5691,61 +5898,105 @@ function buildDashboard() {
   const wkV2 = inV2 ? Math.floor(elapsedV2/7)+1 : 0;
   const ph   = inV2 ? getPhase2(elapsedV2) : {label:'Pre-ciclo',badge:'ph-baseline'};
 
-  // Leggi ultimi valori biometrici
-  function lastVal(field, days) {
-    const d = getDayDataAll(field, days);
-    const v = d.filter(p=>p.value!==null);
-    return v.length ? v[v.length-1].value : null;
-  }
-  const lPeso = lastVal('peso',60);
-  const lHrv  = lastVal('hrv',60);
-  const lRhr  = lastVal('rhr',60);
-  const lBpS  = lastVal('bp_sys',60);
-  const lBpD  = lastVal('bp_dia',60);
   const inj   = getInjComplianceV2();
   const supp  = getSuppComplianceV2();
   const wo2   = getWorkoutComplianceV2();
   const pctCiclo = inV2 ? Math.min(100,Math.round((elapsedV2/CICLO1_DAYS)*100)) : 0;
 
-  // Delta peso/HRV vs T0 (DEXA: 71.1kg) · sonno: media ultimi 7gg (nessun T0 di riferimento registrato)
+  // T0 (DEXA 9/5/2026): peso 71.1kg, HRV 37ms. RHR/Sonno non hanno un T0
+  // clinico registrato — per quelle due la seconda riga delta mostra la
+  // media 7gg invece di "vs T0" (vedi richKpiCard).
   const T0_PESO = 71.1, T0_HRV = 37;
-  const deltaPeso = lPeso ? (lPeso - T0_PESO).toFixed(1) : null;
-  const deltaHrv  = lHrv  ? Math.round(lHrv - T0_HRV)  : null;
-  const sonno7 = getSonnoOreAll(7).filter(p=>p.value!==null).map(p=>p.value);
-  const avgSonno7 = sonno7.length ? (sonno7.reduce((a,b)=>a+b,0)/sonno7.length) : null;
-  const _sonnoRecent = getSonnoOreAll(60).filter(p=>p.value!==null);
-  const lSonno = _sonnoRecent.length ? _sonnoRecent[_sonnoRecent.length-1].value : null;
+
+  // ── Serie 7gg per le rich-kpi-card (Peso/HRV/RHR/Sonno) ─────────────────
+  const peso7 = getDayDataAll('peso', 7);
+  const hrv7  = getDayDataAll('hrv',  7);
+  const rhr7  = getDayDataAll('rhr',  7);
+  const sonno7Series = getSonnoOreAll(7);
+  const _sonnoValid = sonno7Series.filter(p=>p.value!==null);
+  const lSonno = _sonnoValid.length ? _sonnoValid[_sonnoValid.length-1].value : null;
+
+  // ── Helper: card KPI "ricca" — grafico 7gg con assi, MAX/MIN e riepilogo
+  // Min/Max/Media (30/07/2026, sostituisce le vecchie mini-sparkline compact
+  // per Peso/HRV/RHR/Sonno su richiesta esplicita di Giorgio, per allinearsi
+  // al mockup di riferimento). Le altre card (Ciclo/Fase, Compliance) restano
+  // nel formato kpi-box piccolo, invariato, subito sotto.
+  function richKpiCard(cfg) {
+    const valid = cfg.series7.filter(p=>p.value!==null);
+    const last = valid.length ? valid[valid.length-1].value : null;
+    const yestP = cfg.series7[cfg.series7.length-2];
+    const yestVal = yestP && yestP.value!==null ? yestP.value : null;
+    const deltaIeri = (last!==null && yestVal!==null) ? (last-yestVal) : null;
+    const vals = valid.map(p=>p.value);
+    const minV = vals.length ? Math.min(...vals) : null;
+    const maxV = vals.length ? Math.max(...vals) : null;
+    const avgV = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length) : null;
+    const dec  = cfg.decimals;
+    const fmt  = v => v===null ? '—' : (dec===0 ? Math.round(v).toString() : v.toFixed(dec));
+
+    function deltaRow(delta, label, refStr) {
+      if (delta===null) return `<div class="rich-kpi-delta-row neutral">Dati insufficienti</div>`;
+      const arrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
+      const sign  = delta > 0 ? '+' : '';
+      return `<div class="rich-kpi-delta-row" style="color:${cfg.accent}">${arrow} ${sign}${fmt(delta)} ${cfg.unit} ${label}${refStr?` (${refStr})`:''}</div>`;
+    }
+
+    const line1 = deltaRow(deltaIeri, 'vs ieri', yestVal!==null ? fmt(yestVal) : null);
+    let line2;
+    if (cfg.t0 !== undefined && cfg.t0 !== null) {
+      const deltaT0 = last!==null ? (last-cfg.t0) : null;
+      line2 = deltaRow(deltaT0, 'vs T0', `${fmt(cfg.t0)}${cfg.t0Suffix||''}`);
+    } else {
+      line2 = avgV!==null
+        ? `<div class="rich-kpi-delta-row neutral">Media 7gg: ${fmt(avgV)} ${cfg.unit}</div>`
+        : `<div class="rich-kpi-delta-row neutral">Dati insufficienti</div>`;
+    }
+
+    const zoneHtml = cfg.zoneBar ? `
+      <div class="rich-kpi-zonebar">
+        <div class="rich-kpi-zonebar-bar"></div>
+        <div class="rich-kpi-zonebar-labels">
+          <div><b>&lt; ${cfg.zoneBar.lo}</b>Basso</div>
+          <div><b>${cfg.zoneBar.lo}–${cfg.zoneBar.hi}</b>Nella norma</div>
+          <div><b>&gt; ${cfg.zoneBar.hi}</b>Ottimale</div>
+        </div>
+      </div>` : '';
+
+    return `<div class="rich-kpi-card">
+      <div class="rich-kpi-head">
+        <div class="rich-kpi-head-left">
+          <span class="rich-kpi-icon" style="background:${cfg.iconBg}">${cfg.icon}</span>
+          <span class="rich-kpi-lbl">${cfg.label}</span>
+        </div>
+        <span class="rich-kpi-badge">7 giorni</span>
+      </div>
+      <div class="rich-kpi-value">${fmt(last)}<span> ${cfg.unit}</span></div>
+      ${line1}
+      ${line2}
+      <canvas class="rich-kpi-chart" id="${cfg.canvasId}"></canvas>
+      <div class="rich-kpi-summary">
+        <span>Min <b>${fmt(minV)}</b></span>
+        <span>Max <b>${fmt(maxV)}</b></span>
+        <span>Media <b>${fmt(avgV)}</b></span>
+      </div>
+      ${zoneHtml}
+    </div>`;
+  }
 
   dash.innerHTML = `<div class="dash-inner view-wrap">
 
     <!-- ══ SEZ. STATO ══════════════════════════════════════════ -->
     <div class="dash-section">
       <div class="dash-section-title">Stato ciclo</div>
+
+      <div class="rich-kpi-grid">
+        ${richKpiCard({series7:peso7, label:'Peso attuale', icon:'⚖️', iconBg:'#eaf1fb', unit:'kg', decimals:1, accent:'#ff3b30', t0:T0_PESO, canvasId:'rk-peso'})}
+        ${richKpiCard({series7:hrv7, label:'HRV', icon:'💓', iconBg:'#fde7ef', unit:'ms', decimals:0, accent:'#34c759', t0:T0_HRV, t0Suffix:'ms', canvasId:'rk-hrv', zoneBar:{lo:40,hi:45}})}
+        ${richKpiCard({series7:rhr7, label:'RHR', icon:'❤️', iconBg:'#fde7e7', unit:'bpm', decimals:0, accent:'#ff3b30', canvasId:'rk-rhr'})}
+        ${richKpiCard({series7:sonno7Series, label:'Sonno', icon:'😴', iconBg:'#ece7fb', unit:'h', decimals:1, accent:'#5856d6', canvasId:'rk-sonno'})}
+      </div>
+
       <div class="kpi-grid">
-
-        <div class="kpi-box">
-          <span class="kpi-icon">⚖️</span>
-          <div class="kpi-val">${lPeso?lPeso.toFixed(1):'—'}<span style="font-size:13px;font-weight:400"> kg</span></div>
-          <div class="kpi-lbl">Peso attuale</div>
-          ${deltaPeso!==null?`<div class="kpi-delta ${parseFloat(deltaPeso)<0?'up':'down'}">${parseFloat(deltaPeso)>0?'+':''}${deltaPeso} vs T0 (71.1)</div>`:'<div class="kpi-delta neutral">T0: 71.1 kg · target 66–68</div>'}
-          <canvas class="kpi-spark" id="spark-peso" style="margin-top:8px"></canvas>
-        </div>
-
-        <div class="kpi-box">
-          <span class="kpi-icon">💓</span>
-          <div class="kpi-val">${lHrv?Math.round(lHrv):'—'}<span style="font-size:13px;font-weight:400"> ms</span></div>
-          <div class="kpi-lbl">HRV</div>
-          ${deltaHrv!==null?`<div class="kpi-delta ${deltaHrv>0?'up':'down'}">${deltaHrv>0?'+':''}${deltaHrv} ms vs T0 (37ms)</div>`:'<div class="kpi-delta neutral">T0: 37ms</div>'}
-          <canvas class="kpi-spark" id="spark-hrv" style="margin-top:8px"></canvas>
-        </div>
-
-        <div class="kpi-box">
-          <span class="kpi-icon">❤️</span>
-          <div class="kpi-val">${lRhr?Math.round(lRhr):'—'}<span style="font-size:13px;font-weight:400"> bpm</span></div>
-          <div class="kpi-lbl">RHR</div>
-          <div class="kpi-delta neutral">${lBpS&&lBpD?`PA: ${Math.round(lBpS)}/${Math.round(lBpD)} mmHg`:'PA: —'}</div>
-          <canvas class="kpi-spark" id="spark-rhr" style="margin-top:8px"></canvas>
-        </div>
 
         <div class="kpi-box">
           <span class="kpi-icon">🧬</span>
@@ -5786,14 +6037,6 @@ function buildDashboard() {
             <div style="height:100%;width:${wo2.pct}%;background:${wo2.pct>=80?'#34c759':wo2.pct>=60?'#ff9500':'#ff3b30'};border-radius:2px"></div>
           </div>
         </div>` : ''}
-
-        <div class="kpi-box">
-          <span class="kpi-icon">😴</span>
-          <div class="kpi-val">${lSonno!==null?lSonno.toFixed(1):'—'}<span style="font-size:13px;font-weight:400">h</span></div>
-          <div class="kpi-lbl">Sonno</div>
-          <div class="kpi-delta neutral">${avgSonno7!==null?`Media 7gg: ${avgSonno7.toFixed(1)}h`:'Dati insufficienti'}</div>
-          <canvas class="kpi-spark" id="spark-sonno" style="margin-top:8px"></canvas>
-        </div>
 
       </div>
     </div>
@@ -6110,15 +6353,15 @@ function refreshDashCharts() {
   const recup = getDayDataAll('recupero',30);
   const umore = getDayDataAll('umore',   30);
 
-  // ── Sparkline KPI ──────────────────────────────────────────
-  // Unificate su drawDashChart (29/07/2026, modalita' compact) al posto della
-  // vecchia drawSparkline, una quarta implementazione parallela stilisticamente
-  // diversa dal resto dell'app. hideLabel:true perche' il valore e' gia'
-  // mostrato in grande sopra ogni sparkline (kpi-val).
-  drawDashChart('spark-peso', [{data:peso60,color:'#0071e3'}], {height:32,minPts:1,compact:true,hideLabel:true});
-  drawDashChart('spark-hrv',  [{data:hrv60, color:'#34c759'}], {height:32,minPts:1,compact:true,hideLabel:true});
-  drawDashChart('spark-rhr',  [{data:rhr60, color:'#ff3b30'}], {height:32,minPts:1,compact:true,hideLabel:true});
-  drawDashChart('spark-sonno',[{data:sonno60,color:'#5856d6'}],{height:32,minPts:1,compact:true,hideLabel:true});
+  // ── Grafici rich-kpi-card (30/07/2026) ──────────────────────
+  // Sostituiscono le vecchie mini-sparkline compact: finestra fissa 7gg,
+  // assi visibili, annotazioni MAX/MIN (vedi drawRichKpiChart). I dati sono
+  // ricalcolati qui (non riusano peso60/hrv60/rhr60/sonno60, che coprono
+  // 60gg) perché la card mostra sempre e solo l'ultima settimana.
+  drawRichKpiChart('rk-peso',  getDayDataAll('peso', 7), {height:130, color:'#0071e3', decimals:1});
+  drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  7), {height:130, color:'#34c759', decimals:0});
+  drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  7), {height:130, color:'#ff3b30', decimals:0});
+  drawRichKpiChart('rk-sonno', getSonnoOreAll(7),        {height:130, color:'#5856d6', decimals:1});
 
   // ── Grafici biometria ──────────────────────────────────────
   drawDashChart('dc-peso',[{data:peso60,color:'#0071e3'}],{height:110,minScale:0.98,maxScale:1.02,refLine:71.1});
