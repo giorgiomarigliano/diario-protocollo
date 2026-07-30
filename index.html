@@ -6529,6 +6529,27 @@ function buildDashboard() {
           </div>
           <canvas class="dash-chart" id="dc-sleep-wakecount" height="90"></canvas>
         </div>
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">REM</div>
+            <div id="dc-sleep-rem-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-rem" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Sonno principale</div>
+            <div id="dc-sleep-principale-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-principale" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Sonno profondo</div>
+            <div id="dc-sleep-profondo-trend" style="font-size:10.5px;color:var(--muted);font-weight:500"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-profondo" height="90"></canvas>
+        </div>
       </div>
     </div>`:''}
 
@@ -6863,6 +6884,11 @@ function refreshDashCharts() {
   sleepChart('dc-sleep-hours',     'ore_sonno',        '#5856d6', parseSonnoHours, 'h');
   sleepChart('dc-sleep-wakemin',   'sonno_veglia_min', '#ff9500', null, 'min');
   sleepChart('dc-sleep-wakecount', 'sonno_risvegli',   '#ff3b30', null, '');
+  // Fasi sonno dettagliate (30/07/2026) — dati retroattivi dal Test Protocollo
+  // in poi, recuperati dagli screenshot "Tutti i dati salvati" di Salute.
+  sleepChart('dc-sleep-rem',        'sonno_rem_min',        '#5ac8fa', null, 'min');
+  sleepChart('dc-sleep-principale', 'sonno_principale_min', '#0071e3', null, 'min');
+  sleepChart('dc-sleep-profondo',   'sonno_profondo_min',   '#2e2a6e', null, 'min');
 }
 
 function buildMotraSection(dayId) {
