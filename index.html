@@ -1085,6 +1085,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .rich-kpi-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
 .rich-kpi-lbl{font-size:13px;font-weight:600;color:var(--text);line-height:1.15;word-break:normal}
 .rich-kpi-badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--muted);flex-shrink:0;white-space:nowrap}
+.rich-kpi-range-select{appearance:none;-webkit-appearance:none;border:none;cursor:pointer;font-family:inherit}
 .rich-kpi-value{font-size:28px;font-weight:700;letter-spacing:-0.02em;color:var(--text);line-height:1;margin-bottom:6px}
 .rich-kpi-value span{font-size:13px;font-weight:400}
 .rich-kpi-delta-row{font-size:11px;font-weight:500;margin-top:2px;display:flex;align-items:center;gap:3px}
@@ -1111,6 +1112,13 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .rich-kpi-stat-pct{font-size:17px;font-weight:700;color:var(--text);line-height:1}
 .rich-kpi-stat-lbl{font-size:10px;color:var(--muted);margin-top:3px}
 .rich-kpi-stat-sub{font-size:9px;color:var(--muted);margin-top:1px}
+
+/* Ripartizione fasi sonno (30/07/2026) */
+.rich-kpi-sleepphases{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.rich-kpi-sleepphase-item{font-size:11px;font-weight:500;color:var(--text)}
+.rich-kpi-sleepphase-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:4px}
+.rich-kpi-sleepphase-min{font-size:12px;font-weight:600;color:var(--text);margin-top:3px}
+.rich-kpi-sleepphase-pct{font-size:10px;color:var(--muted);margin-top:1px}
 
 /* Charts */
 .chart-wrap{position:relative;width:100%;margin-bottom:8px}
@@ -1152,11 +1160,16 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 
 @media(max-width:600px){
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
-  .rich-kpi-card{padding:12px}
-  .rich-kpi-value{font-size:24px}
+  .rich-kpi-card{padding:11px}
+  .rich-kpi-head{margin-bottom:8px}
+  .rich-kpi-value{font-size:22px;margin-bottom:3px}
   .rich-kpi-icon{width:26px;height:26px;font-size:12px}
   .rich-kpi-lbl{font-size:12px}
   .rich-kpi-badge{font-size:9px;padding:2px 7px}
+  .rich-kpi-delta-row{font-size:10px;margin-top:1px}
+  .rich-kpi-chart{margin-top:2px}
+  .rich-kpi-summary{margin-top:2px;padding-top:6px;font-size:10px}
+  .rich-kpi-extra,.rich-kpi-zonebar,.rich-kpi-sleepphases,.rich-kpi-stats3{margin-top:8px;padding-top:8px}
   .compliance-grid{grid-template-columns:repeat(3,1fr)}
   .cycle-card{gap:12px;padding:16px}
   .cycle-info h3{font-size:14px}
@@ -3076,6 +3089,9 @@ const VALIDATION_RANGES = {
   ore_sonno: [0, 14],     // ore (formato H.MM, es. "5.27")
   sonno_veglia_min: [0, 300],  // minuti di veglia notturna (da grafico fasi sonno)
   sonno_risvegli:   [0, 20],   // numero di risvegli/spike di veglia visibili nel grafico
+  sonno_rem_min:       [0, 300], // minuti di sonno REM (da grafico fasi sonno, 30/07/2026)
+  sonno_principale_min:[0, 500], // minuti di sonno "principale"/Core (30/07/2026)
+  sonno_profondo_min:  [0, 200], // minuti di sonno profondo/Deep (30/07/2026)
 };
 function validateBiometrics(dataV1, dataV2){
   const errors=[];
@@ -5630,6 +5646,17 @@ function drawSentinelGroup(group) {
 }
 let dashBuilt = false;
 
+// ── Intervallo selezionabile per le rich-kpi-card Peso/HRV/RHR (30/07/2026
+// sera, richiesta esplicita di Giorgio: badge "7 giorni" cliccabile per
+// vedere un periodo più lungo/diverso). Sonno e Compliance integratori non
+// sono in questo elenco: badge fisso a 7gg, non richiesto per quelle due.
+let richKpiRangeDays = { peso: 7, hrv: 7, rhr: 7 };
+function setRichKpiRange(key, days) {
+  richKpiRangeDays[key] = parseInt(days, 10);
+  dashBuilt = false;
+  buildDashboard();
+}
+
 // ── Dati da proto v2 (_lastData2) ─────────────────────────────
 function getDayDataV2(field, days) {
   const today = new Date(); today.setHours(0,0,0,0);
@@ -5921,6 +5948,13 @@ function getSuppComplianceDaily(days) {
   for (let offset = days - 1; offset >= 0; offset--) {
     const d = new Date(today); d.setDate(d.getDate() - offset); d.setHours(0,0,0,0);
     let value = null;
+    // Il giorno odierno è ancora in corso: le dosi non ancora segnate non
+    // sono "saltate", sono semplicemente non ancora dovute. Includerlo nel
+    // calcolo produce una % artificialmente bassa e fuorviante (bug
+    // segnalato da Giorgio il 30/07 sera — es. 2/9 dosi prese a metà
+    // mattina mostrava "22%" come se fosse già un giorno fallito). Va
+    // quindi escluso dal trend finché non è concluso.
+    if (d.getTime() === today.getTime()) { result.push({ date: d, value: null }); continue; }
     if (d >= testStart) {
       const rd = resolveDay(d);
       if (rd.period === 'test_proto' || rd.period === 'v2') {
@@ -5982,9 +6016,9 @@ function buildDashboard() {
   const T0_PESO = 71.1, T0_HRV = 37;
 
   // ── Serie 7gg per le rich-kpi-card (Peso/HRV/RHR/Sonno) ─────────────────
-  const peso7 = getDayDataAll('peso', 7);
-  const hrv7  = getDayDataAll('hrv',  7);
-  const rhr7  = getDayDataAll('rhr',  7);
+  const peso7 = getDayDataAll('peso', richKpiRangeDays.peso);
+  const hrv7  = getDayDataAll('hrv',  richKpiRangeDays.hrv);
+  const rhr7  = getDayDataAll('rhr',  richKpiRangeDays.rhr);
   const sonno7Series = getSonnoOreAll(7);
   const _sonnoValid = sonno7Series.filter(p=>p.value!==null);
   const lSonno = _sonnoValid.length ? _sonnoValid[_sonnoValid.length-1].value : null;
@@ -6005,6 +6039,39 @@ function buildDashboard() {
   // per Peso/HRV/RHR/Sonno su richiesta esplicita di Giorgio, per allinearsi
   // al mockup di riferimento). Le altre card (Ciclo/Fase, Compliance) restano
   // nel formato kpi-box piccolo, invariato, subito sotto.
+  // ── Ripartizione fasi sonno (30/07/2026) — mostra Veglia/REM/Principale/
+  // Profondo SOLO se la notte più recente (oggi o ieri) ha questi campi
+  // compilati; non usa MAI un'altra notte più vecchia spacciandola per
+  // recente. I campi sonno_rem_min/sonno_principale_min/sonno_profondo_min
+  // sono nuovi (finora si tracciavano solo veglia e numero risvegli) — vanno
+  // compilati a mano finché Giorgio non manda di nuovo gli screenshot delle
+  // notti mancanti.
+  function sleepBreakdownHtml() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    for (let offset = 0; offset <= 1; offset++) {
+      const d = new Date(today); d.setDate(d.getDate()-offset);
+      const rd = resolveDay(d);
+      const rec = (rd.period==='test_proto'||rd.period==='v2') ? ((_lastData2||{})[rd.id]||{}) : {};
+      const veglia = parseFloat(rec.sonno_veglia_min);
+      const rem = parseFloat(rec.sonno_rem_min);
+      const principale = parseFloat(rec.sonno_principale_min);
+      const profondo = parseFloat(rec.sonno_profondo_min);
+      if ([veglia,rem,principale,profondo].some(v=>isNaN(v))) continue;
+      const sleepTot = rem+principale+profondo;
+      const bedTot = sleepTot+veglia;
+      const pct = v => bedTot>0 ? Math.round(v/bedTot*100) : 0;
+      const pctSleep = v => sleepTot>0 ? Math.round(v/sleepTot*100) : 0;
+      const fmtMin = m => `${Math.floor(m/60)}h ${String(Math.round(m%60)).padStart(2,'0')}m`;
+      return `<div class="rich-kpi-sleepphases">
+        <div class="rich-kpi-sleepphase-item"><span class="rich-kpi-sleepphase-dot" style="background:#ff9500"></span>Veglia<div class="rich-kpi-sleepphase-min">${fmtMin(veglia)}</div><div class="rich-kpi-sleepphase-pct">${pct(veglia)}%</div></div>
+        <div class="rich-kpi-sleepphase-item"><span class="rich-kpi-sleepphase-dot" style="background:#5ac8fa"></span>REM<div class="rich-kpi-sleepphase-min">${fmtMin(rem)}</div><div class="rich-kpi-sleepphase-pct">${pctSleep(rem)}%</div></div>
+        <div class="rich-kpi-sleepphase-item"><span class="rich-kpi-sleepphase-dot" style="background:#0071e3"></span>Principale<div class="rich-kpi-sleepphase-min">${fmtMin(principale)}</div><div class="rich-kpi-sleepphase-pct">${pctSleep(principale)}%</div></div>
+        <div class="rich-kpi-sleepphase-item"><span class="rich-kpi-sleepphase-dot" style="background:#2e2a6e"></span>Profondo<div class="rich-kpi-sleepphase-min">${fmtMin(profondo)}</div><div class="rich-kpi-sleepphase-pct">${pctSleep(profondo)}%</div></div>
+      </div>`;
+    }
+    return `<div style="font-size:11px;color:var(--muted)">Aggiungi i minuti REM/Principale/Profondo di stanotte per vedere qui la ripartizione delle fasi.</div>`;
+  }
+
   function richKpiCard(cfg) {
     const valid = cfg.series7.filter(p=>p.value!==null);
     const last = valid.length ? valid[valid.length-1].value : null;
@@ -6049,13 +6116,19 @@ function buildDashboard() {
       </div>` : '';
     const extraHtml = cfg.extraHtml ? `<div class="rich-kpi-extra">${cfg.extraHtml}</div>` : '';
 
+    const days = cfg.rangeDays || 7;
+    const badgeHtml = cfg.rangeKey ? `
+        <select class="rich-kpi-badge rich-kpi-range-select" onchange="setRichKpiRange('${cfg.rangeKey}', this.value)">
+          ${[7,14,30,60].map(n=>`<option value="${n}"${n===days?' selected':''}>${n} giorni</option>`).join('')}
+        </select>` : `<span class="rich-kpi-badge">${days} giorni</span>`;
+
     return `<div class="rich-kpi-card">
       <div class="rich-kpi-head">
         <div class="rich-kpi-head-left">
           <span class="rich-kpi-icon" style="background:${cfg.iconBg}">${cfg.icon}</span>
           <span class="rich-kpi-lbl">${cfg.label}</span>
         </div>
-        <span class="rich-kpi-badge">7 giorni</span>
+        ${badgeHtml}
       </div>
       <div class="rich-kpi-value">${fmt(last)}<span> ${cfg.unit}</span></div>
       ${line1}
@@ -6105,7 +6178,7 @@ function buildDashboard() {
       <div class="rich-kpi-head">
         <div class="rich-kpi-head-left">
           <span class="rich-kpi-icon" style="background:#ece7fb">🧬</span>
-          <span class="rich-kpi-lbl">Protocollo (Tesamorelin)</span>
+          <span class="rich-kpi-lbl">Protocollo</span>
         </div>
         <span class="rich-kpi-badge">${weeks} settimane</span>
       </div>
@@ -6127,11 +6200,11 @@ function buildDashboard() {
       <div class="dash-section-title">Stato ciclo</div>
 
       <div class="rich-kpi-grid">
-        ${richKpiCard({series7:peso7, label:'Peso attuale', icon:'⚖️', iconBg:'#eaf1fb', unit:'kg', decimals:1, accent:'#ff3b30', t0:T0_PESO, canvasId:'rk-peso'})}
-        ${richKpiCard({series7:hrv7, label:'HRV', icon:'💓', iconBg:'#fde7ef', unit:'ms', decimals:0, accent:'#34c759', t0:T0_HRV, t0Suffix:'ms', canvasId:'rk-hrv', zoneBar:{lo:40,hi:45}})}
-        ${richKpiCard({series7:rhr7, label:'RHR (FC a riposo)', icon:'❤️', iconBg:'#fde7e7', unit:'bpm', decimals:0, accent:'#ff3b30', canvasId:'rk-rhr', extraHtml: (lBpS&&lBpD)?`PA: ${Math.round(lBpS)}/${Math.round(lBpD)} mmHg`:null})}
+        ${richKpiCard({series7:peso7, label:'Peso attuale', icon:'⚖️', iconBg:'#eaf1fb', unit:'kg', decimals:1, accent:'#ff3b30', t0:T0_PESO, canvasId:'rk-peso', rangeKey:'peso', rangeDays:richKpiRangeDays.peso})}
+        ${richKpiCard({series7:hrv7, label:'HRV', icon:'💓', iconBg:'#fde7ef', unit:'ms', decimals:0, accent:'#34c759', t0:T0_HRV, t0Suffix:'ms', canvasId:'rk-hrv', zoneBar:{lo:40,hi:45}, rangeKey:'hrv', rangeDays:richKpiRangeDays.hrv})}
+        ${richKpiCard({series7:rhr7, label:'RHR (FC a riposo)', icon:'❤️', iconBg:'#fde7e7', unit:'bpm', decimals:0, accent:'#ff3b30', canvasId:'rk-rhr', extraHtml: (lBpS&&lBpD)?`PA: ${Math.round(lBpS)}/${Math.round(lBpD)} mmHg`:null, rangeKey:'rhr', rangeDays:richKpiRangeDays.rhr})}
         ${protocolloCard()}
-        ${richKpiCard({series7:sonno7Series, label:'Sonno', icon:'😴', iconBg:'#ece7fb', unit:'h', decimals:1, accent:'#5856d6', canvasId:'rk-sonno'})}
+        ${richKpiCard({series7:sonno7Series, label:'Sonno', icon:'😴', iconBg:'#ece7fb', unit:'h', decimals:1, accent:'#5856d6', canvasId:'rk-sonno', extraHtml:sleepBreakdownHtml()})}
         ${inV2?richKpiCard({series7:suppDaily7, label:'Compliance integratori', icon:'💊', iconBg:'#fdf0e3', unit:'%', decimals:0, accent:'#34c759', canvasId:'rk-supp', noLine2:true}):''}
       </div>
     </div>
@@ -6449,16 +6522,19 @@ function refreshDashCharts() {
   const umore = getDayDataAll('umore',   30);
 
   // ── Grafici rich-kpi-card (30/07/2026) ──────────────────────
-  // Sostituiscono le vecchie mini-sparkline compact: finestra fissa 7gg,
-  // assi visibili, annotazioni MAX/MIN (vedi drawRichKpiChart). I dati sono
-  // ricalcolati qui (non riusano peso60/hrv60/rhr60/sonno60, che coprono
-  // 60gg) perché la card mostra sempre e solo l'ultima settimana.
-  drawRichKpiChart('rk-peso',  getDayDataAll('peso', 7), {height:130, color:'#0071e3', decimals:1});
-  drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  7), {height:130, color:'#34c759', decimals:0});
-  drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  7), {height:130, color:'#ff3b30', decimals:0});
-  drawRichKpiChart('rk-sonno', getSonnoOreAll(7),        {height:130, color:'#5856d6', decimals:1});
+  // Sostituiscono le vecchie mini-sparkline compact: finestra 7/14/30/60gg
+  // selezionabile per Peso/HRV/RHR (badge cliccabile, vedi richKpiRangeDays),
+  // fissa a 7gg per Sonno/Compliance integratori. Altezza ridotta su schermi
+  // stretti (bug "card allungate su mobile" segnalato da Giorgio il 30/07
+  // sera) — niente di miracoloso: un grafico annotato ha bisogno di un
+  // minimo di spazio verticale, ma su mobile lo teniamo più compatto.
+  const _dashChartH = window.innerWidth <= 600 ? 100 : 130;
+  drawRichKpiChart('rk-peso',  getDayDataAll('peso', richKpiRangeDays.peso), {height:_dashChartH, color:'#0071e3', decimals:1});
+  drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  richKpiRangeDays.hrv),  {height:_dashChartH, color:'#34c759', decimals:0});
+  drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  richKpiRangeDays.rhr),  {height:_dashChartH, color:'#ff3b30', decimals:0});
+  drawRichKpiChart('rk-sonno', getSonnoOreAll(7),        {height:_dashChartH, color:'#5856d6', decimals:1});
   if (document.getElementById('rk-supp')) {
-    drawRichKpiChart('rk-supp', getSuppComplianceDaily(7), {height:130, color:'#ff9500', decimals:0});
+    drawRichKpiChart('rk-supp', getSuppComplianceDaily(7), {height:_dashChartH, color:'#ff9500', decimals:0});
   }
 
   // ── Grafici biometria ──────────────────────────────────────
@@ -7803,6 +7879,9 @@ function buildTestProtoCards(container) {
         <div class="bio-grid" style="margin-top:6px">
           <div class="bio-box"><input type="number" placeholder="14"   data-id="${id}" data-f="sonno_veglia_min"><div class="bio-lbl">Minuti veglia</div></div>
           <div class="bio-box"><input type="number" placeholder="4"    data-id="${id}" data-f="sonno_risvegli"><div class="bio-lbl">Numero risvegli</div></div>
+          <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="sonno_rem_min"><div class="bio-lbl">Min. REM</div></div>
+          <div class="bio-box"><input type="number" placeholder="220"  data-id="${id}" data-f="sonno_principale_min"><div class="bio-lbl">Min. principale</div></div>
+          <div class="bio-box"><input type="number" placeholder="35"   data-id="${id}" data-f="sonno_profondo_min"><div class="bio-lbl">Min. profondo</div></div>
           ${d.getDay()===1 ? `<div class="bio-box"><input type="number" step="0.1" placeholder="82.0" data-id="${id}" data-f="circ_addome"><div class="bio-lbl">Circonf. addome cm<br><span style="font-weight:400;text-transform:none;letter-spacing:0">check settimanale lun</span></div></div>` : ''}
         </div>
 
@@ -8154,6 +8233,9 @@ function buildProtoV2() {
         <div class="bio-grid" style="margin-top:6px">
           <div class="bio-box"><input type="number" placeholder="14"   data-id="${id}" data-f="sonno_veglia_min"><div class="bio-lbl">Minuti veglia</div></div>
           <div class="bio-box"><input type="number" placeholder="4"    data-id="${id}" data-f="sonno_risvegli"><div class="bio-lbl">Numero risvegli</div></div>
+          <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="sonno_rem_min"><div class="bio-lbl">Min. REM</div></div>
+          <div class="bio-box"><input type="number" placeholder="220"  data-id="${id}" data-f="sonno_principale_min"><div class="bio-lbl">Min. principale</div></div>
+          <div class="bio-box"><input type="number" placeholder="35"   data-id="${id}" data-f="sonno_profondo_min"><div class="bio-lbl">Min. profondo</div></div>
           ${d.getDay()===1 ? `<div class="bio-box"><input type="number" step="0.1" placeholder="82.0" data-id="${id}" data-f="circ_addome"><div class="bio-lbl">Circonf. addome cm<br><span style="font-weight:400;text-transform:none;letter-spacing:0">check settimanale lun</span></div></div>` : ''}
         </div>
 
