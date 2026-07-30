@@ -1080,11 +1080,11 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
    kpi-box compatto esistente sopra — vedi buildDashboard(). */
 .rich-kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
 .rich-kpi-card{background:var(--surface);border-radius:var(--radius-sm);padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
-.rich-kpi-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.rich-kpi-head-left{display:flex;align-items:center;gap:8px;min-width:0}
-.rich-kpi-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
-.rich-kpi-lbl{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rich-kpi-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;background:var(--surface2);color:var(--muted);flex-shrink:0}
+.rich-kpi-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:6px}
+.rich-kpi-head-left{display:flex;align-items:center;gap:7px;min-width:0;flex:1}
+.rich-kpi-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.rich-kpi-lbl{font-size:13px;font-weight:600;color:var(--text);line-height:1.15;word-break:normal}
+.rich-kpi-badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--muted);flex-shrink:0;white-space:nowrap}
 .rich-kpi-value{font-size:28px;font-weight:700;letter-spacing:-0.02em;color:var(--text);line-height:1;margin-bottom:6px}
 .rich-kpi-value span{font-size:13px;font-weight:400}
 .rich-kpi-delta-row{font-size:11px;font-weight:500;margin-top:2px;display:flex;align-items:center;gap:3px}
@@ -1140,6 +1140,9 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
   .rich-kpi-card{padding:12px}
   .rich-kpi-value{font-size:24px}
+  .rich-kpi-icon{width:26px;height:26px;font-size:12px}
+  .rich-kpi-lbl{font-size:12px}
+  .rich-kpi-badge{font-size:9px;padding:2px 7px}
   .compliance-grid{grid-template-columns:repeat(3,1fr)}
   .cycle-card{gap:12px;padding:16px}
   .cycle-info h3{font-size:14px}
@@ -5124,16 +5127,26 @@ function drawRichKpiChart(canvasId, points, options = {}) {
   });
   ctx.textAlign = 'left';
 
-  // X labels — uno slot fisso per ognuno dei 7 giorni della finestra
+  // X labels — un trattino per ogni giorno; l'etichetta testuale invece
+  // viene disegnata solo se c'è spazio sufficiente rispetto alla precedente
+  // (bug segnalato da Giorgio il 30/07 sera: su card affiancate 2 per riga
+  // su mobile, 7 etichette "dd/mm" fisse si sovrapponevano in un blocco
+  // illeggibile tipo "24/025/026/027..."). L'ultima (oggi) è sempre mostrata.
   const n = points.length;
-  ctx.font = '9px -apple-system'; ctx.fillStyle = labelColor; ctx.textAlign = 'center';
+  const minLabelPx = 24;
+  let lastLabelX = -Infinity;
+  ctx.font = '9px -apple-system'; ctx.textAlign = 'center';
   points.forEach((p, i) => {
     const x = ML + (n > 1 ? i / (n - 1) * CW : CW / 2);
     ctx.strokeStyle = axisColor; ctx.lineWidth = 0.5;
     ctx.beginPath(); ctx.moveTo(x, MT + CH); ctx.lineTo(x, MT + CH + 3); ctx.stroke();
+    const isLast = i === n - 1;
+    const clampedX = Math.max(ML + 12, Math.min(x, ML + CW - 12));
+    if (!isLast && clampedX - lastLabelX < minLabelPx) return;
     const lbl = String(p.date.getDate()).padStart(2, '0') + '/' + String(p.date.getMonth() + 1).padStart(2, '0');
     ctx.fillStyle = labelColor;
-    ctx.fillText(lbl, x, H - 3);
+    ctx.fillText(lbl, clampedX, H - 3);
+    lastLabelX = clampedX;
   });
   ctx.textAlign = 'left';
 
@@ -5968,7 +5981,7 @@ function buildDashboard() {
           <span class="rich-kpi-icon" style="background:${cfg.iconBg}">${cfg.icon}</span>
           <span class="rich-kpi-lbl">${cfg.label}</span>
         </div>
-        <span class="rich-kpi-badge">7 giorni</span>
+        <span class="rich-kpi-badge">7gg</span>
       </div>
       <div class="rich-kpi-value">${fmt(last)}<span> ${cfg.unit}</span></div>
       ${line1}
