@@ -84,7 +84,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
-  font-size: 15px;
+  font-size: var(--fs-md);
   line-height: 1.5;
   min-height: 100vh;
 }
@@ -105,13 +105,13 @@ body {
   height: 52px;
 }
 .h-left h1 {
-  font-size: 17px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semi);
   color: var(--text);
   letter-spacing: -0.02em;
 }
 .h-left p {
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--muted);
   letter-spacing: 0.01em;
   margin-top: 1px;
@@ -121,9 +121,9 @@ body {
   background: transparent;
   border: none;
   color: var(--blue);
-  font-size: 15px;
+  font-size: var(--fs-md);
   font-family: inherit;
-  font-weight: 400;
+  font-weight: var(--fw-reg);
   cursor: pointer;
   padding: 4px 10px;
   border-radius: 6px;
@@ -134,14 +134,14 @@ body {
 .h-btn.primary {
   background: var(--blue);
   color: #fff;
-  font-weight: 500;
+  font-weight: var(--fw-med);
   padding: 6px 14px;
   border-radius: 980px;
-  font-size: 13px;
+  font-size: var(--fs-body);
 }
 .h-btn.primary:hover { background: var(--blue-hover); }
 .sync-indicator {
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--muted);
   display: flex;
   align-items: center;
@@ -231,19 +231,19 @@ body {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
 }
-.cycle-ring-pct { font-size: 16px; font-weight: 600; color: var(--text); letter-spacing: -0.03em; line-height: 1; }
-.cycle-ring-sub { font-size: 9px; color: var(--muted); margin-top: 2px; letter-spacing: 0.02em; text-transform: uppercase; }
+.cycle-ring-pct { font-size: var(--fs-16); font-weight: var(--fw-semi); color: var(--text); letter-spacing: -0.03em; line-height: 1; }
+.cycle-ring-sub { font-size: var(--fs-3xs); color: var(--muted); margin-top: 2px; letter-spacing: 0.02em; text-transform: uppercase; }
 .cycle-info { flex: 1; min-width: 0; }
-.cycle-info h3 { font-size: var(--fs-lg); font-weight: 600; color: var(--text); letter-spacing: -0.02em; margin-bottom: 3px; }
-.cycle-info p { font-size: 13px; color: var(--muted); }
+.cycle-info h3 { font-size: var(--fs-lg); font-weight: var(--fw-semi); color: var(--text); letter-spacing: -0.02em; margin-bottom: 3px; }
+.cycle-info p { font-size: var(--fs-body); color: var(--muted); }
 .cycle-next {
   margin-top: 8px;
   padding: 8px 12px;
   background: var(--blue-light);
   border-radius: var(--radius-xs);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   color: var(--blue);
-  font-weight: 500;
+  font-weight: var(--fw-med);
 }
 
 /* Charts card */
@@ -255,8 +255,8 @@ body {
   box-shadow: var(--shadow);
 }
 .charts-card-title {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-body);
+  font-weight: var(--fw-semi);
   color: var(--muted);
   letter-spacing: 0.01em;
   text-transform: uppercase;
@@ -270,18 +270,18 @@ body {
    mini-grafici stretti e bassi — affiancati lasciavano troppo spazio bianco
    sotto. Impilati verticalmente sono più bilanciati (29/07/2026). */
 #charts-card2 .charts-grid { grid-template-columns: 1fr; gap: 14px; }
-.chart-label { font-size: 11px; color: var(--muted); margin-bottom: 5px; font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase; }
+.chart-label { font-size: var(--fs-xs); color: var(--muted); margin-bottom: 5px; font-weight: var(--fw-med); letter-spacing: 0.02em; text-transform: uppercase; }
 canvas.mini-chart { width: 100%; height: 64px; display: block; }
 
 /* ── Lotto 2: aderenza iniezioni per composto + peso/volume doppio asse ── */
 .adh-list { display: flex; flex-direction: column; gap: 10px; }
 .adh-row { display: flex; align-items: center; gap: 10px; }
-.adh-label { flex: 0 0 118px; font-size: 12px; color: var(--text); font-weight: 500; }
+.adh-label { flex: 0 0 118px; font-size: var(--fs-sm); color: var(--text); font-weight: var(--fw-med); }
 .adh-bar-track { flex: 1; height: 8px; border-radius: 4px; background: var(--card-bg,#eee); overflow: hidden; }
 .adh-bar-fill { height: 100%; border-radius: 4px; }
-.adh-pct { flex: 0 0 38px; text-align: right; font-size: 12px; font-weight: 600; color: var(--text); }
+.adh-pct { flex: 0 0 38px; text-align: right; font-size: var(--fs-sm); font-weight: var(--fw-semi); color: var(--text); }
 .chart-legend { display: flex; gap: 14px; margin-top: 6px; }
-.chart-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.chart-legend-item { display: flex; align-items: center; gap: 5px; font-size: var(--fs-xs); color: var(--muted); }
 .chart-legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 
 /* Week header */
@@ -516,7 +516,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .radial-ring .ring-val {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; color: var(--text);
+  font-size: var(--fs-xs); font-weight: var(--fw-bold); color: var(--text);
 }
 
 /* Timeline medico verticale */
@@ -774,15 +774,15 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
   gap: 12px;
   z-index: 100;
 }
-.save-hint { font-size: 12px; color: var(--muted); }
+.save-hint { font-size: var(--fs-sm); color: var(--muted); }
 .save-btn-main {
   background: var(--blue);
   color: #fff;
   border: none;
   padding: 10px 24px;
   border-radius: 980px;
-  font-size: 15px;
-  font-weight: 500;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-med);
   cursor: pointer;
   font-family: inherit;
   letter-spacing: -0.01em;
@@ -800,7 +800,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
   align-items: center; justify-content: center;
   z-index: 300; gap: 12px;
 }
-.loading-overlay p { font-size: 14px; color: var(--muted); }
+.loading-overlay p { font-size: var(--fs-14); color: var(--muted); }
 .spinner {
   width: 28px; height: 28px;
   border: 2.5px solid var(--border);
@@ -1258,7 +1258,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .cycle-charts-row  { display: flex; gap: 20px; align-items: stretch; margin-bottom: 20px; }
   .cycle-charts-row .cycle-card  { flex: 0 0 400px; margin-bottom: 0; }
   .cycle-charts-row .charts-card { flex: 1; margin-bottom: 0; min-height: 0; }
-  .cycle-info h3     { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 18px; }
+  .cycle-info h3     { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--fs-18); }
 
   /* ── Dashboard ── */
   /* .dash-two-col consolidata piu' sotto (era duplicata qui) */
@@ -1476,16 +1476,16 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 .adh-ring-block { display:flex; flex-direction:column; align-items:center; gap:5px; }
 .adh-ring { position:relative; width:56px; height:56px; flex:0 0 auto; }
 .adh-ring svg { width:100%; height:100%; transform:rotate(-90deg); }
-.adh-ring-num { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:var(--fw-semi); color:var(--text); }
+.adh-ring-num { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size: var(--fs-14); font-weight:var(--fw-semi); color:var(--text); }
 .adh-ring-label { font-size:8.5px; color:var(--muted); text-align:center; line-height:1.3; max-width:70px; }
 .adh-stats { display:flex; flex-direction:column; gap:6px; flex:1; min-width:90px; justify-content:center; }
 .adh-stat-row { display:flex; align-items:baseline; gap:6px; }
-.adh-stat-row b { font-size:15px; font-weight:var(--fw-semi); color:var(--text); white-space:nowrap; }
+.adh-stat-row b { font-size: var(--fs-md); font-weight:var(--fw-semi); color:var(--text); white-space:nowrap; }
 .adh-stat-row span { font-size:9.5px; color:var(--muted); }
 .adh-weeks { display:flex; flex-direction:column; gap:5px; }
 .adh-week { display:flex; align-items:center; gap:7px; padding:5px 7px; border-radius:var(--radius-xs); background:var(--surface2); }
 .adh-week.current { background:rgba(255,149,0,.10); border:1px solid rgba(255,149,0,.35); padding:4px 6px; }
-.adh-week-range { width:38px; font-size:9px; color:var(--muted); flex:0 0 auto; }
+.adh-week-range { width:38px; font-size: var(--fs-3xs); color:var(--muted); flex:0 0 auto; }
 .adh-week.current .adh-week-range { color:var(--orange); font-weight:var(--fw-med); }
 .adh-week-days { display:flex; gap:3px; flex:1; }
 .adh-day { position:relative; width:16px; height:18px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:var(--fw-med); color:var(--faint); background:#eceff1; border:1px solid var(--border); box-sizing:border-box; }
@@ -1494,15 +1494,15 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 .adh-day.sched-rest::after { content:''; position:absolute; bottom:1.5px; left:50%; transform:translateX(-50%); width:2.5px; height:2.5px; border-radius:50%; background:var(--orange); opacity:.75; }
 .adh-day.on.sched-rest::after { background:#fff; opacity:.9; }
 .adh-day.future.sched-rest::after { display:none; }
-.adh-week-ratio { width:24px; text-align:right; font-size:10px; font-weight:var(--fw-semi); color:var(--text); flex:0 0 auto; }
+.adh-week-ratio { width:24px; text-align:right; font-size: var(--fs-2xs); font-weight:var(--fw-semi); color:var(--text); flex:0 0 auto; }
 .adh-week-ratio.bonus { color:var(--orange); }
-.adh-legend { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; font-size:9px; color:var(--muted); }
+.adh-legend { display:flex; gap:10px; flex-wrap:wrap; margin-top:8px; font-size: var(--fs-3xs); color:var(--muted); }
 .adh-legend-item { display:flex; align-items:center; gap:4px; }
 .adh-legend-sw { position:relative; width:14px; height:16px; border-radius:4px; background:#eceff1; border:1px solid var(--border); box-sizing:border-box; flex:0 0 auto; }
 .adh-legend-sw.on { background:var(--green); border-color:#2ba84a; }
 .adh-legend-sw.rest::after { content:''; position:absolute; bottom:1.5px; left:50%; transform:translateX(-50%); width:2.5px; height:2.5px; border-radius:50%; background:var(--orange); }
 .adh-legend-sw.on.rest::after { background:#fff; }
-.adh-more { display:block; text-align:center; font-size:10px; color:var(--muted); margin-top:6px; padding:5px; border-radius:var(--radius-xs); background:var(--surface2); cursor:pointer; }
+.adh-more { display:block; text-align:center; font-size: var(--fs-2xs); color:var(--muted); margin-top:6px; padding:5px; border-radius:var(--radius-xs); background:var(--surface2); cursor:pointer; }
 </style>
 <!-- deploy 1781175570 -->
 </head>
@@ -1906,12 +1906,12 @@ function buildCycleCard(container){
       </div>
     </div>
     <div class="cycle-info" style="flex:1">
-      <h3 style="font-size:15px;font-weight:600;margin-bottom:4px">Fase pre-protocollo</h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">8 – 28 giu 2026 · raccolta baseline</p>
+      <h3 style="font-size: var(--fs-md);font-weight: var(--fw-semi);margin-bottom:4px">Fase pre-protocollo</h3>
+      <p style="font-size: var(--fs-sm);color:var(--muted);margin-bottom:8px">8 – 28 giu 2026 · raccolta baseline</p>
       <div style="display:flex;gap:20px;margin-bottom:6px">
-        <div><span style="font-size:17px;font-weight:600;letter-spacing:-.02em">${lastPeso}</span><span style="font-size:11px;color:var(--muted);margin-left:3px">kg</span></div>
-        <div><span style="font-size:17px;font-weight:600;letter-spacing:-.02em">${lastHrv}</span><span style="font-size:11px;color:var(--muted);margin-left:3px">HRV ms</span></div>
-        <div><span style="font-size:17px;font-weight:600;letter-spacing:-.02em">${lastRhr}</span><span style="font-size:11px;color:var(--muted);margin-left:3px">RHR</span></div>
+        <div><span style="font-size: var(--fs-lg);font-weight: var(--fw-semi);letter-spacing:-.02em">${lastPeso}</span><span style="font-size: var(--fs-xs);color:var(--muted);margin-left:3px">kg</span></div>
+        <div><span style="font-size: var(--fs-lg);font-weight: var(--fw-semi);letter-spacing:-.02em">${lastHrv}</span><span style="font-size: var(--fs-xs);color:var(--muted);margin-left:3px">HRV ms</span></div>
+        <div><span style="font-size: var(--fs-lg);font-weight: var(--fw-semi);letter-spacing:-.02em">${lastRhr}</span><span style="font-size: var(--fs-xs);color:var(--muted);margin-left:3px">RHR</span></div>
       </div>
       ${countdownHtml}
     </div>`;
@@ -2420,7 +2420,7 @@ function renderMotraFromLog(dayId, jsonStr) {
       const workSets = ex.sets.filter(s => s.label !== 'W');
       const warmSets = ex.sets.filter(s => s.label === 'W');
       const setsStr = workSets.map(s => `${s.reps}×${s.kg}kg`).join(' · ');
-      const warnStr = warmSets.length ? ` <span style="color:var(--faint);font-size:11px">(+${warmSets.length} riscald.)</span>` : '';
+      const warnStr = warmSets.length ? ` <span style="color:var(--faint);font-size: var(--fs-xs)">(+${warmSets.length} riscald.)</span>` : '';
       return `<div class="motra-ex-row">
         <div class="motra-ex-name">${ex.name}</div>
         <div class="motra-ex-sets">${setsStr}${warnStr}</div>
@@ -2840,18 +2840,18 @@ function showMissingDataPopup(dayLabel, view, cardId, missing, dismissKey) {
 
   card.innerHTML = `
     <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:14px">
-      <span style="font-size:22px">⚠️</span>
+      <span style="font-size: var(--fs-xl)">⚠️</span>
       <div>
-        <div style="font-weight:700;font-size:16px">Dati mancanti — ${dayLabel}</div>
-        <div style="font-size:12px;color:var(--text-muted,#888)">Non hai completato tutti i campi di ieri</div>
+        <div style="font-weight: var(--fw-bold);font-size: var(--fs-16)">Dati mancanti — ${dayLabel}</div>
+        <div style="font-size: var(--fs-sm);color:var(--text-muted,#888)">Non hai completato tutti i campi di ieri</div>
       </div>
     </div>
     <ul style="margin:0 0 18px;padding-left:20px;font-size:13.5px;line-height:1.7;color:var(--text,#1c1c1e)">
       ${missing.map(m => `<li>${m}</li>`).join('')}
     </ul>
     <div style="display:flex;gap:10px">
-      <button id="missing-goto-btn" style="flex:1;background:#007aff;color:#fff;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:600;cursor:pointer">Vai al giorno</button>
-      <button id="missing-dismiss-btn" style="flex:1;background:#f2f2f7;color:#1c1c1e;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:600;cursor:pointer">Ricorda domani</button>
+      <button id="missing-goto-btn" style="flex:1;background:#007aff;color:#fff;border:none;border-radius:10px;padding:11px;font-size: var(--fs-14);font-weight: var(--fw-semi);cursor:pointer">Vai al giorno</button>
+      <button id="missing-dismiss-btn" style="flex:1;background:#f2f2f7;color:#1c1c1e;border:none;border-radius:10px;padding:11px;font-size: var(--fs-14);font-weight: var(--fw-semi);cursor:pointer">Ricorda domani</button>
     </div>
   `;
   overlay.style.display = 'flex';
@@ -2875,10 +2875,10 @@ function renderBackupStatus(status) {
 
   if (!status || !status.last_run_utc) {
     el.innerHTML = `<div class="charts-card" style="display:flex;align-items:center;gap:10px">
-      <span style="font-size:20px">⏳</span>
+      <span style="font-size: var(--fs-20)">⏳</span>
       <div>
-        <div style="font-weight:600">Backup dati: in attesa del primo report</div>
-        <div style="font-size:12px;color:var(--text-muted)">Nessuno stato ricevuto ancora dal repo di backup.</div>
+        <div style="font-weight: var(--fw-semi)">Backup dati: in attesa del primo report</div>
+        <div style="font-size: var(--fs-sm);color:var(--text-muted)">Nessuno stato ricevuto ancora dal repo di backup.</div>
       </div>
     </div>`;
     return;
@@ -2915,13 +2915,13 @@ function renderBackupStatus(status) {
 
   el.innerHTML = `<div class="charts-card" style="border-left:3px solid ${colors.bd};background:${colors.bg}">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <span style="font-size:20px">${icon}</span>
+      <span style="font-size: var(--fs-20)">${icon}</span>
       <div>
-        <div style="font-weight:600;color:${colors.c}">${label}</div>
-        <div style="font-size:12px;color:var(--text-muted)">Ultimo backup: ${hoursTxt} · repo privato diario-protocollo-backups</div>
+        <div style="font-weight: var(--fw-semi);color:${colors.c}">${label}</div>
+        <div style="font-size: var(--fs-sm);color:var(--text-muted)">Ultimo backup: ${hoursTxt} · repo privato diario-protocollo-backups</div>
       </div>
     </div>
-    <div style="display:flex;gap:20px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;padding-left:30px">
+    <div style="display:flex;gap:20px;font-size: var(--fs-sm);color:var(--text-muted);flex-wrap:wrap;padding-left:30px">
       <span><b style="color:var(--text)">${status.total_snapshots ?? '—'}</b> snapshot conservati</span>
       ${affidabilita!==null?`<span><b style="color:var(--text)">${affidabilita}%</b> affidabilità ultimi 7gg (${runs7d}/${expected7d} run attese)</span>`:''}
       <span>frequenza: ogni 6 ore</span>
@@ -2939,7 +2939,7 @@ function labDeltaPillHtml(currStr, prevStr, prevLabel, better) {
   const c = parseFloat(currStr), p = parseFloat(prevStr);
   if (isNaN(c) || isNaN(p)) return '';
   if (c === p) {
-    return `<div style="margin-top:3px;font-size:10px;color:var(--muted)">vs ${prevLabel}: invariato</div>`;
+    return `<div style="margin-top:3px;font-size: var(--fs-2xs);color:var(--muted)">vs ${prevLabel}: invariato</div>`;
   }
   const diff = (c - p).toFixed(2).replace(/\.?0+$/, '');
   const sign = diff > 0 ? '+' : '';
@@ -2947,8 +2947,8 @@ function labDeltaPillHtml(currStr, prevStr, prevLabel, better) {
   const col = isGood === true ? 'var(--green-dark)' : isGood === false ? 'var(--red-dark)' : '#636366';
   const bg  = isGood === true ? 'var(--green-light)'  : isGood === false ? 'var(--red-light)'  : '#f2f2f7';
   return `<div style="margin-top:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-    <span style="font-size:10px;color:var(--muted)">vs ${prevLabel}: ${prevStr}</span>
-    <span style="font-size:10px;font-weight:600;background:${bg};color:${col};padding:1px 6px;border-radius:10px">${sign}${diff}</span>
+    <span style="font-size: var(--fs-2xs);color:var(--muted)">vs ${prevLabel}: ${prevStr}</span>
+    <span style="font-size: var(--fs-2xs);font-weight: var(--fw-semi);background:${bg};color:${col};padding:1px 6px;border-radius:10px">${sign}${diff}</span>
   </div>`;
 }
 
@@ -3578,8 +3578,8 @@ function buildLabSection(container) {
       return `
         <div class="lab-box" id="labbox-${m.id}-${k}" data-ref="${f.ref}" style="border-left:3px solid ${st.border};background:${st.bg};border-radius:8px;padding:10px 12px;position:relative">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-            <label style="margin:0">${f.label} <span style="color:var(--faint);font-weight:400">${f.unit}</span></label>
-            <span class="lab-status-badge" title="${statusTitle}" style="font-size:11px;font-weight:700;color:${st.dot};background:${st.bg === 'transparent' ? '#f2f2f7' : st.bg};border:1px solid ${st.dot};border-radius:20px;padding:0px 6px;line-height:18px${statusLabel ? '' : ';display:none'}">${statusLabel} ${statusTitle}</span>
+            <label style="margin:0">${f.label} <span style="color:var(--faint);font-weight: var(--fw-reg)">${f.unit}</span></label>
+            <span class="lab-status-badge" title="${statusTitle}" style="font-size: var(--fs-xs);font-weight: var(--fw-bold);color:${st.dot};background:${st.bg === 'transparent' ? '#f2f2f7' : st.bg};border:1px solid ${st.dot};border-radius:20px;padding:0px 6px;line-height:18px${statusLabel ? '' : ';display:none'}">${statusLabel} ${statusTitle}</span>
           </div>
           <input type="text" placeholder="${isBaseline ? f.val : '—'}"
             data-id="${m.id}" data-f="lab_${k}"
@@ -3593,8 +3593,8 @@ function buildLabSection(container) {
     card.innerHTML = `
       <div class="milestone-head" onclick="toggleDay('${m.id}')">
         <div style="flex:1">
-          <div style="font-size:15px;font-weight:500">${m.label}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">${subText}</div>
+          <div style="font-size: var(--fs-md);font-weight: var(--fw-med)">${m.label}</div>
+          <div style="font-size: var(--fs-sm);color:var(--muted);margin-top:2px">${subText}</div>
         </div>
         <span class="milestone-badge ${m.badge}">${m.locked ? 'Completato' : 'In attesa'}</span>
         <span class="day-chev">▾</span>
@@ -3643,8 +3643,8 @@ function buildLabSection(container) {
     card.innerHTML = `
       <div class="milestone-head" onclick="toggleDay('${m.id}')">
         <div style="flex:1">
-          <div style="font-size:15px;font-weight:500">${m.label}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">${m.sub ? m.sub : (isT0 ? 'Baseline confermata' : 'Target: 66–68kg · BF 14–16% · VAT ≤62cm²')}</div>
+          <div style="font-size: var(--fs-md);font-weight: var(--fw-med)">${m.label}</div>
+          <div style="font-size: var(--fs-sm);color:var(--muted);margin-top:2px">${m.sub ? m.sub : (isT0 ? 'Baseline confermata' : 'Target: 66–68kg · BF 14–16% · VAT ≤62cm²')}</div>
         </div>
         <span class="milestone-badge ${m.badge}">${isT0 ? 'Completato' : 'In attesa'}</span>
         <span class="day-chev">▾</span>
@@ -3670,8 +3670,8 @@ function buildLabSection(container) {
         </div>
         ${!isT0 ? `
         <div style="margin-top:12px;padding:10px 12px;background:var(--blue-light);border-radius:var(--radius-xs)">
-          <div style="font-size:11px;font-weight:600;color:var(--blue);margin-bottom:6px">Delta vs T0</div>
-          <div id="dexa-delta-${m.id}" style="font-size:12px;color:var(--muted)">Inserisci i valori per calcolare il delta</div>
+          <div style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--blue);margin-bottom:6px">Delta vs T0</div>
+          <div id="dexa-delta-${m.id}" style="font-size: var(--fs-sm);color:var(--muted)">Inserisci i valori per calcolare il delta</div>
         </div>` : ''}
       </div>`;
 
@@ -3780,15 +3780,15 @@ function buildWeekSummary(container, wkIdx) {
   card.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
       <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Riepilogo settimana ${wkIdx+1}</div>
-      <div style="font-size:11px;color:var(--muted)">${daysLogged} gg registrati · ${getWeekRange(wkIdx)}</div>
+      <div style="font-size: var(--fs-xs);color:var(--muted)">${daysLogged} gg registrati · ${getWeekRange(wkIdx)}</div>
     </div>
     <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr)">
       <div class="ws-item">
-        <div class="ws-val">${avgPeso}<span style="font-size:12px;font-weight:400"> kg</span></div>
+        <div class="ws-val">${avgPeso}<span style="font-size: var(--fs-sm);font-weight: var(--fw-reg)"> kg</span></div>
         <div class="ws-lbl">Peso medio</div>
       </div>
       <div class="ws-item">
-        <div class="ws-val">${avgHrv}<span style="font-size:12px;font-weight:400"> ms</span></div>
+        <div class="ws-val">${avgHrv}<span style="font-size: var(--fs-sm);font-weight: var(--fw-reg)"> ms</span></div>
         <div class="ws-lbl">HRV medio</div>
       </div>
       <div class="ws-item">
@@ -3802,19 +3802,19 @@ function buildWeekSummary(container, wkIdx) {
     </div>
     <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
       <div class="ws-item">
-        <div class="ws-val">${avgRpe}<span style="font-size:12px;font-weight:400">/10</span></div>
+        <div class="ws-val">${avgRpe}<span style="font-size: var(--fs-sm);font-weight: var(--fw-reg)">/10</span></div>
         <div class="ws-lbl">RPE medio</div>
       </div>
       <div class="ws-item">
-        <div class="ws-val">${avgSys}<span style="font-size:12px;font-weight:400"> mmHg</span></div>
+        <div class="ws-val">${avgSys}<span style="font-size: var(--fs-sm);font-weight: var(--fw-reg)"> mmHg</span></div>
         <div class="ws-lbl">Sistolica media</div>
       </div>
       <div class="ws-item">
-        <div class="ws-val">${avgEnergia}<span style="font-size:12px;font-weight:400">/10</span></div>
+        <div class="ws-val">${avgEnergia}<span style="font-size: var(--fs-sm);font-weight: var(--fw-reg)">/10</span></div>
         <div class="ws-lbl">Energia media</div>
       </div>
       <div class="ws-item">
-        <div class="ws-val">${kcalTotal > 0 ? kcalTotal : '—'}<span style="font-size:12px;font-weight:400">${kcalTotal > 0 ? ' kcal' : ''}</span></div>
+        <div class="ws-val">${kcalTotal > 0 ? kcalTotal : '—'}<span style="font-size: var(--fs-sm);font-weight: var(--fw-reg)">${kcalTotal > 0 ? ' kcal' : ''}</span></div>
         <div class="ws-lbl">Kcal totali</div>
       </div>
     </div>`;
@@ -7216,7 +7216,7 @@ function importMotra(dayId) {
       const workSets = ex.sets.filter(s => s.label !== 'W');
       const warmSets = ex.sets.filter(s => s.label === 'W');
       const setsStr = workSets.map(s => `${s.reps}×${s.kg}kg`).join(' · ');
-      const warnStr = warmSets.length ? ` <span style="color:var(--faint);font-size:11px">(+${warmSets.length} riscald.)</span>` : '';
+      const warnStr = warmSets.length ? ` <span style="color:var(--faint);font-size: var(--fs-xs)">(+${warmSets.length} riscald.)</span>` : '';
       return `<div class="motra-ex-row">
         <div class="motra-ex-name">${ex.name}</div>
         <div class="motra-ex-sets">${setsStr}${warnStr}</div>
@@ -7731,7 +7731,7 @@ function buildAdherenceAndVolumeCharts2(container) {
     <div class="charts-grid">
       <div>
         <div class="chart-label">Aderenza iniezioni per composto</div>
-        <div class="adh-list">${adhRows || '<div style="font-size:12px;color:var(--muted)">Nessun dato ancora</div>'}</div>
+        <div class="adh-list">${adhRows || '<div style="font-size: var(--fs-sm);color:var(--muted)">Nessun dato ancora</div>'}</div>
       </div>
       <div>
         <div class="chart-label">Peso vs Volume allenamento</div>
@@ -7760,29 +7760,29 @@ function buildProtoHeader2(container) {
   div.style.cssText = 'margin-bottom:8px';
   div.innerHTML = `
     <div style="background:var(--surface);border-radius:var(--radius-sm);padding:16px 18px;box-shadow:var(--shadow);border:none">
-      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px">Protocollo peptidico · Ciclo 1</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">20 lug – 8 nov 2026 · 16 settimane</div>
+      <div style="font-size: var(--fs-md);font-weight: var(--fw-semi);color:var(--text);margin-bottom:3px">Protocollo peptidico · Ciclo 1</div>
+      <div style="font-size: var(--fs-sm);color:var(--muted);margin-bottom:10px">20 lug – 8 nov 2026 · 16 settimane</div>
       <div style="display:flex;flex-direction:column;gap:6px">
         <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
-          <i class="ti ti-sunrise" style="font-size:17px;color:#0071e3;flex-shrink:0;margin-top:1px"></i>
-          <div><div style="font-size:12px;font-weight:600;color:#0071e3">Mattino · digiuno</div>
-          <div style="font-size:12px;color:var(--text)">Fragment 176-191 <b>250mcg</b> · BPC-157 <b>250mcg</b></div></div>
+          <i class="ti ti-sunrise" style="font-size: var(--fs-lg);color:#0071e3;flex-shrink:0;margin-top:1px"></i>
+          <div><div style="font-size: var(--fs-sm);font-weight: var(--fw-semi);color:#0071e3">Mattino · digiuno</div>
+          <div style="font-size: var(--fs-sm);color:var(--text)">Fragment 176-191 <b>250mcg</b> · BPC-157 <b>250mcg</b></div></div>
         </div>
         <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
-          <i class="ti ti-sun" style="font-size:17px;color:#ff9500;flex-shrink:0;margin-top:1px"></i>
-          <div><div style="font-size:12px;font-weight:600;color:#ff9500">Pomeriggio</div>
-          <div style="font-size:12px;color:var(--text)">Fragment 176-191 <b>250mcg</b></div></div>
+          <i class="ti ti-sun" style="font-size: var(--fs-lg);color:#ff9500;flex-shrink:0;margin-top:1px"></i>
+          <div><div style="font-size: var(--fs-sm);font-weight: var(--fw-semi);color:#ff9500">Pomeriggio</div>
+          <div style="font-size: var(--fs-sm);color:var(--text)">Fragment 176-191 <b>250mcg</b></div></div>
         </div>
         <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
-          <i class="ti ti-barbell" style="font-size:17px;color:#af52de;flex-shrink:0;margin-top:1px"></i>
-          <div><div style="font-size:12px;font-weight:600;color:#af52de">Post-WO <span style="font-weight:400;color:var(--muted)">(solo giorni allenamento)</span></div>
-          <div style="font-size:12px;color:var(--text)">IGF-1 DES <b>25mcg dx</b> · IGF-1 DES <b>25mcg sx</b></div>
-          <div style="font-size:11px;color:var(--muted);margin-top:3px">Distretto: rotazione mar=Petto · mer=Bicipiti · ven=Quadricipiti · sab=Tricipiti · dom=Deltoidi</div></div>
+          <i class="ti ti-barbell" style="font-size: var(--fs-lg);color:#af52de;flex-shrink:0;margin-top:1px"></i>
+          <div><div style="font-size: var(--fs-sm);font-weight: var(--fw-semi);color:#af52de">Post-WO <span style="font-weight: var(--fw-reg);color:var(--muted)">(solo giorni allenamento)</span></div>
+          <div style="font-size: var(--fs-sm);color:var(--text)">IGF-1 DES <b>25mcg dx</b> · IGF-1 DES <b>25mcg sx</b></div>
+          <div style="font-size: var(--fs-xs);color:var(--muted);margin-top:3px">Distretto: rotazione mar=Petto · mer=Bicipiti · ven=Quadricipiti · sab=Tricipiti · dom=Deltoidi</div></div>
         </div>
         <div style="background:var(--card-bg,#fff);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:flex-start">
-          <i class="ti ti-moon" style="font-size:17px;color:#34c759;flex-shrink:0;margin-top:1px"></i>
-          <div><div style="font-size:12px;font-weight:600;color:#34c759">Sera · 90–120 min post-cena</div>
-          <div style="font-size:12px;color:var(--text)">Tesamorelin <b>2mg</b> · Ipamorelin <b>100mcg</b> · BPC-157 <b>250mcg</b> · TB-500 <b>500mcg</b></div></div>
+          <i class="ti ti-moon" style="font-size: var(--fs-lg);color:#34c759;flex-shrink:0;margin-top:1px"></i>
+          <div><div style="font-size: var(--fs-sm);font-weight: var(--fw-semi);color:#34c759">Sera · 90–120 min post-cena</div>
+          <div style="font-size: var(--fs-sm);color:var(--text)">Tesamorelin <b>2mg</b> · Ipamorelin <b>100mcg</b> · BPC-157 <b>250mcg</b> · TB-500 <b>500mcg</b></div></div>
         </div>
       </div>
     </div>`;
@@ -7914,13 +7914,13 @@ function buildWeekSummary2(container, wkIdx) {
 
   function deltaBadge(delta, unit, higherIsBad) {
     if (delta===null) return '';
-    if (Math.abs(delta) < (unit==='ms'?1:0.05)) return `<span style="font-size:11px;color:var(--muted);margin-left:5px">stabile</span>`;
+    if (Math.abs(delta) < (unit==='ms'?1:0.05)) return `<span style="font-size: var(--fs-xs);color:var(--muted);margin-left:5px">stabile</span>`;
     const up = delta>0;
     const good = higherIsBad ? !up : up;
     const color = good ? '#34c759' : '#ff9500';
     const sign = up?'+':'';
     const val = unit==='ms' ? Math.round(delta) : delta.toFixed(1);
-    return `<span style="font-size:11px;color:${color};margin-left:5px">${sign}${val}${unit}</span>`;
+    return `<span style="font-size: var(--fs-xs);color:${color};margin-left:5px">${sign}${val}${unit}</span>`;
   }
 
   const symptomBits = [];
@@ -7934,38 +7934,38 @@ function buildWeekSummary2(container, wkIdx) {
   card.id = 'week-summary2-'+wkIdx;
   card.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
-      <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Riepilogo settimana ${wkIdx+1}${wkIdx===0?' <span style="text-transform:none;font-weight:400">(incl. 2gg test)</span>':''}</div>
-      <div style="font-size:11px;color:var(--muted)">${st.daysLogged} gg registrati · ${getWeekRange2(wkIdx)}</div>
+      <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase">Riepilogo settimana ${wkIdx+1}${wkIdx===0?' <span style="text-transform:none;font-weight: var(--fw-reg)">(incl. 2gg test)</span>':''}</div>
+      <div style="font-size: var(--fs-xs);color:var(--muted)">${st.daysLogged} gg registrati · ${getWeekRange2(wkIdx)}</div>
     </div>
 
     <div style="display:flex;gap:16px;margin-bottom:10px">
       <div style="flex:1">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Peso</div>
+        <div style="font-size: var(--fs-2xs);color:var(--muted);margin-bottom:2px">Peso</div>
         <canvas class="dash-chart" id="ws2-spark-peso-${wkIdx}" height="50"></canvas>
       </div>
       <div style="flex:1">
-        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">HRV</div>
+        <div style="font-size: var(--fs-2xs);color:var(--muted);margin-bottom:2px">HRV</div>
         <canvas class="dash-chart" id="ws2-spark-hrv-${wkIdx}" height="50"></canvas>
       </div>
     </div>
 
     <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr)">
-      <div class="ws-item"><div class="ws-val">${avgPeso!==null?avgPeso.toFixed(1):'—'}<span style="font-size:12px;font-weight:400"> kg</span>${deltaBadge(deltaPeso,'kg',true)}</div><div class="ws-lbl">Peso medio</div></div>
-      <div class="ws-item"><div class="ws-val">${avgHrv!==null?Math.round(avgHrv):'—'}<span style="font-size:12px;font-weight:400"> ms</span>${deltaBadge(deltaHrv,'ms',false)}</div><div class="ws-lbl">HRV medio</div></div>
-      <div class="ws-item"><div class="ws-val">${avgSonno!==null?avgSonno.toFixed(1):'—'}<span style="font-size:12px;font-weight:400">h</span></div><div class="ws-lbl">Sonno medio</div></div>
+      <div class="ws-item"><div class="ws-val">${avgPeso!==null?avgPeso.toFixed(1):'—'}<span style="font-size: var(--fs-sm);font-weight: var(--fw-reg)"> kg</span>${deltaBadge(deltaPeso,'kg',true)}</div><div class="ws-lbl">Peso medio</div></div>
+      <div class="ws-item"><div class="ws-val">${avgHrv!==null?Math.round(avgHrv):'—'}<span style="font-size: var(--fs-sm);font-weight: var(--fw-reg)"> ms</span>${deltaBadge(deltaHrv,'ms',false)}</div><div class="ws-lbl">HRV medio</div></div>
+      <div class="ws-item"><div class="ws-val">${avgSonno!==null?avgSonno.toFixed(1):'—'}<span style="font-size: var(--fs-sm);font-weight: var(--fw-reg)">h</span></div><div class="ws-lbl">Sonno medio</div></div>
       <div class="ws-item"><div class="ws-val" style="color:${aderenzaColor}">${aderenzaPct!==null?aderenzaPct+'%':'—'}</div><div class="ws-lbl">Aderenza tot.</div></div>
     </div>
 
     <div class="week-summary-grid" style="grid-template-columns:repeat(4,1fr);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
       <div class="ws-item"><div class="ws-val" style="color:${injColor}">${st.doneInj}/${st.totalInj}</div><div class="ws-lbl">Iniezioni</div></div>
       <div class="ws-item"><div class="ws-val">${st.doneWo}/${st.totalWo}</div><div class="ws-lbl">Workout</div></div>
-      <div class="ws-item"><div class="ws-val">${avgRpe}<span style="font-size:12px;font-weight:400">/10</span></div><div class="ws-lbl">RPE medio</div></div>
-      <div class="ws-item"><div class="ws-val">${avgSys}<span style="font-size:12px;font-weight:400"> mmHg</span></div><div class="ws-lbl">Sistolica media</div></div>
+      <div class="ws-item"><div class="ws-val">${avgRpe}<span style="font-size: var(--fs-sm);font-weight: var(--fw-reg)">/10</span></div><div class="ws-lbl">RPE medio</div></div>
+      <div class="ws-item"><div class="ws-val">${avgSys}<span style="font-size: var(--fs-sm);font-weight: var(--fw-reg)"> mmHg</span></div><div class="ws-lbl">Sistolica media</div></div>
     </div>
 
     ${pesoProgressPct!==null ? `
     <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
+      <div style="display:flex;justify-content:space-between;font-size: var(--fs-xs);color:var(--muted);margin-bottom:4px">
         <span>Verso il target peso (66–68kg)</span><span>${Math.round(pesoProgressPct)}%</span>
       </div>
       <div style="height:6px;background:var(--surface2,#f0f0f0);border-radius:3px;overflow:hidden">
@@ -8020,7 +8020,7 @@ function buildTestProtoCards(container) {
     const slotHTML = slots.map(s => {
       const muscleField = s.igfMuscle !== undefined ? `
         <div style="margin-top:8px">
-          <div style="font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare (IM)</div>
+          <div style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px">Distretto muscolare (IM)</div>
           <select data-id="${id}" data-f="inj_${s.n}_distretto">
             <option value="" ${!s.igfMuscle?'selected':''}>— scegli distretto —</option>
             ${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m=>`<option value="${m}" ${m===s.igfMuscle?'selected':''}>${m}</option>`).join('')}
@@ -8028,12 +8028,12 @@ function buildTestProtoCards(container) {
         </div>` : '';
       const slotClass = s.n === 1 ? 'inj-card-mattino' : s.n === 2 ? 'inj-card-pomeriggio' : s.igfMuscle !== undefined ? 'inj-card-postWO' : 'inj-card-sera';
       const slotIconMap = {
-        1: '<i class="ti ti-sunrise" style="font-size:15px;color:#0071e3"></i>',
-        2: '<i class="ti ti-sun" style="font-size:15px;color:#ff9500"></i>',
+        1: '<i class="ti ti-sunrise" style="font-size: var(--fs-md);color:#0071e3"></i>',
+        2: '<i class="ti ti-sun" style="font-size: var(--fs-md);color:#ff9500"></i>',
       };
       const slotIcon = s.igfMuscle !== undefined
-        ? '<i class="ti ti-barbell" style="font-size:15px;color:#af52de"></i>'
-        : slotIconMap[s.n] || '<i class="ti ti-moon" style="font-size:15px;color:#34c759"></i>';
+        ? '<i class="ti ti-barbell" style="font-size: var(--fs-md);color:#af52de"></i>'
+        : slotIconMap[s.n] || '<i class="ti ti-moon" style="font-size: var(--fs-md);color:#34c759"></i>';
       return `
       <div class="inj-card ${slotClass}">
         <div class="inj-num">${slotIcon}</div>
@@ -8054,7 +8054,7 @@ function buildTestProtoCards(container) {
                 </select>` : '';
               return `
             <div style="display:flex;align-items:center;gap:8px;background:var(--surface,#fff);border-radius:8px;padding:6px 10px">
-              <span style="font-size:12px;font-weight:500;color:var(--text);flex:1">${f}</span>
+              <span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--text);flex:1">${f}</span>
               <select data-id="${id}" data-f="inj_${s.n}_${fkey}" style="flex-shrink:0;width:100px">
                 <option value="">— stato</option>
                 <option value="fatto">✅ Fatto</option>
@@ -8105,7 +8105,7 @@ function buildTestProtoCards(container) {
           <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="sonno_rem_min"><div class="bio-lbl">Minuti REM</div></div>
           <div class="bio-box"><input type="number" placeholder="220"  data-id="${id}" data-f="sonno_principale_min"><div class="bio-lbl">Minuti sonno principale</div></div>
           <div class="bio-box"><input type="number" placeholder="35"   data-id="${id}" data-f="sonno_profondo_min"><div class="bio-lbl">Minuti sonno profondo</div></div>
-          ${d.getDay()===1 ? `<div class="bio-box"><input type="number" step="0.1" placeholder="82.0" data-id="${id}" data-f="circ_addome"><div class="bio-lbl">Circonf. addome cm<br><span style="font-weight:400;text-transform:none;letter-spacing:0">check settimanale lun</span></div></div>` : ''}
+          ${d.getDay()===1 ? `<div class="bio-box"><input type="number" step="0.1" placeholder="82.0" data-id="${id}" data-f="circ_addome"><div class="bio-lbl">Circonf. addome cm<br><span style="font-weight: var(--fw-reg);text-transform:none;letter-spacing:0">check settimanale lun</span></div></div>` : ''}
         </div>
 
         <div class="section-label" style="margin-top:14px">Stack mattutino</div>
@@ -8775,11 +8775,11 @@ function renderReconRows(compounds) {
     const dateStr = item.date_reconstituted || '—';
 
     return `<tr style="border-bottom:1px solid var(--border,#e8e8ed)">
-      <td style="padding:7px 4px;font-weight:600;color:${c.color}">${c.emoji} ${c.name}</td>
-      <td style="padding:7px 4px;text-align:center"><input type="number" value="${mg}" step="0.1" min="0" onchange="reconUpdate('${item.id}','vial_mg',this.value)" style="width:44px;padding:4px;border:1px solid var(--border,#e8e8ed);border-radius:5px;font-size:11px;background:var(--surface2,#f5f5f7);color:var(--text);text-align:center;font-family:inherit"></td>
-      <td style="padding:7px 4px;text-align:center"><input type="number" value="${bac}" step="0.1" min="0" onchange="reconUpdate('${item.id}','bac_ml',this.value)" style="width:44px;padding:4px;border:1px solid var(--border,#e8e8ed);border-radius:5px;font-size:11px;background:var(--surface2,#f5f5f7);color:var(--text);text-align:center;font-family:inherit"></td>
+      <td style="padding:7px 4px;font-weight: var(--fw-semi);color:${c.color}">${c.emoji} ${c.name}</td>
+      <td style="padding:7px 4px;text-align:center"><input type="number" value="${mg}" step="0.1" min="0" onchange="reconUpdate('${item.id}','vial_mg',this.value)" style="width:44px;padding:4px;border:1px solid var(--border,#e8e8ed);border-radius:5px;font-size: var(--fs-xs);background:var(--surface2,#f5f5f7);color:var(--text);text-align:center;font-family:inherit"></td>
+      <td style="padding:7px 4px;text-align:center"><input type="number" value="${bac}" step="0.1" min="0" onchange="reconUpdate('${item.id}','bac_ml',this.value)" style="width:44px;padding:4px;border:1px solid var(--border,#e8e8ed);border-radius:5px;font-size: var(--fs-xs);background:var(--surface2,#f5f5f7);color:var(--text);text-align:center;font-family:inherit"></td>
       <td style="padding:7px 4px;text-align:center;color:var(--text)">${conc.toFixed(1)} mcg/mL</td>
-      <td style="padding:7px 4px;text-align:center;font-weight:700;color:var(--blue)">${uiLabel}</td>
+      <td style="padding:7px 4px;text-align:center;font-weight: var(--fw-bold);color:var(--blue)">${uiLabel}</td>
       <td style="padding:7px 4px;text-align:center;color:var(--muted)">${dateStr}</td>
     </tr>`;
   }).join('');
@@ -11319,7 +11319,7 @@ function buildOrariView() {
   btn.id = 'scroll-top-btn';
   btn.setAttribute('aria-label', 'Torna in cima');
   btn.textContent = '↑';
-  btn.style.cssText = 'position:fixed;bottom:86px;right:16px;width:46px;height:46px;border-radius:50%;background:var(--blue,#0071e3);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size:22px;line-height:1;display:none;align-items:center;justify-content:center;z-index:9998;cursor:pointer;padding:0';
+  btn.style.cssText = 'position:fixed;bottom:86px;right:16px;width:46px;height:46px;border-radius:50%;background:var(--blue,#0071e3);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.25);font-size: var(--fs-xl);line-height:1;display:none;align-items:center;justify-content:center;z-index:9998;cursor:pointer;padding:0';
   btn.onclick = function() { window.scrollTo({ top: 0, behavior: 'smooth' }); };
   document.body.appendChild(btn);
 
@@ -11335,7 +11335,7 @@ function buildOrariView() {
   const el = document.createElement('div');
   el.id = 'build-stamp';
   el.textContent = 'v' + BUILD_DATE + ' · ' + BUILD_SHA;
-  el.style.cssText = 'position:fixed;bottom:4px;left:8px;font-size:10px;color:var(--muted,#8e8e93);opacity:.55;z-index:9997;pointer-events:none;font-family:-apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.2px';
+  el.style.cssText = 'position:fixed;bottom:4px;left:8px;font-size: var(--fs-2xs);color:var(--muted,#8e8e93);opacity:.55;z-index:9997;pointer-events:none;font-family:-apple-system,BlinkMacSystemFont,sans-serif;letter-spacing:.2px';
   document.body.appendChild(el);
 })();
 </script>
