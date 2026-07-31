@@ -3933,9 +3933,9 @@ function buildMedView() {
   // ── HELPER ──────────────────────────────────────────────────────────────
   function flag(ok, severity) {
     // severity: 'warn' | 'alert' | auto
-    if (ok) return { color:'var(--green)', bg:'rgba(52,199,89,.08)' };
-    if (severity==='alert') return { color:'var(--red)', bg:'rgba(255,59,48,.08)' };
-    return { color:'var(--orange)', bg:'rgba(255,149,0,.08)' };
+    if (ok) return { color:'#34c759', bg:'rgba(52,199,89,.08)' };
+    if (severity==='alert') return { color:'#ff3b30', bg:'rgba(255,59,48,.08)' };
+    return { color:'#ff9500', bg:'rgba(255,149,0,.08)' };
   }
   function renderPanel(p) {
     let h = `<div class="med-panel">
@@ -4658,7 +4658,7 @@ function buildMedView() {
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">`;
     t.pts.forEach(pt => {
-      const c = t.ok(pt.v) ? 'var(--green)' : 'var(--orange)';
+      const c = t.ok(pt.v) ? '#34c759' : '#ff9500';
       html += `<div style="background:rgba(0,0,0,.05);border-radius:6px;padding:4px 9px;font-size: var(--fs-xs)">
         <span style="color:var(--muted)">${pt.d}: </span>
         <span style="font-weight: var(--fw-bold);color:${c}">${pt.v}</span>
@@ -4677,7 +4677,7 @@ function buildMedView() {
     <div style="display:grid;gap:8px">`;
   azioni.forEach(a => {
     const bg = a.col==='ok' ? 'rgba(52,199,89,.08)' : a.col==='alert' ? 'rgba(255,59,48,.08)' : 'rgba(255,149,0,.08)';
-    const tc = a.col==='ok' ? 'var(--green)' : a.col==='alert' ? 'var(--red)' : 'var(--orange)';
+    const tc = a.col==='ok' ? '#34c759' : a.col==='alert' ? '#ff3b30' : '#ff9500';
     html += `<div style="padding:9px 12px;background:${bg};border-radius:8px;font-size: var(--fs-body)">
       <span style="font-weight: var(--fw-semi);color:${tc}">${a.label}</span>
       <span style="color:var(--muted)"> — ${a.text}</span>
@@ -5114,7 +5114,7 @@ function drawRichKpiChart(canvasId, points, options = {}) {
     return;
   }
 
-  const color = options.color || 'var(--blue)';
+  const color = options.color || '#0071e3';
   const decimals = options.decimals !== undefined ? options.decimals : 1;
   const fmtV = v => decimals === 0 ? Math.round(v).toString() : v.toFixed(decimals);
 
@@ -5502,7 +5502,7 @@ function drawBarChart(canvasId, bars, options = {}) {
     ctx.lineTo(x, y + r2);
     ctx.quadraticCurveTo(x, y, x + r2, y);
     ctx.closePath();
-    ctx.fillStyle = b.color || 'var(--blue)';
+    ctx.fillStyle = b.color || '#0071e3';
     ctx.globalAlpha = b.alpha || 1;
     ctx.fill();
     ctx.globalAlpha = 1;
@@ -5554,7 +5554,7 @@ function drawStackedBarChart(canvasId, weeks, options = {}) {
   const labelH = 16, barAreaH = H - labelH - 4;
   const bw = Math.max(4, (W - 8) / weeks.length - 4);
   const gap = (W - 8 - bw * weeks.length) / Math.max(weeks.length - 1, 1);
-  const colors = { push:'var(--red)', pull:'var(--green)', legs:'var(--orange)', upperSab:'var(--purple)', upperDom:'var(--blue)' };
+  const colors = { push:'#ff3b30', pull:'#34c759', legs:'#ff9500', upperSab:'#af52de', upperDom:'#0071e3' };
 
   // Grid lines
   ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1;
@@ -5645,13 +5645,13 @@ function drawScatterChart(canvasId, points, options = {}) {
   ctx.beginPath();
   ctx.moveTo(toX(minH), toY(slope * minH + intercept));
   ctx.lineTo(toX(maxH), toY(slope * maxH + intercept));
-  ctx.strokeStyle = 'var(--blue)22'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.strokeStyle = '#0071e322'; ctx.lineWidth = 1.5; ctx.stroke();
 
   // Points
   points.forEach(p => {
     ctx.beginPath();
     ctx.arc(toX(p.hrv), toY(p.vol), 4, 0, Math.PI*2);
-    ctx.fillStyle = 'var(--blue)bb'; ctx.fill();
+    ctx.fillStyle = '#0071e3bb'; ctx.fill();
   });
 
   // Correlation label
@@ -5665,12 +5665,12 @@ function drawScatterChart(canvasId, points, options = {}) {
 
 // Sentinel lift group definitions for dashboard tabs — esercizi master
 const SENTINEL_GROUPS = {
-  chest:    { ids:['bench','incbench','pecfly'],      colors:['var(--blue)','#5ac8fa','#34aadc'],              labels:['BB Bench Press','Mac Incline','Pec Fly'] },
-  back:     { ids:['lat','tbar','bbrow'],            colors:['var(--green)','#30d158','#00b341'],              labels:['Lat Wide-Grip','T-Bar Row','BB Bent Row'] },
-  shoulder: { ids:['bbohp','dbpress','dblateral'],   colors:['var(--orange)','#ff6b00','#ffcc02'],              labels:['BB OHP','DB Press','DB Lateral'] },
-  bicep:    { ids:['dbcurl','hammercurl'],            colors:['var(--orange)','var(--red)'],                        labels:['DB Curl','Hammer Curl'] },
-  tricep:   { ids:['tridown','triover'],              colors:['var(--purple)','#ff9f0a'],                        labels:['Rope Pushdown','Rope Overhead'] },
-  legs:     { ids:['legext','legpress','rdl','hipthrust','calf','legcurl'], colors:['var(--red)','#ff6b6b','var(--blue)','#ffcc02','var(--green)','var(--orange)'], labels:['Leg Ext','Leg Press','RDL','Hip Thrust','Calf','Leg Curl'] },
+  chest:    { ids:['bench','incbench','pecfly'],      colors:['#0071e3','#5ac8fa','#34aadc'],              labels:['BB Bench Press','Mac Incline','Pec Fly'] },
+  back:     { ids:['lat','tbar','bbrow'],            colors:['#34c759','#30d158','#00b341'],              labels:['Lat Wide-Grip','T-Bar Row','BB Bent Row'] },
+  shoulder: { ids:['bbohp','dbpress','dblateral'],   colors:['#ff9500','#ff6b00','#ffcc02'],              labels:['BB OHP','DB Press','DB Lateral'] },
+  bicep:    { ids:['dbcurl','hammercurl'],            colors:['#ff9500','#ff3b30'],                        labels:['DB Curl','Hammer Curl'] },
+  tricep:   { ids:['tridown','triover'],              colors:['#af52de','#ff9f0a'],                        labels:['Rope Pushdown','Rope Overhead'] },
+  legs:     { ids:['legext','legpress','rdl','hipthrust','calf','legcurl'], colors:['#ff3b30','#ff6b6b','#0071e3','#ffcc02','#34c759','#ff9500'], labels:['Leg Ext','Leg Press','RDL','Hip Thrust','Calf','Leg Curl'] },
 };
 
 let _currentSentinelGroup = 'chest';
@@ -5880,7 +5880,7 @@ function drawXYScatter(canvasId, points, opts = {}) {
 
   // Punti
   points.forEach(p => {
-    ctx.fillStyle = opts.color || 'var(--green)';
+    ctx.fillStyle = opts.color || '#34c759';
     ctx.beginPath(); ctx.arc(px(p.x), py(p.y), 3.5, 0, Math.PI*2); ctx.fill();
   });
 }
@@ -6351,9 +6351,9 @@ function buildDashboard() {
 
       <div class="rich-kpi-grid">
         ${protocolloCard()}
-        ${richKpiCard({series7:peso7, label:'Peso attuale', icon:'⚖️', iconBg:'#eaf1fb', unit:'kg', decimals:1, accent:'var(--red)', t0:T0_PESO, canvasId:'rk-peso', rangeKey:'peso', rangeDays:richKpiRangeDays.peso})}
-        ${richKpiCard({series7:hrv7, label:'HRV', icon:'💓', iconBg:'#fde7ef', unit:'ms', decimals:0, accent:'var(--green)', t0:T0_HRV, t0Suffix:'ms', canvasId:'rk-hrv', zoneBar:{lo:40,hi:45}, rangeKey:'hrv', rangeDays:richKpiRangeDays.hrv})}
-        ${richKpiCard({series7:rhr7, label:'RHR (FC a riposo)', icon:'❤️', iconBg:'#fde7e7', unit:'bpm', decimals:0, accent:'var(--red)', canvasId:'rk-rhr', extraHtml: (lBpS&&lBpD)?`PA: ${Math.round(lBpS)}/${Math.round(lBpD)} mmHg`:null, rangeKey:'rhr', rangeDays:richKpiRangeDays.rhr})}
+        ${richKpiCard({series7:peso7, label:'Peso attuale', icon:'⚖️', iconBg:'#eaf1fb', unit:'kg', decimals:1, accent:'#ff3b30', t0:T0_PESO, canvasId:'rk-peso', rangeKey:'peso', rangeDays:richKpiRangeDays.peso})}
+        ${richKpiCard({series7:hrv7, label:'HRV', icon:'💓', iconBg:'#fde7ef', unit:'ms', decimals:0, accent:'#34c759', t0:T0_HRV, t0Suffix:'ms', canvasId:'rk-hrv', zoneBar:{lo:40,hi:45}, rangeKey:'hrv', rangeDays:richKpiRangeDays.hrv})}
+        ${richKpiCard({series7:rhr7, label:'RHR (FC a riposo)', icon:'❤️', iconBg:'#fde7e7', unit:'bpm', decimals:0, accent:'#ff3b30', canvasId:'rk-rhr', extraHtml: (lBpS&&lBpD)?`PA: ${Math.round(lBpS)}/${Math.round(lBpD)} mmHg`:null, rangeKey:'rhr', rangeDays:richKpiRangeDays.rhr})}
         ${richKpiCard({series7:sonno7Series, label:'Sonno', icon:'😴', iconBg:'#ece7fb', unit:'h', decimals:1, accent:'#5856d6', canvasId:'rk-sonno', extraHtml:sleepBreakdownHtml(), rangeKey:'sonno', rangeDays:richKpiRangeDays.sonno})}
       </div>
     </div>
@@ -6711,9 +6711,9 @@ function refreshDashCharts() {
   // sera) — niente di miracoloso: un grafico annotato ha bisogno di un
   // minimo di spazio verticale, ma su mobile lo teniamo più compatto.
   const _dashChartH = window.innerWidth <= 600 ? 100 : 130;
-  drawRichKpiChart('rk-peso',  getDayDataAll('peso', richKpiRangeDays.peso), {height:_dashChartH, color:'var(--blue)', decimals:1, showTrend:true});
-  drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  richKpiRangeDays.hrv),  {height:_dashChartH, color:'var(--green)', decimals:0, showTrend:true});
-  drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  richKpiRangeDays.rhr + 1).slice(0, -1),  {height:_dashChartH, color:'var(--red)', decimals:0, showTrend:true});
+  drawRichKpiChart('rk-peso',  getDayDataAll('peso', richKpiRangeDays.peso), {height:_dashChartH, color:'#0071e3', decimals:1, showTrend:true});
+  drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  richKpiRangeDays.hrv),  {height:_dashChartH, color:'#34c759', decimals:0, showTrend:true});
+  drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  richKpiRangeDays.rhr + 1).slice(0, -1),  {height:_dashChartH, color:'#ff3b30', decimals:0, showTrend:true});
   drawRichKpiChart('rk-sonno', getSonnoOreAll(richKpiRangeDays.sonno), {height:_dashChartH, color:'#5856d6', decimals:1, showTrend:true});
 
   // ── Grafici biometria ──────────────────────────────────────
@@ -6729,13 +6729,13 @@ function refreshDashCharts() {
       el.textContent = '';
     }
   }
-  setTrendLabel('dc-peso-trend', drawDashChart('dc-peso',[{data:peso60,color:'var(--blue)'}],{height:110,minScale:0.98,maxScale:1.02,refLine:71.1,showTrend:true}), 'kg', 2);
-  setTrendLabel('dc-hrv-trend',  drawDashChart('dc-hrv', [{data:hrv60, color:'var(--green)'}],{height:110,refLine:37,showTrend:true}), 'ms', 1);
-  setTrendLabel('dc-rhr-trend',  drawDashChart('dc-rhr', [{data:rhr60, color:'var(--red)'}],{height:110,showTrend:true}), 'bpm', 1);
+  setTrendLabel('dc-peso-trend', drawDashChart('dc-peso',[{data:peso60,color:'#0071e3'}],{height:110,minScale:0.98,maxScale:1.02,refLine:71.1,showTrend:true}), 'kg', 2);
+  setTrendLabel('dc-hrv-trend',  drawDashChart('dc-hrv', [{data:hrv60, color:'#34c759'}],{height:110,refLine:37,showTrend:true}), 'ms', 1);
+  setTrendLabel('dc-rhr-trend',  drawDashChart('dc-rhr', [{data:rhr60, color:'#ff3b30'}],{height:110,showTrend:true}), 'bpm', 1);
 
   const allBp=[...bpSys,...bpDia].filter(p=>p.value!==null);
   if(allBp.length>=2) {
-    const bpTrend = drawDashChart('dc-bp',[{data:bpSys,color:'var(--red)'},{data:bpDia,color:'var(--blue)'}],{height:110,showTrend:true});
+    const bpTrend = drawDashChart('dc-bp',[{data:bpSys,color:'#ff3b30'},{data:bpDia,color:'#0071e3'}],{height:110,showTrend:true});
     const bpTrendEl = document.getElementById('dc-bp-trend');
     if (bpTrendEl) {
       bpTrendEl.textContent = bpTrend ? `Tendenza sistolica: ${bpTrend.weekly>0?'+':''}${bpTrend.weekly.toFixed(1)}/sett` : '';
@@ -6746,9 +6746,9 @@ function refreshDashCharts() {
   const hasSubj=[...energ,...recup,...umore].some(p=>p.value!==null);
   if(hasSubj)
     drawDashChart('dc-subj',[
-      {data:energ,color:'var(--blue)'},
-      {data:recup,color:'var(--green)'},
-      {data:umore,color:'var(--purple)'}
+      {data:energ,color:'#0071e3'},
+      {data:recup,color:'#34c759'},
+      {data:umore,color:'#af52de'}
     ],{height:100,minVal:1,maxVal:10});
 
   // ── Effetti peptidi: nuovi campi soggettivi (30gg) ─────────
@@ -6758,9 +6758,9 @@ function refreshDashCharts() {
   const libid = getDayDataAll('libido',     30);
   if ([...appet,...sonnS,...chiar,...libid].some(p=>p.value!==null)) {
     drawDashChart('dc-peptide-subj',[
-      {data:appet,color:'var(--orange)'},
+      {data:appet,color:'#ff9500'},
       {data:sonnS,color:'#5856d6'},
-      {data:chiar,color:'var(--blue)'},
+      {data:chiar,color:'#0071e3'},
       {data:libid,color:'#ff2d55'}
     ],{height:110,minVal:1,maxVal:10});
   }
@@ -6780,7 +6780,7 @@ function refreshDashCharts() {
     const h = hrvAll60[i+1] ? hrvAll60[i+1].value : null;  // HRV del giorno DOPO
     if (s!==null && h!==null) shPoints.push({x:s, y:h});
   }
-  drawXYScatter('dc-sleep-hrv', shPoints, {height:150, color:'var(--green)', xLabel:'ore di sonno'});
+  drawXYScatter('dc-sleep-hrv', shPoints, {height:150, color:'#34c759', xLabel:'ore di sonno'});
   const shNote = document.getElementById('dc-sleep-hrv-note');
   if (shNote) {
     if (shPoints.length < 3) {
@@ -6804,7 +6804,7 @@ function refreshDashCharts() {
     const volBars = sessions.filter(s=>s.volume).map(s=>({
       label: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}),
       value: s.volume/1000,
-      color: {Push:'var(--red)',Pull:'var(--green)',Legs:'var(--orange)','Upper Sab':'var(--purple)','Upper Dom':'var(--blue)'}[s.type]||'#aeaeb2'
+      color: {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'}[s.type]||'#aeaeb2'
     }));
     if(volBars.length) drawBarChart('dc-vol', volBars, {height:120, unit:'t'});
 
@@ -6812,14 +6812,14 @@ function refreshDashCharts() {
     const rpeData = sessions.filter(s=>s.rpe).map(s=>({
       date:s.date, value:s.rpe
     }));
-    if(rpeData.length) drawDashChart('dc-rpe',[{data:rpeData,color:'var(--orange)'}],{height:120,minVal:1,maxVal:10});
+    if(rpeData.length) drawDashChart('dc-rpe',[{data:rpeData,color:'#ff9500'}],{height:120,minVal:1,maxVal:10});
 
     // Breakdown tipo
     const breakdown = {};
     sessions.filter(s=>s.volume!==null).forEach(s=>{breakdown[s.type]=(breakdown[s.type]||0)+1;});
     const bdEl = document.getElementById('dc-breakdown');
     if(bdEl){
-      const colors={Push:'var(--red)',Pull:'var(--green)',Legs:'var(--orange)','Upper Sab':'var(--purple)','Upper Dom':'var(--blue)'};
+      const colors={Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'};
       const tot=Object.values(breakdown).reduce((a,b)=>a+b,0);
       bdEl.innerHTML=Object.entries(breakdown).map(([type,n])=>`
         <div class="comp-bar-row">
@@ -6845,7 +6845,7 @@ function refreshDashCharts() {
       .reverse();
     const tblEl = document.getElementById('dc-scatter-table');
     if (tblEl) {
-      const C = {Push:'var(--red)',Pull:'var(--green)',Legs:'var(--orange)','Upper Sab':'var(--purple)','Upper Dom':'var(--blue)'};
+      const C = {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'};
       tblEl.innerHTML = sessionRows.length ? `<table style="width:100%;border-collapse:collapse;font-size: var(--fs-sm)">
         <thead><tr style="color:var(--muted);font-size: var(--fs-2xs);border-bottom:1px solid var(--border)">
           <th style="text-align:left;padding:4px 6px">Data</th><th style="text-align:left;padding:4px 6px">Tipo</th>
@@ -6941,31 +6941,31 @@ function refreshDashCharts() {
   }
 
   // PETTO
-  dc('dc-bench',    'bench',    'var(--blue)', 55);
+  dc('dc-bench',    'bench',    '#0071e3', 55);
   dc('dc-incbench', 'incbench', '#5ac8fa', null);
   dc('dc-pecfly',   'pecfly',   '#34aadc', null);
 
   // DORSO
-  dc('dc-lat',   'lat',   'var(--green)', null);
+  dc('dc-lat',   'lat',   '#34c759', null);
   dc('dc-tbar',  'tbar',  '#30d158', null);
   dc('dc-bbrow', 'bbrow', '#00b341', null);
 
   // SPALLE
-  dc('dc-bbohp',    'bbohp',    'var(--orange)', 40);
+  dc('dc-bbohp',    'bbohp',    '#ff9500', 40);
   dc('dc-dbpress',  'dbpress',  '#ff6b00', null);
   dc('dc-dblateral','dblateral','#ffcc02', 12);
 
   // BRACCIA
-  dc2('dc-bicep',  'dbcurl',   'hammercurl', 'var(--orange)','var(--red)', null, null);
-  dc2('dc-tricep', 'tridown',  'triover',    'var(--purple)','#ff9f0a', 50,   35);
+  dc2('dc-bicep',  'dbcurl',   'hammercurl', '#ff9500','#ff3b30', null, null);
+  dc2('dc-tricep', 'tridown',  'triover',    '#af52de','#ff9f0a', 50,   35);
 
   // GAMBE
-  dc('dc-legext',   'legext',   'var(--red)', 80);
+  dc('dc-legext',   'legext',   '#ff3b30', 80);
   dc('dc-legpress', 'legpress', '#ff6b6b', 117.5);
-  dc('dc-rdl',      'rdl',      'var(--blue)', 60);
+  dc('dc-rdl',      'rdl',      '#0071e3', 60);
   dc('dc-hipthrust','hipthrust','#ffcc02', 45);
-  dc('dc-calf',     'calf',     'var(--green)', null);
-  dc('dc-legcurl',  'legcurl',  'var(--orange)', null);
+  dc('dc-calf',     'calf',     '#34c759', null);
+  dc('dc-legcurl',  'legcurl',  '#ff9500', null);
 
   // ── Andamento sonno (dal Test Protocollo, 18/7) ────────────
   // Finestra ampia a sufficienza per coprire da TEST_PROTO_START a oggi;
@@ -6987,12 +6987,12 @@ function refreshDashCharts() {
     }
   }
   sleepChart('dc-sleep-hours',     'ore_sonno',        '#5856d6', parseSonnoHours, 'h');
-  sleepChart('dc-sleep-wakemin',   'sonno_veglia_min', 'var(--orange)', null, 'min');
-  sleepChart('dc-sleep-wakecount', 'sonno_risvegli',   'var(--red)', null, '');
+  sleepChart('dc-sleep-wakemin',   'sonno_veglia_min', '#ff9500', null, 'min');
+  sleepChart('dc-sleep-wakecount', 'sonno_risvegli',   '#ff3b30', null, '');
   // Fasi sonno dettagliate (30/07/2026) — dati retroattivi dal Test Protocollo
   // in poi, recuperati dagli screenshot "Tutti i dati salvati" di Salute.
   sleepChart('dc-sleep-rem',        'sonno_rem_min',        '#5ac8fa', null, 'min');
-  sleepChart('dc-sleep-principale', 'sonno_principale_min', 'var(--blue)', null, 'min');
+  sleepChart('dc-sleep-principale', 'sonno_principale_min', '#0071e3', null, 'min');
   sleepChart('dc-sleep-profondo',   'sonno_profondo_min',   '#2e2a6e', null, 'min');
 }
 
@@ -8946,7 +8946,7 @@ function buildStockView2() {
   }
 
   const compounds = [
-    { id:'tesa',    name:'Tesamorelin',      emoji:'🧬', color:'var(--blue)', bg:'rgba(0,113,227,.08)',
+    { id:'tesa',    name:'Tesamorelin',      emoji:'🧬', color:'#0071e3', bg:'rgba(0,113,227,.08)',
       dose:'2mg/sera · SC',           dose_mcg:2000, mgNeeded:224, fab_detail:'112gg × 2mg/die',
       stabilityDays:21, stabilityNote:'21 gg frigo · sensibile alla luce',
       mgOptions:[2,5,10], bacOptions:[0.5,1.0,2.0], defaultMg:10, defaultBac:2.0,
@@ -8954,28 +8954,28 @@ function buildStockView2() {
         { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(24,'intatto') },
         { key:'limitless', vials:[{n:1,stato:'perso'},{n:2,stato:'perso'},{n:3,stato:'intatto'},{n:4,stato:'intatto'},{n:5,stato:'intatto'},{n:6,stato:'intatto'},{n:7,stato:'intatto'},{n:8,stato:'intatto'},{n:9,stato:'intatto'},{n:10,stato:'intatto'},{n:11,stato:'intatto'},{n:12,stato:'intatto'}] },
       ] },
-    { id:'fragment',name:'Fragment 176-191', emoji:'🔥', color:'var(--red)', bg:'rgba(255,59,48,.08)',
+    { id:'fragment',name:'Fragment 176-191', emoji:'🔥', color:'#ff3b30', bg:'rgba(255,59,48,.08)',
       dose:'250mcg × 2/die · SC',     dose_mcg:250,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
       stabilityDays:30, stabilityNote:'30 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
       suppliers:[
         { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(6,'intatto') },
       ] },
-    { id:'ipa',     name:'Ipamorelin',        emoji:'⚡', color:'var(--green)', bg:'rgba(52,199,89,.08)',
+    { id:'ipa',     name:'Ipamorelin',        emoji:'⚡', color:'#34c759', bg:'rgba(52,199,89,.08)',
       dose:'100mcg/sera · SC',        dose_mcg:100,  mgNeeded:11.2,fab_detail:'112gg × 100mcg/die',
       stabilityDays:30, stabilityNote:'30 gg frigo',
       mgOptions:[2,5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
       suppliers:[
         { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(4,'intatto') },
       ] },
-    { id:'igf',     name:'IGF-1 DES',         emoji:'💪', color:'var(--purple)', bg:'rgba(175,82,222,.08)',
+    { id:'igf',     name:'IGF-1 DES',         emoji:'💪', color:'#af52de', bg:'rgba(175,82,222,.08)',
       dose:'50mcg post-WO · IM bilat',dose_mcg:50,   mgNeeded:4,   fab_detail:'80gg WO × 50mcg/die',
       stabilityDays:30, stabilityNote:'30–40+ gg frigo (indicato dal medico, dato il dosaggio · verificare aspetto prima di ogni uso)',
       mgOptions:[2,5], bacOptions:[0.5,1.0,2.0,3.0], defaultMg:2, defaultBac:3.0,
       suppliers:[
         { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(4,'intatto') },
       ] },
-    { id:'bpc',     name:'BPC-157',            emoji:'🔧', color:'var(--orange)', bg:'rgba(255,149,0,.08)',
+    { id:'bpc',     name:'BPC-157',            emoji:'🔧', color:'#ff9500', bg:'rgba(255,149,0,.08)',
       dose:'250mcg × 2/die · SC',     dose_mcg:250,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
       stabilityDays:28, stabilityNote:'28 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
@@ -9140,10 +9140,10 @@ function buildStockView2() {
   const bkkTotalExtraBac = Math.round(compounds.reduce((s,c) => s + (c.bkkExtraBac||0), 0) * 10) / 10;
 
   function stSty(s) {
-    const M = { intatto:{dot:'var(--green)',text:'Intatto',bg:'rgba(52,199,89,.10)',c:'#1d6e32'},
-      in_uso:{dot:'var(--blue)',text:'In uso',bg:'rgba(0,113,227,.10)',c:'#0058b8'},
-      esaurito:{dot:'var(--red)',text:'Esaurito',bg:'rgba(255,59,48,.10)',c:'#c0392b'},
-      perso:{dot:'var(--orange)',text:'Perso',bg:'rgba(255,149,0,.10)',c:'#a05a00'},
+    const M = { intatto:{dot:'#34c759',text:'Intatto',bg:'rgba(52,199,89,.10)',c:'#1d6e32'},
+      in_uso:{dot:'#0071e3',text:'In uso',bg:'rgba(0,113,227,.10)',c:'#0058b8'},
+      esaurito:{dot:'#ff3b30',text:'Esaurito',bg:'rgba(255,59,48,.10)',c:'#c0392b'},
+      perso:{dot:'#ff9500',text:'Perso',bg:'rgba(255,149,0,.10)',c:'#a05a00'},
       congelato:{dot:'#5ac8fa',text:'Congelato',bg:'rgba(90,200,250,.10)',c:'#006fa6'},
       attesa:{dot:'#8e8e93',text:'In arrivo',bg:'rgba(142,142,147,.12)',c:'#636366'} };
     return M[s] || {dot:'#aeaeb2',text:s,bg:'#f5f5f7',c:'#6e6e73'};
@@ -9246,7 +9246,7 @@ function buildStockView2() {
         const dispMg = c.disponibile || 0;
         const pctDisp = c.mgNeeded ? Math.min(100,Math.round((dispMg/c.mgNeeded)*100)) : 0;
         const surplus = Math.round((dispMg - c.mgNeeded)*10)/10;
-        const col = pctDisp>=100?'var(--green)':pctDisp>0?'var(--blue)':'var(--red)';
+        const col = pctDisp>=100?'#34c759':pctDisp>0?'#0071e3':'#ff3b30';
         return `<div style="background:var(--surface,#fff);border:1px solid var(--border,#e8e8ed);border-radius:12px;padding:10px 12px">
           <div style="font-size:var(--fs-2xs);font-weight:var(--fw-bold);color:${c.color};margin-bottom:4px">${c.emoji} ${c.name}</div>
           <div style="display:flex;align-items:baseline;gap:3px;margin-bottom:2px">
@@ -9299,7 +9299,7 @@ function buildStockView2() {
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-bottom:16px">`;
     }
     const pct = c.offProtocol ? 0 : Math.min(100,Math.round((c.disponibile/c.mgNeeded)*100));
-    const barC = pct>=100?'var(--green)':pct>30?'var(--orange)':'var(--red)';
+    const barC = pct>=100?'#34c759':pct>30?'#ff9500':'#ff3b30';
     const circ = (2*Math.PI*20).toFixed(1);
     const off  = (parseFloat(circ)*(1-pct/100)).toFixed(1);
 
@@ -9318,7 +9318,7 @@ function buildStockView2() {
         const today2 = new Date(); today2.setHours(0,0,0,0);
         const elapsed = Math.floor((today2-recoD)/86400000);
         const pctLife = Math.min(100,Math.round((elapsed/c.stabilityDays)*100));
-        const lifeC = pctLife>=90?'var(--red)':pctLife>=70?'var(--orange)':'var(--green)';
+        const lifeC = pctLife>=90?'#ff3b30':pctLife>=70?'#ff9500':'#34c759';
         const left2 = Math.max(0, c.stabilityDays-elapsed);
         lifeBar = `<div style="margin:6px 0 4px">
           <div style="display:flex;justify-content:space-between;font-size:var(--fs-3xs);color:var(--muted);margin-bottom:2px">
@@ -9339,7 +9339,7 @@ function buildStockView2() {
           const dosesUsed = Math.round(dosesUsedRaw);
           const dosesLeft = Math.max(0, totalDoses - dosesUsed);
           const pctDose = totalDoses>0 ? Math.min(100, Math.round((dosesUsed/totalDoses)*100)) : 0;
-          const doseC = pctDose>=90?'var(--red)':pctDose>=70?'var(--orange)':'var(--green)';
+          const doseC = pctDose>=90?'#ff3b30':pctDose>=70?'#ff9500':'#34c759';
           doseBar = `<div style="margin:6px 0 4px">
             <div style="display:flex;justify-content:space-between;font-size:var(--fs-3xs);color:var(--muted);margin-bottom:2px">
               <span>Dosi su questo vial</span><span>${dosesUsed} fatte · ${dosesLeft} rimanenti / ${totalDoses}</span>
@@ -9568,7 +9568,7 @@ function buildStockView2() {
       ${['tesa','fragment','ipa','bpc','tb500','igf'].map(id => {
         const c = compounds.find(x => x.id === id);
         if (!c || c.exhaustDays===null) return '';
-        const urg = c.exhaustDays<14 ? 'var(--red)' : c.exhaustDays<30 ? 'var(--orange)' : 'var(--green)';
+        const urg = c.exhaustDays<14 ? '#ff3b30' : c.exhaustDays<30 ? '#ff9500' : '#34c759';
         const pctBar = Math.max(4, Math.min(100, Math.round((c.exhaustDays/60)*100)));
         const dateStr = c.exhaustDate.toLocaleDateString('it-IT',{day:'numeric',month:'short',year:'numeric'});
         return `<div style="margin-bottom:12px">
@@ -9589,7 +9589,7 @@ function buildStockView2() {
       <div style="font-size:var(--fs-14);font-weight:var(--fw-bold);color:var(--text);margin-bottom:2px">⏳ Timeline scadenze vial attivi</div>
       <div style="font-size:var(--fs-sm);color:var(--muted);margin-bottom:14px">Tutti i vial già ricostituiti (in uso o congelati), ordinati per scadenza più vicina</div>
       ${activeVialExpiries.map(e => {
-        const urg = e.daysLeft<0 ? 'var(--red)' : e.daysLeft<=5 ? 'var(--orange)' : 'var(--green)';
+        const urg = e.daysLeft<0 ? '#ff3b30' : e.daysLeft<=5 ? '#ff9500' : '#34c759';
         const st = stSty(e.stato);
         return `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border,#e8e8ed)">
           <div style="width:8px;height:8px;border-radius:50%;background:${urg};flex-shrink:0"></div>
@@ -9784,7 +9784,7 @@ function buildMedDash() {
 
     const dots = pts.map((p,i) => {
       const ok = (refMin === undefined || p.v >= refMin) && (refMax === undefined || p.v <= refMax);
-      const dc = ok ? color : 'var(--red)';
+      const dc = ok ? color : '#ff3b30';
       return `<circle cx="${toX(i)}" cy="${toY(p.v)}" r="3" fill="${dc}" stroke="white" stroke-width="1.5"/>`;
     }).join('');
 
@@ -9804,11 +9804,11 @@ function buildMedDash() {
   function progressBar(current, target, max, color, label) {
     const pct = Math.min(100, (current/target)*100).toFixed(0);
     const warn = current < target;
-    const barColor = warn ? 'var(--orange)' : color;
+    const barColor = warn ? '#ff9500' : color;
     return `<div style="margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;font-size: var(--fs-sm);margin-bottom:5px">
         <span style="font-weight: var(--fw-med)">${label}</span>
-        <span style="color:${warn?'var(--orange)':'var(--green)'};font-weight: var(--fw-semi)">${current} <span style="color:var(--muted);font-weight: var(--fw-reg)">/ target ${target}</span></span>
+        <span style="color:${warn?'#ff9500':'#34c759'};font-weight: var(--fw-semi)">${current} <span style="color:var(--muted);font-weight: var(--fw-reg)">/ target ${target}</span></span>
       </div>
       <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden">
         <div style="background:${barColor};height:6px;width:${pct}%;border-radius:4px;transition:width .5s ease"></div>
@@ -9822,10 +9822,10 @@ function buildMedDash() {
     const prev = pts[pts.length-2];
     const delta = prev ? (last.v - prev.v) : null;
     const isOk = (refMin === undefined || last.v >= refMin) && (refMax === undefined || last.v <= refMax);
-    const valColor = isOk ? 'var(--green)' : (Math.abs(last.v - (refMin||refMax)) < (refMin||refMax)*0.15 ? 'var(--orange)' : 'var(--red)');
+    const valColor = isOk ? '#34c759' : (Math.abs(last.v - (refMin||refMax)) < (refMin||refMax)*0.15 ? '#ff9500' : '#ff3b30');
     const arrow = delta === null ? '' : delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
     const arrowColor = delta === null ? '' :
-      (refMin && delta > 0) || (refMax && delta < 0) ? 'var(--green)' : 'var(--red)';
+      (refMin && delta > 0) || (refMax && delta < 0) ? '#34c759' : '#ff3b30';
     const spark = sparkline(pts, 120, 50, color, refMin, refMax);
     return `<div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px">
       <div class="t-section-title" style="margin-bottom:6px">${label}</div>
@@ -9893,7 +9893,7 @@ function buildMedDash() {
       lines += `<polyline points="${polyPts}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
       validPts.forEach(p => {
         const ok = (s.refMin===undefined||p.v>=s.refMin)&&(s.refMax===undefined||p.v<=s.refMax);
-        dots += `<circle cx="${toX(p.t)}" cy="${toY(p.v)}" r="3.5" fill="${ok?s.color:'var(--red)'}" stroke="white" stroke-width="1.5"/>`;
+        dots += `<circle cx="${toX(p.t)}" cy="${toY(p.v)}" r="3.5" fill="${ok?s.color:'#ff3b30'}" stroke="white" stroke-width="1.5"/>`;
       });
       // label ultimo valore
       const lastP = validPts[validPts.length-1];
@@ -9915,49 +9915,49 @@ function buildMedDash() {
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
     ${kpiCard('Creatinina', DATA.creatinina, 'mg/dL', undefined, 1.2, 'target ≤1.20', '#8e8e93')}
     ${kpiCard('eGFR', DATA.egfr, 'mL/min', 90, undefined, 'target ≥90', '#5856d6')}
-    ${kpiCard('ACR urinario', DATA.acr, 'mg/g cre', undefined, 30, 'target <30 (normoalbuminuria)', 'var(--green)')}
+    ${kpiCard('ACR urinario', DATA.acr, 'mg/g cre', undefined, 30, 'target <30 (normoalbuminuria)', '#34c759')}
   </div>
 
   <div class="section-label">⚖️ Asse gonadico</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
-    ${kpiCard('Testosterone tot.', DATA.testTotale, 'ng/dL', 127.18, 1020.36, 'range 127.18–1020.36 (Sant\'Agostino)', 'var(--blue)')}
-    ${kpiCard('Testosterone lib.', DATA.testLibero, 'pg/mL', 9.57, 40.60, 'range 9.57–40.60 (Sant\'Agostino)', 'var(--blue)')}
+    ${kpiCard('Testosterone tot.', DATA.testTotale, 'ng/dL', 127.18, 1020.36, 'range 127.18–1020.36 (Sant\'Agostino)', '#0071e3')}
+    ${kpiCard('Testosterone lib.', DATA.testLibero, 'pg/mL', 9.57, 40.60, 'range 9.57–40.60 (Sant\'Agostino)', '#0071e3')}
     ${kpiCard('SHBG', DATA.shbg, 'nmol/L', 11.20, 78.10, 'range 11.20–78.10 (Sant\'Agostino)', '#8e44ad')}
-    ${kpiCard('FSH', DATA.fsh, 'mIU/mL', 0.95, 11.95, 'range 0.95–11.95 (Sant\'Agostino)', 'var(--red)')}
-    ${kpiCard('LH', DATA.lh, 'mUI/mL', 0.57, 12.7, 'range 0.57–12.7 (Sant\'Agostino)', 'var(--red)')}
+    ${kpiCard('FSH', DATA.fsh, 'mIU/mL', 0.95, 11.95, 'range 0.95–11.95 (Sant\'Agostino)', '#ff3b30')}
+    ${kpiCard('LH', DATA.lh, 'mUI/mL', 0.57, 12.7, 'range 0.57–12.7 (Sant\'Agostino)', '#ff3b30')}
   </div>
 
   <div class="section-label">🫀 Lipidi</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
-    ${kpiCard('HDL', DATA.hdl, 'mg/dL', 40, undefined, 'target ≥40', 'var(--orange)')}
+    ${kpiCard('HDL', DATA.hdl, 'mg/dL', 40, undefined, 'target ≥40', '#ff9500')}
   </div>
 
   <div class="section-label">🔥 Infiammazione</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
-    ${kpiCard('Omocisteina', DATA.omocist, 'µmol/L', undefined, 13, 'target ≤13', 'var(--blue)')}
-    ${kpiCard('VES', DATA.ves, 'mm/h', undefined, 15, 'target ≤15', 'var(--orange)')}
+    ${kpiCard('Omocisteina', DATA.omocist, 'µmol/L', undefined, 13, 'target ≤13', '#0071e3')}
+    ${kpiCard('VES', DATA.ves, 'mm/h', undefined, 15, 'target ≤15', '#ff9500')}
     ${kpiCard('PCR', DATA.crp, 'mg/L', undefined, 3.3, 'target ≤3.3', '#8e8e93')}
   </div>
 
   <div class="section-label">🧬 Altro / quadro generale</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:28px">
-    ${kpiCard('IGF-1', DATA.igf1, 'µg/L', 115, 300, 'target 150–180+ (post Tesa)', 'var(--purple)')}
-    ${kpiCard('Vitamina D', DATA.vitd, 'µg/L', 50, undefined, 'target ≥50', 'var(--green)')}
-    ${kpiCard('Emoglobina', DATA.emoglobina, 'g/L', 133, undefined, 'target ≥133', 'var(--red)')}
+    ${kpiCard('IGF-1', DATA.igf1, 'µg/L', 115, 300, 'target 150–180+ (post Tesa)', '#af52de')}
+    ${kpiCard('Vitamina D', DATA.vitd, 'µg/L', 50, undefined, 'target ≥50', '#34c759')}
+    ${kpiCard('Emoglobina', DATA.emoglobina, 'g/L', 133, undefined, 'target ≥133', '#ff3b30')}
     ${kpiCard('Zinco', DATA.zinco, 'µg/dL', 60, 106, 'target 60–106', '#8e44ad')}
-    ${kpiCard('PSA', DATA.psa, 'µg/L', undefined, 4, 'target ≤4', 'var(--green)')}
-    ${kpiCard('Ferritina', DATA.ferritina, 'µg/L', 22, 322, 'target 22–322', 'var(--orange)')}
-    ${kpiCard('Cortisolo urinario 24h', DATA.cortisolUrin, 'µg/24h', 4.2, 60.0, 'range 4.2–60.0', 'var(--orange)')}
+    ${kpiCard('PSA', DATA.psa, 'µg/L', undefined, 4, 'target ≤4', '#34c759')}
+    ${kpiCard('Ferritina', DATA.ferritina, 'µg/L', 22, 322, 'target 22–322', '#ff9500')}
+    ${kpiCard('Cortisolo urinario 24h', DATA.cortisolUrin, 'µg/24h', 4.2, 60.0, 'range 4.2–60.0', '#ff9500')}
   </div>
 
   <!-- OBIETTIVI PROTOCOLLO -->
   <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
     <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px">🎯 Obiettivi protocollo — baseline vs target</div>
-    ${progressBar(94, 165, 300, 'var(--purple)', 'IGF-1 (µg/L) · target 150–180+')}
-    ${progressBar(32, 40, 60, 'var(--orange)', 'HDL (mg/dL) · target ≥40')}
-    ${progressBar(22, 50, 100, 'var(--green)', 'Vitamina D (µg/L) · target ≥50')}
-    ${progressBar(17.5, 13, 25, 'var(--blue)', 'Omocisteina (µmol/L) · target ≤13 — barra inversa: più alta = peggio')}
-    ${progressBar(119, 133, 180, 'var(--red)', 'Emoglobina (g/L) · target ≥133')}
+    ${progressBar(94, 165, 300, '#af52de', 'IGF-1 (µg/L) · target 150–180+')}
+    ${progressBar(32, 40, 60, '#ff9500', 'HDL (mg/dL) · target ≥40')}
+    ${progressBar(22, 50, 100, '#34c759', 'Vitamina D (µg/L) · target ≥50')}
+    ${progressBar(17.5, 13, 25, '#0071e3', 'Omocisteina (µmol/L) · target ≤13 — barra inversa: più alta = peggio')}
+    ${progressBar(119, 133, 180, '#ff3b30', 'Emoglobina (g/L) · target ≥133')}
     ${progressBar(50.3, 70, 106, '#8e44ad', 'Zinco (µg/dL) · target 70–80')}
   </div>
 
@@ -9968,13 +9968,13 @@ function buildMedDash() {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">HDL <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≥40</span></div>
-        ${lineChart([{label:'HDL',pts:DATA.hdl,color:'var(--orange)',refMin:40}], 400, 140)}
+        ${lineChart([{label:'HDL',pts:DATA.hdl,color:'#ff9500',refMin:40}], 400, 140)}
       </div>
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">LDL + Trigliceridi <span style="color:var(--muted);font-weight: var(--fw-reg)">target LDL ≤115 · TG ≤150</span></div>
         ${lineChart([
-          {label:'LDL',pts:DATA.ldl,color:'var(--blue)',refMin:undefined,refMax:115},
-          {label:'TG',pts:DATA.tg,color:'var(--orange)',refMin:undefined,refMax:150}
+          {label:'LDL',pts:DATA.ldl,color:'#0071e3',refMin:undefined,refMax:115},
+          {label:'TG',pts:DATA.tg,color:'#ff9500',refMin:undefined,refMax:150}
         ], 400, 140)}
       </div>
     </div>
@@ -9986,15 +9986,15 @@ function buildMedDash() {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Emoglobina <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≥133 g/L</span></div>
-        ${lineChart([{label:'Hb',pts:DATA.emoglobina,color:'var(--red)',refMin:133}], 400, 120)}
+        ${lineChart([{label:'Hb',pts:DATA.emoglobina,color:'#ff3b30',refMin:133}], 400, 120)}
       </div>
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Omocisteina <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≤13 µmol/L</span></div>
-        ${lineChart([{label:'Omocist',pts:DATA.omocist,color:'var(--blue)',refMax:13}], 400, 120)}
+        ${lineChart([{label:'Omocist',pts:DATA.omocist,color:'#0071e3',refMax:13}], 400, 120)}
       </div>
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Vitamina D <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≥50 µg/L</span></div>
-        ${lineChart([{label:'VitD',pts:DATA.vitd,color:'var(--green)',refMin:50}], 400, 120)}
+        ${lineChart([{label:'VitD',pts:DATA.vitd,color:'#34c759',refMin:50}], 400, 120)}
       </div>
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Zinco <span style="color:var(--muted);font-weight: var(--fw-reg)">target 60–106 µg/dL</span></div>
@@ -10009,7 +10009,7 @@ function buildMedDash() {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">PSA totale <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≤4 µg/L</span></div>
-        ${lineChart([{label:'PSA',pts:DATA.psa,color:'var(--green)',refMax:4}], 400, 120)}
+        ${lineChart([{label:'PSA',pts:DATA.psa,color:'#34c759',refMax:4}], 400, 120)}
       </div>
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Creatinina <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≤1.20 mg/dL</span></div>
@@ -10021,7 +10021,7 @@ function buildMedDash() {
       </div>
       <div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">FSH + LH <span style="color:var(--muted);font-weight: var(--fw-reg)">asse gonadico · range Sant'Agostino FSH 0.95–11.95 · LH 0.57–12.7</span></div>
-        ${lineChart([{label:'FSH',pts:DATA.fsh,color:'var(--red)',refMax:11.95},{label:'LH',pts:DATA.lh,color:'var(--orange)',refMax:12.7}], 400, 120)}
+        ${lineChart([{label:'FSH',pts:DATA.fsh,color:'#ff3b30',refMax:11.95},{label:'LH',pts:DATA.lh,color:'#ff9500',refMax:12.7}], 400, 120)}
       </div>
     </div>
   </div>
@@ -10637,7 +10637,7 @@ function buildHistoryTab() {
   const muscleVol = (_lastData && _lastData.muscle_volume_summary) || [];
 
   const TYPE_COLOR = {
-    Push:'var(--red)', Pull:'var(--green)', Legs:'var(--orange)', 'Upper Sab':'var(--purple)', 'Upper Dom':'var(--blue)'
+    Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#0071e3'
   };
   function guessType(title) {
     const t = title.toLowerCase();
@@ -10700,8 +10700,8 @@ function buildHistoryTab() {
     const LABELS_IT = {shoulders:'Spalle', lats:'Dorso (lat)', chest:'Petto', triceps:'Tricipiti',
       quads:'Quadricipiti', glutes:'Glutei', traps:'Trapezi', biceps:'Bicipiti',
       hamstrings:'Femorali', calves:'Polpacci', lowerBack:'Lombari', unknown:'Altro'};
-    const COLORS = {shoulders:'var(--blue)', lats:'var(--green)', chest:'var(--red)', triceps:'var(--purple)',
-      quads:'var(--orange)', glutes:'#ff2d55', traps:'#5ac8fa', biceps:'#ffcc00',
+    const COLORS = {shoulders:'#0071e3', lats:'#34c759', chest:'#ff3b30', triceps:'#af52de',
+      quads:'#ff9500', glutes:'#ff2d55', traps:'#5ac8fa', biceps:'#ffcc00',
       hamstrings:'#34aadc', calves:'#8e8e93', lowerBack:'#a2845e', unknown:'#c7c7cc'};
     return muscleVol.map(m => {
       const pct = (m.volume_kg / max * 100).toFixed(0);
@@ -10831,7 +10831,7 @@ function buildHistoryTab() {
       return `<div class="adh-ring">
           <svg viewBox="0 0 56 56">
             <circle cx="28" cy="28" r="${r}" fill="none" stroke="var(--surface2)" stroke-width="6"/>
-            <circle cx="28" cy="28" r="${r}" fill="none" stroke="var(--green)" stroke-width="6"
+            <circle cx="28" cy="28" r="${r}" fill="none" stroke="#34c759" stroke-width="6"
               stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${dashOffset.toFixed(1)}" stroke-linecap="round"/>
           </svg>
           <div class="adh-ring-num">${value}%</div>
@@ -10964,11 +10964,11 @@ function buildOrariView() {
       id: 'wo',
       label: 'Allenamento',
       sub: 'Mar · Mer · Ven',
-      color: 'var(--blue)',
+      color: '#0071e3',
       badge: 'WO',
       rows: [
-        { time:'06:00', icon:'💉', action:'Fragment 176-191 250mcg SC + BPC-157 250mcg SC', tag:'digiuno', tagColor:'var(--orange)' },
-        { time:'06:05', icon:'☕', action:'Caffè Nespresso Vertuo + Alpro', tag:'ok', tagColor:'var(--green)' },
+        { time:'06:00', icon:'💉', action:'Fragment 176-191 250mcg SC + BPC-157 250mcg SC', tag:'digiuno', tagColor:'#ff9500' },
+        { time:'06:05', icon:'☕', action:'Caffè Nespresso Vertuo + Alpro', tag:'ok', tagColor:'#34c759' },
         { time:'06:05', icon:'💊', action:'D3+K2 · B12+folato', tag:'con caffè', tagColor:'#8e8e93' },
         { time:'09:15', icon:'🍳', action:'Colazione — shaker proteico + bresaola', tag:'', tagColor:'' },
         { time:'09:15', icon:'💊', action:'Creatina 5g', tag:'con shaker', tagColor:'#8e8e93' },
@@ -10976,12 +10976,12 @@ function buildOrariView() {
         { time:'11:00', icon:'🥩', action:'Spuntino — carne secca', tag:'', tagColor:'' },
         { time:'13:00', icon:'🍽️', action:'Pranzo', tag:'', tagColor:'' },
         { time:'13:00', icon:'💊', action:'Omega-3 ×2 · Normocis 400', tag:'', tagColor:'' },
-        { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'3h post-pranzo', tagColor:'var(--green)' },
-        { time:'17:00', icon:'🍫', action:'2Bar Net Integratori (22g prot · 0.3g zuccheri) o bresaola', tag:'no-carb · post-Fragment', tagColor:'var(--green)' },
+        { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'3h post-pranzo', tagColor:'#34c759' },
+        { time:'17:00', icon:'🍫', action:'2Bar Net Integratori (22g prot · 0.3g zuccheri) o bresaola', tag:'no-carb · post-Fragment', tagColor:'#34c759' },
         { time:'19:00', icon:'🏋️', action:'Allenamento', tag:'fino alle 21:00', tagColor:'#8e8e93' },
-        { time:'21:00', icon:'💉', action:'IGF-1 DES 50mcg IM bilaterale (25mcg R + 25mcg L)', tag:'immediato post-WO', tagColor:'var(--purple)' },
-        { time:'21:30', icon:'🍳', action:'Pasto post-WO — albumi + verdure (no grassi)', tag:'NO carbs 2h30 · low-fat per Tesa', tagColor:'var(--red)' },
-        { time:'00:00', icon:'💉', action:'Tesamorelin 2mg + Ipamorelin 100mcg + BPC-157 250mcg + TB-500 500mcg SC', tag:'2h30 post-pasto light ✅', tagColor:'var(--green)' },
+        { time:'21:00', icon:'💉', action:'IGF-1 DES 50mcg IM bilaterale (25mcg R + 25mcg L)', tag:'immediato post-WO', tagColor:'#af52de' },
+        { time:'21:30', icon:'🍳', action:'Pasto post-WO — albumi + verdure (no grassi)', tag:'NO carbs 2h30 · low-fat per Tesa', tagColor:'#ff3b30' },
+        { time:'00:00', icon:'💉', action:'Tesamorelin 2mg + Ipamorelin 100mcg + BPC-157 250mcg + TB-500 500mcg SC', tag:'2h30 post-pasto light ✅', tagColor:'#34c759' },
         { time:'00:30', icon:'💊', action:'Mg bisglicinato + Glicina 3g + Melatonina 1mg', tag:'pre-sleep', tagColor:'#5ac8fa' },
       ]
     },
@@ -10992,8 +10992,8 @@ function buildOrariView() {
       color: '#aeaeb2',
       badge: 'REST',
       rows: [
-        { time:'06:00', icon:'💉', action:'Fragment 176-191 250mcg SC + BPC-157 250mcg SC', tag:'digiuno', tagColor:'var(--orange)' },
-        { time:'06:05', icon:'☕', action:'Caffè Nespresso Vertuo + Alpro', tag:'ok', tagColor:'var(--green)' },
+        { time:'06:00', icon:'💉', action:'Fragment 176-191 250mcg SC + BPC-157 250mcg SC', tag:'digiuno', tagColor:'#ff9500' },
+        { time:'06:05', icon:'☕', action:'Caffè Nespresso Vertuo + Alpro', tag:'ok', tagColor:'#34c759' },
         { time:'06:05', icon:'💊', action:'D3+K2 · B12+folato', tag:'con caffè', tagColor:'#8e8e93' },
         { time:'09:15', icon:'🍳', action:'Colazione — shaker proteico + bresaola', tag:'', tagColor:'' },
         { time:'09:15', icon:'💊', action:'Creatina 5g', tag:'con shaker', tagColor:'#8e8e93' },
@@ -11001,10 +11001,10 @@ function buildOrariView() {
         { time:'11:00', icon:'🥩', action:'Spuntino — carne secca', tag:'', tagColor:'' },
         { time:'13:00', icon:'🍽️', action:'Pranzo', tag:'', tagColor:'' },
         { time:'13:00', icon:'💊', action:'Omega-3 ×2 · Normocis 400', tag:'', tagColor:'' },
-        { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'3h post-pranzo', tagColor:'var(--green)' },
-        { time:'17:00', icon:'🍫', action:'2Bar Net Integratori (22g prot · 0.3g zuccheri) o bresaola', tag:'no-carb · post-Fragment', tagColor:'var(--green)' },
-        { time:'19:30', icon:'🍽️', action:'Cena — pesce/carne magra + verdure + max 4-5 Wasa', tag:'low-fat · low-GI · no grassi aggiunti', tagColor:'var(--orange)' },
-        { time:'22:30', icon:'💉', action:'Tesamorelin 2mg + Ipamorelin 100mcg + BPC-157 250mcg + TB-500 500mcg SC', tag:'3h post-cena ✅', tagColor:'var(--green)' },
+        { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'3h post-pranzo', tagColor:'#34c759' },
+        { time:'17:00', icon:'🍫', action:'2Bar Net Integratori (22g prot · 0.3g zuccheri) o bresaola', tag:'no-carb · post-Fragment', tagColor:'#34c759' },
+        { time:'19:30', icon:'🍽️', action:'Cena — pesce/carne magra + verdure + max 4-5 Wasa', tag:'low-fat · low-GI · no grassi aggiunti', tagColor:'#ff9500' },
+        { time:'22:30', icon:'💉', action:'Tesamorelin 2mg + Ipamorelin 100mcg + BPC-157 250mcg + TB-500 500mcg SC', tag:'3h post-cena ✅', tagColor:'#34c759' },
         { time:'23:00', icon:'💊', action:'Mg bisglicinato + Glicina 3g + Melatonina 1mg', tag:'pre-sleep', tagColor:'#5ac8fa' },
       ]
     },
@@ -11012,22 +11012,22 @@ function buildOrariView() {
       id: 'wknd',
       label: 'Weekend',
       sub: 'Sab · Dom (orari flessibili)',
-      color: 'var(--purple)',
+      color: '#af52de',
       badge: 'WO',
       rows: [
-        { time:'06:00', icon:'💉', action:'Fragment 176-191 250mcg SC + BPC-157 250mcg SC', tag:'digiuno', tagColor:'var(--orange)' },
-        { time:'06:05', icon:'☕', action:'Caffè Nespresso Vertuo + Alpro', tag:'ok', tagColor:'var(--green)' },
+        { time:'06:00', icon:'💉', action:'Fragment 176-191 250mcg SC + BPC-157 250mcg SC', tag:'digiuno', tagColor:'#ff9500' },
+        { time:'06:05', icon:'☕', action:'Caffè Nespresso Vertuo + Alpro', tag:'ok', tagColor:'#34c759' },
         { time:'08:00', icon:'🍳', action:'Colazione', tag:'orario flessibile', tagColor:'#5ac8fa' },
         { time:'08:00', icon:'💊', action:'D3+K2 · B12+folato', tag:'con caffè', tagColor:'#8e8e93' },
         { time:'08:00', icon:'💊', action:'Creatina 5g · Omega-3 ×1 · Zinco 15mg', tag:'con colazione', tagColor:'#8e8e93' },
         { time:'10:00', icon:'🏋️', action:'Allenamento (mattina)', tag:'orario flessibile', tagColor:'#5ac8fa' },
-        { time:'11:30', icon:'💉', action:'IGF-1 DES 50mcg IM bilaterale (25mcg R + 25mcg L)', tag:'immediato post-WO', tagColor:'var(--purple)' },
-        { time:'13:00', icon:'🍽️', action:'Pranzo', tag:'NO carbs 1h30 post IGF-1', tagColor:'var(--red)' },
+        { time:'11:30', icon:'💉', action:'IGF-1 DES 50mcg IM bilaterale (25mcg R + 25mcg L)', tag:'immediato post-WO', tagColor:'#af52de' },
+        { time:'13:00', icon:'🍽️', action:'Pranzo', tag:'NO carbs 1h30 post IGF-1', tagColor:'#ff3b30' },
         { time:'13:30', icon:'💊', action:'Omega-3 ×2 · Normocis 400', tag:'', tagColor:'' },
-        { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'2h+ post-pranzo', tagColor:'var(--green)' },
-        { time:'17:00', icon:'🍫', action:'2Bar Net Integratori (22g prot · 0.3g zuccheri) o bresaola', tag:'no-carb · post-Fragment', tagColor:'var(--green)' },
-        { time:'20:00', icon:'🍽️', action:'Cena — pesce/carne magra + verdure + max 4-5 Wasa', tag:'low-fat · low-GI · no grassi aggiunti', tagColor:'var(--orange)' },
-        { time:'23:00', icon:'💉', action:'Tesamorelin 2mg + Ipamorelin 100mcg + BPC-157 250mcg + TB-500 500mcg SC', tag:'3h post-cena ✅', tagColor:'var(--green)' },
+        { time:'16:00', icon:'💉', action:'Fragment 176-191 250mcg SC', tag:'2h+ post-pranzo', tagColor:'#34c759' },
+        { time:'17:00', icon:'🍫', action:'2Bar Net Integratori (22g prot · 0.3g zuccheri) o bresaola', tag:'no-carb · post-Fragment', tagColor:'#34c759' },
+        { time:'20:00', icon:'🍽️', action:'Cena — pesce/carne magra + verdure + max 4-5 Wasa', tag:'low-fat · low-GI · no grassi aggiunti', tagColor:'#ff9500' },
+        { time:'23:00', icon:'💉', action:'Tesamorelin 2mg + Ipamorelin 100mcg + BPC-157 250mcg + TB-500 500mcg SC', tag:'3h post-cena ✅', tagColor:'#34c759' },
         { time:'23:30', icon:'💊', action:'Mg bisglicinato + Glicina 3g + Melatonina 1mg', tag:'pre-sleep', tagColor:'#5ac8fa' },
       ]
     },
@@ -11041,8 +11041,8 @@ function buildOrariView() {
         {
           title: '✈️ Venerdì 7 agosto — Milano → Bangkok',
           rows: [
-            { time:'06:00', icon:'💉', action:'Fragment + BPC mattino SC', tag:'digiuno ✅', tagColor:'var(--orange)' },
-            { time:'06:05', icon:'☕', action:'Caffè Nespresso Vertuo + Alpro', tag:'ok', tagColor:'var(--green)' },
+            { time:'06:00', icon:'💉', action:'Fragment + BPC mattino SC', tag:'digiuno ✅', tagColor:'#ff9500' },
+            { time:'06:05', icon:'☕', action:'Caffè Nespresso Vertuo + Alpro', tag:'ok', tagColor:'#34c759' },
             { time:'06:05', icon:'💊', action:'D3+K2 · B12+folato', tag:'con caffè', tagColor:'#8e8e93' },
             { time:'09:15', icon:'🍳', action:'Colazione + Creatina 5g con shaker', tag:'', tagColor:'' },
             { time:'09:30', icon:'💊', action:'Omega-3 ×1 · Zinco 15mg', tag:'', tagColor:'' },
@@ -11050,22 +11050,22 @@ function buildOrariView() {
             { time:'16:00', icon:'💉', action:'Fragment pomeriggio SC', tag:'', tagColor:'' },
             { time:'19:00', icon:'🚆', action:'Malpensa Express da Cadorna', tag:'', tagColor:'' },
             { time:'19:35', icon:'🛫', action:'Arrivo Malpensa T1 — check-in · security · immigrazione', tag:'', tagColor:'' },
-            { time:'20:20', icon:'🍽️', action:'Lounge — cena leggera: insalata + formaggio magro + frutta', tag:'no salumi · no frutta secca · no dolci', tagColor:'var(--orange)' },
+            { time:'20:20', icon:'🍽️', action:'Lounge — cena leggera: insalata + formaggio magro + frutta', tag:'no salumi · no frutta secca · no dolci', tagColor:'#ff9500' },
             { time:'21:00', icon:'⏱️', action:'Fine cena — inizio finestra 2h30 per Tesa', tag:'', tagColor:'' },
             { time:'22:15', icon:'💊', action:'Mg bisglicinato + Glicina 3g + Melatonina 1mg', tag:'per dormire in volo', tagColor:'#5ac8fa' },
             { time:'22:30', icon:'🚪', action:'Boarding', tag:'', tagColor:'' },
             { time:'23:00', icon:'✈️', action:'Decollo MXP', tag:'', tagColor:'' },
-            { time:'23:30', icon:'💉', action:'Tesa 2mg + Ipam 100mcg + BPC 250mcg + TB 500mcg SC', tag:'2h30 post-cena ✅ · bagno aereo · rifiuta cena di bordo', tagColor:'var(--green)' },
+            { time:'23:30', icon:'💉', action:'Tesa 2mg + Ipam 100mcg + BPC 250mcg + TB 500mcg SC', tag:'2h30 post-cena ✅ · bagno aereo · rifiuta cena di bordo', tagColor:'#34c759' },
             { time:'05:45', icon:'🛬', action:'Atterraggio DOH (ora Doha)', tag:'scalo 2h45m', tagColor:'#8e8e93' },
-            { time:'06:15', icon:'💉', action:'Fragment + BPC mattino SC — Lounge Doha', tag:'digiuno ✅', tagColor:'var(--orange)' },
-            { time:'06:30', icon:'🍳', action:'Colazione in lounge Doha', tag:'nessun vincolo post-iniezione', tagColor:'var(--green)' },
+            { time:'06:15', icon:'💉', action:'Fragment + BPC mattino SC — Lounge Doha', tag:'digiuno ✅', tagColor:'#ff9500' },
+            { time:'06:30', icon:'🍳', action:'Colazione in lounge Doha', tag:'nessun vincolo post-iniezione', tagColor:'#34c759' },
             { time:'08:30', icon:'✈️', action:'Decollo DOH → BKK', tag:'', tagColor:'' },
             { time:'10:00', icon:'🍽️', action:'Pranzo a bordo', tag:'ora Doha', tagColor:'' },
-            { time:'12:30', icon:'💉', action:'Fragment pomeriggio SC', tag:'2h30 post-pranzo ✅ · bagno aereo · ora Doha', tagColor:'var(--green)' },
+            { time:'12:30', icon:'💉', action:'Fragment pomeriggio SC', tag:'2h30 post-pranzo ✅ · bagno aereo · ora Doha', tagColor:'#34c759' },
             { time:'19:25', icon:'🛬', action:'Atterraggio Bangkok (BKK)', tag:'', tagColor:'' },
             { time:'20:15', icon:'🚕', action:'Immigrazione + bagagli + taxi → hotel (~30 min)', tag:'', tagColor:'' },
             { time:'21:00', icon:'🏨', action:'Check-in Maison Hotel', tag:'', tagColor:'' },
-            { time:'21:00', icon:'💉', action:'Tesa 2mg + Ipam 100mcg + BPC 250mcg + TB 500mcg SC', tag:'digiuno ~12h ✅', tagColor:'var(--green)' },
+            { time:'21:00', icon:'💉', action:'Tesa 2mg + Ipam 100mcg + BPC 250mcg + TB 500mcg SC', tag:'digiuno ~12h ✅', tagColor:'#34c759' },
             { time:'21:30', icon:'🌆', action:'Esci', tag:'', tagColor:'' },
             { time:'03:00', icon:'🏨', action:'Rientro hotel — niente cibo · dormi', tag:'', tagColor:'' },
           ]
@@ -11077,12 +11077,12 @@ function buildOrariView() {
             { time:'04:30', icon:'⏰', action:'Sveglia', tag:'', tagColor:'' },
             { time:'05:00', icon:'🚕', action:'Check-out — taxi per Suvarnabhumi', tag:'', tagColor:'' },
             { time:'06:00', icon:'🛫', action:'Arrivo aeroporto — check-in · security · immigrazione', tag:'', tagColor:'' },
-            { time:'07:30', icon:'💉', action:'Fragment + BPC mattino SC — Lounge BKK', tag:'digiuno ✅', tagColor:'var(--orange)' },
-            { time:'07:45', icon:'🍳', action:'Colazione in lounge BKK', tag:'nessun vincolo post-iniezione', tagColor:'var(--green)' },
+            { time:'07:30', icon:'💉', action:'Fragment + BPC mattino SC — Lounge BKK', tag:'digiuno ✅', tagColor:'#ff9500' },
+            { time:'07:45', icon:'🍳', action:'Colazione in lounge BKK', tag:'nessun vincolo post-iniezione', tagColor:'#34c759' },
             { time:'09:15', icon:'✈️', action:'Decollo BKK → DOH', tag:'', tagColor:'' },
             { time:'11:00', icon:'🍽️', action:'Pranzo a bordo', tag:'ora BKK', tagColor:'' },
             { time:'11:50', icon:'🛬', action:'Atterraggio DOH (ora Doha)', tag:'scalo 4h', tagColor:'#8e8e93' },
-            { time:'12:30', icon:'💉', action:'Fragment pomeriggio SC — Lounge Doha', tag:'~4h30 post-mattino ✅', tagColor:'var(--green)' },
+            { time:'12:30', icon:'💉', action:'Fragment pomeriggio SC — Lounge Doha', tag:'~4h30 post-mattino ✅', tagColor:'#34c759' },
             { time:'12:45', icon:'☕', action:'Acqua · caffè · relax in lounge', tag:'', tagColor:'' },
             { time:'15:50', icon:'✈️', action:'Decollo DOH → MXP', tag:'', tagColor:'' },
             { time:'17:00', icon:'🍽️', action:'Cena di bordo', tag:'ora Milano · ultimo pasto', tagColor:'' },
@@ -11090,7 +11090,7 @@ function buildOrariView() {
             { time:'21:45', icon:'🧳', action:'Bagagli + uscita', tag:'', tagColor:'' },
             { time:'22:00', icon:'🚆', action:'Malpensa Express → Cadorna', tag:'~35 min', tagColor:'' },
             { time:'22:35', icon:'🏠', action:'Cadorna → casa', tag:'', tagColor:'' },
-            { time:'23:00', icon:'💉', action:'Tesa 2mg + Ipam 100mcg + BPC 250mcg + TB 500mcg SC', tag:'digiuno ~6h post-cena volo ✅', tagColor:'var(--green)' },
+            { time:'23:00', icon:'💉', action:'Tesa 2mg + Ipam 100mcg + BPC 250mcg + TB 500mcg SC', tag:'digiuno ~6h post-cena volo ✅', tagColor:'#34c759' },
             { time:'23:30', icon:'💊', action:'Mg bisglicinato + Glicina 3g + Melatonina 1mg', tag:'pre-sleep', tagColor:'#5ac8fa' },
             { time:'00:00', icon:'😴', action:'Dormi — niente cibo', tag:'', tagColor:'' },
           ]
@@ -11109,7 +11109,7 @@ function buildOrariView() {
   // [P] = previsto dal protocollo Seregni · [+] = prassi aggiuntiva, da confermare col medico
   const nutriSlots = [
     {
-      slot:'Mattino · a digiuno', icon:'🌅', color:'var(--orange)',
+      slot:'Mattino · a digiuno', icon:'🌅', color:'#ff9500',
       peptides:'Fragment 176-191 + BPC-157',
       prima:'<b>[P]</b> A digiuno notturno · <b>[+]</b> nessuna caloria da almeno 8h. Acqua, caffè o tè <i>amari</i> sono ammessi.',
       dopo:'<b>[P]</b> LISS 30–40 min · <b>[+]</b> primo pasto almeno <b>60 min</b> dopo l\'iniezione (cioè a fine LISS).',
@@ -11118,7 +11118,7 @@ function buildOrariView() {
       why:'Il Fragment mobilizza acidi grassi; l\'insulina è il principale antagonista della lipolisi. Tutto ciò che alza l\'insulina prima o subito dopo ne riduce l\'effetto.'
     },
     {
-      slot:'Pomeriggio', icon:'☀️', color:'var(--green)',
+      slot:'Pomeriggio', icon:'☀️', color:'#34c759',
       peptides:'Fragment 176-191',
       prima:'<b>[+]</b> Almeno <b>2h dall\'ultimo pasto</b>. Finestra ideale a metà pomeriggio, lontano da pranzo e cena.',
       dopo:'<b>[+]</b> Attendere <b>45–60 min</b> prima di mangiare.',
@@ -11127,7 +11127,7 @@ function buildOrariView() {
       why:'È lo slot più facile da sbagliare perché cade in orario di lavoro. Se non riesci a rispettare le 2h, meglio spostare l\'iniezione di un\'ora che farla a stomaco pieno.'
     },
     {
-      slot:'Post-workout', icon:'💪', color:'var(--purple)',
+      slot:'Post-workout', icon:'💪', color:'#af52de',
       peptides:'IGF-1 DES (solo giorni di allenamento)',
       prima:'<b>[+]</b> Nessun vincolo di digiuno.',
       dopo:'<b>[+]</b> Pasto proteico entro <b>30–45 min</b>, <b>con</b> carboidrati.',
@@ -11288,7 +11288,7 @@ function buildOrariView() {
   // Selector function
   window.orariShowDay = function(id) {
     const dayDefs = ['wo','rest','wknd','bkk'];
-    const colors = {'wo':'var(--blue)','rest':'#aeaeb2','wknd':'var(--purple)','bkk':'#c0392b'};
+    const colors = {'wo':'#0071e3','rest':'#aeaeb2','wknd':'#af52de','bkk':'#c0392b'};
     dayDefs.forEach(d => {
       document.getElementById('orari-panel-' + d).style.display = (d === id) ? 'block' : 'none';
       const btn = document.getElementById('orari-btn-' + d);
