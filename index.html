@@ -5118,7 +5118,15 @@ function drawRichKpiChart(canvasId, points, options = {}) {
   const decimals = options.decimals !== undefined ? options.decimals : 1;
   const fmtV = v => decimals === 0 ? Math.round(v).toString() : v.toFixed(decimals);
 
-  const ML = 32, MR = 40, MT = 22, MB = 16;
+  // Margini ridotti su schermi stretti (31/07/2026, richiesta di Giorgio: le
+  // card mobile sprecavano troppo spazio bianco ai lati del grafico vero e
+  // proprio). ML serve alle etichette dell'asse Y, MR all'etichetta del
+  // valore finale — su mobile bastano margini più stretti, il grafico
+  // guadagna spazio utile reale.
+  const isNarrowScreen = window.innerWidth <= 600;
+  const ML = isNarrowScreen ? 26 : 32;
+  const MR = isNarrowScreen ? 30 : 40;
+  const MT = 22, MB = 16;
   const CW = W - ML - MR;
   const CH = H - MB - MT;
 
