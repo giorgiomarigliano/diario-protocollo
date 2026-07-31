@@ -211,7 +211,7 @@ body {
 .t-value-lg     { font-size: var(--fs-2xl);  font-weight: var(--fw-bold); letter-spacing: -.03em; line-height: 1; }
 .t-value-md     { font-size: var(--fs-lg);   font-weight: var(--fw-semi); letter-spacing: -.02em; line-height: 1; }
 .t-value-sm     { font-size: var(--fs-md);   font-weight: var(--fw-semi); }
-.t-week-title   { font-size: 19px; font-weight: var(--fw-semi); letter-spacing: -.3px; }
+.t-week-title   { font-size: var(--fs-18); font-weight: var(--fw-semi); letter-spacing: -.3px; }
 
 /* Cycle indicator card */
 .cycle-card {
@@ -301,7 +301,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
   flex-wrap: nowrap;
 }
 .week-hdr h2 {
-  font-size: 19px;
+  font-size: var(--fs-18);
   font-weight: var(--fw-semi);
   letter-spacing: -0.03em;
   color: var(--text);
@@ -2594,7 +2594,7 @@ function renderWarmupAssessment(data) {
 
   // Blocco 1 — Biometria estesa: primo→ultimo + min/max/media
   const biomRow = (label, obj, st, unit, dec = 1) => {
-    if (!obj || !st) return `<div style="padding:6px 0;border-bottom:1px solid var(--border,#eee);font-size:12.5px">${label}: dati insufficienti</div>`;
+    if (!obj || !st) return `<div style="padding:6px 0;border-bottom:1px solid var(--border,#eee);font-size: var(--fs-sm)">${label}: dati insufficienti</div>`;
     return `<div style="padding:6px 0;border-bottom:1px solid var(--border,#eee)">
       <div style="display:flex;justify-content:space-between;font-size: var(--fs-body)">
         <span style="font-weight: var(--fw-semi)">${label}</span>
@@ -2608,7 +2608,7 @@ function renderWarmupAssessment(data) {
   const liftEntries = Object.entries(s.liftSummary)
     .sort((a, b) => b[1].delta - a[1].delta);
   const liftRows = liftEntries.map(([k, v]) => `
-    <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:5px 0;border-bottom:1px solid var(--border,#eee)">
+    <div style="display:flex;justify-content:space-between;font-size: var(--fs-sm);padding:5px 0;border-bottom:1px solid var(--border,#eee)">
       <span>${LIFT_LABELS[k] || k.replace('sl_','').replace('_kg','')}</span>
       <span>${v.first}kg → <b>${v.last}kg</b> <span style="color:${col(v.delta)}">(${v.delta>0?'+':''}${v.delta}kg)</span></span>
     </div>`).join('');
@@ -2846,7 +2846,7 @@ function showMissingDataPopup(dayLabel, view, cardId, missing, dismissKey) {
         <div style="font-size: var(--fs-sm);color:var(--text-muted,#888)">Non hai completato tutti i campi di ieri</div>
       </div>
     </div>
-    <ul style="margin:0 0 18px;padding-left:20px;font-size:13.5px;line-height:1.7;color:var(--text,#1c1c1e)">
+    <ul style="margin:0 0 18px;padding-left:20px;font-size: var(--fs-body);line-height:1.7;color:var(--text,#1c1c1e)">
       ${missing.map(m => `<li>${m}</li>`).join('')}
     </ul>
     <div style="display:flex;gap:10px">
@@ -6385,14 +6385,14 @@ function buildDashboard() {
           <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Peso (kg) <span style="font-size: var(--fs-xs);color:var(--muted);font-weight: var(--fw-reg)">— target 66–68 · T0: 71.1</span></div>
-            <div id="dc-peso-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
+            <div id="dc-peso-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-peso" height="110"></canvas>
         </div>
           <div class="charts-card" style="margin-top:10px">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">HRV (ms) <span style="font-size: var(--fs-xs);color:var(--muted);font-weight: var(--fw-reg)">— T0: 37ms</span></div>
-            <div id="dc-hrv-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
+            <div id="dc-hrv-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-hrv" height="110"></canvas>
         </div>
@@ -6401,14 +6401,14 @@ function buildDashboard() {
           <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">RHR (bpm)</div>
-            <div id="dc-rhr-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
+            <div id="dc-rhr-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-rhr" height="110"></canvas>
         </div>
           <div class="charts-card" style="margin-top:10px">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Pressione arteriosa (mmHg)</div>
-            <div id="dc-bp-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
+            <div id="dc-bp-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
             <div class="chart-legend">
               <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--red)"></span>Sistolica</span>
@@ -6471,42 +6471,42 @@ function buildDashboard() {
         <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Ore totali</div>
-            <div id="dc-sleep-hours-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
+            <div id="dc-sleep-hours-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-sleep-hours" height="90"></canvas>
         </div>
         <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Minuti veglia</div>
-            <div id="dc-sleep-wakemin-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
+            <div id="dc-sleep-wakemin-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-sleep-wakemin" height="90"></canvas>
         </div>
         <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Numero risvegli</div>
-            <div id="dc-sleep-wakecount-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
+            <div id="dc-sleep-wakecount-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-sleep-wakecount" height="90"></canvas>
         </div>
         <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">REM</div>
-            <div id="dc-sleep-rem-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
+            <div id="dc-sleep-rem-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-sleep-rem" height="90"></canvas>
         </div>
         <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Sonno principale</div>
-            <div id="dc-sleep-principale-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
+            <div id="dc-sleep-principale-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-sleep-principale" height="90"></canvas>
         </div>
         <div class="charts-card">
           <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
             <div class="dash-card-title">Sonno profondo</div>
-            <div id="dc-sleep-profondo-trend" style="font-size:10.5px;color:var(--muted);font-weight: var(--fw-med)"></div>
+            <div id="dc-sleep-profondo-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-sleep-profondo" height="90"></canvas>
         </div>
@@ -6885,7 +6885,7 @@ function refreshDashCharts() {
       const phases = getPhaseAverages();
       const fmt = (v, dec=1) => v===null ? '—' : v.toFixed(dec);
       const fmtPct = v => v===null ? '—' : v+'%';
-      pcEl.innerHTML = phases.length ? `<table style="width:100%;border-collapse:collapse;font-size:11.5px;white-space:nowrap">
+      pcEl.innerHTML = phases.length ? `<table style="width:100%;border-collapse:collapse;font-size: var(--fs-xs);white-space:nowrap">
         <thead><tr style="color:var(--muted);font-size: var(--fs-2xs);border-bottom:1px solid var(--border)">
           <th style="text-align:left;padding:5px 8px">Fase</th><th style="text-align:right;padding:5px 8px">gg</th>
           <th style="text-align:right;padding:5px 8px">Peso</th><th style="text-align:right;padding:5px 8px">HRV</th>
@@ -7981,7 +7981,7 @@ function buildWeekSummary2(container, wkIdx) {
       </div>
     </div>` : ''}
 
-    <div style="margin-top:10px;font-size:11.5px;color:var(--muted)">🩺 ${symptomText}</div>
+    <div style="margin-top:10px;font-size: var(--fs-xs);color:var(--muted)">🩺 ${symptomText}</div>
   `;
   setTimeout(() => {
     drawDashChart('ws2-spark-peso-'+wkIdx, [{data: sparkPeso, color:'#0071e3'}], {height:50, minPts:1});
@@ -9227,7 +9227,7 @@ function buildStockView2() {
         </div>
         <div style="background:rgba(0,113,227,.08);border:1px solid rgba(0,113,227,.25);border-radius:10px;padding:10px;text-align:center">
           <div style="font-size:var(--fs-3xs);color:var(--blue);font-weight:var(--fw-semi);text-transform:uppercase">Volume da prelevare</div>
-          <div id="uc-draw" style="font-size:var(--fs-xl);font-weight:800;color:var(--blue);margin:2px 0">—</div>
+          <div id="uc-draw" style="font-size:var(--fs-xl);font-weight: var(--fw-bold);color:var(--blue);margin:2px 0">—</div>
           <div style="font-size:var(--fs-3xs);color:var(--blue)">unità (UI)</div>
         </div>
         <div style="background:var(--surface2,#f5f5f7);border-radius:10px;padding:10px;text-align:center">
@@ -11274,13 +11274,13 @@ function buildOrariView() {
             <div style="font-size: var(--fs-body);min-width:18px">${ic}</div>
             <div style="flex:1;min-width:0">
               <div style="font-size: var(--fs-2xs);font-weight: var(--fw-semi);color:var(--muted);text-transform:uppercase;letter-spacing:.4px">${lab}</div>
-              <div style="font-size:12.5px;color:var(--text);line-height:1.5;margin-top:1px">${txt}</div>
+              <div style="font-size: var(--fs-sm);color:var(--text);line-height:1.5;margin-top:1px">${txt}</div>
             </div>
           </div>`).join('')}
         <div style="margin-top:9px;padding:9px 11px;background:var(--surface2,#f5f5f7);border-radius:8px;
-          font-size:11.5px;color:var(--muted);line-height:1.5">${s.why}</div>
+          font-size: var(--fs-xs);color:var(--muted);line-height:1.5">${s.why}</div>
         ${s.warn ? `<div style="margin-top:8px;padding:9px 11px;background:rgba(255,149,0,.10);
-          border-radius:8px;font-size:11.5px;color:var(--text);line-height:1.5">
+          border-radius:8px;font-size: var(--fs-xs);color:var(--text);line-height:1.5">
           <b style="color:var(--orange)">Da chiarire col medico —</b> ${s.warn}</div>` : ''}
       </div>
     </div>`;
