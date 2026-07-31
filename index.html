@@ -747,12 +747,12 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 /* Phase badge colors */
 .p1b { background: #e8f1fb; color: var(--blue); }
 .p2b { background: #fff5e6; color: #c26000; }
-.p3b { background: #e8f8ed; color: #1a7a3a; }
-.p4b { background: #feeeec; color: #cc2200; }
+.p3b { background: var(--green-light); color: var(--green-dark); }
+.p4b { background: var(--red-light); color: var(--red-dark); }
 
 /* Workout type badges */
-.badge-push  { background: #feeeec; color: #cc2200; }
-.badge-pull  { background: #e8f8ed; color: #1a7a3a; }
+.badge-push  { background: var(--red-light); color: var(--red-dark); }
+.badge-pull  { background: var(--green-light); color: var(--green-dark); }
 .badge-legs  { background: #fff5e6; color: #c26000; }
 .badge-upper     { background: #f5eeff; color: #8522c0; }
 .badge-upper-dom { background: #e8f1fb; color: #0058b0; }
@@ -2590,7 +2590,7 @@ function renderWarmupAssessment(data) {
 
   const bs = s.biomSummary, bst = s.biomStats, ad = s.adherence, ss = s.subjStats;
   const fmt = (v, d = 1) => (v === null || v === undefined || isNaN(v)) ? '—' : v.toFixed(d);
-  const col = d => d > 0 ? '#1a7a3a' : d < 0 ? '#cc2200' : '#888';
+  const col = d => d > 0 ? 'var(--green-dark)' : d < 0 ? 'var(--red-dark)' : '#888';
 
   // Blocco 1 — Biometria estesa: primo→ultimo + min/max/media
   const biomRow = (label, obj, st, unit, dec = 1) => {
@@ -2629,7 +2629,7 @@ function renderWarmupAssessment(data) {
       <div style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--blue);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">2 · Aderenza & allenamento</div>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px">
         <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px">
-          <div style="font-size: var(--fs-20);font-weight: var(--fw-bold);color:${ad.suppPct>=80?'#1a7a3a':ad.suppPct>=60?'#b8860b':'#cc2200'}">${ad.suppPct!=null?ad.suppPct+'%':'—'}</div>
+          <div style="font-size: var(--fs-20);font-weight: var(--fw-bold);color:${ad.suppPct>=80?'var(--green-dark)':ad.suppPct>=60?'#b8860b':'var(--red-dark)'}">${ad.suppPct!=null?ad.suppPct+'%':'—'}</div>
           <div style="font-size: var(--fs-xs);color:var(--muted)">Aderenza integratori<br>${ad.suppTaken}/${ad.suppPossible} dosi${ad.suppSkipped?` · ${ad.suppSkipped} skip`:''}</div>
         </div>
         <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px">
@@ -2900,9 +2900,9 @@ function renderBackupStatus(status) {
   }
 
   const colors = {
-    good: {bg:'#e8f8ed', bd:'#1a7a3a', c:'#1a7a3a'},
+    good: {bg:'var(--green-light)', bd:'var(--green-dark)', c:'var(--green-dark)'},
     warn: {bg:'#fff6e0', bd:'#b8860b', c:'#8a6100'},
-    bad:  {bg:'#feeeec', bd:'#cc2200', c:'#cc2200'},
+    bad:  {bg:'var(--red-light)', bd:'var(--red-dark)', c:'var(--red-dark)'},
   }[level];
 
   const hoursTxt = hoursAgo < 1 ? 'meno di un\'ora fa'
@@ -2944,8 +2944,8 @@ function labDeltaPillHtml(currStr, prevStr, prevLabel, better) {
   const diff = (c - p).toFixed(2).replace(/\.?0+$/, '');
   const sign = diff > 0 ? '+' : '';
   const isGood = better === 'up' ? diff > 0 : better === 'down' ? diff < 0 : null;
-  const col = isGood === true ? '#1a7a3a' : isGood === false ? '#cc2200' : '#636366';
-  const bg  = isGood === true ? '#e8f8ed'  : isGood === false ? '#feeeec'  : '#f2f2f7';
+  const col = isGood === true ? 'var(--green-dark)' : isGood === false ? 'var(--red-dark)' : '#636366';
+  const bg  = isGood === true ? 'var(--green-light)'  : isGood === false ? 'var(--red-light)'  : '#f2f2f7';
   return `<div style="margin-top:3px;display:flex;align-items:center;gap:5px;flex-wrap:wrap">
     <span style="font-size:10px;color:var(--muted)">vs ${prevLabel}: ${prevStr}</span>
     <span style="font-size:10px;font-weight:600;background:${bg};color:${col};padding:1px 6px;border-radius:10px">${sign}${diff}</span>
@@ -3705,7 +3705,7 @@ function calcDexaDelta(milestoneId) {
     const diff = (v - parseFloat(fd.t0)).toFixed(1);
     const sign = diff > 0 ? '+' : '';
     const cls = (fd.better === 'down' && diff < 0) || (fd.better === 'up' && diff > 0) ? 'up' : diff == 0 ? 'neutral' : 'down';
-    return `<span class="tag-pill" style="background:${cls==='up'?'#e8f8ed':cls==='down'?'#feeeec':'#f5f5f7'};color:${cls==='up'?'#1a7a3a':cls==='down'?'#cc2200':'#6e6e73'}">${fd.label} ${sign}${diff}${fd.unit}</span>`;
+    return `<span class="tag-pill" style="background:${cls==='up'?'var(--green-light)':cls==='down'?'var(--red-light)':'#f5f5f7'};color:${cls==='up'?'var(--green-dark)':cls==='down'?'var(--red-dark)':'#6e6e73'}">${fd.label} ${sign}${diff}${fd.unit}</span>`;
   }).filter(Boolean);
   const el = document.getElementById('dexa-delta-' + milestoneId);
   if (el) el.innerHTML = deltas.length ? deltas.join('') : 'Inserisci i valori per calcolare il delta';
@@ -6696,7 +6696,7 @@ function refreshDashCharts() {
   if (_readyEl) {
     const flags = (_lastData && _lastData.ready_to_progress) || [];
     _readyEl.innerHTML = flags.length ? `<div style="background:rgba(52,199,89,.08);border:0.5px solid rgba(52,199,89,.3);border-radius:10px;padding:10px 14px;margin-bottom:14px">
-      <div style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:#1a7a3a;margin-bottom:4px">💪 Pronti per aumentare il carico</div>
+      <div style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--green-dark);margin-bottom:4px">💪 Pronti per aumentare il carico</div>
       <div style="font-size: var(--fs-sm);color:var(--text-secondary)">${flags.map(f=>`<strong style="color:var(--text-primary)">${f.label}</strong> ${f.weight}kg`).join(' · ')}</div>
     </div>` : '';
   }
@@ -9548,7 +9548,7 @@ function buildStockView2() {
           const extra = c.bkkExtraVials || 0;
           const extraLine = extra > 0
             ? `<div style="font-size:var(--fs-2xs);font-weight:var(--fw-bold);color:#c0392b;margin-top:4px">+${extra} vial sigillat${extra===1?'o':'i'} da portare</div>`
-            : `<div style="font-size:var(--fs-2xs);color:#1a7a3a;margin-top:4px">✓ copre il vial in uso</div>`;
+            : `<div style="font-size:var(--fs-2xs);color:var(--green-dark);margin-top:4px">✓ copre il vial in uso</div>`;
           return `<div style="background:${c.bg};border-left:3px solid ${c.color};border-radius:8px;padding:9px 12px">
             <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--text)">${c.emoji} ${c.name}</div>
             <div style="font-size:var(--fs-16);font-weight:var(--fw-bold);color:${c.color};margin:2px 0">${c.bkkMg}mg</div>
@@ -9562,7 +9562,7 @@ function buildStockView2() {
         <span>Siringhe SC: <b style="color:var(--text)">${bkkSyringesSC}</b></span>
         <span>Siringhe IM: <b style="color:var(--text)">${bkkSyringesIM}</b></span>
         <span>Totale minimo: <b style="color:var(--text)">${bkkSyringesTotal}</b></span>
-        <span>Con margine 15%: <b style="color:#1a7a3a">${bkkSyringesMargin}</b></span>
+        <span>Con margine 15%: <b style="color:var(--green-dark)">${bkkSyringesMargin}</b></span>
       </div>
       <div style="background:rgba(255,59,48,.08);border:0.5px solid rgba(255,59,48,.3);border-radius:8px;padding:10px 12px;font-size:var(--fs-sm);color:var(--text);margin-bottom:12px">
         <b style="color:#c0392b">🧳 Da mettere in valigia:</b> ${compounds.filter(c=>c.bkkMg!==undefined).length} vial già in uso (li porti così come sono, li stai già usando fino alla partenza)${bkkTotalExtraVials>0 ? ` + <b>${bkkTotalExtraVials} vial sigillat${bkkTotalExtraVials===1?'o':'i'}</b> da ricostituire durante il viaggio` : ''}${bkkTotalExtraBac>0 ? ` · almeno <b>${bkkTotalExtraBac}mL di acqua batteriostatica</b> in più per quelle ricostituzioni in loco` : ''}.
@@ -10263,7 +10263,7 @@ function buildProtocolloTimeline() {
       </div>`;
     }
     // Trends
-    const TS = {p:'background:#e8f8ed;color:#1a7a3a',n:'background:#f5f5f7;color:var(--text-muted)'};
+    const TS = {p:'background:var(--green-light);color:var(--green-dark)',n:'background:#f5f5f7;color:var(--text-muted)'};
     card += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">';
     d.tr.forEach((t,i) => { card += `<span style="font-size: var(--fs-xs);padding:3px 10px;border-radius:20px;${TS[d.tc[i]]}">${t}</span>`; });
     card += '</div>';
@@ -10480,7 +10480,7 @@ function buildFoodTab() {
           </div>
           <div style="display:flex;gap:12px;flex-shrink:0;text-align:right">
             <div><span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--text-primary)">${m.kcal}</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">kcal</span></div>
-            <div><span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:#1a7a3a">${m.p}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">prot</span></div>
+            <div><span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--green-dark)">${m.p}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">prot</span></div>
             <div><span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:#185fa5">${m.c}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">carb</span></div>
             <div><span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:#854f0b">${m.g}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">gras</span></div>
           </div>
@@ -10528,7 +10528,7 @@ function buildFoodTab() {
           <span style="font-size: var(--fs-xs);color:var(--text-muted)">${unitLabel}</span>
           <div style="flex:1;display:flex;gap:10px;justify-content:flex-end">
             <span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--text-primary)">${m.kcal} kcal</span>
-            <span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:#1a7a3a">${m.p}g P</span>
+            <span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--green-dark)">${m.p}g P</span>
             <span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:#185fa5">${m.c}g C</span>
             <span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:#854f0b">${m.g}g G</span>
           </div>
@@ -10586,7 +10586,7 @@ function buildFoodTab() {
           <div style="flex:1;font-size: var(--fs-2xs);font-weight: var(--fw-med);text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Alimento · porzione di riferimento</div>
           <div style="display:flex;gap:12px;flex-shrink:0;text-align:right">
             <div style="font-size: var(--fs-2xs);font-weight: var(--fw-med);text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);width:32px">kcal</div>
-            <div style="font-size: var(--fs-2xs);font-weight: var(--fw-med);text-transform:uppercase;letter-spacing:.06em;color:#1a7a3a;width:32px">prot</div>
+            <div style="font-size: var(--fs-2xs);font-weight: var(--fw-med);text-transform:uppercase;letter-spacing:.06em;color:var(--green-dark);width:32px">prot</div>
             <div style="font-size: var(--fs-2xs);font-weight: var(--fw-med);text-transform:uppercase;letter-spacing:.06em;color:#185fa5;width:32px">carb</div>
             <div style="font-size: var(--fs-2xs);font-weight: var(--fw-med);text-transform:uppercase;letter-spacing:.06em;color:#854f0b;width:32px">gras</div>
           </div>
@@ -10608,7 +10608,7 @@ function buildFoodTab() {
             <div style="font-size: var(--fs-2xs);font-weight: var(--fw-med);text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px">Totale pasto</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center">
               <div><div style="font-size: var(--fs-18);font-weight: var(--fw-med);color:var(--text-primary)" id="fd-tot-kcal">0</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">kcal</div></div>
-              <div><div style="font-size: var(--fs-18);font-weight: var(--fw-med);color:#1a7a3a" id="fd-tot-p">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">proteine</div></div>
+              <div><div style="font-size: var(--fs-18);font-weight: var(--fw-med);color:var(--green-dark)" id="fd-tot-p">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">proteine</div></div>
               <div><div style="font-size: var(--fs-18);font-weight: var(--fw-med);color:#185fa5" id="fd-tot-c">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">carb</div></div>
               <div><div style="font-size: var(--fs-18);font-weight: var(--fw-med);color:#854f0b" id="fd-tot-g">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">grassi</div></div>
             </div>
@@ -10919,7 +10919,7 @@ function buildHistoryTab() {
     const flags = (_lastData && _lastData.ready_to_progress) || [];
     if (!flags.length) return '';
     return `<div style="background:rgba(52,199,89,.08);border:0.5px solid rgba(52,199,89,.3);border-radius:10px;padding:12px 14px;margin-bottom:14px">
-      <div style="font-size: var(--fs-sm);font-weight: var(--fw-semi);color:#1a7a3a;margin-bottom:8px">💪 Pronti per aumentare il carico</div>
+      <div style="font-size: var(--fs-sm);font-weight: var(--fw-semi);color:var(--green-dark);margin-bottom:8px">💪 Pronti per aumentare il carico</div>
       ${flags.map(f => `<div style="font-size: var(--fs-sm);color:var(--text-secondary);padding:2px 0">
         <strong style="color:var(--text-primary)">${f.label}</strong> — ${f.weight}kg, min ${f.min_reps} reps su tutte le serie da ${f.sessions_at_weight} sessioni
       </div>`).join('')}
