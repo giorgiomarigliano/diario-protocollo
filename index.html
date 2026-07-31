@@ -614,7 +614,8 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 }
 .inj-fields select:focus, .inj-grid select:focus { border-color: var(--blue); }
 .inj-grid select[value="fatto"], .inj-grid select option[value="fatto"] { color: var(--green); }
-.inj-grid select[value="skip"], .inj-grid select option[value="skip"] { color: var(--muted); }
+.inj-grid select option[value="saltata"] { color: var(--red); }
+.inj-grid select[value="na"], .inj-grid select option[value="na"], .inj-grid select[value="skip"], .inj-grid select option[value="skip"] { color: var(--muted); }
 
 .sent-tab {
   font-size: var(--fs-xs); font-weight: var(--fw-med); padding: 3px 9px; border-radius: 20px;
@@ -2761,7 +2762,7 @@ function computeMissingForV2Day(entry, dayIdxForSlots) {
       totalInj++;
       const key = 'inj_' + s.n + '_' + f.replace(/[\s\-]/g,'_');
       const v = entry[key];
-      if (v !== 'fatto' && v !== 'skip') missingInj++;
+      if (v !== 'fatto' && v !== 'skip' && v !== 'na' && v !== 'saltata') missingInj++;
     });
   });
   if (missingInj > 0) missing.push(`Iniezioni non registrate: ${missingInj}/${totalInj}`);
@@ -5976,7 +5977,7 @@ function getInjComplianceV2() {
       // criterio già usato per gli integratori. Caso reale: IGF-1 DES è
       // post-workout; se l'allenamento non c'è stato, non prenderlo è il
       // protocollo rispettato, non una dose mancata (31/07/2026 sera).
-      if (v === 'skip') return;
+      if (v === 'skip' || v === 'na') return; // 'skip' = valore legacy pre-31/07, trattato come 'na'
       total++;
       if (v === 'fatto') done++;
     }));
@@ -7365,7 +7366,7 @@ function getPhaseAverages() {
       slots.forEach(s => s.fields.forEach(f => {
         const k = 'inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_');
         const v = rec[k] || '';
-        if (v === 'skip') return; // stesso criterio di getInjComplianceV2() (31/07/2026 sera)
+        if (v === 'skip' || v === 'na') return; // stesso criterio di getInjComplianceV2() ('skip'=valore legacy)
         b.injTotal++;
         if (v === 'fatto') b.injDone++;
       }));
@@ -7713,7 +7714,7 @@ function buildAdherenceAndVolumeCharts2(container) {
         if (!c) return;
         const key = 'inj_' + s.n + '_' + f.replace(/[\s\-]/g, '_');
         const v = rec[key] || '';
-        if (v === 'skip') return; // stesso criterio di getInjComplianceV2() (31/07/2026 sera)
+        if (v === 'skip' || v === 'na') return; // stesso criterio di getInjComplianceV2() ('skip'=valore legacy)
         compounds[c].total++;
         if (v === 'fatto') compounds[c].done++;
       });
@@ -7840,7 +7841,7 @@ function buildWeekSummary2(container, wkIdx) {
       slots.forEach(s => {
         s.fields.forEach(f => {
           const v = get(id, 'inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_')) || '';
-          if (v === 'skip') return; // stesso criterio di getInjComplianceV2() (31/07/2026 sera)
+          if (v === 'skip' || v === 'na') return; // stesso criterio di getInjComplianceV2() ('skip'=valore legacy)
           totalInj++;
           if (v === 'fatto') doneInj++;
         });
@@ -8079,7 +8080,8 @@ function buildTestProtoCards(container) {
               <select data-id="${id}" data-f="inj_${s.n}_${fkey}" style="flex-shrink:0;width:100px">
                 <option value="">— stato</option>
                 <option value="fatto">✅ Fatto</option>
-                <option value="skip">⏭ Skip</option>
+                <option value="saltata">❌ Saltata</option>
+                <option value="na">🚫 N/A</option>
               </select>
               ${siteSelect}
             </div>`;
@@ -8432,7 +8434,8 @@ function buildProtoV2() {
               <select data-id="${id}" data-f="inj_${s.n}_${fkey}" style="flex-shrink:0;width:100px">
                 <option value="">— stato</option>
                 <option value="fatto">✅ Fatto</option>
-                <option value="skip">⏭ Skip</option>
+                <option value="saltata">❌ Saltata</option>
+                <option value="na">🚫 N/A</option>
               </select>
               ${siteSelect}
             </div>`;
@@ -8675,9 +8678,13 @@ function colorInjSelects(root) {
   const r = root || document.getElementById('container2');
   r.querySelectorAll('.inj-grid select').forEach(sel => {
     const v = sel.value;
-    sel.style.color = v === 'fatto' ? '#34c759' : v === 'skip' ? 'var(--muted)' : 'var(--text)';
-    sel.style.borderColor = v === 'fatto' ? '#34c75940' : '';
-    sel.style.background = v === 'fatto' ? 'rgba(52,199,89,.07)' : v === 'skip' ? 'var(--surface2)' : '';
+    // 'skip' e' il vecchio valore (rinominato in 'na' il 31/07/2026 per
+    // chiarezza — vedi nota su getInjComplianceV2): trattato identico a 'na'
+    // per non toccare i giorni passati già salvati con quel valore.
+    const isNA = (v === 'na' || v === 'skip');
+    sel.style.color = v === 'fatto' ? '#34c759' : v === 'saltata' ? '#ff3b30' : isNA ? 'var(--muted)' : 'var(--text)';
+    sel.style.borderColor = v === 'fatto' ? '#34c75940' : v === 'saltata' ? '#ff3b3040' : '';
+    sel.style.background = v === 'fatto' ? 'rgba(52,199,89,.07)' : v === 'saltata' ? 'rgba(255,59,48,.07)' : isNA ? 'var(--surface2)' : '';
   });
 }
 
@@ -8733,7 +8740,7 @@ function applyProto2Data() {
           s.fields.forEach(f2 => {
             const key = 'inj_'+s.n+'_'+f2.replace(/[\s\-]/g,'_');
             const v = fields[key] || '';
-            if (v === 'skip') return; // stesso criterio di getInjComplianceV2() (31/07/2026 sera)
+            if (v === 'skip' || v === 'na') return; // stesso criterio di getInjComplianceV2() ('skip'=valore legacy)
             totalInj2++;
             if (v === 'fatto') doneInj2++;
           });
