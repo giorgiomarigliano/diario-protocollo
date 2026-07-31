@@ -5969,9 +5969,16 @@ function getInjComplianceV2() {
     const woIdx = rd.period==='test_proto' ? rd.index-TEST_PROTO_DAYS : rd.index;
     const slots=getInjectionSlots2(woIdx);
     slots.forEach(s=>s.fields.forEach(f=>{
-      total++;
       const k='inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_');
-      if((rec[k]||'')==='fatto') done++;
+      const v = rec[k]||'';
+      // "Skip" (già selezionabile nel menu a tendina, già escluso dal popup
+      // dati mancanti) va escluso anche qui dal denominatore — stesso
+      // criterio già usato per gli integratori. Caso reale: IGF-1 DES è
+      // post-workout; se l'allenamento non c'è stato, non prenderlo è il
+      // protocollo rispettato, non una dose mancata (31/07/2026 sera).
+      if (v === 'skip') return;
+      total++;
+      if (v === 'fatto') done++;
     }));
   }
   return {done,total,pct:total?Math.round((done/total)*100):0};
@@ -7356,9 +7363,11 @@ function getPhaseAverages() {
       const woIdx = rd.period==='test_proto' ? rd.index-TEST_PROTO_DAYS : rd.index;
       const slots = getInjectionSlots2(woIdx);
       slots.forEach(s => s.fields.forEach(f => {
-        b.injTotal++;
         const k = 'inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_');
-        if ((rec[k]||'')==='fatto') b.injDone++;
+        const v = rec[k] || '';
+        if (v === 'skip') return; // stesso criterio di getInjComplianceV2() (31/07/2026 sera)
+        b.injTotal++;
+        if (v === 'fatto') b.injDone++;
       }));
     }
   }
@@ -7703,8 +7712,10 @@ function buildAdherenceAndVolumeCharts2(container) {
         const c = canonInjectionCompound2(f);
         if (!c) return;
         const key = 'inj_' + s.n + '_' + f.replace(/[\s\-]/g, '_');
+        const v = rec[key] || '';
+        if (v === 'skip') return; // stesso criterio di getInjComplianceV2() (31/07/2026 sera)
         compounds[c].total++;
-        if (rec[key] === 'fatto') compounds[c].done++;
+        if (v === 'fatto') compounds[c].done++;
       });
     });
   }
@@ -7827,9 +7838,11 @@ function buildWeekSummary2(container, wkIdx) {
 
       const slots = getInjectionSlots2(dayIdx);
       slots.forEach(s => {
-        totalInj += s.fields.length;
         s.fields.forEach(f => {
-          if (get(id, 'inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_')) === 'fatto') doneInj++;
+          const v = get(id, 'inj_'+s.n+'_'+f.replace(/[\s\-]/g,'_')) || '';
+          if (v === 'skip') return; // stesso criterio di getInjComplianceV2() (31/07/2026 sera)
+          totalInj++;
+          if (v === 'fatto') doneInj++;
         });
       });
 
@@ -8718,9 +8731,11 @@ function applyProto2Data() {
         let doneInj2 = 0, totalInj2 = 0;
         slots2.forEach(s => {
           s.fields.forEach(f2 => {
-            totalInj2++;
             const key = 'inj_'+s.n+'_'+f2.replace(/[\s\-]/g,'_');
-            if (fields[key] === 'fatto') doneInj2++;
+            const v = fields[key] || '';
+            if (v === 'skip') return; // stesso criterio di getInjComplianceV2() (31/07/2026 sera)
+            totalInj2++;
+            if (v === 'fatto') doneInj2++;
           });
         });
         const qInj = document.getElementById('q-'+id+'-inj');
