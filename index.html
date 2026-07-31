@@ -6138,11 +6138,22 @@ function buildDashboard() {
   }
 
   function richKpiCard(cfg) {
-    const valid = cfg.series7.filter(p=>p.value!==null);
-    const last = valid.length ? valid[valid.length-1].value : null;
-    const yestP = cfg.series7[cfg.series7.length-2];
+    // Fix bug reale (31/07/2026 mattina, segnalato da Giorgio): "vs ieri"
+    // usava una posizione fissa (length-2) per trovare il giorno precedente.
+    // Se il giorno corrente non è ancora stato compilato (es. la mattina
+    // presto, prima di inserire i dati), "last" (ultimo valore valido)
+    // ricadeva già su ieri — ma "yestP" a posizione fissa PUNTAVA ANCH'ESSO
+    // a ieri, confrontando lo stesso giorno con se stesso: delta sempre 0 su
+    // tutte le card contemporaneamente. Ora si cerca l'indice dell'ultimo
+    // valore valido e si prende quello subito prima, qualunque sia la sua
+    // posizione — corretto sia a giorno compilato che non ancora compilato.
+    let lastValidIdx = -1;
+    cfg.series7.forEach((p,i) => { if (p.value!==null) lastValidIdx = i; });
+    const last = lastValidIdx>=0 ? cfg.series7[lastValidIdx].value : null;
+    const yestP = lastValidIdx>=1 ? cfg.series7[lastValidIdx-1] : null;
     const yestVal = yestP && yestP.value!==null ? yestP.value : null;
     const deltaIeri = (last!==null && yestVal!==null) ? (last-yestVal) : null;
+    const valid = cfg.series7.filter(p=>p.value!==null);
     const vals = valid.map(p=>p.value);
     const minV = vals.length ? Math.min(...vals) : null;
     const maxV = vals.length ? Math.max(...vals) : null;
