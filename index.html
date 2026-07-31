@@ -8340,8 +8340,16 @@ function buildProtoV2() {
   container.appendChild(navStrip2);
 
   // 5. Card giornaliere
+  // Genera fino a CICLO1_DAYS (fine reale del Ciclo 1, 112gg), non fino a
+  // TOTAL_DAYS2 (500, solo un tetto tecnico di sicurezza affinché resolveDay
+  // e le funzioni dati non si rompano oltre l'8/11 — vedi sezione 17.1 della
+  // KB). Prima di questo fix venivano generate 500 card "ipotetiche" fino
+  // alla settimana 72, tutte vuote. Da rivalutare quando si deciderà come
+  // strutturare il proseguimento dopo la fine del Ciclo 1 (richiesta di
+  // Giorgio, 31/07/2026 sera: "per ora fermati all'ultimo giorno di
+  // protocollo, poi capiremo come far evolvere il tutto").
   let curWk = -1;
-  for (let i=0; i<TOTAL_DAYS2; i++) {
+  for (let i=0; i<CICLO1_DAYS; i++) {
     const d = new Date(START2); d.setDate(d.getDate()+i); d.setHours(0,0,0,0);
     const wk = Math.floor(i/7)+1;
     const wo = getWorkout2(i);
