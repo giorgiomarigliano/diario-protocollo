@@ -4817,12 +4817,12 @@ function drawDashChart(canvasId, datasets, options = {}) {
   // nella card, qui serve solo l'andamento a colpo d'occhio. Puramente
   // additiva: senza options.compact il comportamento resta identico a prima.
   const compact = !!options.compact;
-  const ML = compact ? 2  : 34; // left margin per asse Y
+  let ML = compact ? 2  : 34; // left margin per asse Y
   const MB = compact ? 2  : 18; // bottom margin per asse X
-  const MR = compact ? (options.hideLabel ? 2 : 30) : 36; // right margin — spazio per label ultimo valore
+  let MR = compact ? (options.hideLabel ? 2 : 30) : 36; // right margin — spazio per label ultimo valore
   const MT = compact ? 2  : 10;
-  const CW = W - ML - MR;  // chart width (esclude spazio label dx)
-  const CH = H - MB - MT;  // chart height
+  let CW = W - ML - MR;  // chart width (esclude spazio label dx)
+  let CH = H - MB - MT;  // chart height
 
   canvas.width  = W * dpr;
   canvas.height = H * dpr;
@@ -4897,6 +4897,38 @@ function drawDashChart(canvasId, datasets, options = {}) {
   const yStart = Math.ceil(mn / yStep) * yStep;
   const yTicks = [];
   for (let v = yStart; v <= mx; v += yStep) yTicks.push(Math.round(v * 10)/10);
+
+  // Margini NON-compact ricalcolati sulla larghezza testo reale (1/08/2026,
+  // richiesta di Giorgio sulle mini-sparkline "Riepilogo settimana": i
+  // margini fissi 34/36 erano pensati per i grafici Biometria a piena
+  // larghezza (60gg) e restavano sproporzionati in card strette con poche
+  // etichette — stessa filosofia già applicata a drawRichKpiChart.
+  if (!compact) {
+    ctx.font = '9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif';
+    let maxYLabelW = 0;
+    yTicks.forEach(v => {
+      const w = ctx.measureText(v % 1 === 0 ? String(v) : v.toFixed(1)).width;
+      if (w > maxYLabelW) maxYLabelW = w;
+    });
+    ML = Math.max(16, Math.ceil(maxYLabelW) + 6);
+
+    if (!options.hideLabel) {
+      ctx.font = '500 10px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif';
+      let maxValLabelW = 0;
+      datasets.forEach(ds => {
+        const lastPt = [...ds.data].reverse().find(p => p.value !== null);
+        if (!lastPt) return;
+        const lbl = lastPt.value.toFixed(lastPt.value % 1 === 0 ? 0 : 1);
+        const w = ctx.measureText(lbl).width;
+        if (w > maxValLabelW) maxValLabelW = w;
+      });
+      MR = Math.max(18, Math.ceil(maxValLabelW) + 8);
+    } else {
+      MR = 4;
+    }
+    CW = W - ML - MR;
+    CH = H - MB - MT;
+  }
 
   if (!compact) {
     // Asse Y — linea
