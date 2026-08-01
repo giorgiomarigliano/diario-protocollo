@@ -5015,16 +5015,15 @@ function drawDashChart(canvasId, datasets, options = {}) {
     pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
     ctx.strokeStyle = ds.color; ctx.lineWidth = 1.8; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
 
-    // Dots — in modalità compact solo l'ultimo punto (come la vecchia
-    // drawSparkline, pulita), altrimenti uno per ogni punto crea un effetto
-    // "collana di perline" su dataset densi (60gg) in card piccole (28/07/2026,
-    // regressione trovata dall'utente subito dopo l'unificazione dei KPI).
+    // Dots — pallini pieni piccoli invece del cerchietto vuoto bianco+bordo
+    // (1/08/2026: l'effetto "collana di perline" segnalato da Giorgio non
+    // era del tutto risolto dal fix del 28/07 — quello copriva solo le
+    // card compact, qui i grafici Biometria a piena larghezza restano densi
+    // di punti su 60gg). In modalità compact resta solo l'ultimo punto.
     const dotsToShow = compact ? [pts[pts.length - 1]] : pts;
     dotsToShow.forEach(p => {
-      ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#fff'; ctx.fill();
-      ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
-      ctx.strokeStyle = ds.color; ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = ds.color; ctx.fill();
     });
 
     if (!options.hideLabel) {
