@@ -5177,12 +5177,12 @@ function drawRichKpiChart(canvasId, points, options = {}) {
     const w = ctx.measureText(v % 1 === 0 ? String(v) : v.toFixed(1)).width;
     if (w > maxYLabelW) maxYLabelW = w;
   });
-  const ML = Math.max(18, Math.ceil(maxYLabelW) + 8);
+  const ML = Math.max(14, Math.ceil(maxYLabelW) + 4);
 
   const lastValidForWidth = [...validPts].reverse()[0];
   ctx.font = VALUE_FONT;
   const endValueW = ctx.measureText(fmtV(lastValidForWidth.value)).width;
-  const MR = Math.max(20, Math.ceil(endValueW) + 10);
+  const MR = Math.max(16, Math.ceil(endValueW) + 6);
 
   const CW = W - ML - MR;
   const CH = H - MB - MT;
