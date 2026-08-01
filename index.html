@@ -5119,17 +5119,9 @@ function drawRichKpiChart(canvasId, points, options = {}) {
   const decimals = options.decimals !== undefined ? options.decimals : 1;
   const fmtV = v => decimals === 0 ? Math.round(v).toString() : v.toFixed(decimals);
 
-  // Margini ridotti su schermi stretti (31/07/2026, richiesta di Giorgio: le
-  // card mobile sprecavano troppo spazio bianco ai lati del grafico vero e
-  // proprio). ML serve alle etichette dell'asse Y, MR all'etichetta del
-  // valore finale — su mobile bastano margini più stretti, il grafico
-  // guadagna spazio utile reale.
-  const isNarrowScreen = window.innerWidth <= 600;
-  const ML = isNarrowScreen ? 26 : 32;
-  const MR = isNarrowScreen ? 30 : 40;
   const MT = 22, MB = 16;
-  const CW = W - ML - MR;
-  const CH = H - MB - MT;
+  const AXIS_FONT  = '9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif';
+  const VALUE_FONT = '600 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif';
 
   canvas.width  = W * dpr;
   canvas.height = H * dpr;
@@ -5148,7 +5140,7 @@ function drawRichKpiChart(canvasId, points, options = {}) {
   const validPts = points.filter(p => p.value !== null);
   if (validPts.length < 2) {
     ctx.font = '11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#aeaeb2';
-    ctx.fillText('Dati insufficienti', ML + 4, H / 2);
+    ctx.fillText('Dati insufficienti', 20, H / 2);
     return;
   }
 
@@ -5172,12 +5164,35 @@ function drawRichKpiChart(canvasId, points, options = {}) {
   const yTicks = [];
   for (let v = yStart; v <= mx; v += yStep) yTicks.push(Math.round(v * 10) / 10);
 
+  // Margini MISURATI, non stimati a occhio (1/08/2026, seconda richiesta di
+  // Giorgio: dopo la prima riduzione restava comunque troppo spazio bianco
+  // ai lati). Invece di indovinare un valore fisso "abbastanza stretto",
+  // si misura con ctx.measureText() lo spazio che serve DAVVERO per le
+  // etichette dell'asse Y e per il valore finale a destra (che cambiano
+  // parecchio da card a card: "72" vs "100%" vs "3.7") — così il grafico
+  // usa sempre il massimo spazio disponibile, su qualunque metrica/schermo.
+  ctx.font = AXIS_FONT;
+  let maxYLabelW = 0;
+  yTicks.forEach(v => {
+    const w = ctx.measureText(v % 1 === 0 ? String(v) : v.toFixed(1)).width;
+    if (w > maxYLabelW) maxYLabelW = w;
+  });
+  const ML = Math.max(18, Math.ceil(maxYLabelW) + 8);
+
+  const lastValidForWidth = [...validPts].reverse()[0];
+  ctx.font = VALUE_FONT;
+  const endValueW = ctx.measureText(fmtV(lastValidForWidth.value)).width;
+  const MR = Math.max(20, Math.ceil(endValueW) + 10);
+
+  const CW = W - ML - MR;
+  const CH = H - MB - MT;
+
   // Assi
   ctx.strokeStyle = axisColor; ctx.lineWidth = 0.5;
   ctx.beginPath(); ctx.moveTo(ML, MT); ctx.lineTo(ML, MT + CH); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(ML, MT + CH); ctx.lineTo(ML + CW, MT + CH); ctx.stroke();
 
-  ctx.font = '9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.textAlign = 'right';
+  ctx.font = AXIS_FONT; ctx.textAlign = 'right';
   yTicks.forEach(v => {
     const y = MT + CH - ((v - mn) / rng) * CH;
     if (y < MT || y > MT + CH) return;
