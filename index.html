@@ -1096,6 +1096,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .rich-kpi-summary b{color:var(--text);font-weight: var(--fw-semi)}
 .rich-kpi-zonebar{margin-top:10px}
 .rich-kpi-zonebar-bar{height:4px;border-radius:2px;background:linear-gradient(to right,var(--red),var(--red) 33%,var(--orange) 33%,var(--orange) 66%,var(--green) 66%);margin-bottom:4px}
+.rich-kpi-zonebar-bar.reverse{background:linear-gradient(to right,var(--green),var(--green) 33%,var(--orange) 33%,var(--orange) 66%,var(--red) 66%)}
 .rich-kpi-zonebar-labels{display:flex;justify-content:space-between}
 .rich-kpi-zonebar-labels div{text-align:center;flex:1;font-size: var(--fs-3xs);color:var(--muted)}
 .rich-kpi-zonebar-labels div b{display:block;font-size: var(--fs-2xs);color:var(--text);font-weight: var(--fw-semi)}
@@ -6243,13 +6244,18 @@ function buildDashboard() {
       }
     }
 
+    // zoneBar.reverse (02/08/2026, richiesta di Giorgio per l'indicatore
+    // RHR): per HRV "basso" è peggio e "alto" è meglio (verde a destra); per
+    // RHR è l'opposto — un battito a riposo più basso è meglio (verde a
+    // sinistra). Stessa struttura HTML/CSS, solo etichette e gradiente
+    // invertiti quando richiesto.
     const zoneHtml = cfg.zoneBar ? `
       <div class="rich-kpi-zonebar">
-        <div class="rich-kpi-zonebar-bar"></div>
+        <div class="rich-kpi-zonebar-bar${cfg.zoneBar.reverse ? ' reverse' : ''}"></div>
         <div class="rich-kpi-zonebar-labels">
-          <div><b>&lt; ${cfg.zoneBar.lo}</b>Basso</div>
+          <div><b>&lt; ${cfg.zoneBar.lo}</b>${cfg.zoneBar.reverse ? 'Ottimale' : 'Basso'}</div>
           <div><b>${cfg.zoneBar.lo}–${cfg.zoneBar.hi}</b>Nella norma</div>
-          <div><b>&gt; ${cfg.zoneBar.hi}</b>Ottimale</div>
+          <div><b>&gt; ${cfg.zoneBar.hi}</b>${cfg.zoneBar.reverse ? 'Alto' : 'Ottimale'}</div>
         </div>
       </div>` : '';
     const extraHtml = cfg.extraHtml ? `<div class="rich-kpi-extra">${cfg.extraHtml}</div>` : '';
@@ -6426,7 +6432,7 @@ function buildDashboard() {
         ${protocolloCard()}
         ${richKpiCard({series7:peso7, label:'Peso attuale', icon:'⚖️', iconBg:'#eaf1fb', unit:'kg', decimals:1, accent:'#ff3b30', t0:T0_PESO, canvasId:'rk-peso', rangeKey:'peso', rangeDays:richKpiRangeDays.peso})}
         ${richKpiCard({series7:hrv7, label:'HRV', icon:'💓', iconBg:'#fde7ef', unit:'ms', decimals:0, accent:'#34c759', t0:T0_HRV, t0Suffix:'ms', canvasId:'rk-hrv', zoneBar:{lo:40,hi:45}, rangeKey:'hrv', rangeDays:richKpiRangeDays.hrv})}
-        ${richKpiCard({series7:rhr7, label:'RHR (FC a riposo)', icon:'❤️', iconBg:'#fde7e7', unit:'bpm', decimals:0, accent:'#ff3b30', canvasId:'rk-rhr', extraHtml: (lBpS&&lBpD)?`PA: ${Math.round(lBpS)}/${Math.round(lBpD)} mmHg`:null, rangeKey:'rhr', rangeDays:richKpiRangeDays.rhr})}
+        ${richKpiCard({series7:rhr7, label:'RHR (FC a riposo)', icon:'❤️', iconBg:'#fde7e7', unit:'bpm', decimals:0, accent:'#ff3b30', canvasId:'rk-rhr', zoneBar:{lo:60,hi:70,reverse:true}, extraHtml: (lBpS&&lBpD)?`PA: ${Math.round(lBpS)}/${Math.round(lBpD)} mmHg`:null, rangeKey:'rhr', rangeDays:richKpiRangeDays.rhr})}
         ${richKpiCard({series7:sonno7Series, label:'Sonno', icon:'😴', iconBg:'#ece7fb', unit:'h', decimals:1, accent:'#5856d6', canvasId:'rk-sonno', extraHtml:sleepBreakdownHtml(), rangeKey:'sonno', rangeDays:richKpiRangeDays.sonno})}
       </div>
     </div>
