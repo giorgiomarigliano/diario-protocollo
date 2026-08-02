@@ -5529,14 +5529,20 @@ function drawBarChart(canvasId, bars, options = {}) {
     ctx.fillText('Dati insufficienti — continua a compilare il diario', 8, H/2); return;
   }
   const maxV = Math.max(...vals);
-  const pad = 4, labelH = 16, barAreaH = H - labelH - 4;
+  // topPad (02/08/2026): la barra più alta arriva a ridosso del bordo
+  // superiore del canvas — la sua etichetta numero, disegnata appena sopra
+  // il bordo della barra, finiva troppo vicina/appiccicata al margine,
+  // difficile da leggere (segnalato da Giorgio). Riservato un margine fisso
+  // in alto così anche la barra al 100% dell'altezza lascia spazio pulito
+  // sopra il numero.
+  const pad = 4, labelH = 16, topPad = 12, barAreaH = H - labelH - 4 - topPad;
   const bw = Math.max(4, (W - pad * 2) / bars.length - 3);
   const gap = (W - pad * 2 - bw * bars.length) / Math.max(bars.length - 1, 1);
 
   // Grid
   ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1;
   [0.25, 0.5, 0.75, 1].forEach(r => {
-    const y = barAreaH - r * barAreaH + 2;
+    const y = topPad + barAreaH - r * barAreaH + 2;
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   });
 
@@ -5545,7 +5551,7 @@ function drawBarChart(canvasId, bars, options = {}) {
     if (b.value == null) return;
     const x = pad + i * (bw + gap);
     const bh = (b.value / maxV) * (barAreaH - 4);
-    const y = barAreaH - bh + 2;
+    const y = topPad + barAreaH - bh + 2;
 
     // Bar with rounded top
     const r2 = Math.min(3, bw / 2);
@@ -5553,8 +5559,8 @@ function drawBarChart(canvasId, bars, options = {}) {
     ctx.moveTo(x + r2, y);
     ctx.lineTo(x + bw - r2, y);
     ctx.quadraticCurveTo(x + bw, y, x + bw, y + r2);
-    ctx.lineTo(x + bw, barAreaH + 2);
-    ctx.lineTo(x, barAreaH + 2);
+    ctx.lineTo(x + bw, topPad + barAreaH + 2);
+    ctx.lineTo(x, topPad + barAreaH + 2);
     ctx.lineTo(x, y + r2);
     ctx.quadraticCurveTo(x, y, x + r2, y);
     ctx.closePath();
@@ -5563,11 +5569,15 @@ function drawBarChart(canvasId, bars, options = {}) {
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    // Value on top if fits
-    if (bh > 18 && options.showValues !== false) {
-      ctx.font = '500 9px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = '#fff';
+    // Value on top if fits (in altezza E larghezza, non solo altezza — con
+    // molte barre strette il numero ci stava ma restava illeggibile)
+    if (bh > 18 && bw >= 10 && options.showValues !== false) {
+      ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(options.valFormat ? options.valFormat(b.value) : Math.round(b.value), x + bw/2, y + 11);
+      ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 2;
+      ctx.fillStyle = '#fff';
+      ctx.fillText(options.valFormat ? options.valFormat(b.value) : Math.round(b.value), x + bw/2, y + 12);
+      ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
       ctx.textAlign = 'left';
     }
 
