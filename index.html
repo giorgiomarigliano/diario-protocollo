@@ -5569,15 +5569,23 @@ function drawBarChart(canvasId, bars, options = {}) {
     ctx.fill();
     ctx.globalAlpha = 1;
 
-    // Value on top if fits (in altezza E larghezza, non solo altezza — con
-    // molte barre strette il numero ci stava ma restava illeggibile)
+    // Value on top if fits — contorno scuro pieno attorno al testo invece
+    // della semplice ombra leggera (02/08/2026, seconda segnalazione di
+    // Giorgio: l'ombra non bastava, il numero restava poco leggibile dove
+    // finiva a cavallo tra la barra e lo sfondo, o sull'angolo arrotondato).
+    // Stessa tecnica usata per le etichette su mappa/overlay: contorno scuro
+    // spesso + riempimento bianco sopra, leggibile su QUALSIASI sfondo.
     if (bh > 18 && options.showValues !== false) {
-      ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif';
+      const label = options.valFormat ? options.valFormat(b.value) : String(Math.round(b.value));
+      const tx = x + bw/2, ty = y + 12;
+      ctx.font = '700 10px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif';
       ctx.textAlign = 'center';
-      ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 2;
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+      ctx.strokeText(label, tx, ty);
       ctx.fillStyle = '#fff';
-      ctx.fillText(options.valFormat ? options.valFormat(b.value) : Math.round(b.value), x + bw/2, y + 12);
-      ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+      ctx.fillText(label, tx, ty);
       ctx.textAlign = 'left';
     }
 
