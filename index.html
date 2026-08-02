@@ -5571,7 +5571,7 @@ function drawBarChart(canvasId, bars, options = {}) {
 
     // Value on top if fits (in altezza E larghezza, non solo altezza — con
     // molte barre strette il numero ci stava ma restava illeggibile)
-    if (bh > 18 && bw >= 10 && options.showValues !== false) {
+    if (bh > 18 && options.showValues !== false) {
       ctx.font = '600 10px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif';
       ctx.textAlign = 'center';
       ctx.shadowColor = 'rgba(0,0,0,0.35)'; ctx.shadowBlur = 2;
