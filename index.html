@@ -8860,7 +8860,28 @@ function reconGetItem(peptideId) {
   return list.find(x => x.id === peptideId) || null;
 }
 
-function renderReconRows(compounds) {
+// Trova il vial ATTUALMENTE in uso per un composto e ne restituisce la vera
+// data di ricostituzione (3/08/2026: la colonna "Ricostituito" della tabella
+// leggeva da peptide_reconstitution, un blob separato popolato una volta
+// sola il 18/7 e mai più aggiornato quando si cambia vial — Giorgio ha
+// notato che la data restava sempre "2026-07-18" per tutti i composti,
+// anche per Fragment appena ricostituito il 3/8. Questa funzione legge
+// invece la stessa fonte già tenuta aggiornata dalle card vial qui sopra
+// (stock_v2_vials/vd), quindi la data mostrata è sempre quella vera.
+function reconGetActiveVialDate(compound, vd) {
+  if (!compound.suppliers) return null;
+  for (const sup of compound.suppliers) {
+    for (const v of sup.vials) {
+      const k = compound.id+'_'+sup.key+'_v'+v.n;
+      const sv = vd[k] || {};
+      const stato = sv.stato || v.stato;
+      if (stato === 'in_uso' && sv.reco) return sv.reco;
+    }
+  }
+  return null;
+}
+
+function renderReconRows(compounds, vd) {
   const list = (_lastData2 && Array.isArray(_lastData2.peptide_reconstitution)) ? _lastData2.peptide_reconstitution : [];
   if (!list.length) {
     return '<tr><td colspan="6" style="padding:10px 4px;text-align:center;color:var(--muted)">Caricamento dati…</td></tr>';
@@ -8880,7 +8901,8 @@ function renderReconRows(compounds) {
     const perInj = bilat ? doseMcg / 2 : doseMcg;
     const ui = conc > 0 ? (perInj / conc * 100) : 0;
     const uiLabel = bilat ? (ui.toFixed(1) + ' UI/lato') : (ui.toFixed(1) + ' UI');
-    const dateStr = item.date_reconstituted || '—';
+    const activeDate = vd ? reconGetActiveVialDate(c, vd) : null;
+    const dateStr = activeDate || item.date_reconstituted || '—';
 
     return `<tr style="border-bottom:1px solid var(--border,#e8e8ed)">
       <td style="padding:7px 4px;font-weight: var(--fw-semi);color:${c.color}">${c.emoji} ${c.name}</td>
@@ -8903,7 +8925,7 @@ async function reconUpdate(peptideId, field, newValue) {
   if (tbody) {
     const el = document.getElementById('stock2-view');
     const compounds = (el && el._reconCompounds) || [];
-    if (compounds.length) tbody.innerHTML = renderReconRows(compounds);
+    if (compounds.length) tbody.innerHTML = renderReconRows(compounds, stockGetVd());
   }
   try {
     const url = SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID2;
@@ -9367,7 +9389,7 @@ function buildStockView2() {
             <th style="text-align:center;padding:6px 4px;color:var(--muted);font-weight:var(--fw-semi)">Ricostituito</th>
           </tr>
         </thead>
-        <tbody id="recon-table-body">${renderReconRows(compounds)}</tbody>
+        <tbody id="recon-table-body">${renderReconRows(compounds, vd)}</tbody>
       </table>
       </div>
     </div>
