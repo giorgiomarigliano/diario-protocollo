@@ -4591,7 +4591,7 @@ function buildMedView() {
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(175,82,222,.08);border:2px dashed var(--purple)">🏖️</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--purple);font-weight: var(--fw-semi)">14–16 ott 2026 — PIANIFICATO</div><div class="med-tl-title">Mallorca (viaggio)</div><div class="med-tl-sub">3 giorni fuori — da valutare impatto su iniezioni/allenamenti dei giorni di viaggio, come per Bangkok</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--purple);font-weight: var(--fw-semi)">20–22 ott 2026 — PIANIFICATO</div><div class="med-tl-title">Mallorca (viaggio)</div><div class="med-tl-sub">3 giorni fuori — da valutare impatto su iniezioni/allenamenti dei giorni di viaggio, come per Bangkok</div></div>
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed var(--blue)">🔬</div></div>
@@ -6337,7 +6337,7 @@ function buildDashboard() {
     const pct = idx => Math.max(0, Math.min(100, idx / CICLO1_DAYS * 100));
 
     const bkkStart = new Date('2026-08-07'), bkkEnd = new Date('2026-08-21');
-    const mallStart = new Date('2026-10-14'), mallEnd = new Date('2026-10-16');
+    const mallStart = new Date('2026-10-20'), mallEnd = new Date('2026-10-22');
     const t1Date = new Date('2026-09-12'), t2Date = new Date('2026-11-07');
 
     function eventInfo(start, end) {
@@ -6395,7 +6395,7 @@ function buildDashboard() {
         <div class="ct-ends-row"><span>${fmtDate(START2)}</span><span>${fmtDate(cycleEndDate)}</span></div>
         <div class="ct-events-row">
           <div><span class="ct-dot" style="background:var(--purple)"></span>Bangkok 7–21 ago · ${bkk.status}</div>
-          <div><span class="ct-dot" style="background:var(--purple)"></span>Mallorca 14–16 ott · ${mallorca.status}</div>
+          <div><span class="ct-dot" style="background:var(--purple)"></span>Mallorca 20–22 ott · ${mallorca.status}</div>
           <div><span class="ct-dot" style="background:var(--blue)"></span>T1 · 12 set · ${t1.status}</div>
           <div><span class="ct-dot" style="background:var(--blue)"></span>T2 · 7 nov · ${t2.status}</div>
         </div>
