@@ -3484,14 +3484,14 @@ const LAB_CDI_CARD = {id:'lab_cdi_quadro', label:'Quadro generale pre-protocollo
 const LAB_MILESTONES = [
   {id:'lab_t0',   label:'T0 · Sant\u2019Agostino (pre-v2)',        badge:'p1b', locked:true},
   {id:'lab_wk8',  label:'T1 · Sant\u2019Agostino (sett. 8 da v2)', badge:'p3b', locked:false,
-    sub:'\ud83d\udcc5 Prenotato: 5 set 2026, ore 08:00 \u00b7 Santagostino Galleria Corso Vercelli 23 (ingresso pian terreno), Milano \u00b7 n. 431190540 \u2014 combacia con la settimana 8 pianificata'},
+    sub:'\ud83d\udcc5 Prenotato: 12 set 2026, ore 08:00 \u00b7 Santagostino Galleria Corso Vercelli 23 (ingresso pian terreno), Milano \u00b7 n. 431190540 \u2014 combacia esattamente con le 8 settimane dall\u2019inizio reale (18 lug)'},
   {id:'lab_final',label:'T2 · Sant\u2019Agostino (fine ciclo)',    badge:'p4b', locked:false},
 ];
 
 const DEXA_MILESTONES = [
   {id:'dexa_t0', label:'DEXA T0 · 9 mag 2026', badge:'p1b', locked:true},
   {id:'dexa_t1', label:'DEXA T1 · sett. 8 da v2', badge:'p3b', locked:false,
-    sub:'\ud83d\udcc5 Prenotato: 5 set 2026, ore 09:30 \u00b7 Centro Radiologico Ambrosiano, Via Selvanesco 77, Milano \u00b7 MOC/21603'},
+    sub:'\ud83d\udcc5 Prenotato: 12 set 2026, ore 09:30 \u00b7 Centro Radiologico Ambrosiano, Via Selvanesco 77, Milano \u00b7 MOC/21603'},
   {id:'dexa_t2', label:'DEXA T2 · Fine ciclo', badge:'p4b', locked:false},
 ];
 
@@ -4587,7 +4587,7 @@ function buildMedView() {
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(0,113,227,.08);border:2px dashed var(--blue)">🔬</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
-        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--blue);font-weight: var(--fw-semi)">Sab 5 set 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T1 mid-ciclo + DEXA T1 · Santagostino / CRA</div><div class="med-tl-sub">08:00 Panel Santagostino (Galleria Corso Vercelli 23, cod. 00K24KC2) · 09:30 DEXA Centro Radiologico Ambrosiano (Via Selvanesco 77, MOC/21603) · confronto vs T0 · ~8 settimane dall'inizio reale delle iniezioni (18 lug, incl. Test Protocollo)</div></div>
+        <div class="med-tl-content"><div class="med-tl-date" style="color:var(--blue);font-weight: var(--fw-semi)">Sab 12 set 2026 — PIANIFICATO</div><div class="med-tl-title">Panel T1 mid-ciclo + DEXA T1 · Santagostino / CRA</div><div class="med-tl-sub">08:00 Panel Santagostino (Galleria Corso Vercelli 23, cod. 00K24KC2) · 09:30 DEXA Centro Radiologico Ambrosiano (Via Selvanesco 77, MOC/21603) · confronto vs T0 · esattamente 8 settimane dall'inizio reale delle iniezioni (18 lug, incl. Test Protocollo)</div></div>
       </div>
       <div class="med-tl-item">
         <div class="med-tl-line"><div class="med-tl-icon" style="background:rgba(175,82,222,.08);border:2px dashed var(--purple)">🏖️</div><div class="med-tl-connector" style="background:repeating-linear-gradient(to bottom,var(--border) 0,var(--border) 4px,transparent 4px,transparent 8px)"></div></div>
@@ -6324,7 +6324,7 @@ function buildDashboard() {
     //    già usate nella timeline "Effetti attesi" (Adattamento/Costruzione/
     //    Peak/Mantenimento/Fine ciclo), stessa palette — vedi PEPTIDE_PHASES,
     //    condivisa tra i due tab per non poter mai andare fuori sincrono.
-    // 2) aggiunti T1 (5 set) e T2 (7 nov) come marcatori puntuali (non bande,
+    // 2) aggiunti T1 (12 set) e T2 (7 nov) come marcatori puntuali (non bande,
     //    sono eventi di un giorno solo) — blu, stesso colore già usato per
     //    questi due appuntamenti nella timeline eventi del tab Referti.
     //    Bangkok/Mallorca restano viola (viaggi), stesso criterio del tab
@@ -6338,7 +6338,7 @@ function buildDashboard() {
 
     const bkkStart = new Date('2026-08-07'), bkkEnd = new Date('2026-08-21');
     const mallStart = new Date('2026-10-14'), mallEnd = new Date('2026-10-16');
-    const t1Date = new Date('2026-09-05'), t2Date = new Date('2026-11-07');
+    const t1Date = new Date('2026-09-12'), t2Date = new Date('2026-11-07');
 
     function eventInfo(start, end) {
       const startIdx = dayIdx(start), endIdx = dayIdx(end) + 1; // +1 = fine giornata inclusa
@@ -6396,7 +6396,7 @@ function buildDashboard() {
         <div class="ct-events-row">
           <div><span class="ct-dot" style="background:var(--purple)"></span>Bangkok 7–21 ago · ${bkk.status}</div>
           <div><span class="ct-dot" style="background:var(--purple)"></span>Mallorca 14–16 ott · ${mallorca.status}</div>
-          <div><span class="ct-dot" style="background:var(--blue)"></span>T1 · 5 set · ${t1.status}</div>
+          <div><span class="ct-dot" style="background:var(--blue)"></span>T1 · 12 set · ${t1.status}</div>
           <div><span class="ct-dot" style="background:var(--blue)"></span>T2 · 7 nov · ${t2.status}</div>
         </div>
       </div>`;
