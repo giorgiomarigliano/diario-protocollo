@@ -9029,7 +9029,17 @@ function buildStockView2() {
     const today = new Date(); today.setHours(0,0,0,0);
     if (recoDate > today) return 0;
     let mcgUsed = 0;
-    for (let d = new Date(recoDate); d <= today; d.setDate(d.getDate()+1)) {
+    // Si parte dal giorno DOPO la ricostituzione, non da quello stesso
+    // (2/08/2026, segnalato da Giorgio): l'app non sa da quale vial fisico
+    // provenga una dose già segnata "fatto" — se ricostituisci un vial nuovo
+    // lo stesso giorno in cui hai già segnato la dose di oggi (presa dal
+    // vial vecchio, ora esaurito), quella dose veniva attribuita per errore
+    // al vial appena aperto, mostrando "1 dose già fatta" prima di averlo
+    // anche solo toccato. Escludendo il giorno della ricostituzione si perde
+    // in teoria una dose reale presa più tardi lo stesso giorno dal vial
+    // nuovo, ma è un compromesso preferibile al falso positivo sistematico.
+    const startDate = new Date(recoDate); startDate.setDate(startDate.getDate() + 1);
+    for (let d = startDate; d <= today; d.setDate(d.getDate()+1)) {
       const rd = resolveDay(d);
       if (rd.period !== 'test_proto' && rd.period !== 'v2') continue;
       const rec = _lastData2[rd.id] || {};
