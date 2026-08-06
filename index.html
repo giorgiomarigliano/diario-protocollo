@@ -1547,6 +1547,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   <div class="main-nav-tab" id="main-tab-timeline" onclick="switchView('timeline')">Timeline</div>
   <div class="main-nav-tab" id="main-tab-food" onclick="switchView('food')">Alimenti</div>
   <div class="main-nav-tab" id="main-tab-history" onclick="switchView('history')">Storico</div>
+  <div class="main-nav-tab" id="main-tab-foto" onclick="switchView('foto')">Foto</div>
   <!-- tab obsoleti nascosti -->
   <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')" style="display:none">Stock v1</div>
   <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')" style="display:none">Proto v2</div>
@@ -1584,6 +1585,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="med-view" id="timeline-view"></div>
 <div class="med-view" id="food-view"></div>
 <div class="med-view" id="history-view"></div>
+<div class="med-view" id="foto-view"></div>
 <div class="diary-view hidden" id="proto2-view"></div>
 
 <div class="save-bar">
@@ -3858,6 +3860,7 @@ function switchView(view) {
   const timelineView = document.getElementById('timeline-view');
   const foodView = document.getElementById('food-view');
   const historyView = document.getElementById('history-view');
+  const fotoView = document.getElementById('foto-view');
   const tabOrari = document.getElementById('main-tab-orari');
   // Reset all
   diary.classList.add('hidden'); dash.classList.remove('active');
@@ -3867,6 +3870,7 @@ function switchView(view) {
   if(timelineView) timelineView.classList.remove('visible');
   if(foodView) foodView.classList.remove('visible');
   if(historyView) historyView.classList.remove('visible');
+  if(fotoView) fotoView.classList.remove('visible');
   proto2View.classList.add('hidden');
   navStrip.style.display = 'none';
   tabDiary.classList.remove('on'); tabDash.classList.remove('on');
@@ -3876,6 +3880,7 @@ function switchView(view) {
   const _tlTab=document.getElementById('main-tab-timeline'); if(_tlTab) _tlTab.classList.remove('on');
   const _fdTab=document.getElementById('main-tab-food'); if(_fdTab) _fdTab.classList.remove('on');
   const _hsTab=document.getElementById('main-tab-history'); if(_hsTab) _hsTab.classList.remove('on');
+  const _ftTab=document.getElementById('main-tab-foto'); if(_ftTab) _ftTab.classList.remove('on');
   if (view === 'dash') {
     dash.classList.add('active');
     tabDash.classList.add('on');
@@ -3918,6 +3923,10 @@ function switchView(view) {
     historyView.classList.add('visible');
     if(_hsTab) _hsTab.classList.add('on');
     buildHistoryTab();
+  } else if (view === 'foto') {
+    fotoView.classList.add('visible');
+    if(_ftTab) _ftTab.classList.add('on');
+    buildFotoTab();
   } else {
     diary.classList.remove('hidden');
     navStrip.style.display = '';
@@ -11106,6 +11115,107 @@ function buildHistoryTab() {
   window.hsToggle = function(idx) { expandedIdx = (expandedIdx === idx) ? null : idx; document.getElementById('hs-list').innerHTML = renderSessionList(); };
 
   render();
+}
+
+// ── F1 (04/08/2026): Tab Foto — diario fotografico ricomposizione corporea.
+// Scopo esplicito di questa prima micro-sessione: validare il pattern nuovo
+// per l'app (file binario privato via diario-proxy, mai un dato JSON puro)
+// prima di costruirci sopra il resto (F2: pipeline HEIC/compressione/EXIF;
+// F3-F6: le 3 viste Timeline; F7-F8: Confronto; F9: conferma pre-salvataggio).
+// Qui: upload grezzo (nessuna compressione/conversione ancora), + lettura
+// della foto appena caricata tramite l'endpoint firmato del proxy.
+// photo_log vive nel record v1 (USER_ID), stesso pattern di history_sessions
+// — un array leggero top-level, non un p2_day_N: le foto non hanno una
+// cardinalità 1:1 coi giorni (zero o più foto per giorno).
+async function buildFotoTab() {
+  const el = document.getElementById('foto-view');
+  el.innerHTML = '<div class="app-view-inner view-wrap"><p style="color:var(--text-muted);padding:2rem 0">Caricamento...</p></div>';
+
+  const photoLog = (_lastData && Array.isArray(_lastData.photo_log)) ? _lastData.photo_log : [];
+  const last = photoLog.length ? photoLog[photoLog.length - 1] : null;
+
+  el.innerHTML = `
+    <div class="app-view-inner view-wrap">
+      <div class="dash-card-title" style="margin-bottom:8px">📷 Foto — F1 (validazione upload)</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+        Prima micro-sessione: carica una foto e verifica che venga salvata e mostrata correttamente
+        tramite il bucket privato. Nessuna compressione o lettura EXIF ancora (arriva in F2).
+      </p>
+      <input type="file" id="foto-f1-input" accept="image/*" style="margin-bottom:10px">
+      <br>
+      <button id="foto-f1-upload-btn" onclick="fotoF1Upload()" style="padding:10px 18px;border-radius:10px;background:var(--blue);color:#fff;border:none;font-size:14px;font-weight:600">Carica foto</button>
+      <div id="foto-f1-status" style="margin-top:10px;font-size:13px;color:var(--text-muted)"></div>
+      <div id="foto-f1-display" style="margin-top:20px">
+        ${last ? '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">Ultima foto caricata (' + last.date + '):</div><img id="foto-f1-img" style="max-width:280px;border-radius:12px;display:block">' : '<p style="font-size:13px;color:var(--text-muted)">Nessuna foto ancora caricata.</p>'}
+      </div>
+    </div>`;
+
+  if (last) fotoF1LoadImage(last.filename, 'foto-f1-img');
+}
+
+async function fotoF1LoadImage(filename, imgElId) {
+  const statusEl = document.getElementById('foto-f1-status');
+  try {
+    const r = await fetch(SB_URL + '/photo/' + encodeURIComponent(filename), {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const imgEl = document.getElementById(imgElId);
+    if (imgEl) imgEl.src = url;
+  } catch (e) {
+    if (statusEl) statusEl.textContent = 'Errore nel caricamento della foto: ' + e.message;
+  }
+}
+
+async function fotoF1Upload() {
+  const input = document.getElementById('foto-f1-input');
+  const statusEl = document.getElementById('foto-f1-status');
+  const btn = document.getElementById('foto-f1-upload-btn');
+  if (!input.files || !input.files[0]) { statusEl.textContent = 'Seleziona prima un file.'; return; }
+  const file = input.files[0];
+  btn.disabled = true; btn.textContent = 'Caricamento...';
+  statusEl.textContent = '';
+
+  const today = new Date().toISOString().slice(0, 10);
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const filename = today + '_' + Date.now() + '.' + ext;
+
+  try {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('filename', filename);
+    const upRes = await fetch(SB_URL + '/photo-upload', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+      body: form
+    });
+    if (!upRes.ok) { const t = await upRes.text(); throw new Error('Upload fallito: ' + t); }
+
+    // Read-modify-write sul record v1, stesso principio già usato ovunque
+    // nell'app: fetch fresco prima di scrivere, mai una copia locale stale.
+    const freshRes = await fetch(SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID + '&select=data',
+      { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } });
+    const freshRows = await freshRes.json();
+    const freshData = (freshRows && freshRows[0] && freshRows[0].data) ? freshRows[0].data : {};
+    if (!Array.isArray(freshData.photo_log)) freshData.photo_log = [];
+    freshData.photo_log.push({ filename, date: today, note: null });
+
+    const patchRes = await fetch(SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID, {
+      method: 'PATCH',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ data: freshData, updated_at: new Date().toISOString() })
+    });
+    if (!patchRes.ok) throw new Error('Salvataggio riferimento foto fallito (HTTP ' + patchRes.status + ')');
+
+    _lastData = freshData;
+    statusEl.textContent = 'Foto caricata e salvata correttamente.';
+    buildFotoTab();
+  } catch (e) {
+    statusEl.textContent = 'Errore: ' + e.message;
+    btn.disabled = false; btn.textContent = 'Carica foto';
+  }
 }
 
 function buildOrariView() {
