@@ -11317,6 +11317,21 @@ function fotoComputeEntryData(entry) {
     peso = parseFloat(rec.peso);
     dayLabel = 'Warm-up giorno ' + (rd.index + 1);
     weekLabel = 'Pre-ciclo';
+  } else if (rd.period === 'before_start' && entry.peso_manual != null) {
+    // Aggiunto (06/08/2026): foto precedenti l'inizio di qualunque
+    // tracciamento (prima dell'8 giugno) non hanno un giorno di protocollo
+    // a cui agganciarsi — resolveDay le marca 'before_start' e non esiste
+    // alcun record diario per loro. Per queste 5 foto storiche (18 gen -
+    // 28 apr) il peso è stato recuperato una tantum dall'export Withings
+    // (bilancia collegata, stessa fonte dei dati mattutini di Giorgio) e
+    // salvato direttamente sull'entry come 'peso_manual', matchato
+    // sull'orario esatto EXIF dello scatto (scarto sempre <1h tranne il 18
+    // gennaio, unica misurazione disponibile quel giorno, scarto 11h).
+    // Nessuna logica generica: campo popolato a mano solo su queste 5
+    // entry, non un meccanismo automatico per foto future.
+    peso = parseFloat(entry.peso_manual);
+    dayLabel = '';
+    weekLabel = 'Pre-ciclo';
   }
 
   const pesoTxt = !isNaN(peso) ? peso.toFixed(1) + ' kg' : '';
