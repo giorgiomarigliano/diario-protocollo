@@ -11220,10 +11220,10 @@ function fotoSetTlMode(mode) {
     t.style.color = on ? '#fff' : 'var(--muted)';
   });
   if (mode === 'lista') fotoRenderLista();
+  else if (mode === 'griglia') fotoRenderGriglia();
   else {
     const el = document.getElementById('foto-tl-content');
-    if (el) el.innerHTML = '<p style="font-size:13px;color:var(--muted)">' +
-      (mode === 'griglia' ? 'Griglia arriva in F5.' : 'Per settimana arriva in F6.') + '</p>';
+    if (el) el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Per settimana arriva in F6.</p>';
   }
 }
 
@@ -11261,6 +11261,34 @@ async function fotoDeleteEntry(filename) {
   }
 }
 
+// Calcolo condiviso dei dati per singola foto — usato sia da Lista (F4) che
+// da Griglia (F5), stessa fonte per evitare che le due viste divergano.
+const FOTO_T0_PESO = 71.1;
+function fotoComputeEntryData(entry) {
+  const rd = resolveDay(entry.date);
+  let dayLabel = '', weekLabel = 'Pre-ciclo', peso = NaN, aderenza = null, woLabel = '';
+
+  if (rd.period === 'v2' || rd.period === 'test_proto') {
+    const rec = (_lastData2 && _lastData2[rd.id]) || {};
+    peso = parseFloat(rec.peso);
+    if (rd.period === 'v2') {
+      dayLabel = `Giorno ${rd.index}/${CICLO1_DAYS}`;
+      const wkIdx = Math.floor(rd.index / 7);
+      weekLabel = `Settimana ${wkIdx + 1}`;
+      const st = computeWeekStats2(wkIdx);
+      aderenza = st.aderenzaPct; woLabel = st.doneWo + '/' + st.totalWo;
+    } else {
+      dayLabel = 'Test Protocollo'; weekLabel = 'Test Protocollo';
+      const st = computeWeekStats2(0);
+      aderenza = st.aderenzaPct; woLabel = st.doneWo + '/' + st.totalWo;
+    }
+  }
+
+  const pesoTxt = !isNaN(peso) ? peso.toFixed(1) + ' kg' : '';
+  const deltaTxt = !isNaN(peso) ? (peso >= FOTO_T0_PESO ? '+' : '') + (peso - FOTO_T0_PESO).toFixed(1) : '';
+  return { dayLabel, weekLabel, peso, pesoTxt, deltaTxt, aderenza, woLabel };
+}
+
 function fotoRenderLista() {
   const el = document.getElementById('foto-tl-content');
   if (!el) return;
@@ -11269,31 +11297,10 @@ function fotoRenderLista() {
     el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Nessuna foto ancora caricata.</p>';
     return;
   }
-  const T0_PESO = 71.1;
   const sorted = [...photoLog].sort((a, b) => b.date.localeCompare(a.date));
 
   el.innerHTML = sorted.map((entry, idx) => {
-    const rd = resolveDay(entry.date);
-    let dayLabel = '', weekLabel = 'Pre-ciclo', peso = NaN, aderenza = null, woLabel = '';
-
-    if (rd.period === 'v2' || rd.period === 'test_proto') {
-      const rec = (_lastData2 && _lastData2[rd.id]) || {};
-      peso = parseFloat(rec.peso);
-      if (rd.period === 'v2') {
-        dayLabel = `Giorno ${rd.index}/${CICLO1_DAYS}`;
-        const wkIdx = Math.floor(rd.index / 7);
-        weekLabel = `Settimana ${wkIdx + 1}`;
-        const st = computeWeekStats2(wkIdx);
-        aderenza = st.aderenzaPct; woLabel = st.doneWo + '/' + st.totalWo;
-      } else {
-        dayLabel = 'Test Protocollo'; weekLabel = 'Test Protocollo';
-        const st = computeWeekStats2(0);
-        aderenza = st.aderenzaPct; woLabel = st.doneWo + '/' + st.totalWo;
-      }
-    }
-
-    const pesoTxt = !isNaN(peso) ? peso.toFixed(1) + ' kg' : '';
-    const deltaTxt = !isNaN(peso) ? (peso >= T0_PESO ? '+' : '') + (peso - T0_PESO).toFixed(1) + ' vs T0' : '';
+    const { dayLabel, weekLabel, pesoTxt, deltaTxt, aderenza, woLabel } = fotoComputeEntryData(entry);
     const imgId = 'foto-list-img-' + idx;
 
     return `<div style="position:relative;display:flex;gap:12px;background:var(--surface);border-radius:14px;padding:10px;margin-bottom:10px;border:1px solid var(--border)">
@@ -11302,13 +11309,49 @@ function fotoRenderLista() {
       <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px;padding-right:26px">
         <div style="font-size:14px;font-weight:600">${entry.date}${dayLabel ? ' <span style="font-size:11px;color:var(--muted);font-weight:500">· ' + dayLabel + '</span>' : ''}</div>
         <div style="font-size:12px;color:var(--purple);font-weight:600">${weekLabel}</div>
-        ${pesoTxt ? `<div style="font-size:12px;color:var(--muted)">${pesoTxt}${deltaTxt ? ' <span style="font-weight:600;color:var(--orange)">' + deltaTxt + '</span>' : ''}</div>` : ''}
+        ${pesoTxt ? `<div style="font-size:12px;color:var(--muted)">${pesoTxt}${deltaTxt ? ' <span style="font-weight:600;color:var(--orange)">' + deltaTxt + ' vs T0</span>' : ''}</div>` : ''}
         ${aderenza !== null ? `<div style="display:flex;gap:10px;margin-top:4px;font-size:11px;color:var(--muted)"><span>Aderenza sett. <b style="color:var(--text)">${aderenza}%</b></span><span>Workout <b style="color:var(--text)">${woLabel}</b></span></div>` : ''}
       </div>
     </div>`;
   }).join('');
 
   sorted.forEach((entry, idx) => fotoLoadImage(entry.filename, 'foto-list-img-' + idx));
+  if (_fotoBlurred) document.querySelectorAll('.foto-photo').forEach(img => { img.style.filter = 'blur(16px)'; });
+}
+
+// F5 (06/08/2026): Vista Griglia — 2 colonne (non 3, per lasciare spazio
+// alla fascia dati completa su ogni tile, su richiesta esplicita di Giorgio
+// nel mockup: "sarebbe sprecato non correlare quante più informazioni
+// possibili con le immagini"). Stessi dati della Lista, stessa fonte
+// (fotoComputeEntryData) — solo il layout cambia.
+function fotoRenderGriglia() {
+  const el = document.getElementById('foto-tl-content');
+  if (!el) return;
+  const photoLog = (_lastData && Array.isArray(_lastData.photo_log)) ? _lastData.photo_log : [];
+  if (!photoLog.length) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Nessuna foto ancora caricata.</p>';
+    return;
+  }
+  const sorted = [...photoLog].sort((a, b) => b.date.localeCompare(a.date));
+
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">` +
+    sorted.map((entry, idx) => {
+      const { dayLabel, pesoTxt, deltaTxt, aderenza, woLabel } = fotoComputeEntryData(entry);
+      const imgId = 'foto-grid-img-' + idx;
+      const substats = [pesoTxt, aderenza !== null ? aderenza + '%' : '', woLabel].filter(Boolean).join(' · ');
+
+      return `<div style="position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--surface2)">
+        <img id="${imgId}" class="foto-photo" style="width:100%;height:100%;object-fit:cover;display:block">
+        <button onclick="fotoDeleteEntry('${entry.filename}')" title="Elimina foto" style="position:absolute;top:5px;left:5px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.9);border:none;color:var(--red,#ff3b30);font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">✕</button>
+        ${deltaTxt ? `<div style="position:absolute;top:5px;right:5px;background:rgba(255,255,255,.9);color:#1c1c1e;font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px">${deltaTxt}</div>` : ''}
+        <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;padding:5px 7px">
+          <div style="font-size:11px;font-weight:600">${entry.date.slice(5)}${dayLabel ? ' · ' + dayLabel.replace('Giorno ','G').replace('/'+CICLO1_DAYS,'') : ''}</div>
+          ${substats ? `<div style="font-size:9px;opacity:.9;margin-top:1px">${substats}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('') + `</div>`;
+
+  sorted.forEach((entry, idx) => fotoLoadImage(entry.filename, 'foto-grid-img-' + idx));
   if (_fotoBlurred) document.querySelectorAll('.foto-photo').forEach(img => { img.style.filter = 'blur(16px)'; });
 }
 
