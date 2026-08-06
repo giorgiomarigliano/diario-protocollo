@@ -11221,10 +11221,7 @@ function fotoSetTlMode(mode) {
   });
   if (mode === 'lista') fotoRenderLista();
   else if (mode === 'griglia') fotoRenderGriglia();
-  else {
-    const el = document.getElementById('foto-tl-content');
-    if (el) el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Per settimana arriva in F6.</p>';
-  }
+  else fotoRenderSettimana();
 }
 
 // F4 (06/08/2026): Vista Lista — legge photo_log e per ogni foto calcola
@@ -11352,6 +11349,79 @@ function fotoRenderGriglia() {
     }).join('') + `</div>`;
 
   sorted.forEach((entry, idx) => fotoLoadImage(entry.filename, 'foto-grid-img-' + idx));
+  if (_fotoBlurred) document.querySelectorAll('.foto-photo').forEach(img => { img.style.filter = 'blur(16px)'; });
+}
+
+// F6 (06/08/2026): Vista Per settimana — raggruppa le foto per settimana/
+// fase, con aderenza e workout mostrati UNA SOLA VOLTA nell'intestazione del
+// gruppo (sono per natura dati settimanali, ripeterli per ogni foto sarebbe
+// ridondante — decisione presa già nel mockup). Riusa getWeekRange2() per il
+// range di date, fotoComputeEntryData() per i dati per-foto.
+function fotoRenderSettimana() {
+  const el = document.getElementById('foto-tl-content');
+  if (!el) return;
+  const photoLog = (_lastData && Array.isArray(_lastData.photo_log)) ? _lastData.photo_log : [];
+  if (!photoLog.length) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Nessuna foto ancora caricata.</p>';
+    return;
+  }
+
+  // Raggruppa per chiave settimana: "v2-<wkIdx>" | "test_proto" | "pre-ciclo"
+  const groups = {}; // key -> { label, range, wkIdx|null, entries:[] }
+  photoLog.forEach(entry => {
+    const rd = resolveDay(entry.date);
+    let key, label, range, wkIdx = null;
+    if (rd.period === 'v2') {
+      wkIdx = Math.floor(rd.index / 7);
+      key = 'v2-' + wkIdx;
+      label = 'Settimana ' + (wkIdx + 1);
+      range = getWeekRange2(wkIdx);
+    } else if (rd.period === 'test_proto') {
+      key = 'test_proto'; label = 'Test Protocollo'; range = '18–19 lug'; wkIdx = 0;
+    } else {
+      key = 'pre-ciclo'; label = 'Pre-ciclo'; range = '';
+    }
+    if (!groups[key]) groups[key] = { label, range, wkIdx, entries: [] };
+    groups[key].entries.push(entry);
+  });
+
+  // Ordina i gruppi dal più recente: v2 per wkIdx decrescente, poi test_proto, poi pre-ciclo.
+  const sortedKeys = Object.keys(groups).sort((a, b) => {
+    const rank = k => k.startsWith('v2-') ? 1000 + parseInt(k.slice(3)) : k === 'test_proto' ? 1 : 0;
+    return rank(b) - rank(a);
+  });
+
+  el.innerHTML = sortedKeys.map(key => {
+    const g = groups[key];
+    let statsHtml = '';
+    if (key !== 'pre-ciclo') {
+      const st = computeWeekStats2(g.wkIdx);
+      statsHtml = `<div style="display:flex;gap:12px;font-size:11px;color:var(--muted);margin-bottom:8px"><span>Aderenza <b style="color:var(--text)">${st.aderenzaPct}%</b></span><span>Workout <b style="color:var(--text)">${st.doneWo}/${st.totalWo}</b></span></div>`;
+    }
+    const entriesSorted = [...g.entries].sort((a, b) => b.date.localeCompare(a.date));
+    const photosHtml = entriesSorted.map((entry, i) => {
+      const { pesoTxt } = fotoComputeEntryData(entry);
+      const imgId = 'foto-wk-img-' + key + '-' + i;
+      return `<div style="text-align:center;flex-shrink:0">
+        <img id="${imgId}" class="foto-photo" style="width:64px;height:80px;border-radius:8px;object-fit:cover;background:var(--surface2);display:block">
+        ${pesoTxt ? `<div style="font-size:10px;color:var(--muted);margin-top:3px">${pesoTxt}</div>` : ''}
+      </div>`;
+    }).join('');
+
+    return `<div style="margin-bottom:18px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:700;color:var(--purple)">${g.label}</span>
+        <span style="font-size:11px;color:var(--muted)">${g.range}</span>
+      </div>
+      ${statsHtml}
+      <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:2px">${photosHtml}</div>
+    </div>`;
+  }).join('');
+
+  sortedKeys.forEach(key => {
+    const entriesSorted = [...groups[key].entries].sort((a, b) => b.date.localeCompare(a.date));
+    entriesSorted.forEach((entry, i) => fotoLoadImage(entry.filename, 'foto-wk-img-' + key + '-' + i));
+  });
   if (_fotoBlurred) document.querySelectorAll('.foto-photo').forEach(img => { img.style.filter = 'blur(16px)'; });
 }
 
