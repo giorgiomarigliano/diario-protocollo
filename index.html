@@ -11304,6 +11304,19 @@ function fotoComputeEntryData(entry) {
       const st = computeWeekStats2(0);
       aderenza = st.aderenzaPct; woLabel = st.doneWo + '/' + st.totalWo;
     }
+  } else if (rd.period === 'warmup') {
+    // Fix (06/08/2026): il tab Foto ignorava il periodo warm-up (8 giu–17
+    // lug), mostrando "Pre-ciclo" senza alcun dato anche quando il diario
+    // li aveva già tracciati. Legge da _lastData (record v1), stesso campo
+    // 'peso' usato nel ciclo. Nessuna aderenza/workout settimanale qui:
+    // non esiste un equivalente di computeWeekStats2 per il warm-up
+    // (buildWeekSummary v1 mostra solo la settimana corrente, non
+    // riusabile per date passate arbitrarie) — se servisse in futuro va
+    // estratta allo stesso modo di computeWeekStats2.
+    const rec = (_lastData && _lastData[rd.id]) || {};
+    peso = parseFloat(rec.peso);
+    dayLabel = 'Warm-up giorno ' + (rd.index + 1);
+    weekLabel = 'Pre-ciclo';
   }
 
   const pesoTxt = !isNaN(peso) ? peso.toFixed(1) + ' kg' : '';
