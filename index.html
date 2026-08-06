@@ -11487,13 +11487,29 @@ function fotoRenderConfronto() {
   const entryB = photoLog.find(e => e.filename === selB.value);
   if (!entryA || !entryB) return;
 
-  if (_fotoCmpMode === 'overlay') {
-    el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Overlay arriva in F8.</p>';
-    return;
-  }
-
   const dataA = fotoComputeEntryData(entryA);
   const dataB = fotoComputeEntryData(entryB);
+
+  if (_fotoCmpMode === 'overlay') {
+    _fotoCmpOpacity = 50;
+    el.innerHTML = `<div style="position:relative;width:100%;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:var(--surface2)">
+      <img id="foto-cmp-img-a" class="foto-photo" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block">
+      <img id="foto-cmp-img-b" class="foto-photo" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:${_fotoCmpOpacity / 100}">
+    </div>
+    <div style="margin-top:12px">
+      <input type="range" id="foto-cmp-opacity" min="0" max="100" value="${_fotoCmpOpacity}" oninput="fotoUpdateOverlayOpacity(this.value)" style="width:100%;accent-color:var(--blue)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px">
+        <div style="font-size:11px;color:var(--muted);text-align:left"><b style="color:var(--text)">${entryA.date}</b>${dataA.pesoTxt ? '<br>' + dataA.pesoTxt : ''}</div>
+        <div id="foto-cmp-opacity-label" style="font-size:11px;font-weight:700;color:var(--blue)">${_fotoCmpOpacity}%</div>
+        <div style="font-size:11px;color:var(--muted);text-align:right"><b style="color:var(--text)">${entryB.date}</b>${dataB.pesoTxt ? '<br>' + dataB.pesoTxt : ''}</div>
+      </div>
+    </div>`;
+
+    fotoLoadImage(entryA.filename, 'foto-cmp-img-a');
+    fotoLoadImage(entryB.filename, 'foto-cmp-img-b');
+    if (_fotoBlurred) document.querySelectorAll('.foto-photo').forEach(img => { img.style.filter = 'blur(16px)'; });
+    return;
+  }
 
   el.innerHTML = `<div style="display:flex;gap:10px">
     <div style="flex:1;text-align:center">
@@ -11509,6 +11525,20 @@ function fotoRenderConfronto() {
   fotoLoadImage(entryA.filename, 'foto-cmp-img-a');
   fotoLoadImage(entryB.filename, 'foto-cmp-img-b');
   if (_fotoBlurred) document.querySelectorAll('.foto-photo').forEach(img => { img.style.filter = 'blur(16px)'; });
+}
+
+// F8 (06/08/2026): Confronto — Overlay. Le due foto sono impilate nello
+// stesso riquadro (posizione assoluta, stesso object-fit/aspect-ratio del
+// modo Affiancato); lo slider controlla solo l'opacità della foto B, quella
+// A resta sempre piena sotto. Nessuna nuova fetch immagine: riusa
+// fotoLoadImage come in tutte le altre viste.
+let _fotoCmpOpacity = 50;
+function fotoUpdateOverlayOpacity(val) {
+  _fotoCmpOpacity = parseInt(val, 10);
+  const imgB = document.getElementById('foto-cmp-img-b');
+  const label = document.getElementById('foto-cmp-opacity-label');
+  if (imgB) imgB.style.opacity = _fotoCmpOpacity / 100;
+  if (label) label.textContent = _fotoCmpOpacity + '%';
 }
 
 let _fotoBlurred = false;
