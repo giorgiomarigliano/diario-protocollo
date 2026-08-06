@@ -11199,9 +11199,25 @@ async function buildFotoTab() {
           </div>
           <label style="font-size:12px;color:var(--muted)">Data foto (modificabile)</label><br>
           <input type="date" id="foto-date-input" style="margin:4px 0 10px;padding:6px 8px;border-radius:8px;border:1px solid var(--border)">
-          <br>
-          <img id="foto-preview-img" class="foto-photo" style="max-width:220px;border-radius:12px;display:block;margin-bottom:10px">
-          <button id="foto-confirm-btn" onclick="fotoUploadAndSave()" style="padding:10px 18px;border-radius:10px;background:var(--blue);color:#fff;border:none;font-size:14px;font-weight:600">Salva foto</button>
+
+          <div style="display:flex;gap:10px;margin:10px 0">
+            <div style="flex:1;text-align:center">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Ultima salvata</div>
+              <div id="foto-last-wrap" style="width:100%;aspect-ratio:3/4;border-radius:12px;background:var(--surface2);display:flex;align-items:center;justify-content:center;overflow:hidden">
+                <img id="foto-last-img" class="foto-photo" style="width:100%;height:100%;object-fit:cover;display:none">
+                <span id="foto-last-empty" style="font-size:11px;color:var(--muted);padding:8px">Nessuna foto precedente</span>
+              </div>
+            </div>
+            <div style="flex:1;text-align:center">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Nuova</div>
+              <img id="foto-preview-img" class="foto-photo" style="width:100%;aspect-ratio:3/4;border-radius:12px;object-fit:cover;background:var(--surface2);display:block">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px">
+            <button id="foto-retake-btn" onclick="fotoRetake()" style="flex:1;padding:10px 18px;border-radius:10px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font-size:14px;font-weight:600">Riscatta</button>
+            <button id="foto-confirm-btn" onclick="fotoUploadAndSave()" style="flex:1;padding:10px 18px;border-radius:10px;background:var(--blue);color:#fff;border:none;font-size:14px;font-weight:600">Salva foto</button>
+          </div>
         </div>
       </div>
     </div>`;
@@ -11640,11 +11656,47 @@ async function fotoFileSelected(evt) {
       : 'Non trovata nei metadati — impostata a oggi, modificala se serve';
     document.getElementById('foto-date-input').value = finalDate;
     document.getElementById('foto-preview-img').src = URL.createObjectURL(compressed);
+    fotoShowLastSaved();
     confirmBox.style.display = 'block';
     statusEl.textContent = `Pronta (${Math.round(compressed.size / 1024)} KB dopo compressione, originale ${Math.round(file.size / 1024)} KB).`;
   } catch (e) {
     statusEl.textContent = 'Errore nella preparazione della foto: ' + e.message;
   }
+}
+
+// F9 (06/08/2026): mostra l'ultima foto salvata accanto alla nuova, per dare
+// un termine di paragone immediato prima di confermare. Riusa fotoLoadImage
+// (stesso pattern di tutte le altre viste), nessuna nuova fetch se il log è
+// vuoto (prima foto in assoluto — mostra solo il placeholder testuale).
+function fotoShowLastSaved() {
+  const photoLog = (_lastData && Array.isArray(_lastData.photo_log)) ? _lastData.photo_log : [];
+  const img = document.getElementById('foto-last-img');
+  const empty = document.getElementById('foto-last-empty');
+  if (!photoLog.length) {
+    if (img) img.style.display = 'none';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  const chrono = [...photoLog].sort((a, b) => a.date.localeCompare(b.date));
+  const last = chrono[chrono.length - 1];
+  if (empty) empty.style.display = 'none';
+  if (img) img.style.display = 'block';
+  fotoLoadImage(last.filename, 'foto-last-img');
+  if (_fotoBlurred && img) img.style.filter = 'blur(16px)';
+}
+
+// F9: scarta l'anteprima in corso e riporta il form allo stato iniziale,
+// senza toccare nulla di già salvato (non serve alcuna chiamata di rete).
+function fotoRetake() {
+  _fotoPending = null;
+  const input = document.getElementById('foto-input');
+  const confirmBox = document.getElementById('foto-confirm-box');
+  const statusEl = document.getElementById('foto-prep-status');
+  const btn = document.getElementById('foto-confirm-btn');
+  if (input) input.value = '';
+  if (confirmBox) confirmBox.style.display = 'none';
+  if (statusEl) statusEl.textContent = '';
+  if (btn) { btn.disabled = false; btn.textContent = 'Salva foto'; }
 }
 
 async function fotoUploadAndSave() {
