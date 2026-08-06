@@ -11335,7 +11335,11 @@ function fotoRenderGriglia() {
     sorted.map((entry, idx) => {
       const { dayLabel, pesoTxt, deltaTxt, aderenza, woLabel } = fotoComputeEntryData(entry);
       const imgId = 'foto-grid-img-' + idx;
-      const substats = [pesoTxt, aderenza !== null ? aderenza + '%' : '', woLabel].filter(Boolean).join(' · ');
+      const substats = [
+        pesoTxt ? 'Peso ' + pesoTxt : '',
+        aderenza !== null ? 'Ader. ' + aderenza + '%' : '',
+        woLabel ? 'WO ' + woLabel : ''
+      ].filter(Boolean).join(' · ');
 
       return `<div style="position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--surface2)">
         <img id="${imgId}" class="foto-photo" style="width:100%;height:100%;object-fit:cover;display:block">
