@@ -11173,7 +11173,15 @@ async function buildFotoTab() {
       </div>
 
       <div id="foto-sub-confronto" class="foto-sub" style="display:none">
-        <p style="font-size:13px;color:var(--muted)">Confronto affiancato e overlay arrivano in F7-F8.</p>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <select id="foto-cmp-a" onchange="fotoRenderConfronto()" style="flex:1;padding:8px;border-radius:9px;border:1px solid var(--border);font-size:12px"></select>
+          <select id="foto-cmp-b" onchange="fotoRenderConfronto()" style="flex:1;padding:8px;border-radius:9px;border:1px solid var(--border);font-size:12px"></select>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <div class="foto-cmpmode" data-mode="sbs" onclick="fotoSetCmpMode('sbs')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--blue);color:#fff;cursor:pointer">Affiancato</div>
+          <div class="foto-cmpmode" data-mode="overlay" onclick="fotoSetCmpMode('overlay')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Overlay</div>
+        </div>
+        <div id="foto-cmp-content"></div>
       </div>
 
       <div id="foto-sub-nuovo" class="foto-sub" style="display:none">
@@ -11211,6 +11219,7 @@ function fotoSetView(view) {
     t.style.background = on ? 'var(--purple)' : 'var(--surface2)';
     t.style.color = on ? '#fff' : 'var(--muted)';
   });
+  if (view === 'confronto') fotoInitConfronto();
 }
 
 function fotoSetTlMode(mode) {
@@ -11426,6 +11435,79 @@ function fotoRenderSettimana() {
     const entriesSorted = [...groups[key].entries].sort((a, b) => b.date.localeCompare(a.date));
     entriesSorted.forEach((entry, i) => fotoLoadImage(entry.filename, 'foto-wk-img-' + key + '-' + i));
   });
+  if (_fotoBlurred) document.querySelectorAll('.foto-photo').forEach(img => { img.style.filter = 'blur(16px)'; });
+}
+
+// F7 (06/08/2026): Confronto — Affiancato. Popola i due picker con tutte le
+// foto (ordine cronologico), default: la prima = T0 (foto più vecchia), la
+// seconda = ultima foto salvata — come da design del mockup. La modalità
+// Overlay (F8) resta un placeholder per ora.
+let _fotoCmpMode = 'sbs';
+
+function fotoInitConfronto() {
+  const photoLog = (_lastData && Array.isArray(_lastData.photo_log)) ? _lastData.photo_log : [];
+  const selA = document.getElementById('foto-cmp-a');
+  const selB = document.getElementById('foto-cmp-b');
+  if (!selA || !selB) return;
+
+  if (!photoLog.length) {
+    document.getElementById('foto-cmp-content').innerHTML = '<p style="font-size:13px;color:var(--muted)">Nessuna foto ancora caricata.</p>';
+    selA.innerHTML = ''; selB.innerHTML = '';
+    return;
+  }
+
+  const chrono = [...photoLog].sort((a, b) => a.date.localeCompare(b.date));
+  const opts = chrono.map(e => `<option value="${e.filename}">${e.date}</option>`).join('');
+  selA.innerHTML = opts;
+  selB.innerHTML = opts;
+  selA.value = chrono[0].filename;
+  selB.value = chrono[chrono.length - 1].filename;
+
+  fotoRenderConfronto();
+}
+
+function fotoSetCmpMode(mode) {
+  _fotoCmpMode = mode;
+  document.querySelectorAll('.foto-cmpmode').forEach(t => {
+    const on = t.dataset.mode === mode;
+    t.style.background = on ? 'var(--blue)' : 'var(--surface2)';
+    t.style.color = on ? '#fff' : 'var(--muted)';
+  });
+  fotoRenderConfronto();
+}
+
+function fotoRenderConfronto() {
+  const el = document.getElementById('foto-cmp-content');
+  const selA = document.getElementById('foto-cmp-a');
+  const selB = document.getElementById('foto-cmp-b');
+  if (!el || !selA || !selB || !selA.value || !selB.value) return;
+
+  const photoLog = (_lastData && Array.isArray(_lastData.photo_log)) ? _lastData.photo_log : [];
+  const entryA = photoLog.find(e => e.filename === selA.value);
+  const entryB = photoLog.find(e => e.filename === selB.value);
+  if (!entryA || !entryB) return;
+
+  if (_fotoCmpMode === 'overlay') {
+    el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Overlay arriva in F8.</p>';
+    return;
+  }
+
+  const dataA = fotoComputeEntryData(entryA);
+  const dataB = fotoComputeEntryData(entryB);
+
+  el.innerHTML = `<div style="display:flex;gap:10px">
+    <div style="flex:1;text-align:center">
+      <img id="foto-cmp-img-a" class="foto-photo" style="width:100%;aspect-ratio:3/4;border-radius:14px;object-fit:cover;background:var(--surface2);display:block">
+      <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${entryA.date}</b>${dataA.pesoTxt ? '<br>' + dataA.pesoTxt : ''}</div>
+    </div>
+    <div style="flex:1;text-align:center">
+      <img id="foto-cmp-img-b" class="foto-photo" style="width:100%;aspect-ratio:3/4;border-radius:14px;object-fit:cover;background:var(--surface2);display:block">
+      <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${entryB.date}</b>${dataB.pesoTxt ? '<br>' + dataB.pesoTxt : ''}</div>
+    </div>
+  </div>`;
+
+  fotoLoadImage(entryA.filename, 'foto-cmp-img-a');
+  fotoLoadImage(entryB.filename, 'foto-cmp-img-b');
   if (_fotoBlurred) document.querySelectorAll('.foto-photo').forEach(img => { img.style.filter = 'blur(16px)'; });
 }
 
