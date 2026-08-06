@@ -11233,6 +11233,34 @@ function fotoSetTlMode(mode) {
 // card "Riepilogo settimana", estratta apposta per questo — nessun calcolo
 // duplicato). T0_PESO=71.1 stessa costante letterale già usata altrove
 // nell'app (non esiste un'unica dichiarazione globale condivisa).
+// Rimuove una voce da photo_log (read-modify-write, stesso principio usato
+// ovunque). NON cancella il file dal bucket — irrilevante per lo spazio
+// (servirebbero migliaia di foto per avvicinarsi al limite gratuito), e
+// tenerlo fuori scope evita di dover estendere ora il proxy con una route
+// DELETE. Se servirà la cancellazione fisica, è un'aggiunta successiva.
+async function fotoDeleteEntry(filename) {
+  if (!confirm('Eliminare questa foto dalla timeline?')) return;
+  try {
+    const freshRes = await fetch(SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID + '&select=data',
+      { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } });
+    const freshRows = await freshRes.json();
+    const freshData = (freshRows && freshRows[0] && freshRows[0].data) ? freshRows[0].data : {};
+    freshData.photo_log = (freshData.photo_log || []).filter(e => e.filename !== filename);
+
+    const patchRes = await fetch(SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID, {
+      method: 'PATCH',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ data: freshData, updated_at: new Date().toISOString() })
+    });
+    if (!patchRes.ok) throw new Error('HTTP ' + patchRes.status);
+
+    _lastData = freshData;
+    fotoRenderLista();
+  } catch (e) {
+    alert('Errore nella cancellazione: ' + e.message);
+  }
+}
+
 function fotoRenderLista() {
   const el = document.getElementById('foto-tl-content');
   if (!el) return;
@@ -11268,9 +11296,10 @@ function fotoRenderLista() {
     const deltaTxt = !isNaN(peso) ? (peso >= T0_PESO ? '+' : '') + (peso - T0_PESO).toFixed(1) + ' vs T0' : '';
     const imgId = 'foto-list-img-' + idx;
 
-    return `<div style="display:flex;gap:12px;background:var(--surface);border-radius:14px;padding:10px;margin-bottom:10px;border:1px solid var(--border)">
+    return `<div style="position:relative;display:flex;gap:12px;background:var(--surface);border-radius:14px;padding:10px;margin-bottom:10px;border:1px solid var(--border)">
+      <button onclick="fotoDeleteEntry('${entry.filename}')" title="Elimina foto" style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--red,#ff3b30);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">✕</button>
       <img id="${imgId}" class="foto-photo" style="width:64px;height:80px;border-radius:8px;flex-shrink:0;object-fit:cover;background:var(--surface2)">
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px;padding-right:26px">
         <div style="font-size:14px;font-weight:600">${entry.date}${dayLabel ? ' <span style="font-size:11px;color:var(--muted);font-weight:500">· ' + dayLabel + '</span>' : ''}</div>
         <div style="font-size:12px;color:var(--purple);font-weight:600">${weekLabel}</div>
         ${pesoTxt ? `<div style="font-size:12px;color:var(--muted)">${pesoTxt}${deltaTxt ? ' <span style="font-weight:600;color:var(--orange)">' + deltaTxt + '</span>' : ''}</div>` : ''}
