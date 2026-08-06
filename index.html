@@ -1507,6 +1507,10 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 .adh-more { display:block; text-align:center; font-size: var(--fs-2xs); color:var(--muted); margin-top:6px; padding:5px; border-radius:var(--radius-xs); background:var(--surface2); cursor:pointer; }
 </style>
 <!-- deploy 1781175570 -->
+<!-- F2 (06/08/2026): librerie per la pipeline di caricamento foto —
+     conversione HEIC->JPEG e lettura EXIF (data automatica dello scatto) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
 </head>
 <body>
 
@@ -11117,44 +11121,56 @@ function buildHistoryTab() {
   render();
 }
 
-// ── F1 (04/08/2026): Tab Foto — diario fotografico ricomposizione corporea.
-// Scopo esplicito di questa prima micro-sessione: validare il pattern nuovo
-// per l'app (file binario privato via diario-proxy, mai un dato JSON puro)
-// prima di costruirci sopra il resto (F2: pipeline HEIC/compressione/EXIF;
-// F3-F6: le 3 viste Timeline; F7-F8: Confronto; F9: conferma pre-salvataggio).
-// Qui: upload grezzo (nessuna compressione/conversione ancora), + lettura
-// della foto appena caricata tramite l'endpoint firmato del proxy.
-// photo_log vive nel record v1 (USER_ID), stesso pattern di history_sessions
-// — un array leggero top-level, non un p2_day_N: le foto non hanno una
-// cardinalità 1:1 coi giorni (zero o più foto per giorno).
+// ── F1 (04/08/2026) + F2 (06/08/2026): Tab Foto — diario fotografico.
+// F1 ha validato il pattern file binario privato via diario-proxy (upload +
+// lettura tramite URL firmato) — resta invariato qui sotto in
+// fotoUploadAndSave(). F2 aggiunge la pipeline di pre-processing PRIMA
+// dell'upload: lettura EXIF (data automatica dello scatto), conversione
+// HEIC->JPEG, compressione/ridimensionamento — così l'app non dipende dal
+// comportamento incoerente di Safari su HEIC (vedi KB, sezione 17.4).
+// photo_log vive nel record v1 (USER_ID), stesso pattern di history_sessions.
+let _fotoPending = null; // { blob, filename } — foto già elaborata, in attesa di conferma
+
 async function buildFotoTab() {
   const el = document.getElementById('foto-view');
   el.innerHTML = '<div class="app-view-inner view-wrap"><p style="color:var(--text-muted);padding:2rem 0">Caricamento...</p></div>';
 
   const photoLog = (_lastData && Array.isArray(_lastData.photo_log)) ? _lastData.photo_log : [];
   const last = photoLog.length ? photoLog[photoLog.length - 1] : null;
+  _fotoPending = null;
 
   el.innerHTML = `
     <div class="app-view-inner view-wrap">
-      <div class="dash-card-title" style="margin-bottom:8px">📷 Foto — F1 (validazione upload)</div>
+      <div class="dash-card-title" style="margin-bottom:8px">📷 Foto — F2 (pipeline di caricamento)</div>
       <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
-        Prima micro-sessione: carica una foto e verifica che venga salvata e mostrata correttamente
-        tramite il bucket privato. Nessuna compressione o lettura EXIF ancora (arriva in F2).
+        Seleziona una foto: viene letta la data dello scatto, convertita se necessario e compressa
+        prima del caricamento. Le 3 viste Timeline arrivano in F3-F6.
       </p>
-      <input type="file" id="foto-f1-input" accept="image/*" style="margin-bottom:10px">
-      <br>
-      <button id="foto-f1-upload-btn" onclick="fotoF1Upload()" style="padding:10px 18px;border-radius:10px;background:var(--blue);color:#fff;border:none;font-size:14px;font-weight:600">Carica foto</button>
-      <div id="foto-f1-status" style="margin-top:10px;font-size:13px;color:var(--text-muted)"></div>
-      <div id="foto-f1-display" style="margin-top:20px">
-        ${last ? '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">Ultima foto caricata (' + last.date + '):</div><img id="foto-f1-img" style="max-width:280px;border-radius:12px;display:block">' : '<p style="font-size:13px;color:var(--text-muted)">Nessuna foto ancora caricata.</p>'}
+      <input type="file" id="foto-input" accept="image/*,.heic,.heif" onchange="fotoFileSelected(event)" style="margin-bottom:10px">
+      <div id="foto-prep-status" style="font-size:13px;color:var(--text-muted);margin:8px 0"></div>
+
+      <div id="foto-confirm-box" style="display:none;margin-top:12px">
+        <div style="font-size:12px;background:#eef6ff;border:1px solid #cfe4fb;border-radius:10px;padding:10px 12px;color:#1c5da8;margin-bottom:10px">
+          <b style="display:block;color:#0b4a8a">Data rilevata</b>
+          <span id="foto-exif-note"></span>
+        </div>
+        <label style="font-size:12px;color:var(--text-muted)">Data foto (modificabile)</label><br>
+        <input type="date" id="foto-date-input" style="margin:4px 0 10px;padding:6px 8px;border-radius:8px;border:1px solid var(--border,#e5e5ea)">
+        <br>
+        <img id="foto-preview-img" style="max-width:220px;border-radius:12px;display:block;margin-bottom:10px">
+        <button id="foto-confirm-btn" onclick="fotoUploadAndSave()" style="padding:10px 18px;border-radius:10px;background:var(--blue);color:#fff;border:none;font-size:14px;font-weight:600">Salva foto</button>
+      </div>
+
+      <div id="foto-last-display" style="margin-top:24px">
+        ${last ? '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">Ultima foto salvata (' + last.date + '):</div><img id="foto-last-img" style="max-width:220px;border-radius:12px;display:block">' : '<p style="font-size:13px;color:var(--text-muted)">Nessuna foto ancora caricata.</p>'}
       </div>
     </div>`;
 
-  if (last) fotoF1LoadImage(last.filename, 'foto-f1-img');
+  if (last) fotoLoadImage(last.filename, 'foto-last-img');
 }
 
-async function fotoF1LoadImage(filename, imgElId) {
-  const statusEl = document.getElementById('foto-f1-status');
+async function fotoLoadImage(filename, imgElId) {
+  const statusEl = document.getElementById('foto-prep-status');
   try {
     const r = await fetch(SB_URL + '/photo/' + encodeURIComponent(filename), {
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
@@ -11169,23 +11185,98 @@ async function fotoF1LoadImage(filename, imgElId) {
   }
 }
 
-async function fotoF1Upload() {
-  const input = document.getElementById('foto-f1-input');
-  const statusEl = document.getElementById('foto-f1-status');
-  const btn = document.getElementById('foto-f1-upload-btn');
-  if (!input.files || !input.files[0]) { statusEl.textContent = 'Seleziona prima un file.'; return; }
-  const file = input.files[0];
+// Legge DateTimeOriginal dall'EXIF del file ORIGINALE (va fatto prima di
+// qualunque conversione: sia heic2any che il ridisegno su canvas perdono i
+// metadati nel passaggio, quindi l'EXIF va estratto a monte). Formato EXIF
+// "YYYY:MM:DD HH:MM:SS" -> "YYYY-MM-DD". Nessun'eccezione se manca: si torna
+// null e l'interfaccia ricade sulla data odierna, sempre modificabile.
+function fotoReadExifDate(file) {
+  return new Promise((resolve) => {
+    if (typeof EXIF === 'undefined') { resolve(null); return; }
+    try {
+      EXIF.getData(file, function () {
+        const raw = EXIF.getTag(this, 'DateTimeOriginal');
+        if (!raw) { resolve(null); return; }
+        const m = /^(\d{4}):(\d{2}):(\d{2})/.exec(raw);
+        resolve(m ? `${m[1]}-${m[2]}-${m[3]}` : null);
+      });
+    } catch (e) { resolve(null); }
+  });
+}
+
+function fotoIsHeic(file) {
+  return /heic|heif/i.test(file.type || '') || /\.(heic|heif)$/i.test(file.name || '');
+}
+
+async function fotoMaybeConvertHeic(file) {
+  if (!fotoIsHeic(file)) return file;
+  if (typeof heic2any === 'undefined') throw new Error('Libreria di conversione HEIC non disponibile');
+  const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 });
+  return Array.isArray(converted) ? converted[0] : converted;
+}
+
+// Ridimensiona al lato lungo massimo indicato e ricomprime in JPEG — stessa
+// convenzione decisa in fase di design (1200px / qualità 85%).
+function fotoCompressImage(blob, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > height && width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
+      else if (height >= width && height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob((out) => { URL.revokeObjectURL(url); out ? resolve(out) : reject(new Error('Compressione fallita')); }, 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Immagine non leggibile')); };
+    img.src = url;
+  });
+}
+
+async function fotoFileSelected(evt) {
+  const file = evt.target.files && evt.target.files[0];
+  const statusEl = document.getElementById('foto-prep-status');
+  const confirmBox = document.getElementById('foto-confirm-box');
+  if (!file) return;
+  confirmBox.style.display = 'none';
+  statusEl.textContent = 'Elaborazione in corso...';
+
+  try {
+    const exifDate = await fotoReadExifDate(file);
+    const converted = await fotoMaybeConvertHeic(file);
+    const compressed = await fotoCompressImage(converted, 1200, 0.85);
+
+    const finalDate = exifDate || new Date().toISOString().slice(0, 10);
+    const ext = 'jpg';
+    const filename = finalDate + '_' + Date.now() + '.' + ext;
+    _fotoPending = { blob: compressed, filename };
+
+    document.getElementById('foto-exif-note').textContent = exifDate
+      ? `${exifDate} — letta dai metadati EXIF della foto`
+      : 'Non trovata nei metadati — impostata a oggi, modificala se serve';
+    document.getElementById('foto-date-input').value = finalDate;
+    document.getElementById('foto-preview-img').src = URL.createObjectURL(compressed);
+    confirmBox.style.display = 'block';
+    statusEl.textContent = `Pronta (${Math.round(compressed.size / 1024)} KB dopo compressione, originale ${Math.round(file.size / 1024)} KB).`;
+  } catch (e) {
+    statusEl.textContent = 'Errore nella preparazione della foto: ' + e.message;
+  }
+}
+
+async function fotoUploadAndSave() {
+  const statusEl = document.getElementById('foto-prep-status');
+  const btn = document.getElementById('foto-confirm-btn');
+  if (!_fotoPending) { statusEl.textContent = 'Nessuna foto pronta da salvare.'; return; }
+  const date = document.getElementById('foto-date-input').value || _fotoPending.filename.slice(0, 10);
   btn.disabled = true; btn.textContent = 'Caricamento...';
   statusEl.textContent = '';
 
-  const today = new Date().toISOString().slice(0, 10);
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-  const filename = today + '_' + Date.now() + '.' + ext;
-
   try {
     const form = new FormData();
-    form.append('file', file);
-    form.append('filename', filename);
+    form.append('file', _fotoPending.blob, _fotoPending.filename);
+    form.append('filename', _fotoPending.filename);
     const upRes = await fetch(SB_URL + '/photo-upload', {
       method: 'POST',
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
@@ -11193,14 +11284,13 @@ async function fotoF1Upload() {
     });
     if (!upRes.ok) { const t = await upRes.text(); throw new Error('Upload fallito: ' + t); }
 
-    // Read-modify-write sul record v1, stesso principio già usato ovunque
-    // nell'app: fetch fresco prima di scrivere, mai una copia locale stale.
+    // Read-modify-write sul record v1, stesso principio già usato ovunque nell'app.
     const freshRes = await fetch(SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID + '&select=data',
       { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } });
     const freshRows = await freshRes.json();
     const freshData = (freshRows && freshRows[0] && freshRows[0].data) ? freshRows[0].data : {};
     if (!Array.isArray(freshData.photo_log)) freshData.photo_log = [];
-    freshData.photo_log.push({ filename, date: today, note: null });
+    freshData.photo_log.push({ filename: _fotoPending.filename, date, note: null });
 
     const patchRes = await fetch(SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID, {
       method: 'PATCH',
@@ -11210,11 +11300,12 @@ async function fotoF1Upload() {
     if (!patchRes.ok) throw new Error('Salvataggio riferimento foto fallito (HTTP ' + patchRes.status + ')');
 
     _lastData = freshData;
+    _fotoPending = null;
     statusEl.textContent = 'Foto caricata e salvata correttamente.';
     buildFotoTab();
   } catch (e) {
     statusEl.textContent = 'Errore: ' + e.message;
-    btn.disabled = false; btn.textContent = 'Carica foto';
+    btn.disabled = false; btn.textContent = 'Salva foto';
   }
 }
 
