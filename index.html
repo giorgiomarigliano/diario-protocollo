@@ -7893,7 +7893,9 @@ function buildProtoHeader2(container) {
 }
 
 
-function buildWeekSummary2(container, wkIdx) {
+// Estratta da buildWeekSummary2 il 06/08/2026 (F4) per essere riutilizzabile
+// anche dalla Lista foto — stesso identico calcolo, nessuna duplicazione.
+function computeWeekStats2(wkIdx) {
   const today = new Date(); today.setHours(0,0,0,0);
   const start = new Date(START2); start.setHours(0,0,0,0);
   const elapsed = Math.floor((today - start) / 86400000);
@@ -7966,17 +7968,31 @@ function buildWeekSummary2(container, wkIdx) {
   }
 
   const st = computeStats(days);
+  const totalPossible = st.totalInj + st.suppPossible + st.totalWo;
+  const totalDone = st.doneInj + st.suppTaken + st.doneWo;
+  const aderenzaPct = totalPossible>0 ? Math.round(totalDone/totalPossible*100) : null;
+  return { ...st, aderenzaPct };
+}
+
+function buildWeekSummary2(container, wkIdx) {
+  const st = computeWeekStats2(wkIdx);
   if (st.daysLogged === 0) return null; // settimana futura o senza dati: nessuna card
 
   // Settimana precedente, solo per il delta peso/HRV
-  let prevSt = null;
-  if (wkIdx > 0) {
-    const prevDays = [];
-    if (wkIdx-1 === 0) { prevDays.push({id:'test_proto_0',dayIdx:-2}); prevDays.push({id:'test_proto_1',dayIdx:-1}); }
-    const pStart=(wkIdx-1)*7, pEnd=Math.min(pStart+7, TOTAL_DAYS2);
-    for (let i=pStart; i<pEnd; i++) prevDays.push({id:'p2_day_'+i, dayIdx:i});
-    prevSt = computeStats(prevDays);
+  const prevSt = wkIdx > 0 ? computeWeekStats2(wkIdx - 1) : null;
+
+  // Setup minimo per la sparkline più sotto (giorno per giorno) — la parte
+  // sostanziale del calcolo resta in computeWeekStats2, condivisa.
+  const today = new Date(); today.setHours(0,0,0,0);
+  const elapsed = Math.floor((today - new Date(START2)) / 86400000);
+  const get = (id, f) => (_lastData2[id] && _lastData2[id][f]) || '';
+  const days = [];
+  if (wkIdx === 0) {
+    days.push({ id:'test_proto_0', dayIdx:-2 });
+    days.push({ id:'test_proto_1', dayIdx:-1 });
   }
+  const wkStart2 = wkIdx*7, wkEnd2 = Math.min(wkStart2+7, TOTAL_DAYS2);
+  for (let i=wkStart2; i<wkEnd2; i++) days.push({ id:'p2_day_'+i, dayIdx:i });
 
   const avgPeso  = st.pesoCount  ? st.pesoSum/st.pesoCount   : null;
   const avgHrv   = st.hrvCount   ? st.hrvSum/st.hrvCount     : null;
@@ -7992,9 +8008,7 @@ function buildWeekSummary2(container, wkIdx) {
   const injColor = st.totalInj>0 && st.doneInj===st.totalInj ? '#34c759' : st.doneInj>0 ? '#ff9500' : 'var(--text)';
 
   // Aderenza complessiva: iniezioni + integratori + workout in un unico punteggio
-  const totalPossible = st.totalInj + st.suppPossible + st.totalWo;
-  const totalDone = st.doneInj + st.suppTaken + st.doneWo;
-  const aderenzaPct = totalPossible>0 ? Math.round(totalDone/totalPossible*100) : null;
+  const aderenzaPct = st.aderenzaPct;
   const aderenzaColor = aderenzaPct===null ? 'var(--muted)' : aderenzaPct>=90 ? '#34c759' : aderenzaPct>=70 ? '#ff9500' : '#ff3b30';
 
   // Barra progresso peso verso target (T0 DEXA 9 mag = 71.1kg, target medio 67kg)
@@ -11155,7 +11169,7 @@ async function buildFotoTab() {
           <div class="foto-tlmode" data-mode="griglia" onclick="fotoSetTlMode('griglia')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Griglia</div>
           <div class="foto-tlmode" data-mode="settimana" onclick="fotoSetTlMode('settimana')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Per settimana</div>
         </div>
-        <p style="font-size:13px;color:var(--muted)">Le 3 viste arrivano in F4 (Lista), F5 (Griglia), F6 (Per settimana).</p>
+        <div id="foto-tl-content"></div>
       </div>
 
       <div id="foto-sub-confronto" class="foto-sub" style="display:none">
@@ -11183,6 +11197,8 @@ async function buildFotoTab() {
         </div>
       </div>
     </div>`;
+
+  fotoRenderLista();
 }
 
 function fotoSetView(view) {
@@ -11203,7 +11219,68 @@ function fotoSetTlMode(mode) {
     t.style.background = on ? 'var(--purple)' : 'var(--surface2)';
     t.style.color = on ? '#fff' : 'var(--muted)';
   });
-  // Rendering effettivo per modalità arriva in F4/F5/F6 — per ora solo lo stato del toggle.
+  if (mode === 'lista') fotoRenderLista();
+  else {
+    const el = document.getElementById('foto-tl-content');
+    if (el) el.innerHTML = '<p style="font-size:13px;color:var(--muted)">' +
+      (mode === 'griglia' ? 'Griglia arriva in F5.' : 'Per settimana arriva in F6.') + '</p>';
+  }
+}
+
+// F4 (06/08/2026): Vista Lista — legge photo_log e per ogni foto calcola
+// giorno del ciclo, settimana, peso, delta vs T0, aderenza settimanale e
+// allenamenti settimanali RIUSANDO computeWeekStats2 (stessa funzione della
+// card "Riepilogo settimana", estratta apposta per questo — nessun calcolo
+// duplicato). T0_PESO=71.1 stessa costante letterale già usata altrove
+// nell'app (non esiste un'unica dichiarazione globale condivisa).
+function fotoRenderLista() {
+  const el = document.getElementById('foto-tl-content');
+  if (!el) return;
+  const photoLog = (_lastData && Array.isArray(_lastData.photo_log)) ? _lastData.photo_log : [];
+  if (!photoLog.length) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Nessuna foto ancora caricata.</p>';
+    return;
+  }
+  const T0_PESO = 71.1;
+  const sorted = [...photoLog].sort((a, b) => b.date.localeCompare(a.date));
+
+  el.innerHTML = sorted.map((entry, idx) => {
+    const rd = resolveDay(entry.date);
+    let dayLabel = '', weekLabel = 'Pre-ciclo', peso = NaN, aderenza = null, woLabel = '';
+
+    if (rd.period === 'v2' || rd.period === 'test_proto') {
+      const rec = (_lastData2 && _lastData2[rd.id]) || {};
+      peso = parseFloat(rec.peso);
+      if (rd.period === 'v2') {
+        dayLabel = `Giorno ${rd.index}/${CICLO1_DAYS}`;
+        const wkIdx = Math.floor(rd.index / 7);
+        weekLabel = `Settimana ${wkIdx + 1}`;
+        const st = computeWeekStats2(wkIdx);
+        aderenza = st.aderenzaPct; woLabel = st.doneWo + '/' + st.totalWo;
+      } else {
+        dayLabel = 'Test Protocollo'; weekLabel = 'Test Protocollo';
+        const st = computeWeekStats2(0);
+        aderenza = st.aderenzaPct; woLabel = st.doneWo + '/' + st.totalWo;
+      }
+    }
+
+    const pesoTxt = !isNaN(peso) ? peso.toFixed(1) + ' kg' : '';
+    const deltaTxt = !isNaN(peso) ? (peso >= T0_PESO ? '+' : '') + (peso - T0_PESO).toFixed(1) + ' vs T0' : '';
+    const imgId = 'foto-list-img-' + idx;
+
+    return `<div style="display:flex;gap:12px;background:var(--surface);border-radius:14px;padding:10px;margin-bottom:10px;border:1px solid var(--border)">
+      <img id="${imgId}" class="foto-photo" style="width:64px;height:80px;border-radius:8px;flex-shrink:0;object-fit:cover;background:var(--surface2)">
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px">
+        <div style="font-size:14px;font-weight:600">${entry.date}${dayLabel ? ' <span style="font-size:11px;color:var(--muted);font-weight:500">· ' + dayLabel + '</span>' : ''}</div>
+        <div style="font-size:12px;color:var(--purple);font-weight:600">${weekLabel}</div>
+        ${pesoTxt ? `<div style="font-size:12px;color:var(--muted)">${pesoTxt}${deltaTxt ? ' <span style="font-weight:600;color:var(--orange)">' + deltaTxt + '</span>' : ''}</div>` : ''}
+        ${aderenza !== null ? `<div style="display:flex;gap:10px;margin-top:4px;font-size:11px;color:var(--muted)"><span>Aderenza sett. <b style="color:var(--text)">${aderenza}%</b></span><span>Workout <b style="color:var(--text)">${woLabel}</b></span></div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  sorted.forEach((entry, idx) => fotoLoadImage(entry.filename, 'foto-list-img-' + idx));
+  if (_fotoBlurred) document.querySelectorAll('.foto-photo').forEach(img => { img.style.filter = 'blur(16px)'; });
 }
 
 let _fotoBlurred = false;
