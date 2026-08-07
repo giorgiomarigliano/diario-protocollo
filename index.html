@@ -8567,7 +8567,7 @@ function buildProtoV2() {
         ${isBkkDate(d) ? `
         <div style="background:rgba(192,57,43,.08);border:1px solid rgba(192,57,43,.25);border-radius:10px;padding:10px 12px;margin-bottom:14px">
           <div style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:#c0392b;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">🇹🇭 Trasferta BKK · split libero</div>
-          <select data-id="${id}" data-f="bkk_riposo" onchange="_lastData2['${id}']=_lastData2['${id}']||{};_lastData2['${id}'].bkk_riposo=this.value;_proto2Built=false;const c2=document.getElementById('container2');if(c2){c2.innerHTML='';buildProtoV2();}" style="width:100%;font-size: var(--fs-body);padding:7px 8px;border:1px solid var(--border,#e8e8ed);border-radius:6px;background:var(--surface,#fff);color:var(--text);font-family:inherit">
+          <select data-id="${id}" data-f="bkk_riposo" onchange="_lastData2['${id}']=_lastData2['${id}']||{};_lastData2['${id}'].bkk_riposo=this.value;localStorage.setItem(KEY2,JSON.stringify(_lastData2));_proto2Built=false;const c2=document.getElementById('container2');if(c2){c2.innerHTML='';buildProtoV2();}" style="width:100%;font-size: var(--fs-body);padding:7px 8px;border:1px solid var(--border,#e8e8ed);border-radius:6px;background:var(--surface,#fff);color:var(--text);font-family:inherit">
             <option value="" ${(_lastData2[id]&&_lastData2[id].bkk_riposo)!=='1'?'selected':''}>Allenamento (default)</option>
             <option value="1" ${(_lastData2[id]&&_lastData2[id].bkk_riposo)==='1'?'selected':''}>Riposo</option>
           </select>
