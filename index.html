@@ -401,19 +401,19 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
   padding: 4px 10px;
   border-radius: 980px;
   white-space: nowrap;
-  position: relative;
 }
-/* Aggiunto (11/08/2026): pallino di stato allenamento fatto/saltato,
-   sovrapposto all'angolo del badge senza toccarne colore/testo (che sono
-   richiamati da altre tab del diario — vedi commento su .badge-push ecc). */
+/* Rifatto (11/08/2026, opzione B approvata dopo mockup — la prima versione
+   posizionata in absolute usciva dal bordo del badge e si sovrapponeva alla
+   freccetta accanto): pallino di stato allenamento fatto/saltato, inline
+   dentro il testo del badge stesso — nessun position:absolute, quindi non
+   può più uscire dal contenitore. Colori/testo badge invariati. */
 .day-badge-status {
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  width: 9px;
-  height: 9px;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  border: 1.5px solid var(--surface, #fff);
+  margin-left: 5px;
+  vertical-align: middle;
 }
 .day-badge-status.done   { background: var(--green-dark, #1a7a3a); }
 .day-badge-status.missed { background: var(--red-dark, #cc2200); }
