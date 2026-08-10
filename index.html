@@ -11200,6 +11200,18 @@ async function buildFotoTab() {
           <label style="font-size:12px;color:var(--muted)">Data foto (modificabile)</label><br>
           <input type="date" id="foto-date-input" style="margin:4px 0 10px;padding:6px 8px;border-radius:8px;border:1px solid var(--border)">
 
+          <div style="display:flex;gap:10px;margin-bottom:10px">
+            <div style="flex:1">
+              <label style="font-size:12px;color:var(--muted)">Ora (modificabile)</label><br>
+              <input type="time" id="foto-time-input" style="margin:4px 0;padding:6px 8px;border-radius:8px;border:1px solid var(--border);width:100%">
+            </div>
+            <div style="flex:1">
+              <label style="font-size:12px;color:var(--muted)">Luogo (modificabile)</label><br>
+              <input type="text" id="foto-luogo-input" placeholder="es. Milano" style="margin:4px 0;padding:6px 8px;border-radius:8px;border:1px solid var(--border);width:100%;box-sizing:border-box">
+            </div>
+          </div>
+          <div id="foto-luogo-note" style="font-size:11px;color:var(--muted);margin:-6px 0 10px"></div>
+
           <div style="display:flex;gap:10px;margin:10px 0">
             <div style="flex:1;text-align:center">
               <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Ultima salvata</div>
@@ -11302,6 +11314,16 @@ function fotoFormatDateShort(dateStr) {
   return d + ' ' + FOTO_MESI_ABBR[m - 1];
 }
 
+// Aggiunto (10/08/2026): ora e luogo sono opzionali (le foto storiche
+// pre-esistenti non li hanno) — mostra solo quello che c'è, senza buchi o
+// separatori vuoti.
+function fotoFormatTimeLoc(entry) {
+  const parts = [];
+  if (entry.time) parts.push(entry.time);
+  if (entry.luogo) parts.push(entry.luogo);
+  return parts.length ? ' · ' + parts.join(' · ') : '';
+}
+
 function fotoComputeEntryData(entry) {
   const rd = resolveDay(entry.date);
   let dayLabel = '', weekLabel = 'Pre-ciclo', peso = NaN, aderenza = null, woLabel = '';
@@ -11373,7 +11395,7 @@ function fotoRenderLista() {
       <button onclick="fotoDeleteEntry('${entry.filename}')" title="Elimina foto" style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--red,#ff3b30);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">✕</button>
       <img id="${imgId}" class="foto-photo" style="width:64px;height:80px;border-radius:8px;flex-shrink:0;object-fit:cover;background:var(--surface2)">
       <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px;padding-right:26px">
-        <div style="font-size:14px;font-weight:600">${fotoFormatDate(entry.date)}${dayLabel ? ' <span style="font-size:11px;color:var(--muted);font-weight:500">· ' + dayLabel + '</span>' : ''}</div>
+        <div style="font-size:14px;font-weight:600">${fotoFormatDate(entry.date)}${fotoFormatTimeLoc(entry)}${dayLabel ? ' <span style="font-size:11px;color:var(--muted);font-weight:500">· ' + dayLabel + '</span>' : ''}</div>
         <div style="font-size:12px;color:var(--purple);font-weight:600">${weekLabel}</div>
         ${pesoTxt ? `<div style="font-size:12px;color:var(--muted)">${pesoTxt}${deltaTxt ? ' <span style="font-weight:600;color:var(--orange)">' + deltaTxt + ' vs T0</span>' : ''}</div>` : ''}
         ${aderenza !== null ? `<div style="display:flex;gap:10px;margin-top:4px;font-size:11px;color:var(--muted)"><span>Aderenza sett. <b style="color:var(--text)">${aderenza}%</b></span><span>Workout <b style="color:var(--text)">${woLabel}</b></span></div>` : ''}
@@ -11559,9 +11581,9 @@ function fotoRenderConfronto() {
     <div style="margin-top:12px">
       <input type="range" id="foto-cmp-opacity" min="0" max="100" value="${_fotoCmpOpacity}" oninput="fotoUpdateOverlayOpacity(this.value)" style="width:100%;accent-color:var(--blue)">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px">
-        <div style="font-size:11px;color:var(--muted);text-align:left"><b style="color:var(--text)">${fotoFormatDate(entryA.date)}</b>${dataA.pesoTxt ? '<br>' + dataA.pesoTxt : ''}</div>
+        <div style="font-size:11px;color:var(--muted);text-align:left"><b style="color:var(--text)">${fotoFormatDate(entryA.date)}</b>${fotoFormatTimeLoc(entryA)}${dataA.pesoTxt ? '<br>' + dataA.pesoTxt : ''}</div>
         <div id="foto-cmp-opacity-label" style="font-size:11px;font-weight:700;color:var(--blue)">${_fotoCmpOpacity}%</div>
-        <div style="font-size:11px;color:var(--muted);text-align:right"><b style="color:var(--text)">${fotoFormatDate(entryB.date)}</b>${dataB.pesoTxt ? '<br>' + dataB.pesoTxt : ''}</div>
+        <div style="font-size:11px;color:var(--muted);text-align:right"><b style="color:var(--text)">${fotoFormatDate(entryB.date)}</b>${fotoFormatTimeLoc(entryB)}${dataB.pesoTxt ? '<br>' + dataB.pesoTxt : ''}</div>
       </div>
     </div>`;
 
@@ -11574,11 +11596,11 @@ function fotoRenderConfronto() {
   el.innerHTML = `<div style="display:flex;gap:10px">
     <div style="flex:1;text-align:center">
       <img id="foto-cmp-img-a" class="foto-photo" style="width:100%;aspect-ratio:3/4;border-radius:14px;object-fit:cover;background:var(--surface2);display:block">
-      <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${fotoFormatDate(entryA.date)}</b>${dataA.pesoTxt ? '<br>' + dataA.pesoTxt : ''}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${fotoFormatDate(entryA.date)}</b>${fotoFormatTimeLoc(entryA)}${dataA.pesoTxt ? '<br>' + dataA.pesoTxt : ''}</div>
     </div>
     <div style="flex:1;text-align:center">
       <img id="foto-cmp-img-b" class="foto-photo" style="width:100%;aspect-ratio:3/4;border-radius:14px;object-fit:cover;background:var(--surface2);display:block">
-      <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${fotoFormatDate(entryB.date)}</b>${dataB.pesoTxt ? '<br>' + dataB.pesoTxt : ''}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${fotoFormatDate(entryB.date)}</b>${fotoFormatTimeLoc(entryB)}${dataB.pesoTxt ? '<br>' + dataB.pesoTxt : ''}</div>
     </div>
   </div>`;
 
@@ -11632,18 +11654,53 @@ async function fotoLoadImage(filename, imgElId) {
 // metadati nel passaggio, quindi l'EXIF va estratto a monte). Formato EXIF
 // "YYYY:MM:DD HH:MM:SS" -> "YYYY-MM-DD". Nessun'eccezione se manca: si torna
 // null e l'interfaccia ricade sulla data odierna, sempre modificabile.
-function fotoReadExifDate(file) {
+// Esteso (10/08/2026, F-orario/luogo): oltre alla data, legge anche l'ora
+// dallo stesso tag EXIF DateTimeOriginal, e le coordinate GPS se presenti
+// (solo se il permesso posizione era attivo sul telefono al momento dello
+// scatto — non garantito). GPS in formato DMS (gradi/minuti/secondi) va
+// convertito in decimale prima di poterlo usare per il reverse geocoding.
+function fotoReadExifMeta(file) {
   return new Promise((resolve) => {
-    if (typeof EXIF === 'undefined') { resolve(null); return; }
+    if (typeof EXIF === 'undefined') { resolve({ date: null, time: null, lat: null, lon: null }); return; }
     try {
       EXIF.getData(file, function () {
         const raw = EXIF.getTag(this, 'DateTimeOriginal');
-        if (!raw) { resolve(null); return; }
-        const m = /^(\d{4}):(\d{2}):(\d{2})/.exec(raw);
-        resolve(m ? `${m[1]}-${m[2]}-${m[3]}` : null);
+        let date = null, time = null;
+        if (raw) {
+          const m = /^(\d{4}):(\d{2}):(\d{2})\s+(\d{2}):(\d{2})/.exec(raw);
+          if (m) { date = `${m[1]}-${m[2]}-${m[3]}`; time = `${m[4]}:${m[5]}`; }
+        }
+        const latDMS = EXIF.getTag(this, 'GPSLatitude');
+        const lonDMS = EXIF.getTag(this, 'GPSLongitude');
+        const latRef = EXIF.getTag(this, 'GPSLatitudeRef');
+        const lonRef = EXIF.getTag(this, 'GPSLongitudeRef');
+        let lat = null, lon = null;
+        if (latDMS && lonDMS && latRef && lonRef) {
+          const toDecimal = (dms, ref) => {
+            const dec = dms[0] + dms[1] / 60 + dms[2] / 3600;
+            return (ref === 'S' || ref === 'W') ? -dec : dec;
+          };
+          lat = toDecimal(latDMS, latRef);
+          lon = toDecimal(lonDMS, lonRef);
+        }
+        resolve({ date, time, lat, lon });
       });
-    } catch (e) { resolve(null); }
+    } catch (e) { resolve({ date: null, time: null, lat: null, lon: null }); }
   });
+}
+
+// Reverse geocoding via Nominatim (OpenStreetMap) — servizio gratuito, nessuna
+// API key. Fallback a città/paese/frazione in ordine di specificità.
+async function fotoReverseGeocode(lat, lon) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const a = data.address || {};
+    const city = a.city || a.town || a.village || a.suburb || a.county;
+    if (!city) return null;
+    return a.country ? `${city}, ${a.country}` : city;
+  } catch (e) { return null; }
 }
 
 function fotoIsHeic(file) {
@@ -11686,23 +11743,43 @@ async function fotoFileSelected(evt) {
   statusEl.textContent = 'Elaborazione in corso...';
 
   try {
-    const exifDate = await fotoReadExifDate(file);
+    const exifMeta = await fotoReadExifMeta(file);
     const converted = await fotoMaybeConvertHeic(file);
     const compressed = await fotoCompressImage(converted, 1200, 0.85);
 
-    const finalDate = exifDate || new Date().toISOString().slice(0, 10);
+    const finalDate = exifMeta.date || new Date().toISOString().slice(0, 10);
     const ext = 'jpg';
     const filename = finalDate + '_' + Date.now() + '.' + ext;
     _fotoPending = { blob: compressed, filename };
 
-    document.getElementById('foto-exif-note').textContent = exifDate
-      ? `${exifDate} — letta dai metadati EXIF della foto`
+    document.getElementById('foto-exif-note').textContent = exifMeta.date
+      ? `${exifMeta.date} — letta dai metadati EXIF della foto`
       : 'Non trovata nei metadati — impostata a oggi, modificala se serve';
     document.getElementById('foto-date-input').value = finalDate;
+    document.getElementById('foto-time-input').value = exifMeta.time || '';
     document.getElementById('foto-preview-img').src = URL.createObjectURL(compressed);
     fotoShowLastSaved();
     confirmBox.style.display = 'block';
     statusEl.textContent = `Pronta (${Math.round(compressed.size / 1024)} KB dopo compressione, originale ${Math.round(file.size / 1024)} KB).`;
+
+    // Luogo: se ci sono coordinate GPS nell'EXIF, prova il reverse geocoding
+    // in background (non blocca il resto del form) — altrimenti resta vuoto
+    // per l'inserimento manuale.
+    const luogoInput = document.getElementById('foto-luogo-input');
+    const luogoNote = document.getElementById('foto-luogo-note');
+    luogoInput.value = '';
+    if (exifMeta.lat != null && exifMeta.lon != null) {
+      luogoNote.textContent = 'Ricerca luogo da GPS...';
+      const place = await fotoReverseGeocode(exifMeta.lat, exifMeta.lon);
+      if (place) {
+        luogoInput.value = place;
+        luogoNote.textContent = 'Da GPS della foto — modificabile';
+      } else {
+        luogoNote.textContent = 'GPS trovato ma luogo non risolto — inserisci a mano';
+      }
+    } else {
+      luogoNote.textContent = 'Nessun dato GPS nella foto — inserisci a mano se vuoi';
+    }
   } catch (e) {
     statusEl.textContent = 'Errore nella preparazione della foto: ' + e.message;
   }
@@ -11748,6 +11825,8 @@ async function fotoUploadAndSave() {
   const btn = document.getElementById('foto-confirm-btn');
   if (!_fotoPending) { statusEl.textContent = 'Nessuna foto pronta da salvare.'; return; }
   const date = document.getElementById('foto-date-input').value || _fotoPending.filename.slice(0, 10);
+  const time = document.getElementById('foto-time-input').value || null;
+  const luogo = document.getElementById('foto-luogo-input').value.trim() || null;
   btn.disabled = true; btn.textContent = 'Caricamento...';
   statusEl.textContent = '';
 
@@ -11768,7 +11847,7 @@ async function fotoUploadAndSave() {
     const freshRows = await freshRes.json();
     const freshData = (freshRows && freshRows[0] && freshRows[0].data) ? freshRows[0].data : {};
     if (!Array.isArray(freshData.photo_log)) freshData.photo_log = [];
-    freshData.photo_log.push({ filename: _fotoPending.filename, date, note: null });
+    freshData.photo_log.push({ filename: _fotoPending.filename, date, time, luogo, note: null });
 
     const patchRes = await fetch(SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID, {
       method: 'PATCH',
