@@ -401,7 +401,22 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
   padding: 4px 10px;
   border-radius: 980px;
   white-space: nowrap;
+  position: relative;
 }
+/* Aggiunto (11/08/2026): pallino di stato allenamento fatto/saltato,
+   sovrapposto all'angolo del badge senza toccarne colore/testo (che sono
+   richiamati da altre tab del diario — vedi commento su .badge-push ecc). */
+.day-badge-status {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--surface, #fff);
+}
+.day-badge-status.done   { background: var(--green-dark, #1a7a3a); }
+.day-badge-status.missed { background: var(--red-dark, #cc2200); }
 .day-chev { color: var(--faint); font-size: var(--fs-xs); transition: transform .2s; flex-shrink: 0; }
 .day-card.open .day-chev { transform: rotate(180deg); }
 
@@ -2095,6 +2110,19 @@ function buildDays(){
     const wk=Math.floor(i/7)+1;
     const ph=getPhase(i);
     const wo=getWorkout(i);
+    // Aggiunto (11/08/2026): stato fatto/saltato per il pallino sul badge.
+    // Stessa identica logica di getWorkoutVolume2 (fallback su motra_log se
+    // wo_volume non e' stato salvato esplicitamente), riscritta qui perche'
+    // v1 non ha un getWorkoutVolume dedicato — i nomi campo sono gli stessi.
+    const woRec = _lastData['day_'+i] || {};
+    const woHasData = (() => {
+      const v = parseFloat(woRec.wo_volume);
+      if (!isNaN(v) && v > 0) return true;
+      if (woRec.motra_log) { try { return !!JSON.parse(woRec.motra_log).exercises?.length; } catch(e){} }
+      return false;
+    })();
+    const woIsPast = d.getTime() < today.getTime();
+    const woStatus = wo.type === 'Riposo' ? '' : (woHasData ? 'done' : (woIsPast ? 'missed' : ''));
     const id='day_'+i;
     const isToday=d.getTime()===today.getTime();
     const bkk=isBKK(i);
@@ -2136,7 +2164,7 @@ function buildDays(){
           <div class="dq"><div class="dq-v empty" id="q-${id}-hrv">—</div><div class="dq-l">HRV</div></div>
           <div class="dq"><div class="dq-v empty" id="q-${id}-ore_sonno">—</div><div class="dq-l">sonno</div></div>
         </div>
-        <span class="day-badge ${wo.badge}">${wo.label}</span>
+        <span class="day-badge ${wo.badge}">${wo.label}${woStatus ? `<span class="day-badge-status ${woStatus}"></span>` : ''}</span>
         <span class="day-chev">▾</span>
       </div>
       <div class="day-body day-body-desktop">
@@ -8466,6 +8494,12 @@ function buildProtoV2() {
     const wk = Math.floor(i/7)+1;
     const wo = getWorkout2(i);
     const id = 'p2_day_'+i;
+    // Aggiunto (11/08/2026): stato fatto/saltato per il pallino sul badge.
+    // Riusa getWorkoutVolume2 (gia' esistente, gestisce il fallback su
+    // motra_log) invece di reimplementare la logica come in v1.
+    const woHasData = getWorkoutVolume2(_lastData2[id]) !== null;
+    const woIsPast = d.getTime() < today.getTime();
+    const woStatus = wo.type === 'Riposo' ? '' : (woHasData ? 'done' : (woIsPast ? 'missed' : ''));
     const isToday = d.getTime()===today.getTime();
     const dotColor = getDotColor2(wo.type);
     const dateStr = d.toLocaleDateString('it-IT',{weekday:'short',day:'numeric',month:'short'});
@@ -8559,7 +8593,7 @@ function buildProtoV2() {
           <div class="dq"><div class="dq-v empty" id="q-${id}-inj">—</div><div class="dq-l">inj</div></div>
           <div class="dq"><div class="dq-v empty" id="q-${id}-integr">—</div><div class="dq-l">integr%</div></div>
         </div>
-        <span class="day-badge ${wo.badge}">${wo.label}</span>
+        <span class="day-badge ${wo.badge}">${wo.label}${woStatus ? `<span class="day-badge-status ${woStatus}"></span>` : ''}</span>
         <span class="day-chev">▾</span>
       </div>
       <div class="day-body" id="body-${id}">
