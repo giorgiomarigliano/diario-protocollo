@@ -6780,6 +6780,22 @@ function buildDashboard() {
         <div class="dash-card-sub" style="font-size: var(--fs-xs);color:var(--muted);margin-top:-2px;margin-bottom:8px">Warm-up · Test Protocollo · Fasi del ciclo v2 — le fasi future compaiono automaticamente quando iniziano</div>
         <div id="dc-phase-compare" style="overflow-x:auto"></div>
       </div>
+
+      <!-- Settimana tipo (13/08/2026, richiesta esplicita dopo mockup) -->
+      <div class="charts-card" style="margin-top:10px">
+        <div class="dash-card-title">Settimana tipo</div>
+        <div class="dash-card-sub" style="font-size: var(--fs-xs);color:var(--muted);margin-top:-2px;margin-bottom:8px">Medie per giorno della settimana, ciclo v2 — l'n sotto ogni giorno è il numero di osservazioni: con pochi campioni un valore isolato può pesare parecchio sulla media</div>
+        <div id="settimana-tipo-table" style="overflow-x:auto"></div>
+      </div>
+      <div class="charts-card" style="margin-top:10px">
+        <div class="dash-card-title">Completamento per tipo di allenamento</div>
+        <div class="dash-card-sub" style="font-size: var(--fs-xs);color:var(--muted);margin-top:-2px;margin-bottom:8px">Solo periodo pre-Bangkok (split fisso)</div>
+        <div id="settimana-tipo-wo"></div>
+      </div>
+      <div class="charts-card" style="margin-top:10px">
+        <div class="dash-card-title">💬 Commento</div>
+        <div id="settimana-tipo-commento"></div>
+      </div>
     </div>
 
     <!-- ══ SEZ. SISTEMA ══════════════════════════════════════════ -->
@@ -6816,8 +6832,91 @@ requestAnimationFrame(() => requestAnimationFrame(refreshDashCharts));
   window.addEventListener('resize', _scheduleRefresh, {passive: true});
 })();
 
+// Render (13/08/2026) — riempie la card "Settimana tipo" aggiunta in
+// Dashboard. Colora min/max per riga (rosso/verde) rispetto agli altri
+// giorni della STESSA metrica, non rispetto a soglie assolute — con soli
+// 3-4 campioni a giorno l'obiettivo è far notare i giorni relativamente
+// fuori pattern, non giudicare se un valore è "buono" in assoluto.
+function renderSettimanaTipo() {
+  const tableEl = document.getElementById('settimana-tipo-table');
+  const woEl = document.getElementById('settimana-tipo-wo');
+  const commentoEl = document.getElementById('settimana-tipo-commento');
+  if (!tableEl && !woEl && !commentoEl) return; // card non ancora nel DOM
+
+  const { weekdayStats, woByType } = computeSettimanaTipo();
+  const metrics = [
+    { key: 'hrv', label: 'HRV', decimals: 0 },
+    { key: 'sonno', label: 'Sonno (h)', decimals: 1 },
+    { key: 'energia', label: 'Energia', decimals: 1 },
+    { key: 'recupero', label: 'Recupero', decimals: 1 },
+    { key: 'umore', label: 'Umore', decimals: 1 },
+  ];
+
+  if (tableEl) {
+    let html = '<table style="width:100%;border-collapse:collapse;font-size: var(--fs-xs)">';
+    html += '<tr><th style="text-align:left"></th>' + weekdayStats.map(w =>
+      `<th style="text-align:center;font-weight:600;color:var(--muted);font-size: var(--fs-2xs);padding:2px">${w.label}<br><span style="font-weight:400">n=${w.n}</span></th>`
+    ).join('') + '</tr>';
+
+    metrics.forEach(m => {
+      const vals = weekdayStats.map(w => w[m.key]).filter(v => v !== null);
+      const maxV = vals.length ? Math.max(...vals) : null;
+      const minV = vals.length ? Math.min(...vals) : null;
+      html += `<tr><td style="text-align:left;font-weight:600;color:var(--muted);font-size: var(--fs-2xs);padding:6px 2px;border-top:1px solid var(--border)">${m.label}</td>`;
+      html += weekdayStats.map(w => {
+        const v = w[m.key];
+        if (v === null) return '<td style="text-align:center;padding:6px 2px;border-top:1px solid var(--border);color:var(--faint)">—</td>';
+        let color = 'var(--text)';
+        if (maxV !== minV) {
+          if (v === maxV) color = 'var(--green-dark)';
+          else if (v === minV) color = 'var(--red-dark)';
+        }
+        return `<td style="text-align:center;padding:6px 2px;border-top:1px solid var(--border);font-weight:700;color:${color}">${v.toFixed(m.decimals)}</td>`;
+      }).join('');
+      html += '</tr>';
+    });
+    html += '</table>';
+    tableEl.innerHTML = html;
+  }
+
+  if (woEl) {
+    const types = Object.keys(woByType);
+    if (!types.length) {
+      woEl.innerHTML = '<p style="font-size: var(--fs-xs);color:var(--muted)">Nessun dato ancora (periodo pre-BKK).</p>';
+    } else {
+      const badgeClass = { Push:'badge-push', Pull:'badge-pull', Legs:'badge-legs', 'Upper Sab':'badge-upper', 'Upper Dom':'badge-upper-dom' };
+      const barColor = { Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#0071e3' };
+      woEl.innerHTML = types.map(t => {
+        const { done, total } = woByType[t];
+        const pct = total ? Math.round(done / total * 100) : 0;
+        const pctColor = pct === 100 ? 'var(--green-dark)' : 'var(--orange,#ff9500)';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0">
+          <span class="day-badge ${badgeClass[t]}" style="width:90px;text-align:center;flex-shrink:0">${t.toUpperCase()}</span>
+          <div style="flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${barColor[t]};border-radius:4px"></div>
+          </div>
+          <span style="font-size: var(--fs-xs);font-weight:700;color:${pctColor};width:44px;text-align:right;flex-shrink:0">${done}/${total}</span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  if (commentoEl) {
+    const c = _lastData2 && _lastData2.settimana_tipo_commento;
+    if (c && c.text) {
+      commentoEl.innerHTML = `<div style="font-size: var(--fs-xs);color:var(--text-secondary);line-height:1.5">${c.text}</div>
+        <div style="font-size: var(--fs-2xs);color:var(--faint);margin-top:6px">Commento aggiornato il ${c.updated_at || '—'} — chiedi a Claude di rivederlo quando i dati crescono</div>`;
+    } else {
+      commentoEl.innerHTML = `<div style="font-size: var(--fs-xs);color:var(--muted);font-style:italic">Nessun commento ancora — chiedi a Claude di analizzare la settimana tipo in chat.</div>`;
+    }
+  }
+}
+
+
 function refreshDashCharts() {
   renderBackupStatus(_lastData && _lastData.backup_status);
+  renderSettimanaTipo();
+
   // ── Badge "pronti per aumentare il carico" ──────────────────
   const _readyEl = document.getElementById('dash-ready-flags');
   if (_readyEl) {
@@ -7948,6 +8047,61 @@ function buildProtoHeader2(container) {
   container.appendChild(div);
 }
 
+
+// Settimana tipo (13/08/2026, richiesta esplicita dopo mockup): aggrega i
+// giorni del ciclo v2 trascorsi finora per giorno della settimana (HRV,
+// sonno, energia/recupero/umore) e per tipo di allenamento (% completamento
+// Push/Pull/Legs/Upper Sab/Upper Dom, solo periodo pre-BKK dato che durante
+// la trasferta lo split fisso non si applica). L'idea di guardare per tipo
+// di giornata invece che genericamente "per giorno" viene dal fatto che con
+// lo split fisso i due sono quasi la stessa cosa (Lun=Riposo, Mar=Push...).
+function computeSettimanaTipo() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const startV2 = new Date(START2); startV2.setHours(0,0,0,0);
+  const elapsedV2 = Math.floor((today - startV2) / 86400000);
+  const bkkStart = new Date('2026-08-07'); bkkStart.setHours(0,0,0,0);
+
+  const wdNames = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
+  const splitMap = {0:'Riposo',1:'Push',2:'Pull',3:'Riposo',4:'Legs',5:'Upper Sab',6:'Upper Dom'};
+  const metricKeys = ['hrv','ore_sonno','energia','recupero','umore'];
+
+  const byWd = {};
+  for (let w = 0; w < 7; w++) byWd[w] = { hrv:[], ore_sonno:[], energia:[], recupero:[], umore:[] };
+  const woByType = {};
+
+  for (let i = 0; i <= elapsedV2 && i < CICLO1_DAYS; i++) {
+    const d = new Date(startV2); d.setDate(d.getDate() + i);
+    const wd = (d.getDay() + 6) % 7; // JS getDay(): 0=dom -> converto a 0=lun
+    const rec = _lastData2['p2_day_' + i] || {};
+
+    metricKeys.forEach(key => {
+      const v = parseFloat(rec[key]);
+      if (!isNaN(v)) byWd[wd][key].push(v);
+    });
+
+    if (d < bkkStart) {
+      const wtype = splitMap[wd];
+      if (wtype !== 'Riposo') {
+        if (!woByType[wtype]) woByType[wtype] = { done: 0, total: 0 };
+        woByType[wtype].total++;
+        if (getWorkoutVolume2(rec) !== null) woByType[wtype].done++;
+      }
+    }
+  }
+
+  const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0) / arr.length : null;
+  const weekdayStats = wdNames.map((label, wd) => ({
+    label,
+    n: byWd[wd].hrv.length, // n di riferimento (HRV è il più costante come presenza)
+    hrv: avg(byWd[wd].hrv),
+    sonno: avg(byWd[wd].ore_sonno),
+    energia: avg(byWd[wd].energia),
+    recupero: avg(byWd[wd].recupero),
+    umore: avg(byWd[wd].umore),
+  }));
+
+  return { weekdayStats, woByType };
+}
 
 // Estratta da buildWeekSummary2 il 06/08/2026 (F4) per essere riutilizzabile
 // anche dalla Lista foto — stesso identico calcolo, nessuna duplicazione.
