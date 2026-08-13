@@ -6843,7 +6843,7 @@ function renderSettimanaTipo() {
   const commentoEl = document.getElementById('settimana-tipo-commento');
   if (!tableEl && !woEl && !commentoEl) return; // card non ancora nel DOM
 
-  const { weekdayStats, woByType } = computeSettimanaTipo();
+  const { weekdayStats, woByType, autoInsight } = computeSettimanaTipo();
   const metrics = [
     { key: 'hrv', label: 'HRV', decimals: 0 },
     { key: 'sonno', label: 'Sonno (h)', decimals: 1 },
@@ -6902,13 +6902,30 @@ function renderSettimanaTipo() {
   }
 
   if (commentoEl) {
+    // Riga automatica (14/08/2026): calcolata ad ogni apertura della
+    // Dashboard, zero chiamate esterne — vedi commento su computeSettimanaTipo
+    // per come viene scelta. Sempre corrente, a differenza del paragrafo
+    // sotto che è manuale e si aggiorna solo quando Claude lo riscrive.
+    const autoHtml = autoInsight
+      ? `<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:${_lastData2 && _lastData2.settimana_tipo_commento ? '10px' : '0'};padding-bottom:${_lastData2 && _lastData2.settimana_tipo_commento ? '10px' : '0'};border-bottom:${_lastData2 && _lastData2.settimana_tipo_commento ? '1px solid var(--border)' : 'none'}">
+          <span style="font-size: var(--fs-sm)">📌</span>
+          <span style="font-size: var(--fs-xs);color:var(--text)"><b>${autoInsight.label}</b> ha ${autoInsight.metric} più ${autoInsight.direction} della settimana
+          (${autoInsight.value.toFixed(autoInsight.unit === 'ms' ? 0 : 1)}${autoInsight.unit ? ' ' + autoInsight.unit : ''}, media ${autoInsight.mean.toFixed(autoInsight.unit === 'ms' ? 0 : 1)}${autoInsight.unit ? ' ' + autoInsight.unit : ''})
+          <span style="color:var(--faint)"> · calcolato automaticamente</span></span>
+        </div>`
+      : '';
+
     const c = _lastData2 && _lastData2.settimana_tipo_commento;
+    let manualHtml;
     if (c && c.text) {
-      commentoEl.innerHTML = `<div style="font-size: var(--fs-xs);color:var(--text-secondary);line-height:1.5">${c.text}</div>
+      manualHtml = `<div style="font-size: var(--fs-xs);color:var(--text-secondary);line-height:1.5">${c.text}</div>
         <div style="font-size: var(--fs-2xs);color:var(--faint);margin-top:6px">Commento aggiornato il ${c.updated_at || '—'} — chiedi a Claude di rivederlo quando i dati crescono</div>`;
+    } else if (!autoInsight) {
+      manualHtml = `<div style="font-size: var(--fs-xs);color:var(--muted);font-style:italic">Nessun dato sufficiente ancora.</div>`;
     } else {
-      commentoEl.innerHTML = `<div style="font-size: var(--fs-xs);color:var(--muted);font-style:italic">Nessun commento ancora — chiedi a Claude di analizzare la settimana tipo in chat.</div>`;
+      manualHtml = '';
     }
+    commentoEl.innerHTML = autoHtml + manualHtml;
   }
 }
 
@@ -8100,7 +8117,45 @@ function computeSettimanaTipo() {
     umore: avg(byWd[wd].umore),
   }));
 
-  return { weekdayStats, woByType };
+  // Insight automatico (14/08/2026, richiesta esplicita: "una riga sempre
+  // aggiornata, calcolata dal codice, non da un'IA"). Per ogni metrica
+  // calcolo media e deviazione standard tra i 7 giorni, poi lo z-score di
+  // ogni giorno rispetto alla sua riga — così un'oscillazione su HRV (scala
+  // 0-100ms) e una su Umore (scala 1-10) sono confrontabili sulla stessa
+  // base invece di confrontare valori assoluti di scale diverse. Prendo il
+  // singolo (metrica, giorno) con lo z-score più estremo in tutta la
+  // tabella: è "la cosa più fuori pattern", non un elenco di tutto ciò che
+  // si discosta un po'. Richiede almeno 2 giorni con dati per quella
+  // metrica (uno std di un solo punto non significa nulla), altrimenti
+  // resta null e la riga automatica non si mostra.
+  const metricLabels = { hrv:'HRV', sonno:'sonno', energia:'energia', recupero:'recupero', umore:'umore' };
+  const metricUnits = { hrv:'ms', sonno:'h', energia:'', recupero:'', umore:'' };
+  let bestInsight = null, bestZ = 0;
+  ['hrv','sonno','energia','recupero','umore'].forEach(mkey => {
+    const vals = weekdayStats.map(w => w[mkey]).filter(v => v !== null);
+    if (vals.length < 2) return;
+    const mean = vals.reduce((a,b)=>a+b,0) / vals.length;
+    const variance = vals.reduce((a,b)=>a+(b-mean)*(b-mean),0) / vals.length;
+    const std = Math.sqrt(variance);
+    if (std === 0) return;
+    weekdayStats.forEach(w => {
+      const v = w[mkey];
+      if (v === null) return;
+      const z = Math.abs((v - mean) / std);
+      if (z > bestZ) {
+        bestZ = z;
+        bestInsight = {
+          label: w.label, metric: metricLabels[mkey], value: v, mean,
+          unit: metricUnits[mkey], direction: v < mean ? 'più basso' : 'più alto'
+        };
+      }
+    });
+  });
+  // Sotto ~1 deviazione standard non è abbastanza per dire qualcosa —
+  // meglio nessuna riga che un'osservazione che è solo rumore.
+  const autoInsight = (bestInsight && bestZ >= 1) ? bestInsight : null;
+
+  return { weekdayStats, woByType, autoInsight };
 }
 
 // Estratta da buildWeekSummary2 il 06/08/2026 (F4) per essere riutilizzabile
