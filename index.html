@@ -11490,10 +11490,37 @@ function fotoRenderGriglia() {
 // cover, per vederla intera senza tagli) e tutti i dati calcolati da
 // fotoComputeEntryData. Riusa lo stesso array ordinato di fotoRenderGriglia
 // (salvato in _fotoGrigliaSorted) invece di riordinare photo_log da capo.
+//
+// Navigazione avanti/indietro (13/08/2026, richiesta successiva): l'overlay
+// (bottoni ◀▶ + frecce tastiera) si costruisce UNA volta sola in
+// fotoOpenLightbox; muoversi tra le foto aggiorna solo immagine/didascalia
+// via fotoLightboxUpdate, senza ricreare il DOM ogni volta (stesso pattern
+// dello Scrubber). Le frecce si nascondono da sole ai due estremi
+// dell'array invece di restare cliccabili senza effetto.
 let _fotoGrigliaSorted = [];
+let _fotoLightboxIdx = 0;
 function fotoOpenLightbox(idx) {
+  const overlay = document.createElement('div');
+  overlay.id = 'foto-lightbox';
+  overlay.onclick = (e) => { if (e.target === overlay) fotoCloseLightbox(); };
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML = `
+    <button onclick="fotoCloseLightbox()" style="position:absolute;top:16px;right:20px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer;line-height:1;padding:6px;z-index:1">✕</button>
+    <button id="foto-lightbox-prev" onclick="fotoLightboxNav(-1)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:10px 14px;border-radius:8px">◀</button>
+    <button id="foto-lightbox-next" onclick="fotoLightboxNav(1)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.15);border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:10px 14px;border-radius:8px">▶</button>
+    <img id="foto-lightbox-img" class="foto-photo" style="max-width:100%;max-height:78vh;object-fit:contain;border-radius:8px">
+    <div style="color:#fff;text-align:center;margin-top:14px">
+      <div id="foto-lightbox-caption" style="font-size:15px;font-weight:600"></div>
+      <div id="foto-lightbox-substats" style="font-size:12px;opacity:.8;margin-top:4px"></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.addEventListener('keydown', fotoLightboxKeyHandler);
+  fotoLightboxUpdate(idx);
+}
+function fotoLightboxUpdate(idx) {
   const entry = _fotoGrigliaSorted[idx];
   if (!entry) return;
+  _fotoLightboxIdx = idx;
   const { dayLabel, pesoTxt, deltaTxt, aderenza, woLabel } = fotoComputeEntryData(entry);
   const substats = [
     pesoTxt ? 'Peso ' + pesoTxt : '',
@@ -11502,27 +11529,33 @@ function fotoOpenLightbox(idx) {
     woLabel ? 'Workout ' + woLabel : ''
   ].filter(Boolean).join(' · ');
 
-  const overlay = document.createElement('div');
-  overlay.id = 'foto-lightbox';
-  overlay.onclick = (e) => { if (e.target === overlay) fotoCloseLightbox(); };
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px';
-  overlay.innerHTML = `
-    <button onclick="fotoCloseLightbox()" style="position:absolute;top:16px;right:20px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer;line-height:1;padding:6px">✕</button>
-    <img id="foto-lightbox-img" class="foto-photo" style="max-width:100%;max-height:78vh;object-fit:contain;border-radius:8px">
-    <div style="color:#fff;text-align:center;margin-top:14px">
-      <div style="font-size:15px;font-weight:600">${fotoFormatDate(entry.date)}${fotoFormatTimeLoc(entry)}${dayLabel ? ' · ' + dayLabel : ''}</div>
-      ${substats ? `<div style="font-size:12px;opacity:.8;margin-top:4px">${substats}</div>` : ''}
-    </div>`;
-  document.body.appendChild(overlay);
-  document.addEventListener('keydown', fotoLightboxEscHandler);
   fotoLoadImage(entry.filename, 'foto-lightbox-img');
-  if (_fotoBlurred) { const img = document.getElementById('foto-lightbox-img'); if (img) img.style.filter = 'blur(16px)'; }
+  const img = document.getElementById('foto-lightbox-img');
+  if (img && _fotoBlurred) img.style.filter = 'blur(16px)';
+  const caption = document.getElementById('foto-lightbox-caption');
+  const sub = document.getElementById('foto-lightbox-substats');
+  if (caption) caption.textContent = fotoFormatDate(entry.date) + fotoFormatTimeLoc(entry) + (dayLabel ? ' · ' + dayLabel : '');
+  if (sub) sub.textContent = substats;
+
+  const prevBtn = document.getElementById('foto-lightbox-prev');
+  const nextBtn = document.getElementById('foto-lightbox-next');
+  if (prevBtn) prevBtn.style.visibility = idx > 0 ? 'visible' : 'hidden';
+  if (nextBtn) nextBtn.style.visibility = idx < _fotoGrigliaSorted.length - 1 ? 'visible' : 'hidden';
 }
-function fotoLightboxEscHandler(e) { if (e.key === 'Escape') fotoCloseLightbox(); }
+function fotoLightboxNav(delta) {
+  const newIdx = _fotoLightboxIdx + delta;
+  if (newIdx < 0 || newIdx >= _fotoGrigliaSorted.length) return;
+  fotoLightboxUpdate(newIdx);
+}
+function fotoLightboxKeyHandler(e) {
+  if (e.key === 'Escape') fotoCloseLightbox();
+  else if (e.key === 'ArrowLeft') fotoLightboxNav(-1);
+  else if (e.key === 'ArrowRight') fotoLightboxNav(1);
+}
 function fotoCloseLightbox() {
   const overlay = document.getElementById('foto-lightbox');
   if (overlay) overlay.remove();
-  document.removeEventListener('keydown', fotoLightboxEscHandler);
+  document.removeEventListener('keydown', fotoLightboxKeyHandler);
 }
 
 // F-scrubber (13/08/2026, richiesta esplicita): vista "flip-book" — un unico
