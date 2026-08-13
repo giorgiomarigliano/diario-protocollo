@@ -11202,6 +11202,7 @@ async function buildFotoTab() {
           <div class="foto-tlmode" data-mode="lista" onclick="fotoSetTlMode('lista')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--purple);color:#fff;cursor:pointer">Lista</div>
           <div class="foto-tlmode" data-mode="griglia" onclick="fotoSetTlMode('griglia')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Griglia</div>
           <div class="foto-tlmode" data-mode="settimana" onclick="fotoSetTlMode('settimana')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Per settimana</div>
+          <div class="foto-tlmode" data-mode="scrubber" onclick="fotoSetTlMode('scrubber')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Scrubber</div>
         </div>
         <div id="foto-tl-content"></div>
       </div>
@@ -11292,6 +11293,7 @@ function fotoSetTlMode(mode) {
   });
   if (mode === 'lista') fotoRenderLista();
   else if (mode === 'griglia') fotoRenderGriglia();
+  else if (mode === 'scrubber') fotoRenderScrubber();
   else fotoRenderSettimana();
 }
 
@@ -11456,7 +11458,7 @@ function fotoRenderGriglia() {
   }
   const sorted = [...photoLog].sort((a, b) => b.date.localeCompare(a.date));
 
-  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">` +
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">` +
     sorted.map((entry, idx) => {
       const { dayLabel, pesoTxt, deltaTxt, aderenza, woLabel } = fotoComputeEntryData(entry);
       const imgId = 'foto-grid-img-' + idx;
@@ -11479,6 +11481,55 @@ function fotoRenderGriglia() {
 
   sorted.forEach((entry, idx) => fotoLoadImage(entry.filename, 'foto-grid-img-' + idx));
   if (_fotoBlurred) document.querySelectorAll('.foto-photo').forEach(img => { img.style.filter = 'blur(16px)'; });
+}
+
+// F-scrubber (13/08/2026, richiesta esplicita): vista "flip-book" — un unico
+// riquadro foto grande con uno slider sotto che scorre tutte le foto in
+// ordine cronologico (non inverso come Lista/Griglia, qui ha senso vedere
+// l'evoluzione avanti nel tempo). Aggiorna l'immagine a ogni movimento dello
+// slider (evento 'input', non 'change', per la sensazione di scrubbing in
+// tempo reale) senza ricostruire tutto il DOM — solo src/testo cambiano.
+let _fotoScrubberSorted = [];
+function fotoRenderScrubber() {
+  const el = document.getElementById('foto-tl-content');
+  if (!el) return;
+  const photoLog = (_lastData && Array.isArray(_lastData.photo_log)) ? _lastData.photo_log : [];
+  if (!photoLog.length) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Nessuna foto ancora caricata.</p>';
+    return;
+  }
+  _fotoScrubberSorted = [...photoLog].sort((a, b) => a.date.localeCompare(b.date));
+  const lastIdx = _fotoScrubberSorted.length - 1;
+
+  el.innerHTML = `
+    <div style="max-width:340px;margin:0 auto">
+      <div style="position:relative;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:var(--surface2)">
+        <img id="foto-scrub-img" class="foto-photo" style="width:100%;height:100%;object-fit:cover;display:block">
+      </div>
+      <div id="foto-scrub-caption" style="text-align:center;font-size:13px;font-weight:600;margin-top:10px"></div>
+      <div id="foto-scrub-sub" style="text-align:center;font-size:11px;color:var(--muted);margin-top:2px"></div>
+      <input type="range" id="foto-scrub-slider" min="0" max="${lastIdx}" value="${lastIdx}" step="1"
+        oninput="fotoScrubberUpdate(this.value)" style="width:100%;margin-top:14px;accent-color:var(--purple)">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:2px">
+        <span>${fotoFormatDateShort(_fotoScrubberSorted[0].date)}</span>
+        <span>${fotoFormatDateShort(_fotoScrubberSorted[lastIdx].date)}</span>
+      </div>
+    </div>`;
+
+  fotoScrubberUpdate(lastIdx);
+}
+
+function fotoScrubberUpdate(idx) {
+  idx = parseInt(idx, 10);
+  const entry = _fotoScrubberSorted[idx];
+  if (!entry) return;
+  const { dayLabel, pesoTxt } = fotoComputeEntryData(entry);
+  fotoLoadImage(entry.filename, 'foto-scrub-img');
+  if (_fotoBlurred) { const img = document.getElementById('foto-scrub-img'); if (img) img.style.filter = 'blur(16px)'; }
+  const caption = document.getElementById('foto-scrub-caption');
+  const sub = document.getElementById('foto-scrub-sub');
+  if (caption) caption.textContent = fotoFormatDate(entry.date) + fotoFormatTimeLoc(entry);
+  if (sub) sub.textContent = [pesoTxt, dayLabel].filter(Boolean).join(' · ');
 }
 
 // F6 (06/08/2026): Vista Per settimana — raggruppa le foto per settimana/
@@ -11608,9 +11659,10 @@ function fotoRenderConfronto() {
 
   if (_fotoCmpMode === 'overlay') {
     _fotoCmpOpacity = 50;
+    _fotoZoomA = 100; _fotoZoomB = 100;
     el.innerHTML = `<div style="position:relative;width:100%;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:var(--surface2)">
-      <img id="foto-cmp-img-a" class="foto-photo" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block">
-      <img id="foto-cmp-img-b" class="foto-photo" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:${_fotoCmpOpacity / 100}">
+      <img id="foto-cmp-img-a" class="foto-photo" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transform:scale(1);transform-origin:center top">
+      <img id="foto-cmp-img-b" class="foto-photo" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:${_fotoCmpOpacity / 100};transform:scale(1);transform-origin:center top">
     </div>
     <div style="margin-top:12px">
       <input type="range" id="foto-cmp-opacity" min="0" max="100" value="${_fotoCmpOpacity}" oninput="fotoUpdateOverlayOpacity(this.value)" style="width:100%;accent-color:var(--blue)">
@@ -11619,7 +11671,8 @@ function fotoRenderConfronto() {
         <div id="foto-cmp-opacity-label" style="font-size:11px;font-weight:700;color:var(--blue)">${_fotoCmpOpacity}%</div>
         <div style="font-size:11px;color:var(--muted);text-align:right"><b style="color:var(--text)">${fotoFormatDate(entryB.date)}</b>${fotoFormatTimeLoc(entryB)}${dataB.pesoTxt ? '<br>' + dataB.pesoTxt : ''}</div>
       </div>
-    </div>`;
+    </div>
+    ${fotoZoomControlsHtml()}`;
 
     fotoLoadImage(entryA.filename, 'foto-cmp-img-a');
     fotoLoadImage(entryB.filename, 'foto-cmp-img-b');
@@ -11627,20 +11680,59 @@ function fotoRenderConfronto() {
     return;
   }
 
+  _fotoZoomA = 100; _fotoZoomB = 100;
   el.innerHTML = `<div style="display:flex;gap:10px">
     <div style="flex:1;text-align:center">
-      <img id="foto-cmp-img-a" class="foto-photo" style="width:100%;aspect-ratio:3/4;border-radius:14px;object-fit:cover;background:var(--surface2);display:block">
+      <div style="width:100%;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:var(--surface2)">
+        <img id="foto-cmp-img-a" class="foto-photo" style="width:100%;height:100%;object-fit:cover;display:block;transform:scale(1);transform-origin:center top">
+      </div>
       <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${fotoFormatDate(entryA.date)}</b>${fotoFormatTimeLoc(entryA)}${dataA.pesoTxt ? '<br>' + dataA.pesoTxt : ''}</div>
     </div>
     <div style="flex:1;text-align:center">
-      <img id="foto-cmp-img-b" class="foto-photo" style="width:100%;aspect-ratio:3/4;border-radius:14px;object-fit:cover;background:var(--surface2);display:block">
+      <div style="width:100%;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:var(--surface2)">
+        <img id="foto-cmp-img-b" class="foto-photo" style="width:100%;height:100%;object-fit:cover;display:block;transform:scale(1);transform-origin:center top">
+      </div>
       <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${fotoFormatDate(entryB.date)}</b>${fotoFormatTimeLoc(entryB)}${dataB.pesoTxt ? '<br>' + dataB.pesoTxt : ''}</div>
     </div>
-  </div>`;
+  </div>
+  ${fotoZoomControlsHtml()}`;
 
   fotoLoadImage(entryA.filename, 'foto-cmp-img-a');
   fotoLoadImage(entryB.filename, 'foto-cmp-img-b');
   if (_fotoBlurred) document.querySelectorAll('.foto-photo').forEach(img => { img.style.filter = 'blur(16px)'; });
+}
+
+// Zoom (13/08/2026, richiesta esplicita): "rendere le proporzioni
+// confrontabili facendo zoom in/out" — framing/distanza dallo specchio
+// variano tra scatti diversi, quindi i due corpi non sono mai della stessa
+// dimensione nel riquadro. Due slider indipendenti (uno per foto) scalano
+// l'immagine con transform:scale, ancorata in alto al centro
+// (transform-origin:center top) così il punto di riferimento più stabile
+// tra scatti diversi (testa/spalle) resta fermo mentre si zooma, invece di
+// scalare dal centro e far "scappare" la testa fuori dal riquadro. Il
+// contenitore ha overflow:hidden così lo zoom non rompe gli angoli
+// arrotondati. Stato non salvato: si resetta a 100% ad ogni nuovo confronto,
+// è un aggiustamento visivo temporaneo, non un dato da persistere.
+let _fotoZoomA = 100, _fotoZoomB = 100;
+function fotoZoomControlsHtml() {
+  return `<div style="display:flex;gap:14px;margin-top:14px">
+    <div style="flex:1">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Zoom A: <span id="foto-zoom-a-label">100%</span></div>
+      <input type="range" id="foto-zoom-a" min="50" max="200" value="100" oninput="fotoUpdateZoom('a', this.value)" style="width:100%;accent-color:var(--purple)">
+    </div>
+    <div style="flex:1">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Zoom B: <span id="foto-zoom-b-label">100%</span></div>
+      <input type="range" id="foto-zoom-b" min="50" max="200" value="100" oninput="fotoUpdateZoom('b', this.value)" style="width:100%;accent-color:var(--purple)">
+    </div>
+  </div>`;
+}
+function fotoUpdateZoom(which, val) {
+  val = parseInt(val, 10);
+  if (which === 'a') _fotoZoomA = val; else _fotoZoomB = val;
+  const img = document.getElementById('foto-cmp-img-' + which);
+  const label = document.getElementById('foto-zoom-' + which + '-label');
+  if (img) img.style.transform = `scale(${val / 100})`;
+  if (label) label.textContent = val + '%';
 }
 
 // F8 (06/08/2026): Confronto — Overlay. Le due foto sono impilate nello
