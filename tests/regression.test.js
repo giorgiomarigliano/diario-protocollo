@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ═══════════════════════════════════════════════════════════════
 // Test di regressione — Diario Protocollo
-// (D2, Fase D, 27/07/2026)
+// (D2, Fase D, 27/07/2026 — R1+R2, 13/08/2026)
 //
 // Esegue le funzioni VERE estratte da index.html (non copie riscritte a
 // mano, che rischierebbero di disallinearsi silenziosamente dal codice
@@ -14,12 +14,24 @@
 // Uso: node tests/regression.test.js
 // Uscita: 0 se tutti i test passano, 1 altrimenti (adatto a CI/script).
 //
-// Copre i bug scoperti e corretti tra il 22 e il 27/07/2026:
+// Copre i bug scoperti e corretti tra il 22/07 e il 13/08/2026:
 //   1. Split settimanale (getWorkout / getWorkout2)
 //   2. Buco Test Protocollo in getSessionsAll (18-19/7 esclusi dal conteggio)
-//   3. Mappatura sentinel lift (SENTINEL_GROUPS coerente coi campi Supabase)
+//   3. Mappatura sentinel lift — presenza/etichette (SENTINEL_GROUPS)
 //   4. resolveDay() coerente con getWorkout/getWorkout2 (D1)
 //   5. Presenza del fix "ricostruzione dopo Sync" (dashBuilt/_proto2Built)
+//   6. MOTRA_SENTINEL_MAP — esclusioni equipaggiamento (R3, 13/08/2026:
+//      incbench/lat/rdl/legpress matchavano varianti sbagliate)
+//   7. getWorkout2 durante BKK (bkk_riposo, 07/08/2026)
+//   8. getWorkoutVolume2 — fallback su motra_log (09-10/08/2026)
+//   9. Formattazione date foto — fotoFormatDate/Short (07/08/2026)
+//
+// R1 (13/08/2026): il blocco 2 era rotto dal 28/07 (migrazione di
+// getSessionsAll a resolveDay() in D4) — il test non era mai stato
+// aggiornato per iniettare resolveDay nel contesto isolato, quindi girava
+// solo il blocco 1 e tutto da qui in poi non veniva eseguito. Corretto.
+// R2 (13/08/2026): aggiunti i blocchi 6-9 sopra, a copertura del codice
+// scritto dopo la Fase D che oggi non aveva alcun test automatico.
 // ═══════════════════════════════════════════════════════════════
 
 const fs = require('fs');
@@ -115,7 +127,7 @@ console.log('\n═══ 2. Buco Test Protocollo in getSessionsAll ═══');
     const TEST_PROTO_START = new Date('2026-07-18');
     const TEST_PROTO_DAYS = 2;
     const TOTAL_DAYS = 112;
-    const TOTAL_DAYS2 = 112;
+    const TOTAL_DAYS2 = 500;
     function isBkkDate(d) { return false; }
     function isBKK(i) { return i>=60&&i<=74; }
     let _lastData = {
@@ -129,6 +141,7 @@ console.log('\n═══ 2. Buco Test Protocollo in getSessionsAll ═══');
     ${extractConst(source, 'SPLIT')}
     ${extractFunction(source, 'getWorkout')}
     ${extractFunction(source, 'getWorkout2')}
+    ${extractFunction(source, 'resolveDay')}
     ${extractFunction(source, 'getSessionsAll')}
   `, ctx);
 
@@ -192,7 +205,7 @@ console.log('\n═══ 4. resolveDay() coerente con getWorkout/getWorkout2 (D1
     const START = new Date('2026-06-08');
     const TOTAL_DAYS = 112;
     const START2 = new Date('2026-07-20');
-    const TOTAL_DAYS2 = 112;
+    const TOTAL_DAYS2 = 500;
     const TEST_PROTO_START = new Date('2026-07-18');
     const TEST_PROTO_DAYS = 2;
     function isBkkDate(d) { return false; }
@@ -220,6 +233,129 @@ console.log('\n═══ 5. Fix "ricostruzione dopo Sync" presente nel sorgente 
     source.includes('dashBuilt = false; dash.innerHTML'),
     "refreshDashChartsIfBuilt() resetta dashBuilt (ricostruisce la Dashboard dopo Sync)"
   );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// R2 (13/08/2026): copertura per il codice scritto dopo la Fase D
+// (22/07-27/07), rimasto scoperto — BKK, Foto (data/ora/luogo, workout
+// volume fallback), matching sentinel Motra. Aggiunta insieme a R1 (fix
+// del blocco 2 sopra) nella stessa sessione di manutenzione.
+// ═══════════════════════════════════════════════════════════════
+
+console.log('\n═══ 6. MOTRA_SENTINEL_MAP — esclusioni equipaggiamento (R3, 13/08/2026) ═══');
+{
+  const ctx = { console };
+  vm.createContext(ctx);
+  vm.runInContext(`${extractConst(source, 'MOTRA_SENTINEL_MAP')}`, ctx);
+  const map = ctx.MOTRA_SENTINEL_MAP;
+
+  function matches(sentinelId, exerciseName) {
+    const cfg = map[sentinelId];
+    const n = exerciseName.toLowerCase();
+    const hasKw = cfg.kw.some(kw => n.includes(kw.toLowerCase()));
+    const hasEx = cfg.ex.some(ex => n.includes(ex.toLowerCase()));
+    return hasKw && !hasEx;
+  }
+
+  // Bug scoperto l'11/08/2026 lavorando su un log Motra reale: 'incline
+  // bench press' da solo matchava anche la variante Dumbbell.
+  assertTrue(matches('incbench', 'Machine Incline Bench Press'), "incbench matcha Machine Incline Bench Press");
+  assertTrue(!matches('incbench', 'Dumbbell Incline Bench Press'), "incbench NON matcha Dumbbell Incline Bench Press");
+  assertTrue(!matches('incbench', 'Smith Machine Incline Bench Press'), "incbench NON matcha Smith Machine Incline Bench Press");
+
+  // Bug scoperto il 13/08/2026 nel controllo sistematico su tutto lo storico:
+  // 'lat pull down wide' da solo matchava anche le varianti Cable.
+  assertTrue(matches('lat', 'Machine Lat Pull Down Wide-Grip'), "lat matcha Machine Lat Pull Down Wide-Grip");
+  assertTrue(!matches('lat', 'Cable Lat Pull Down Wide-Grip'), "lat NON matcha Cable Lat Pull Down Wide-Grip");
+  assertTrue(!matches('lat', 'Cable Lat Pull Down Wide Hammer'), "lat NON matcha Cable Lat Pull Down Wide Hammer");
+
+  // 'romanian deadlift'/'rdl' da soli matchavano anche Dumbbell e Smith Machine.
+  assertTrue(matches('rdl', 'Barbell Romanian Deadlift'), "rdl matcha Barbell Romanian Deadlift");
+  assertTrue(!matches('rdl', 'Dumbbell Romanian Deadlift'), "rdl NON matcha Dumbbell Romanian Deadlift");
+  assertTrue(!matches('rdl', 'Smith Machine Romanian Deadlift'), "rdl NON matcha Smith Machine Romanian Deadlift");
+
+  // Commento diceva esplicitamente "NON moving chair" ma l'esclusione non
+  // era mai stata implementata nel codice.
+  assertTrue(matches('legpress', 'Machine Leg Press'), "legpress matcha Machine Leg Press");
+  assertTrue(!matches('legpress', 'Machine Leg Press (Moving Chair)'), "legpress NON matcha Moving Chair (commento lo escludeva già)");
+
+  // pecfly e hammercurl: multi-match VOLUTO, non toccati dal fix — verifica
+  // che restino così (se un giorno qualcuno li stringesse per errore
+  // pensando fossero bug, questo test si romperebbe e farebbe da promemoria).
+  assertTrue(matches('pecfly', 'Cable Fly Mid') && matches('pecfly', 'Machine Fly (Pec Dec)'),
+    "pecfly matcha sia Cable che Machine (voluto, non un bug)");
+}
+
+console.log('\n═══ 7. getWorkout2 durante BKK (07/08/2026) ═══');
+{
+  const ctx = { console };
+  vm.createContext(ctx);
+  vm.runInContext(`
+    const START2 = new Date('2026-07-20');
+    function isBkkDate(d) {
+      const s = new Date('2026-08-07'); s.setHours(0,0,0,0);
+      const e = new Date('2026-08-21'); e.setHours(0,0,0,0);
+      const dd = new Date(d); dd.setHours(0,0,0,0);
+      return dd >= s && dd <= e;
+    }
+    let _lastData2 = {
+      p2_day_19: { bkk_riposo: '1' },
+      p2_day_20: {},
+    };
+    ${extractFunction(source, 'getWorkout2')}
+  `, ctx);
+
+  // p2_day_18 = 7 ago (dentro BKK), nessun override -> default allenamento
+  assertEqual(ctx.getWorkout2(18).type, 'Allenamento BKK', "p2_day_18 (7 ago, BKK, nessun override) = Allenamento BKK");
+  // p2_day_19 = 8 ago, bkk_riposo='1' -> Riposo
+  assertEqual(ctx.getWorkout2(19).type, 'Riposo', "p2_day_19 (8 ago, bkk_riposo=1) = Riposo");
+  // p2_day_20 = 9 ago, record vuoto (non '1') -> default allenamento
+  assertEqual(ctx.getWorkout2(20).type, 'Allenamento BKK', "p2_day_20 (9 ago, bkk_riposo assente) = Allenamento BKK");
+  // p2_day_4 = 24 luglio, fuori dalla finestra BKK -> split normale
+  assertEqual(ctx.getWorkout2(4).type, 'Legs', "p2_day_4 (24 lug, fuori BKK) = split normale (Legs)");
+}
+
+console.log('\n═══ 8. getWorkoutVolume2 — fallback su motra_log (09-10/08/2026) ═══');
+{
+  const ctx = { console };
+  vm.createContext(ctx);
+  vm.runInContext(extractFunction(source, 'getWorkoutVolume2'), ctx);
+
+  assertEqual(ctx.getWorkoutVolume2(null), null, "record assente -> null");
+  assertEqual(ctx.getWorkoutVolume2({}), null, "record vuoto -> null");
+  assertEqual(ctx.getWorkoutVolume2({ wo_volume: '11300' }), 11300, "wo_volume diretto valorizzato -> usa quello");
+  assertEqual(
+    ctx.getWorkoutVolume2({ motra_log: JSON.stringify({ volume: '6,5K kg' }) }),
+    6500,
+    "wo_volume assente, fallback su motra_log.volume ('6,5K kg' -> 6500)"
+  );
+  assertEqual(
+    ctx.getWorkoutVolume2({ wo_volume: '', motra_log: JSON.stringify({ volume: '2K kg' }) }),
+    2000,
+    "wo_volume vuoto (stringa), fallback su motra_log -> 2000"
+  );
+  assertEqual(
+    ctx.getWorkoutVolume2({ motra_log: 'non è json valido' }),
+    null,
+    "motra_log corrotto (non parsabile) -> null, nessun crash"
+  );
+}
+
+console.log('\n═══ 9. Formattazione date foto — fotoFormatDate/Short (07/08/2026) ═══');
+{
+  const ctx = { console };
+  vm.createContext(ctx);
+  vm.runInContext(`
+    ${extractConst(source, 'FOTO_MESI')}
+    ${extractConst(source, 'FOTO_MESI_ABBR')}
+    ${extractFunction(source, 'fotoFormatDate')}
+    ${extractFunction(source, 'fotoFormatDateShort')}
+  `, ctx);
+
+  assertEqual(ctx.fotoFormatDate('2026-08-07'), '7 agosto 2026', "fotoFormatDate('2026-08-07') = '7 agosto 2026'");
+  assertEqual(ctx.fotoFormatDate('2026-01-18'), '18 gennaio 2026', "fotoFormatDate('2026-01-18') = '18 gennaio 2026'");
+  assertEqual(ctx.fotoFormatDateShort('2026-08-07'), '7 ago', "fotoFormatDateShort('2026-08-07') = '7 ago'");
+  assertEqual(ctx.fotoFormatDateShort('2026-12-25'), '25 dic', "fotoFormatDateShort('2026-12-25') = '25 dic'");
 }
 
 console.log(`\n═══════════════════════════════════`);
