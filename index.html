@@ -11378,6 +11378,20 @@ function fotoFormatDateShort(dateStr) {
   return d + ' ' + FOTO_MESI_ABBR[m - 1];
 }
 
+// Bug (13/08/2026, segnalato da Giorgio): due foto caricate lo stesso giorno
+// ordinavano in modo imprevedibile — tutti i punti di ordinamento
+// confrontavano solo entry.date (stringa YYYY-MM-DD), ignorando l'ora. Con
+// due foto sulla stessa data il confronto risultava sempre 0 (uguali), e lo
+// stable sort di JS le lasciava nell'ordine con cui capitavano nell'array
+// invece che nell'ordine cronologico reale. fotoDateTimeKey() combina
+// data+ora (fallback '00:00' se l'ora manca, come le foto storiche
+// pre-11/08) in un'unica stringa confrontabile con localeCompare — usata da
+// ora in ogni ordinamento cronologico del tab Foto (Lista, Griglia, Per
+// settimana, Scrubber, picker del Confronto).
+function fotoDateTimeKey(entry) {
+  return entry.date + ' ' + (entry.time || '00:00');
+}
+
 // Aggiunto (10/08/2026): ora e luogo sono opzionali (le foto storiche
 // pre-esistenti non li hanno) — mostra solo quello che c'è, senza buchi o
 // separatori vuoti.
@@ -11449,7 +11463,7 @@ function fotoRenderLista() {
     el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Nessuna foto ancora caricata.</p>';
     return;
   }
-  const sorted = [...photoLog].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = [...photoLog].sort((a, b) => fotoDateTimeKey(b).localeCompare(fotoDateTimeKey(a)));
 
   el.innerHTML = sorted.map((entry, idx) => {
     const { dayLabel, weekLabel, pesoTxt, deltaTxt, aderenza, woLabel } = fotoComputeEntryData(entry);
@@ -11484,7 +11498,7 @@ function fotoRenderGriglia() {
     el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Nessuna foto ancora caricata.</p>';
     return;
   }
-  const sorted = [...photoLog].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = [...photoLog].sort((a, b) => fotoDateTimeKey(b).localeCompare(fotoDateTimeKey(a)));
 
   el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;max-width:920px;margin:0 auto">` +
     sorted.map((entry, idx) => {
@@ -11601,7 +11615,7 @@ function fotoRenderScrubber() {
     el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Nessuna foto ancora caricata.</p>';
     return;
   }
-  _fotoScrubberSorted = [...photoLog].sort((a, b) => a.date.localeCompare(b.date));
+  _fotoScrubberSorted = [...photoLog].sort((a, b) => fotoDateTimeKey(a).localeCompare(fotoDateTimeKey(b)));
   const lastIdx = _fotoScrubberSorted.length - 1;
 
   el.innerHTML = `
@@ -11681,7 +11695,7 @@ function fotoRenderSettimana() {
       const st = computeWeekStats2(g.wkIdx);
       statsHtml = `<div style="display:flex;gap:12px;font-size:11px;color:var(--muted);margin-bottom:8px"><span>Aderenza <b style="color:var(--text)">${st.aderenzaPct}%</b></span><span>Workout <b style="color:var(--text)">${st.doneWo}/${st.totalWo}</b></span></div>`;
     }
-    const entriesSorted = [...g.entries].sort((a, b) => b.date.localeCompare(a.date));
+    const entriesSorted = [...g.entries].sort((a, b) => fotoDateTimeKey(b).localeCompare(fotoDateTimeKey(a)));
     const photosHtml = entriesSorted.map((entry, i) => {
       const { pesoTxt } = fotoComputeEntryData(entry);
       const imgId = 'foto-wk-img-' + key + '-' + i;
@@ -11702,7 +11716,7 @@ function fotoRenderSettimana() {
   }).join('');
 
   sortedKeys.forEach(key => {
-    const entriesSorted = [...groups[key].entries].sort((a, b) => b.date.localeCompare(a.date));
+    const entriesSorted = [...groups[key].entries].sort((a, b) => fotoDateTimeKey(b).localeCompare(fotoDateTimeKey(a)));
     entriesSorted.forEach((entry, i) => fotoLoadImage(entry.filename, 'foto-wk-img-' + key + '-' + i));
   });
   if (_fotoBlurred) document.querySelectorAll('.foto-photo').forEach(img => { img.style.filter = 'blur(16px)'; });
@@ -11726,7 +11740,7 @@ function fotoInitConfronto() {
     return;
   }
 
-  const chrono = [...photoLog].sort((a, b) => a.date.localeCompare(b.date));
+  const chrono = [...photoLog].sort((a, b) => fotoDateTimeKey(a).localeCompare(fotoDateTimeKey(b)));
   const opts = chrono.map(e => `<option value="${e.filename}">${fotoFormatDate(e.date)}</option>`).join('');
   selA.innerHTML = opts;
   selB.innerHTML = opts;
@@ -12086,7 +12100,7 @@ function fotoShowLastSaved() {
     if (empty) empty.style.display = 'block';
     return;
   }
-  const chrono = [...photoLog].sort((a, b) => a.date.localeCompare(b.date));
+  const chrono = [...photoLog].sort((a, b) => fotoDateTimeKey(a).localeCompare(fotoDateTimeKey(b)));
   const last = chrono[chrono.length - 1];
   if (empty) empty.style.display = 'none';
   if (img) img.style.display = 'block';
