@@ -7203,6 +7203,74 @@ function parseMotraText(text) {
   return result;
 }
 
+// Tabella di matching Motra→sentinel lift, spostata a livello top (11/08/2026
+// era locale dentro importMotra) per essere testabile in isolamento dalla
+// suite di regressione. Ogni sentinel ha 'kw' (keyword che devono comparire
+// nel nome esercizio) e 'ex' (keyword che, se presenti, ESCLUDONO il match
+// anche se una keyword di 'kw' combacia — serve quando una keyword generica
+// da sola matcherebbe più attrezzi diversi da quello che il sentinel vuole
+// tracciare).
+//
+// Fix (13/08/2026, R3): 4 sentinel matchavano più varianti/attrezzi diversi
+// contro l'intento dichiarato nel commento, scoperto con un controllo
+// sistematico su tutti i 65 esercizi distinti nello storico:
+//   - incbench ("Machine Incline Bench Press"): matchava anche Dumbbell e
+//     Smith Machine — 'incline bench press' da solo è troppo generico.
+//   - lat ("Lat Machine Wide-Grip"): matchava anche le varianti Cable
+//     (Wide-Grip e Hammer) — 'lat pull down wide' da solo non specifica
+//     l'attrezzo.
+//   - rdl ("RDL", intento barbell dalla prima keyword): matchava anche
+//     Dumbbell e Smith Machine — 'romanian deadlift'/'rdl' da soli troppo
+//     generici.
+//   - legpress (commento esplicito: "macchina fissa, NON moving chair"):
+//     matchava anche la variante Moving Chair — l'esclusione era dichiarata
+//     nel commento ma mai implementata nel codice.
+// pecfly e hammercurl matchano più varianti anche dopo il controllo, ma
+// sembra intenzionale (pecfly include esplicitamente sia Cable che Machine
+// nel nome del sentinel; hammercurl Cross-Body resta comunque manubri, non
+// un attrezzo diverso) — non toccati, sono giudizi di metodologia di
+// allenamento che non spetta a Claude decidere da solo.
+const MOTRA_SENTINEL_MAP = {
+  // PETTO — BB Bench Press (bilanciere, panca piana)
+  'bench':      { kw: ['barbell bench press','bb bench press','panca piana bilanciere'], ex: [] },
+  // PETTO — Machine Incline Bench Press
+  'incbench':   { kw: ['machine incline bench press','incline bench press machine','incline bench press'], ex: ['dumbbell','smith machine'] },
+  // PETTO — Pec Fly / Pec Dec (Cable o Machine, entrambi validi di proposito)
+  'pecfly':     { kw: ['machine fly','pec dec','pec-dec','cable fly','crossover','chest fly','pectoral'], ex: [] },
+  // DORSO — Lat Machine Wide-Grip
+  'lat':        { kw: ['lat pull down wide','lat pulldown wide','wide grip pulldown','wide-grip pulldown','wide grip lat','machine lat pull down wide'], ex: ['cable'] },
+  // DORSO — T-Bar Row
+  'tbar':       { kw: ['t-bar row','t bar row','machine t-bar','tbar row'], ex: [] },
+  // DORSO — BB Bent Over Row
+  'bbrow':      { kw: ['barbell bent over row','barbell row','bb bent over row','bent over row barbell'], ex: [] },
+  // SPALLE — BB OHP in piedi (bilanciere)
+  'bbohp':      { kw: ['barbell overhead press','barbell military press','overhead press / military press','barbell ohp','bb overhead press'], ex: [] },
+  // SPALLE — DB Shoulder Press seduto
+  'dbpress':    { kw: ['dumbbell shoulder press','db shoulder press','dumbbell press seated','db press shoulder'], ex: [] },
+  // SPALLE — DB Lateral Raise
+  'dblateral':  { kw: ['dumbbell lateral raise','db lateral raise','lateral raise dumbbell'], ex: [] },
+  // BICIPITI — DB Curl (manubri, NON cavi)
+  'dbcurl':     { kw: ['dumbbell bicep curl','db bicep curl','dumbbell curl','db curl'], ex: [] },
+  // BICIPITI — DB Hammer Curl (Cross-Body incluso di proposito, resta manubri)
+  'hammercurl': { kw: ['dumbbell hammer curl','db hammer curl','hammer curl','curl martello manubri'], ex: [] },
+  // TRICIPITI — Rope Pushdown
+  'tridown':    { kw: ['rope tricep pushdown','cable rope tricep pushdown','rope pushdown','tricep pushdown rope'], ex: [] },
+  // TRICIPITI — Rope Overhead
+  'triover':    { kw: ['rope overhead tricep','cable rope overhead tricep','overhead tricep extension high','overhead tricep rope'], ex: [] },
+  // GAMBE — Leg Extension
+  'legext':     { kw: ['machine leg extension','leg extension','estensione gambe'], ex: [] },
+  // GAMBE — Leg Press (macchina fissa, NON moving chair)
+  'legpress':   { kw: ['machine leg press','leg press'], ex: ['moving chair'] },
+  // GAMBE — RDL (bilanciere)
+  'rdl':        { kw: ['barbell romanian deadlift','romanian deadlift','rdl','stacco rumeno'], ex: ['dumbbell','smith machine'] },
+  // GAMBE — Calf Raise seduto
+  'calf':       { kw: ['machine seated calf raise','seated calf raise','calf raise seated'], ex: [] },
+  // GAMBE — Hip Thrust
+  'hipthrust':  { kw: ['machine hip thrust','hip thrust','glute bridge','hip-thrust'], ex: [] },
+  // GAMBE — Leg Curl
+  'legcurl':    { kw: ['machine leg / hamstring curl prone','hamstring curl prone','leg curl prone','leg / hamstring curl'], ex: [] },
+};
+
 function importMotra(dayId) {
   const ta = document.getElementById('motra-ta-' + dayId);
   const res = document.getElementById('motra-res-' + dayId);
@@ -7248,57 +7316,17 @@ function importMotra(dayId) {
       }
     }
 
-    // Auto-fill sentinel lifts from parsed exercises
-    // Each entry: sentinelId → [keywords to match in exercise name]
-    // More specific keywords first to avoid false matches
-    const sentinelMap = {
-      // PETTO — BB Bench Press (bilanciere, panca piana)
-      'bench':      ['barbell bench press','bb bench press','panca piana bilanciere'],
-      // PETTO — Machine Incline Bench Press
-      'incbench':   ['machine incline bench press','incline bench press machine','incline bench press'],
-      // PETTO — Pec Fly / Pec Dec
-      'pecfly':     ['machine fly','pec dec','pec-dec','cable fly','crossover','chest fly','pectoral'],
-      // DORSO — Lat Machine Wide-Grip
-      'lat':        ['lat pull down wide','lat pulldown wide','wide grip pulldown','wide-grip pulldown','wide grip lat','machine lat pull down wide'],
-      // DORSO — T-Bar Row
-      'tbar':       ['t-bar row','t bar row','machine t-bar','tbar row'],
-      // DORSO — BB Bent Over Row
-      'bbrow':      ['barbell bent over row','barbell row','bb bent over row','bent over row barbell'],
-      // SPALLE — BB OHP in piedi (bilanciere)
-      'bbohp':      ['barbell overhead press','barbell military press','overhead press / military press','barbell ohp','bb overhead press'],
-      // SPALLE — DB Shoulder Press seduto
-      'dbpress':    ['dumbbell shoulder press','db shoulder press','dumbbell press seated','db press shoulder'],
-      // SPALLE — DB Lateral Raise
-      'dblateral':  ['dumbbell lateral raise','db lateral raise','lateral raise dumbbell'],
-      // BICIPITI — DB Curl (manubri, NON cavi)
-      'dbcurl':     ['dumbbell bicep curl','db bicep curl','dumbbell curl','db curl'],
-      // BICIPITI — DB Hammer Curl
-      'hammercurl': ['dumbbell hammer curl','db hammer curl','hammer curl','curl martello manubri'],
-      // TRICIPITI — Rope Pushdown
-      'tridown':    ['rope tricep pushdown','cable rope tricep pushdown','rope pushdown','tricep pushdown rope'],
-      // TRICIPITI — Rope Overhead
-      'triover':    ['rope overhead tricep','cable rope overhead tricep','overhead tricep extension high','overhead tricep rope'],
-      // GAMBE — Leg Extension
-      'legext':     ['machine leg extension','leg extension','estensione gambe'],
-      // GAMBE — Leg Press (macchina fissa, NON moving chair)
-      'legpress':   ['machine leg press','leg press'],
-      // GAMBE — RDL
-      'rdl':        ['barbell romanian deadlift','romanian deadlift','rdl','stacco rumeno'],
-      // GAMBE — Calf Raise seduto
-      'calf':       ['machine seated calf raise','seated calf raise','calf raise seated'],
-      // GAMBE — Hip Thrust
-      'hipthrust':  ['machine hip thrust','hip thrust','glute bridge','hip-thrust'],
-      // GAMBE — Leg Curl
-      'legcurl':    ['machine leg / hamstring curl prone','hamstring curl prone','leg curl prone','leg / hamstring curl'],
-    };
-
-    // Get session type to know which sentinels are expected
-    for (const [sentinelId, keywords] of Object.entries(sentinelMap)) {
-      // Find matching exercise in parsed data — try most specific keyword first
-      // Trova TUTTI gli esercizi che matchano, poi sceglie il best set tra tutti
+    // Auto-fill sentinel lifts from parsed exercises (mappa MOTRA_SENTINEL_MAP
+    // spostata a livello top l'11/08/2026 per essere testabile — vedi la sua
+    // definizione sopra per il perché delle esclusioni 'ex')
+    for (const [sentinelId, cfg] of Object.entries(MOTRA_SENTINEL_MAP)) {
+      // Trova TUTTI gli esercizi che matchano (keyword presente E nessuna
+      // esclusione presente), poi sceglie il best set tra tutti
       const matches = data.exercises.filter(ex => {
         const name = ex.name.toLowerCase();
-        return keywords.some(kw => name.includes(kw.toLowerCase()));
+        const hasKw = cfg.kw.some(kw => name.includes(kw.toLowerCase()));
+        const hasEx = cfg.ex.some(ex2 => name.includes(ex2.toLowerCase()));
+        return hasKw && !hasEx;
       });
       if (!matches.length) continue;
 
