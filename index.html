@@ -11659,10 +11659,10 @@ function fotoRenderConfronto() {
 
   if (_fotoCmpMode === 'overlay') {
     _fotoCmpOpacity = 50;
-    _fotoZoomA = 100; _fotoZoomB = 100;
+    _fotoZoomA = 100; _fotoZoomB = 100; _fotoOffsetA = { x: 0, y: 0 }; _fotoOffsetB = { x: 0, y: 0 };
     el.innerHTML = `<div style="position:relative;width:100%;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:var(--surface2)">
-      <img id="foto-cmp-img-a" class="foto-photo" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transform:scale(1);transform-origin:center top">
-      <img id="foto-cmp-img-b" class="foto-photo" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:${_fotoCmpOpacity / 100};transform:scale(1);transform-origin:center top">
+      <img id="foto-cmp-img-a" class="foto-photo" onpointerdown="fotoStartDrag(event,'a')" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transform:scale(1);transform-origin:center top;cursor:grab;touch-action:none">
+      <img id="foto-cmp-img-b" class="foto-photo" onpointerdown="fotoStartDrag(event,'b')" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:${_fotoCmpOpacity / 100};transform:scale(1);transform-origin:center top;cursor:grab;touch-action:none">
     </div>
     <div style="margin-top:12px">
       <input type="range" id="foto-cmp-opacity" min="0" max="100" value="${_fotoCmpOpacity}" oninput="fotoUpdateOverlayOpacity(this.value)" style="width:100%;accent-color:var(--blue)">
@@ -11680,17 +11680,17 @@ function fotoRenderConfronto() {
     return;
   }
 
-  _fotoZoomA = 100; _fotoZoomB = 100;
+  _fotoZoomA = 100; _fotoZoomB = 100; _fotoOffsetA = { x: 0, y: 0 }; _fotoOffsetB = { x: 0, y: 0 };
   el.innerHTML = `<div style="display:flex;gap:10px">
     <div style="flex:1;text-align:center">
       <div style="width:100%;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:var(--surface2)">
-        <img id="foto-cmp-img-a" class="foto-photo" style="width:100%;height:100%;object-fit:cover;display:block;transform:scale(1);transform-origin:center top">
+        <img id="foto-cmp-img-a" class="foto-photo" onpointerdown="fotoStartDrag(event,'a')" style="width:100%;height:100%;object-fit:cover;display:block;transform:scale(1);transform-origin:center top;cursor:grab;touch-action:none">
       </div>
       <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${fotoFormatDate(entryA.date)}</b>${fotoFormatTimeLoc(entryA)}${dataA.pesoTxt ? '<br>' + dataA.pesoTxt : ''}</div>
     </div>
     <div style="flex:1;text-align:center">
       <div style="width:100%;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:var(--surface2)">
-        <img id="foto-cmp-img-b" class="foto-photo" style="width:100%;height:100%;object-fit:cover;display:block;transform:scale(1);transform-origin:center top">
+        <img id="foto-cmp-img-b" class="foto-photo" onpointerdown="fotoStartDrag(event,'b')" style="width:100%;height:100%;object-fit:cover;display:block;transform:scale(1);transform-origin:center top;cursor:grab;touch-action:none">
       </div>
       <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${fotoFormatDate(entryB.date)}</b>${fotoFormatTimeLoc(entryB)}${dataB.pesoTxt ? '<br>' + dataB.pesoTxt : ''}</div>
     </div>
@@ -11713,26 +11713,85 @@ function fotoRenderConfronto() {
 // contenitore ha overflow:hidden così lo zoom non rompe gli angoli
 // arrotondati. Stato non salvato: si resetta a 100% ad ogni nuovo confronto,
 // è un aggiustamento visivo temporaneo, non un dato da persistere.
+//
+// Pan (13/08/2026, richiesta esplicita successiva): oltre allo zoom, serve
+// spostare la foto nel riquadro (framing orizzontale diverso tra scatti,
+// non solo distanza). Drag diretto sull'immagine via Pointer Events (unico
+// set di handler per mouse+touch+penna, invece di altri due slider che
+// avrebbero affollato la UI). L'offset è in px NON scalati, applicato PRIMA
+// dello scale nella stringa transform (scale(s) translate(x,y) — l'ordine
+// CSS applica translate nello spazio già scalato, quindi il trascinamento
+// "segue il dito" in modo naturale indipendentemente dal livello di zoom).
 let _fotoZoomA = 100, _fotoZoomB = 100;
+let _fotoOffsetA = { x: 0, y: 0 }, _fotoOffsetB = { x: 0, y: 0 };
+let _fotoDragState = null;
+
 function fotoZoomControlsHtml() {
   return `<div style="display:flex;gap:14px;margin-top:14px">
     <div style="flex:1">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Zoom A: <span id="foto-zoom-a-label">100%</span></div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Zoom A: <span id="foto-zoom-a-label">100%</span> · <a href="#" onclick="fotoResetTransform('a');return false" style="color:var(--purple);text-decoration:none">reset</a></div>
       <input type="range" id="foto-zoom-a" min="50" max="200" value="100" oninput="fotoUpdateZoom('a', this.value)" style="width:100%;accent-color:var(--purple)">
     </div>
     <div style="flex:1">
-      <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Zoom B: <span id="foto-zoom-b-label">100%</span></div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:2px">Zoom B: <span id="foto-zoom-b-label">100%</span> · <a href="#" onclick="fotoResetTransform('b');return false" style="color:var(--purple);text-decoration:none">reset</a></div>
       <input type="range" id="foto-zoom-b" min="50" max="200" value="100" oninput="fotoUpdateZoom('b', this.value)" style="width:100%;accent-color:var(--purple)">
     </div>
-  </div>`;
+  </div>
+  <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:8px">Trascina direttamente le foto per spostarle nel riquadro</div>`;
 }
+
+function fotoApplyTransform(which) {
+  const img = document.getElementById('foto-cmp-img-' + which);
+  if (!img) return;
+  const zoom = which === 'a' ? _fotoZoomA : _fotoZoomB;
+  const off = which === 'a' ? _fotoOffsetA : _fotoOffsetB;
+  img.style.transform = `scale(${zoom / 100}) translate(${off.x}px, ${off.y}px)`;
+}
+
 function fotoUpdateZoom(which, val) {
   val = parseInt(val, 10);
   if (which === 'a') _fotoZoomA = val; else _fotoZoomB = val;
-  const img = document.getElementById('foto-cmp-img-' + which);
   const label = document.getElementById('foto-zoom-' + which + '-label');
-  if (img) img.style.transform = `scale(${val / 100})`;
   if (label) label.textContent = val + '%';
+  fotoApplyTransform(which);
+}
+
+function fotoResetTransform(which) {
+  if (which === 'a') { _fotoZoomA = 100; _fotoOffsetA = { x: 0, y: 0 }; }
+  else { _fotoZoomB = 100; _fotoOffsetB = { x: 0, y: 0 }; }
+  const slider = document.getElementById('foto-zoom-' + which);
+  const label = document.getElementById('foto-zoom-' + which + '-label');
+  if (slider) slider.value = 100;
+  if (label) label.textContent = '100%';
+  fotoApplyTransform(which);
+}
+
+function fotoStartDrag(evt, which) {
+  evt.preventDefault();
+  const off = which === 'a' ? _fotoOffsetA : _fotoOffsetB;
+  _fotoDragState = { which, startX: evt.clientX, startY: evt.clientY, origX: off.x, origY: off.y };
+  const img = document.getElementById('foto-cmp-img-' + which);
+  if (img) img.style.cursor = 'grabbing';
+  window.addEventListener('pointermove', fotoDrag);
+  window.addEventListener('pointerup', fotoEndDrag);
+}
+function fotoDrag(evt) {
+  if (!_fotoDragState) return;
+  const dx = evt.clientX - _fotoDragState.startX;
+  const dy = evt.clientY - _fotoDragState.startY;
+  const off = _fotoDragState.which === 'a' ? _fotoOffsetA : _fotoOffsetB;
+  off.x = _fotoDragState.origX + dx;
+  off.y = _fotoDragState.origY + dy;
+  fotoApplyTransform(_fotoDragState.which);
+}
+function fotoEndDrag() {
+  if (_fotoDragState) {
+    const img = document.getElementById('foto-cmp-img-' + _fotoDragState.which);
+    if (img) img.style.cursor = 'grab';
+  }
+  _fotoDragState = null;
+  window.removeEventListener('pointermove', fotoDrag);
+  window.removeEventListener('pointerup', fotoEndDrag);
 }
 
 // F8 (06/08/2026): Confronto — Overlay. Le due foto sono impilate nello
