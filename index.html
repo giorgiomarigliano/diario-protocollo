@@ -11429,9 +11429,10 @@ async function buildFotoTab() {
       </div>
 
       <div style="display:flex;background:var(--surface2);border-radius:10px;padding:3px;margin-bottom:16px;border:1px solid var(--border)">
-        <div class="foto-tab" data-tab="timeline" onclick="fotoSetView('timeline')" style="flex:1;text-align:center;padding:8px 4px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;background:var(--purple);color:#fff">Timeline</div>
-        <div class="foto-tab" data-tab="confronto" onclick="fotoSetView('confronto')" style="flex:1;text-align:center;padding:8px 4px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--muted)">Confronto</div>
-        <div class="foto-tab" data-tab="nuovo" onclick="fotoSetView('nuovo')" style="flex:1;text-align:center;padding:8px 4px;font-size:13px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--muted)">Nuovo scatto</div>
+        <div class="foto-tab" data-tab="timeline" onclick="fotoSetView('timeline')" style="flex:1;text-align:center;padding:8px 2px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;background:var(--purple);color:#fff">Timeline</div>
+        <div class="foto-tab" data-tab="confronto" onclick="fotoSetView('confronto')" style="flex:1;text-align:center;padding:8px 2px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--muted)">Confronto</div>
+        <div class="foto-tab" data-tab="andamento" onclick="fotoSetView('andamento')" style="flex:1;text-align:center;padding:8px 2px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--muted)">Andamento</div>
+        <div class="foto-tab" data-tab="nuovo" onclick="fotoSetView('nuovo')" style="flex:1;text-align:center;padding:8px 2px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--muted)">Nuovo scatto</div>
       </div>
 
       <div id="foto-sub-timeline" class="foto-sub">
@@ -11454,6 +11455,10 @@ async function buildFotoTab() {
           <div class="foto-cmpmode" data-mode="overlay" onclick="fotoSetCmpMode('overlay')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Overlay</div>
         </div>
         <div id="foto-cmp-content"></div>
+      </div>
+
+      <div id="foto-sub-andamento" class="foto-sub" style="display:none">
+        <div id="foto-andamento-content"></div>
       </div>
 
       <div id="foto-sub-nuovo" class="foto-sub" style="display:none">
@@ -11510,7 +11515,7 @@ async function buildFotoTab() {
 }
 
 function fotoSetView(view) {
-  ['timeline', 'confronto', 'nuovo'].forEach(v => {
+  ['timeline', 'confronto', 'nuovo', 'andamento'].forEach(v => {
     const sub = document.getElementById('foto-sub-' + v);
     if (sub) sub.style.display = (v === view) ? 'block' : 'none';
   });
@@ -11520,6 +11525,7 @@ function fotoSetView(view) {
     t.style.color = on ? '#fff' : 'var(--muted)';
   });
   if (view === 'confronto') fotoInitConfronto();
+  if (view === 'andamento') fotoRenderAndamento();
 }
 
 function fotoSetTlMode(mode) {
@@ -11807,6 +11813,101 @@ function fotoCloseLightbox() {
   const overlay = document.getElementById('foto-lightbox');
   if (overlay) overlay.remove();
   document.removeEventListener('keydown', fotoLightboxKeyHandler);
+}
+
+// F11 (14/08/2026, richiesta esplicita di Giorgio): vista "Andamento" —
+// cronaca delle valutazioni quotidiane generate dal task automatico
+// (scheduled task "Valutazione quotidiana Diario Protocollo", 12:00 tutti i
+// giorni). Campo top-level nuovo `ai_evaluations` su questo stesso record
+// (giorgio_protocollo_2026), stesso pattern array di `photo_log`: ogni voce
+// è { date:'YYYY-MM-DD', testo, generato_il: ISO timestamp }. Questa vista è
+// SOLA LETTURA — la scrittura la fa il task automatico via lo stesso
+// endpoint proxy (read-modify-write dell'intero campo `data`, identico
+// principio di sezione 1 della KB), non questo codice. Ogni voce viene
+// abbinata (se esiste) alla foto con la stessa data in photo_log — stessa
+// fonte fotoComputeEntryData già usata da Lista/Griglia/Settimana per
+// giorno ciclo/settimana/peso/delta, nessun calcolo duplicato.
+function fotoRenderAndamento() {
+  const el = document.getElementById('foto-andamento-content');
+  if (!el) return;
+  const evals = (_lastData && Array.isArray(_lastData.ai_evaluations)) ? _lastData.ai_evaluations : [];
+  if (!evals.length) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--muted)">Nessuna valutazione ancora disponibile. Il task automatico ne aggiunge una ogni giorno alle 12:00.</p>';
+    return;
+  }
+  const photoLog = (_lastData && Array.isArray(_lastData.photo_log)) ? _lastData.photo_log : [];
+  const sorted = [...evals].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  // Foto abbinate, in ordine di comparsa in questa vista: fotoOpenLightbox
+  // legge sempre dall'array globale _fotoGrigliaSorted (stesso usato dalla
+  // Griglia), quindi fotoOpenLightboxFromAndamento ce lo punta al volo prima
+  // di aprire l'overlay, invece di duplicare la logica del lightbox qui.
+  const matchedPhotos = [];
+
+  el.innerHTML = sorted.map((item) => {
+    const { dayLabel, weekLabel, pesoTxt, deltaTxt } = fotoComputeEntryData({ date: item.date });
+    const photo = photoLog.find(p => p.date === item.date);
+    let photoHtml = '';
+    if (photo) {
+      const photoIdx = matchedPhotos.length;
+      matchedPhotos.push(photo);
+      photoHtml = `<img id="foto-and-img-${photoIdx}" class="foto-photo" onclick="fotoOpenLightboxFromAndamento(${photoIdx})" style="width:52px;height:65px;border-radius:8px;object-fit:cover;background:var(--surface2);cursor:pointer;flex-shrink:0">`;
+    }
+    const generatoTxt = item.generato_il ? new Date(item.generato_il).toLocaleString('it-IT', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
+
+    return `<div style="position:relative;background:var(--surface);border-radius:14px;border:1px solid var(--border);border-left:4px solid var(--purple);padding:14px 16px;margin-bottom:12px">
+      <button onclick="fotoDeleteEvaluation('${item.date}')" title="Elimina valutazione" style="position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--red,#ff3b30);font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">✕</button>
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px;padding-right:26px">
+        ${photoHtml}
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
+            <span style="font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--purple);padding:2px 7px;border-radius:6px">✨ Valutazione</span>
+            ${dayLabel ? `<span style="font-size:11px;color:var(--muted)">${dayLabel}</span>` : ''}
+          </div>
+          <div style="font-size:14px;font-weight:600">${fotoFormatDate(item.date)} <span style="font-size:12px;color:var(--purple);font-weight:600">· ${weekLabel}</span></div>
+          ${pesoTxt ? `<div style="font-size:11px;color:var(--muted);margin-top:1px">${pesoTxt}${deltaTxt ? ' · ' + deltaTxt + ' vs T0' : ''}</div>` : ''}
+        </div>
+      </div>
+      <div style="font-size:var(--fs-body);line-height:1.55;color:var(--text);white-space:pre-wrap">${(item.testo || '').replace(/</g,'&lt;')}</div>
+      ${generatoTxt ? `<div style="font-size:10px;color:var(--muted);margin-top:10px;text-align:right">Generata il ${generatoTxt}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  matchedPhotos.forEach((p, idx) => fotoLoadImage(p.filename, 'foto-and-img-' + idx));
+  if (_fotoBlurred) document.querySelectorAll('.foto-photo').forEach(img => { img.style.filter = 'blur(16px)'; });
+  _fotoAndamentoPhotos = matchedPhotos;
+}
+
+let _fotoAndamentoPhotos = [];
+function fotoOpenLightboxFromAndamento(idx) {
+  _fotoGrigliaSorted = _fotoAndamentoPhotos;
+  fotoOpenLightbox(idx);
+}
+
+// Cancella una voce della cronaca valutazioni — stesso pattern read-modify-
+// write già usato da fotoDeleteEntry per le foto (fetch fresco, filtra,
+// PATCH dell'intero campo data, mai una scrittura parziale).
+async function fotoDeleteEvaluation(date) {
+  if (!confirm('Eliminare questa valutazione dalla cronaca?')) return;
+  try {
+    const freshRes = await fetch(SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID + '&select=data',
+      { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } });
+    const freshRows = await freshRes.json();
+    const freshData = (freshRows && freshRows[0] && freshRows[0].data) ? freshRows[0].data : {};
+    freshData.ai_evaluations = (freshData.ai_evaluations || []).filter(e => e.date !== date);
+
+    const patchRes = await fetch(SB_URL + '/rest/v1/diary?user_id=eq.' + USER_ID, {
+      method: 'PATCH',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ data: freshData, updated_at: new Date().toISOString() })
+    });
+    if (!patchRes.ok) throw new Error('HTTP ' + patchRes.status);
+
+    _lastData = freshData;
+    fotoRenderAndamento();
+  } catch (e) {
+    alert('Errore nella cancellazione: ' + e.message);
+  }
 }
 
 // F-scrubber (13/08/2026, richiesta esplicita): vista "flip-book" — un unico
