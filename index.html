@@ -6277,34 +6277,40 @@ function pdfWeightSeries() {
   }
   return pts;
 }
-// Baseline = SENTINELS[i].baseline se presente (misurazione pre-protocollo
-// a mano), altrimenti primo valore digitale reale trovato; "recente" =
-// ultimo valore digitale trovato. Sentinel senza nessuno dei due esclusi
-// dalla tabella (nessun dato, non ha senso mostrare due trattini).
+// Baseline/più recente calcolati sull'INTERO storico allenamenti reale
+// (history_sessions, che parte dal 9 maggio) — non più sui soli campi
+// sl_* digitali (che partono da metà luglio, quindi perdevano ~2 mesi
+// di storico vero) né sulla stringa statica SENTINELS[i].baseline
+// (giudicata inaffidabile da Giorgio il 24/08 — "molti dati sbagliati,
+// specialmente i valori di partenza"). Stessa identica logica di
+// matching/best-set di MOTRA_SENTINEL_MAP + l'auto-fill in importMotra()
+// (vedi sopra), solo applicata a ritroso su tutte le sessioni invece che
+// su un singolo log appena incollato.
 function pdfBuildSentinelTable() {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const testStart = new Date(TEST_PROTO_START); testStart.setHours(0, 0, 0, 0);
+  const sessions = ((_lastData && _lastData.history_sessions) || []).slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   const firstSeen = {}, lastSeen = {};
-  for (let d = new Date(testStart); d <= today; d.setDate(d.getDate() + 1)) {
-    const rd = resolveDay(new Date(d));
-    if (rd.period !== 'test_proto' && rd.period !== 'v2') continue;
-    const rec = (_lastData2 || {})[rd.id] || {};
-    SENTINELS.forEach(s => {
-      const kg = rec['sl_' + s.id + '_kg'], reps = rec['sl_' + s.id + '_reps'];
-      if (kg) {
-        const entry = { kg, reps };
-        if (!firstSeen[s.id]) firstSeen[s.id] = entry;
-        lastSeen[s.id] = entry;
+  sessions.forEach(sess => {
+    (sess.exercises || []).forEach(ex => {
+      const name = (ex.name || '').toLowerCase();
+      for (const [sid, cfg] of Object.entries(MOTRA_SENTINEL_MAP)) {
+        const hasKw = cfg.kw.some(kw => name.includes(kw));
+        const hasEx = cfg.ex.some(e => name.includes(e));
+        if (!hasKw || hasEx) continue;
+        if (!ex.sets || !ex.sets.length) continue;
+        const maxKg = Math.max(...ex.sets.map(s => parseFloat(s.kg)));
+        const topSets = ex.sets.filter(s => parseFloat(s.kg) >= maxKg * 0.97);
+        const best = topSets.reduce((a, b) => parseInt(b.reps) > parseInt(a.reps) ? b : a);
+        const entry = { date: sess.date, kg: best.kg, reps: best.reps };
+        if (!firstSeen[sid]) firstSeen[sid] = entry;
+        lastSeen[sid] = entry;
       }
     });
-  }
+  });
   const rows = [];
   SENTINELS.forEach(s => {
-    const digitalFirst = firstSeen[s.id];
-    const digitalLast = lastSeen[s.id];
-    const baselineTxt = s.baseline !== '—' ? s.baseline : (digitalFirst ? digitalFirst.kg + 'kg × ' + (digitalFirst.reps || '') : null);
-    const recentTxt = digitalLast ? digitalLast.kg + 'kg × ' + (digitalLast.reps || '') : null;
-    if (baselineTxt || recentTxt) rows.push([s.name, baselineTxt || '—', recentTxt || '—']);
+    const f = firstSeen[s.id], l = lastSeen[s.id];
+    if (!f && !l) return; // nessun dato reale, non mostrare due trattini
+    rows.push([s.name, f ? f.kg + 'kg × ' + f.reps + ' (' + f.date + ')' : '—', l ? l.kg + 'kg × ' + l.reps + ' (' + l.date + ')' : '—']);
   });
   return rows;
 }
@@ -6372,11 +6378,11 @@ async function exportPDF() {
     const latest = pdfLatestPeso();
     const pesoAttuale = latest ? latest.peso : null;
     const deltaT0 = pesoAttuale ? (pesoAttuale - 71.1) : null;
-    y = bodyText(y, 'Giorno ' + (elapsedV2 + 1) + ' di ' + CICLO1_DAYS + ' (' + Math.round((elapsedV2 + 1) / CICLO1_DAYS * 100) + '% del ciclo). Peso attuale ' + (pesoAttuale ? pesoAttuale.toFixed(1) + 'kg' : 'n/d') + (deltaT0 !== null ? ', ' + (deltaT0 >= 0 ? '+' : '') + deltaT0.toFixed(1) + 'kg rispetto al T0 (9 maggio, DEXA)' : '') + ' — il dato di massa grassa racconta una storia diversa dal solo peso: il Fit3D del 7-8 agosto misura 20.37% BF, e il confronto fotografico mostra una definizione muscolare superiore al T0, coerente con guadagno di massa magra in parallelo alla perdita di grasso.');
+    y = bodyText(y, 'Giorno ' + (elapsedV2 + 1) + ' di ' + CICLO1_DAYS + ' (' + Math.round((elapsedV2 + 1) / CICLO1_DAYS * 100) + '% del ciclo). Peso attuale ' + (pesoAttuale ? pesoAttuale.toFixed(1) + 'kg' : 'n/d') + (deltaT0 !== null ? ', ' + (deltaT0 >= 0 ? '+' : '') + deltaT0.toFixed(1) + 'kg rispetto al T0 (9 maggio, DEXA)' : '') + ' — il peso da solo non racconta la storia: il confronto fotografico mostra una definizione muscolare superiore al T0, coerente con guadagno di massa magra in parallelo alla perdita di grasso. Il prossimo dato oggettivo di composizione corporea (DEXA T1) arriva il 12 settembre.');
 
     y = kpiRow(y, [
       { label: 'Peso attuale', val: (pesoAttuale ? pesoAttuale.toFixed(1) + ' kg' : 'n/d') },
-      { label: 'BF% (Fit3D 7-8/8)', val: '20.37%' },
+      { label: 'BF% T0 (DEXA 9/5)', val: '18.2%' },
       { label: 'Target BF%', val: '14–16%' },
     ]);
 
@@ -6469,7 +6475,7 @@ async function exportPDF() {
       startY: y, margin: { left: marginL, right: marginR },
       head: [['Fase', 'Periodo', 'Note']],
       body: [
-        ['Warm-up', '8 giu – 17 lug', 'Fase preparatoria, solo Tesamorelin'],
+        ['Warm-up', '8 giu – 17 lug', 'Fase preparatoria — Tesamorelin sospeso dopo 2-3 iniezioni'],
         ['Test Protocollo', '18–19 lug', 'Introduzione stack completo'],
         ['Ciclo 1', '20 lug – 8 nov', '112 giorni, protocollo completo'],
         ['Trasferta Bangkok', '7–21 ago', 'Iniezioni mantenute, allenamento adattato'],
@@ -6481,53 +6487,71 @@ async function exportPDF() {
     footer('pagina 3 di 6');
 
     // ══ PARTE 3 — LABORATORIO ═════════════════════════════════════
+    // Semplificata su richiesta di Giorgio (24/08/2026): la versione
+    // precedente (cronologia multi-pannello + tabella trend + box "da
+    // monitorare") era poco chiara. Sostituita con la fotografia
+    // completa del T0 — unico riferimento, DEXA + Panel Santagostino,
+    // valori esatti dal referto originale (Santagostino_T0.pdf) con gli
+    // stessi flag * fuori range del referto.
     doc.addPage();
-    y = header('Parte 3 di 3', 'Laboratorio');
-    y = sectionTitle(y, 'Pannelli ematici — cronologia');
+    y = header('Parte 3 di 3', 'Laboratorio — fotografia T0');
+    y = bodyText(y, 'Le due misurazioni di riferimento prima dell\'inizio del protocollo: DEXA per la composizione corporea (9 maggio) e pannello ematico completo (13 luglio, appena prima del Test Protocollo del 18 luglio). Il prossimo confronto reale arriva con T1 (DEXA + pannello) il 12 settembre.');
+
+    y = sectionTitle(y, 'DEXA T0 — 9 maggio 2026');
     doc.autoTable({
       startY: y, margin: { left: marginL, right: marginR },
-      head: [['Data', 'Pannello', 'Esito']],
       body: [
-        ['10 apr 2026', 'CDI Bicocca (baseline)', 'Nella norma'],
-        ['20 mag 2026', 'CDI completo', 'HDL basso'],
-        ['3 lug 2026', 'CDI ormonale+renale', 'LH elevato'],
-        ['13 lug 2026', 'Santagostino T0', 'Vedi marker sotto'],
-        ['14 lug 2026', 'Visita Seregni', 'Autorizzato'],
-        ['27 ago 2026', 'Visita nefrologica', 'Programmata'],
-        ['12 set 2026', 'Panel T1 + DEXA T1', 'Programmata'],
-        ['7 nov 2026', 'Panel T2 + DEXA T2', 'Programmata'],
+        ['Peso', '71.1 kg'],
+        ['Massa grassa (BF%)', '18.2%'],
+        ['Massa magra (Lean)', '77.8% (~55.4 kg)'],
+        ['Grasso viscerale (VAT)', '72 cm² / 299 g'],
+        ['Rapporto Androide/Ginoide', '0.80'],
+        ['Densità ossea (BMD)', '1.314 · T-Score 0.0'],
       ],
-      styles: { fontSize: 8.5, cellPadding: 2.5 },
-      headStyles: { fillColor: [245, 245, 247], textColor: [134, 134, 139], fontStyle: 'bold', fontSize: 7 },
-      theme: 'striped',
+      styles: { fontSize: 9, cellPadding: 3 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 70 } },
+      theme: 'plain',
     });
     y = doc.lastAutoTable.finalY + 10;
 
-    y = sectionTitle(y, 'Marker chiave — trend');
+    y = sectionTitle(y, 'Panel Santagostino T0 — 13 luglio 2026 (codice 00K24KC2)');
     doc.autoTable({
       startY: y, margin: { left: marginL, right: marginR },
-      head: [['Marker', 'Prima misurazione', 'Più recente', 'Trend']],
+      head: [['Esame', 'Risultato', 'Range di riferimento']],
       body: [
-        ['Testosterone tot.', '197 ng/dL (3/7, conv.)', '526 ng/dL (13/7)', 'In salita'],
-        ['LH', '10.9 (3/7)', '14.24 (13/7)', '+30%'],
-        ['IGF-1', '94 (20/5)', '86 (13/7)', '-8.5%'],
-        ['HDL', '35 (20/5)', '32 (13/7)', 'Basso cronico'],
-        ['Creatinina', '1.29 (20/5)', '1.28 (13/7)', 'Ai limiti alti'],
+        ['Glucosio', '82 mg/dL', '70–100'],
+        ['Creatinina', '1.28 mg/dL *', '0.73–1.18'],
+        ['Trigliceridi', '50 mg/dL', '≤170'],
+        ['Colesterolo HDL', '32 mg/dL *', '≥40'],
+        ['Colesterolo LDL', '49 mg/dL', '≤115'],
+        ['PCR alta sensibilità', '<0.40 mg/L', '≤5.00'],
+        ['Insulina', '3.6 µU/mL', '2.6–24.0'],
+        ['LH', '14.24 mUI/mL *', '0.57–12.7 (uomini)'],
+        ['FSH', '24.27 mIU/mL *', '0.95–11.95 (uomini)'],
+        ['E2 (Estradiolo)', '<24 pg/mL', '<44 (uomini)'],
+        ['Testosterone totale', '526.20 ng/dL', '127.18–1020.36'],
+        ['Testosterone libero', '18.80 pg/mL', '9.57–40.60'],
+        ['SHBG', '54.10 nmol/L', '11.20–78.10'],
+        ['IGF-1', '86.00 µg/L', '55.00–248.00'],
+        ['Globuli rossi (RBC)', '4.01 ×10¹²/L *', '4.20–6.00'],
+        ['Emoglobina (Hb)', '118.0 g/L *', '140.0–180.0'],
+        ['Ematocrito', '37.1%', '37.0–54.0'],
+        ['MCHC', '318 g/L *', '320–380'],
+        ['Globuli bianchi (WBC)', '9.41 ×10⁹/L', '4.00–10.00'],
+        ['Piastrine', '237 ×10⁹/L', '150–450'],
       ],
-      styles: { fontSize: 8.5, cellPadding: 2.5 },
+      styles: { fontSize: 7.5, cellPadding: 2 },
       headStyles: { fillColor: [245, 245, 247], textColor: [134, 134, 139], fontStyle: 'bold', fontSize: 7 },
       theme: 'striped',
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 1 && String(data.cell.raw).includes('*')) {
+          data.cell.styles.textColor = [255, 149, 0]; data.cell.styles.fontStyle = 'bold';
+        }
+      },
     });
-    y = doc.lastAutoTable.finalY + 10;
-
-    doc.setFillColor(255, 244, 229);
-    const flagLines = doc.splitTextToSize('Creatinina ai limiti, HDL cronicamente basso, LH in salita — nessuno è criticamente fuori range ma tutti meritano un controllo dedicato al prossimo pannello. Follow-up renale già programmato il 27/8.', contentW - 10);
-    const flagH = flagLines.length * 4.4 + 12;
-    doc.roundedRect(marginL, y, contentW, flagH, 2, 2, 'F');
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(122, 74, 0);
-    doc.text('⚠️ Da monitorare a T1 (12 settembre)', marginL + 5, y + 7);
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
-    doc.text(flagLines, marginL + 5, y + 13);
+    y = doc.lastAutoTable.finalY + 6;
+    doc.setFont('helvetica', 'italic'); doc.setFontSize(7.5); doc.setTextColor(134, 134, 139);
+    doc.text('* fuori range di riferimento (come segnalato nel referto originale)', marginL, y);
     footer('pagina 5-6 di 6');
 
     doc.save('diario_protocollo_report_' + today.toISOString().slice(0, 10) + '.pdf');
