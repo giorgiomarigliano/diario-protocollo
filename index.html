@@ -1527,6 +1527,8 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -6234,6 +6236,310 @@ function exportAllCSV() {
   XLSX.writeFile(wb, 'diario_protocollo_' + today.toISOString().slice(0, 10) + '.xlsx');
 }
 
+// ── PDF narrativo a 3 parti (Fase C, 24/08/2026) ──────────────────
+// Mockup approvato prima del codice (Ricomposizione / Protocollo / Lab).
+// jsPDF + autotable via CDN (stesso pattern cdnjs di xlsx/heic2any/exif-js).
+// Foto e adherence riusano rispettivamente la stessa route SB_URL/photo/
+// di fotoLoadImage() e le stesse funzioni di aderenza cumulativa già
+// esistenti (getInjComplianceV2/getSuppComplianceV2/getWorkoutComplianceV2).
+async function pdfFetchPhotoBase64(filename) {
+  const r = await fetch(SB_URL + '/photo/' + encodeURIComponent(filename), {
+    headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const blob = await r.blob();
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+function pdfLatestPeso() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  for (let d = new Date(today); d >= START2; d.setDate(d.getDate() - 1)) {
+    const rd = resolveDay(new Date(d));
+    if (rd.period !== 'v2' && rd.period !== 'test_proto') continue;
+    const rec = (_lastData2 || {})[rd.id] || {};
+    if (rec.peso) return { peso: parseFloat(rec.peso), date: d.toISOString().slice(0, 10) };
+  }
+  return null;
+}
+function pdfWeightSeries() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const testStart = new Date(TEST_PROTO_START); testStart.setHours(0, 0, 0, 0);
+  const pts = [];
+  for (let d = new Date(testStart); d <= today; d.setDate(d.getDate() + 1)) {
+    const rd = resolveDay(new Date(d));
+    if (rd.period !== 'test_proto' && rd.period !== 'v2') continue;
+    const rec = (_lastData2 || {})[rd.id] || {};
+    if (rec.peso) pts.push({ label: (d.getDate() + '/' + (d.getMonth() + 1)), val: parseFloat(rec.peso) });
+  }
+  return pts;
+}
+// Baseline = SENTINELS[i].baseline se presente (misurazione pre-protocollo
+// a mano), altrimenti primo valore digitale reale trovato; "recente" =
+// ultimo valore digitale trovato. Sentinel senza nessuno dei due esclusi
+// dalla tabella (nessun dato, non ha senso mostrare due trattini).
+function pdfBuildSentinelTable() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const testStart = new Date(TEST_PROTO_START); testStart.setHours(0, 0, 0, 0);
+  const firstSeen = {}, lastSeen = {};
+  for (let d = new Date(testStart); d <= today; d.setDate(d.getDate() + 1)) {
+    const rd = resolveDay(new Date(d));
+    if (rd.period !== 'test_proto' && rd.period !== 'v2') continue;
+    const rec = (_lastData2 || {})[rd.id] || {};
+    SENTINELS.forEach(s => {
+      const kg = rec['sl_' + s.id + '_kg'], reps = rec['sl_' + s.id + '_reps'];
+      if (kg) {
+        const entry = { kg, reps };
+        if (!firstSeen[s.id]) firstSeen[s.id] = entry;
+        lastSeen[s.id] = entry;
+      }
+    });
+  }
+  const rows = [];
+  SENTINELS.forEach(s => {
+    const digitalFirst = firstSeen[s.id];
+    const digitalLast = lastSeen[s.id];
+    const baselineTxt = s.baseline !== '—' ? s.baseline : (digitalFirst ? digitalFirst.kg + 'kg × ' + (digitalFirst.reps || '') : null);
+    const recentTxt = digitalLast ? digitalLast.kg + 'kg × ' + (digitalLast.reps || '') : null;
+    if (baselineTxt || recentTxt) rows.push([s.name, baselineTxt || '—', recentTxt || '—']);
+  });
+  return rows;
+}
+
+async function exportPDF() {
+  const btn = document.getElementById('export-pdf-btn');
+  const statusEl = document.getElementById('export-pdf-status');
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = 'Generazione in corso...';
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageW = 210, marginL = 16, marginR = 16, contentW = pageW - marginL - marginR;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const todayStr = today.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
+    const elapsedV2 = Math.floor((today - START2) / 86400000);
+
+    function header(partLabel, partTitle) {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(28, 28, 30);
+      doc.text('Diario Protocollo — Report Ciclo 1', marginL, 18);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(134, 134, 139);
+      doc.text('Giorgio Marigliano · 20 lug – 8 nov 2026 · generato il ' + todayStr, marginL, 24);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(0, 113, 227);
+      doc.text(partLabel, pageW - marginR, 18, { align: 'right' });
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(134, 134, 139);
+      doc.text(partTitle, pageW - marginR, 24, { align: 'right' });
+      doc.setDrawColor(0, 113, 227); doc.setLineWidth(0.8);
+      doc.line(marginL, 28, pageW - marginR, 28);
+      return 38;
+    }
+    function sectionTitle(y, text) {
+      doc.setDrawColor(0, 113, 227); doc.setLineWidth(1.2);
+      doc.line(marginL, y - 4, marginL, y + 1);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5); doc.setTextColor(28, 28, 30);
+      doc.text(text, marginL + 3, y);
+      return y + 7;
+    }
+    function bodyText(y, text, maxW) {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(58, 58, 60);
+      const lines = doc.splitTextToSize(text, maxW || contentW);
+      doc.text(lines, marginL, y);
+      return y + lines.length * 4.6 + 4;
+    }
+    function kpiRow(y, items) {
+      const w = contentW / items.length;
+      items.forEach((it, i) => {
+        const x = marginL + i * w;
+        doc.setFillColor(245, 245, 247);
+        doc.roundedRect(x, y, w - 4, 20, 2, 2, 'F');
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(134, 134, 139);
+        doc.text(it.label.toUpperCase(), x + 4, y + 7);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(28, 28, 30);
+        doc.text(it.val, x + 4, y + 15);
+      });
+      return y + 26;
+    }
+    function footer(pageLabel) {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(134, 134, 139);
+      doc.text('Diario Protocollo · Report generato automaticamente · ' + pageLabel, pageW / 2, 289, { align: 'center' });
+    }
+
+    // ══ PARTE 1 — RICOMPOSIZIONE CORPOREA ═══════════════════════
+    let y = header('Parte 1 di 3', 'Ricomposizione corporea');
+    y = sectionTitle(y, 'Punto della situazione');
+    const latest = pdfLatestPeso();
+    const pesoAttuale = latest ? latest.peso : null;
+    const deltaT0 = pesoAttuale ? (pesoAttuale - 71.1) : null;
+    y = bodyText(y, 'Giorno ' + (elapsedV2 + 1) + ' di ' + CICLO1_DAYS + ' (' + Math.round((elapsedV2 + 1) / CICLO1_DAYS * 100) + '% del ciclo). Peso attuale ' + (pesoAttuale ? pesoAttuale.toFixed(1) + 'kg' : 'n/d') + (deltaT0 !== null ? ', ' + (deltaT0 >= 0 ? '+' : '') + deltaT0.toFixed(1) + 'kg rispetto al T0 (9 maggio, DEXA)' : '') + ' — il dato di massa grassa racconta una storia diversa dal solo peso: il Fit3D del 7-8 agosto misura 20.37% BF, e il confronto fotografico mostra una definizione muscolare superiore al T0, coerente con guadagno di massa magra in parallelo alla perdita di grasso.');
+
+    y = kpiRow(y, [
+      { label: 'Peso attuale', val: (pesoAttuale ? pesoAttuale.toFixed(1) + ' kg' : 'n/d') },
+      { label: 'BF% (Fit3D 7-8/8)', val: '20.37%' },
+      { label: 'Target BF%', val: '14–16%' },
+    ]);
+
+    y = sectionTitle(y, 'Andamento peso — dal Test Protocollo a oggi');
+    const series = pdfWeightSeries();
+    if (series.length >= 2) {
+      const chartX = marginL, chartY = y, chartW = contentW, chartH = 42;
+      doc.setFillColor(245, 245, 247);
+      doc.roundedRect(chartX, chartY, chartW, chartH + 10, 2, 2, 'F');
+      const vals = series.map(p => p.val);
+      const vMin = Math.min(...vals) - 0.5, vMax = Math.max(...vals) + 0.5;
+      const px = i => chartX + 8 + (chartW - 16) * i / (series.length - 1);
+      const py = v => chartY + 6 + (chartH - 12) * (1 - (v - vMin) / (vMax - vMin));
+      doc.setDrawColor(0, 113, 227); doc.setLineWidth(0.5);
+      for (let i = 0; i < series.length - 1; i++) doc.line(px(i), py(series[i].val), px(i + 1), py(series[i + 1].val));
+      doc.setFillColor(0, 113, 227);
+      series.forEach((p, i) => doc.circle(px(i), py(p.val), 0.7, 'F'));
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor(134, 134, 139);
+      [0, Math.floor(series.length / 2), series.length - 1].forEach(i => doc.text(series[i].label, px(i), chartY + chartH + 6, { align: 'center' }));
+      y = chartY + chartH + 14;
+    } else {
+      y = bodyText(y, 'Dati insufficienti per il grafico.');
+    }
+
+    y = sectionTitle(y, 'Confronto visivo');
+    const photoLog = ((_lastData && _lastData.photo_log) || []).slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    if (photoLog.length >= 2) {
+      try {
+        const first = photoLog[0], last = photoLog[photoLog.length - 1];
+        const [b64First, b64Last] = await Promise.all([pdfFetchPhotoBase64(first.filename), pdfFetchPhotoBase64(last.filename)]);
+        const imgW = 55, imgH = 73, gap = 10;
+        const x1 = marginL + (contentW / 2 - imgW - gap / 2), x2 = marginL + contentW / 2 + gap / 2;
+        doc.addImage(b64First, 'JPEG', x1, y, imgW, imgH);
+        doc.addImage(b64Last, 'JPEG', x2, y, imgW, imgH);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(86, 86, 86);
+        doc.text(first.date, x1 + imgW / 2, y + imgH + 5, { align: 'center' });
+        doc.text(last.date, x2 + imgW / 2, y + imgH + 5, { align: 'center' });
+        y = y + imgH + 12;
+      } catch (e) {
+        y = bodyText(y, '(Foto non disponibili per il confronto: ' + e.message + ')');
+      }
+    } else {
+      y = bodyText(y, 'Meno di due foto disponibili per il confronto.');
+    }
+
+    doc.addPage();
+    y = header('Parte 1 di 3', 'Ricomposizione corporea (segue)');
+    y = sectionTitle(y, 'Sentinel lift — progressione forza');
+    const sentinelRows = pdfBuildSentinelTable();
+    doc.autoTable({
+      startY: y, margin: { left: marginL, right: marginR },
+      head: [['Esercizio', 'Baseline', 'Più recente']],
+      body: sentinelRows.length ? sentinelRows : [['Nessun dato disponibile', '—', '—']],
+      styles: { fontSize: 8.5, cellPadding: 2.5 },
+      headStyles: { fillColor: [245, 245, 247], textColor: [134, 134, 139], fontStyle: 'bold', fontSize: 7 },
+      theme: 'striped',
+    });
+    footer('pagina 1-2 di 6');
+
+    // ══ PARTE 2 — PROTOCOLLO PEPTIDICO ═══════════════════════════
+    doc.addPage();
+    y = header('Parte 2 di 3', 'Protocollo peptidico');
+    y = sectionTitle(y, 'Composti e dosaggi');
+    doc.autoTable({
+      startY: y, margin: { left: marginL, right: marginR },
+      body: [
+        ['Fragment 176-191', '250mcg · mattino + pomeriggio'],
+        ['BPC-157', '250mcg · mattino + sera'],
+        ['IGF-1 DES', '25mcg/lato · post-workout, bilaterale'],
+        ['Tesamorelin', '2mg · sera'],
+        ['Ipamorelin', '100mcg · sera'],
+        ['TB-500', '500mcg · sera'],
+      ],
+      styles: { fontSize: 9, cellPadding: 3 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
+      theme: 'plain',
+    });
+    y = doc.lastAutoTable.finalY + 10;
+
+    y = sectionTitle(y, 'Aderenza cumulativa (dal Test Protocollo, 18/7)');
+    const injC = getInjComplianceV2(), suppC = getSuppComplianceV2(), woC = getWorkoutComplianceV2();
+    y = kpiRow(y, [
+      { label: 'Iniezioni', val: injC.pct + '%' },
+      { label: 'Integratori', val: suppC.pct + '%' },
+      { label: 'Allenamento', val: woC.pct + '%' },
+    ]);
+
+    y = sectionTitle(y, 'Timeline del protocollo');
+    doc.autoTable({
+      startY: y, margin: { left: marginL, right: marginR },
+      head: [['Fase', 'Periodo', 'Note']],
+      body: [
+        ['Warm-up', '8 giu – 17 lug', 'Fase preparatoria, solo Tesamorelin'],
+        ['Test Protocollo', '18–19 lug', 'Introduzione stack completo'],
+        ['Ciclo 1', '20 lug – 8 nov', '112 giorni, protocollo completo'],
+        ['Trasferta Bangkok', '7–21 ago', 'Iniezioni mantenute, allenamento adattato'],
+      ],
+      styles: { fontSize: 8.5, cellPadding: 2.5 },
+      headStyles: { fillColor: [245, 245, 247], textColor: [134, 134, 139], fontStyle: 'bold', fontSize: 7 },
+      theme: 'striped',
+    });
+    footer('pagina 3 di 6');
+
+    // ══ PARTE 3 — LABORATORIO ═════════════════════════════════════
+    doc.addPage();
+    y = header('Parte 3 di 3', 'Laboratorio');
+    y = sectionTitle(y, 'Pannelli ematici — cronologia');
+    doc.autoTable({
+      startY: y, margin: { left: marginL, right: marginR },
+      head: [['Data', 'Pannello', 'Esito']],
+      body: [
+        ['10 apr 2026', 'CDI Bicocca (baseline)', 'Nella norma'],
+        ['20 mag 2026', 'CDI completo', 'HDL basso'],
+        ['3 lug 2026', 'CDI ormonale+renale', 'LH elevato'],
+        ['13 lug 2026', 'Santagostino T0', 'Vedi marker sotto'],
+        ['14 lug 2026', 'Visita Seregni', 'Autorizzato'],
+        ['27 ago 2026', 'Visita nefrologica', 'Programmata'],
+        ['12 set 2026', 'Panel T1 + DEXA T1', 'Programmata'],
+        ['7 nov 2026', 'Panel T2 + DEXA T2', 'Programmata'],
+      ],
+      styles: { fontSize: 8.5, cellPadding: 2.5 },
+      headStyles: { fillColor: [245, 245, 247], textColor: [134, 134, 139], fontStyle: 'bold', fontSize: 7 },
+      theme: 'striped',
+    });
+    y = doc.lastAutoTable.finalY + 10;
+
+    y = sectionTitle(y, 'Marker chiave — trend');
+    doc.autoTable({
+      startY: y, margin: { left: marginL, right: marginR },
+      head: [['Marker', 'Prima misurazione', 'Più recente', 'Trend']],
+      body: [
+        ['Testosterone tot.', '197 ng/dL (3/7, conv.)', '526 ng/dL (13/7)', 'In salita'],
+        ['LH', '10.9 (3/7)', '14.24 (13/7)', '+30%'],
+        ['IGF-1', '94 (20/5)', '86 (13/7)', '-8.5%'],
+        ['HDL', '35 (20/5)', '32 (13/7)', 'Basso cronico'],
+        ['Creatinina', '1.29 (20/5)', '1.28 (13/7)', 'Ai limiti alti'],
+      ],
+      styles: { fontSize: 8.5, cellPadding: 2.5 },
+      headStyles: { fillColor: [245, 245, 247], textColor: [134, 134, 139], fontStyle: 'bold', fontSize: 7 },
+      theme: 'striped',
+    });
+    y = doc.lastAutoTable.finalY + 10;
+
+    doc.setFillColor(255, 244, 229);
+    const flagLines = doc.splitTextToSize('Creatinina ai limiti, HDL cronicamente basso, LH in salita — nessuno è criticamente fuori range ma tutti meritano un controllo dedicato al prossimo pannello. Follow-up renale già programmato il 27/8.', contentW - 10);
+    const flagH = flagLines.length * 4.4 + 12;
+    doc.roundedRect(marginL, y, contentW, flagH, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(122, 74, 0);
+    doc.text('⚠️ Da monitorare a T1 (12 settembre)', marginL + 5, y + 7);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+    doc.text(flagLines, marginL + 5, y + 13);
+    footer('pagina 5-6 di 6');
+
+    doc.save('diario_protocollo_report_' + today.toISOString().slice(0, 10) + '.pdf');
+    if (statusEl) statusEl.textContent = 'PDF generato.';
+  } catch (e) {
+    if (statusEl) statusEl.textContent = 'Errore: ' + e.message;
+    console.error(e);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 function buildDashboard() {
   const dash = document.getElementById('dash-view');
   if (dashBuilt) { requestAnimationFrame(()=>requestAnimationFrame(refreshDashCharts)); return; }
@@ -6871,9 +7177,13 @@ function buildDashboard() {
       <div class="med-panel" style="margin-top:12px">
         <div class="med-panel-hdr"><div>
           <div class="med-panel-title">📤 Esporta dati</div>
-          <div class="med-panel-sub">Un file Excel con 3 tab (Biometria, Protocollo, Allenamento) — dal Test Protocollo (18/7) a oggi</div>
+          <div class="med-panel-sub">Excel a 3 tab (dati grezzi) o PDF narrativo (percorso + protocollo + laboratorio) — dal Test Protocollo (18/7) a oggi</div>
         </div></div>
-        <button onclick="exportAllCSV()" style="width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px">Scarica Excel (.xlsx)</button>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button onclick="exportAllCSV()" style="flex:1;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Scarica Excel (.xlsx)</button>
+          <button onclick="exportPDF()" id="export-pdf-btn" style="flex:1;padding:12px;background:var(--purple);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Genera PDF report</button>
+        </div>
+        <div id="export-pdf-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
       </div>
     </div>
 
