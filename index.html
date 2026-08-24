@@ -11428,18 +11428,18 @@ async function buildFotoTab() {
         <div id="foto-blur-btn" onclick="fotoToggleBlur()" style="width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer">🙈</div>
       </div>
 
-      <div style="display:flex;background:var(--surface2);border-radius:10px;padding:3px;margin-bottom:16px;border:1px solid var(--border)">
-        <div class="foto-tab" data-tab="timeline" onclick="fotoSetView('timeline')" style="flex:1;text-align:center;padding:8px 2px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;background:var(--purple);color:#fff">Timeline</div>
-        <div class="foto-tab" data-tab="confronto" onclick="fotoSetView('confronto')" style="flex:1;text-align:center;padding:8px 2px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--muted)">Confronto</div>
-        <div class="foto-tab" data-tab="andamento" onclick="fotoSetView('andamento')" style="flex:1;text-align:center;padding:8px 2px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--muted)">Andamento</div>
-        <div class="foto-tab" data-tab="nuovo" onclick="fotoSetView('nuovo')" style="flex:1;text-align:center;padding:8px 2px;font-size:12px;font-weight:600;border-radius:8px;cursor:pointer;color:var(--muted)">Nuovo scatto</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div class="foto-tab" data-tab="timeline" onclick="fotoSetView('timeline')" style="flex:1;text-align:center;padding:9px 2px;font-size:12px;font-weight:700;border-radius:10px;cursor:pointer;background:var(--blue);color:#fff;border:1.5px solid var(--blue);box-shadow:0 2px 6px rgba(0,113,227,.3)">Timeline</div>
+        <div class="foto-tab" data-tab="confronto" onclick="fotoSetView('confronto')" style="flex:1;text-align:center;padding:9px 2px;font-size:12px;font-weight:700;border-radius:10px;cursor:pointer;background:var(--surface);color:var(--blue);border:1.5px solid var(--blue)">Confronto</div>
+        <div class="foto-tab" data-tab="andamento" onclick="fotoSetView('andamento')" style="flex:1;text-align:center;padding:9px 2px;font-size:12px;font-weight:700;border-radius:10px;cursor:pointer;background:var(--surface);color:var(--blue);border:1.5px solid var(--blue)">Andamento</div>
+        <div class="foto-tab" data-tab="nuovo" onclick="fotoSetView('nuovo')" style="flex:1;text-align:center;padding:9px 2px;font-size:12px;font-weight:700;border-radius:10px;cursor:pointer;background:var(--surface);color:var(--blue);border:1.5px solid var(--blue)">Nuovo scatto</div>
       </div>
 
       <div id="foto-sub-timeline" class="foto-sub">
         <div style="display:flex;gap:8px;margin-bottom:14px">
           <div class="foto-tlmode" data-mode="lista" onclick="fotoSetTlMode('lista')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--purple);color:#fff;cursor:pointer">Lista</div>
           <div class="foto-tlmode" data-mode="griglia" onclick="fotoSetTlMode('griglia')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Griglia</div>
-          <div class="foto-tlmode" data-mode="settimana" onclick="fotoSetTlMode('settimana')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Per settimana</div>
+          <div class="foto-tlmode" data-mode="settimana" onclick="fotoSetTlMode('settimana')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Settimana</div>
           <div class="foto-tlmode" data-mode="scrubber" onclick="fotoSetTlMode('scrubber')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Scrubber</div>
         </div>
         <div id="foto-tl-content"></div>
@@ -11521,8 +11521,9 @@ function fotoSetView(view) {
   });
   document.querySelectorAll('.foto-tab').forEach(t => {
     const on = t.dataset.tab === view;
-    t.style.background = on ? 'var(--purple)' : 'var(--surface2)';
-    t.style.color = on ? '#fff' : 'var(--muted)';
+    t.style.background = on ? 'var(--blue)' : 'var(--surface)';
+    t.style.color = on ? '#fff' : 'var(--blue)';
+    t.style.boxShadow = on ? '0 2px 6px rgba(0,113,227,.3)' : 'none';
   });
   if (view === 'confronto') fotoInitConfronto();
   if (view === 'andamento') fotoRenderAndamento();
