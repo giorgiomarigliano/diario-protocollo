@@ -6237,7 +6237,7 @@ function exportAllCSV() {
   }
 
   const fotoRows = [['data', 'ora', 'luogo', 'filename']];
-  ((_lastData1 && _lastData1.photo_log) || []).slice()
+  ((_lastData && _lastData.photo_log) || []).slice()
     .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
     .forEach(p => fotoRows.push([p.date || '', p.time || '', p.luogo || '', p.filename || '']));
 
