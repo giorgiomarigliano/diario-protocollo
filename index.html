@@ -1526,6 +1526,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
      conversione HEIC->JPEG e lettura EXIF (data automatica dello scatto) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -6165,30 +6166,20 @@ function getWorkoutComplianceV2() {
   return {done,total,pct:total?Math.round((done/total)*100):0};
 }
 
-// ── Export dati (Fase C, 24/08/2026) ─────────────────────────────
-// 4 CSV separati (biometria/protocollo/allenamento/foto) invece di un
-// unico file largo — scelta di Giorgio dopo revisione del mockup.
+// ── Export dati (Fase C, 24/08/2026, rivisto stesso giorno) ──────
+// Prima versione: 4 CSV separati. Corretta su richiesta di Giorgio:
+// un unico file .xlsx con 3 tab (Biometria/Protocollo/Allenamento) —
+// "fogli separati" intendeva tab dentro lo stesso file, non file
+// distinti. Sheet Foto rimosso: un elenco di nomi-file senza le foto
+// vere non ha uso pratico fuori dall'app. Libreria SheetJS (xlsx.full.min.js,
+// stesso CDN cdnjs già in uso per heic2any/exif-js) per generare il
+// workbook lato client, nessun backend coinvolto.
 // Riusa resolveDay/getInjectionSlots2/getWorkout2 gia' esistenti, stessa
 // logica di getInjComplianceV2/getSuppComplianceV2 ma calcolata giorno
 // per giorno invece che cumulativa (come gia' fa getSuppComplianceDaily
 // per il grafico 7gg). Il giorno corrente viene escluso dalle % di
 // aderenza (in corso, non ancora concluso) - stesso criterio adottato
 // ovunque nell'app per non trattare dosi "non ancora dovute" come saltate.
-function csvEscape(v) {
-  if (v === null || v === undefined) return '';
-  const s = String(v);
-  if (/[",\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-  return s;
-}
-function csvDownload(filename, rows) {
-  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }); // BOM per Excel
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
 function exportAllCSV() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const testStart = new Date(TEST_PROTO_START); testStart.setHours(0, 0, 0, 0);
@@ -6236,15 +6227,11 @@ function exportAllCSV() {
     woRows.push([dateStr, giornoCiclo, woFatto, woType, rec.wo_durata || '', rec.wo_volume || '', rec.wo_kcal || '']);
   }
 
-  const fotoRows = [['data', 'ora', 'luogo', 'filename']];
-  ((_lastData && _lastData.photo_log) || []).slice()
-    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
-    .forEach(p => fotoRows.push([p.date || '', p.time || '', p.luogo || '', p.filename || '']));
-
-  csvDownload('diario_biometria.csv', bioRows);
-  setTimeout(() => csvDownload('diario_protocollo.csv', protoRows), 300);
-  setTimeout(() => csvDownload('diario_allenamento.csv', woRows), 600);
-  setTimeout(() => csvDownload('diario_foto.csv', fotoRows), 900);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(bioRows), 'Biometria');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(protoRows), 'Protocollo');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(woRows), 'Allenamento');
+  XLSX.writeFile(wb, 'diario_protocollo_' + today.toISOString().slice(0, 10) + '.xlsx');
 }
 
 function buildDashboard() {
@@ -6884,9 +6871,9 @@ function buildDashboard() {
       <div class="med-panel" style="margin-top:12px">
         <div class="med-panel-hdr"><div>
           <div class="med-panel-title">📤 Esporta dati</div>
-          <div class="med-panel-sub">4 file CSV separati (biometria, protocollo, allenamento, foto) — dal Test Protocollo (18/7) a oggi</div>
+          <div class="med-panel-sub">Un file Excel con 3 tab (Biometria, Protocollo, Allenamento) — dal Test Protocollo (18/7) a oggi</div>
         </div></div>
-        <button onclick="exportAllCSV()" style="width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px">Scarica CSV (4 file)</button>
+        <button onclick="exportAllCSV()" style="width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px">Scarica Excel (.xlsx)</button>
       </div>
     </div>
 
