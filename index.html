@@ -11667,7 +11667,22 @@ function fotoComputeEntryData(entry) {
 
   const pesoTxt = !isNaN(peso) ? peso.toFixed(1) + ' kg' : '';
   const deltaTxt = !isNaN(peso) ? (peso >= FOTO_T0_PESO ? '+' : '') + (peso - FOTO_T0_PESO).toFixed(1) : '';
-  return { dayLabel, weekLabel, peso, pesoTxt, deltaTxt, aderenza, woLabel };
+
+  // Countdown T1/T2 (24/08/2026, richiesta esplicita di Giorgio, mockup
+  // "Opzione A" approvato): quanto mancava a T1 (12/9, sangue+DEXA) e T2
+  // (7/11, DEXA finale) VISTO DALLA DATA DI QUESTA FOTO, non da oggi — è
+  // uno snapshot storico coerente con deltaTxt (anche quello è calcolato
+  // vs T0, non vs "oggi"). Stessa coppia di date letterali già in uso
+  // altrove nell'app (es. timeline eventi Referti) — non promosse a
+  // costante condivisa per non toccare codice non-Foto in questa sessione.
+  const t1Date = new Date('2026-09-12'), t2Date = new Date('2026-11-07');
+  const entryDateObj = new Date(entry.date);
+  const daysToT1 = Math.round((t1Date - entryDateObj) / 86400000);
+  const daysToT2 = Math.round((t2Date - entryDateObj) / 86400000);
+  const t1Label = daysToT1 > 0 ? daysToT1 + 'gg' : (daysToT1 === 0 ? 'Oggi' : '✓ fatto');
+  const t2Label = daysToT2 > 0 ? daysToT2 + 'gg' : (daysToT2 === 0 ? 'Oggi' : '✓ fatto');
+
+  return { dayLabel, weekLabel, peso, pesoTxt, deltaTxt, aderenza, woLabel, t1Label, t2Label };
 }
 
 function fotoRenderLista() {
@@ -11681,17 +11696,26 @@ function fotoRenderLista() {
   const sorted = [...photoLog].sort((a, b) => fotoDateTimeKey(b).localeCompare(fotoDateTimeKey(a)));
 
   el.innerHTML = `<div style="max-width:640px;margin:0 auto">` + sorted.map((entry, idx) => {
-    const { dayLabel, weekLabel, pesoTxt, deltaTxt, aderenza, woLabel } = fotoComputeEntryData(entry);
+    const { dayLabel, weekLabel, pesoTxt, deltaTxt, aderenza, woLabel, t1Label, t2Label } = fotoComputeEntryData(entry);
     const imgId = 'foto-list-img-' + idx;
 
     return `<div style="position:relative;display:flex;gap:16px;background:var(--surface);border-radius:14px;padding:10px;margin-bottom:10px;border:1px solid var(--border)">
       <button onclick="fotoDeleteEntry('${entry.filename}')" title="Elimina foto" style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--red,#ff3b30);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">✕</button>
       <img id="${imgId}" class="foto-photo" style="width:clamp(64px,20vw,130px);height:clamp(80px,25vw,162px);border-radius:8px;flex-shrink:0;object-fit:cover;background:var(--surface2)">
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px;padding-right:26px">
-        <div style="font-size:14px;font-weight:600">${fotoFormatDate(entry.date)}${fotoFormatTimeLoc(entry)}${dayLabel ? ' <span style="font-size:11px;color:var(--muted);font-weight:500">· ' + dayLabel + '</span>' : ''}</div>
-        <div style="font-size:12px;color:var(--purple);font-weight:600">${weekLabel}</div>
-        ${pesoTxt ? `<div style="font-size:12px;color:var(--muted)">${pesoTxt}${deltaTxt ? ' <span style="font-weight:600;color:var(--orange)">' + deltaTxt + ' vs T0</span>' : ''}</div>` : ''}
-        ${aderenza !== null ? `<div style="display:flex;gap:10px;margin-top:4px;font-size:11px;color:var(--muted)"><span>Aderenza sett. <b style="color:var(--text)">${aderenza}%</b></span><span>Workout <b style="color:var(--text)">${woLabel}</b></span></div>` : ''}
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;padding-right:26px">
+        <div>
+          <div style="font-size:14px;font-weight:600">${fotoFormatDate(entry.date)}${fotoFormatTimeLoc(entry)}${dayLabel ? ' <span style="font-size:11px;color:var(--muted);font-weight:500">· ' + dayLabel + '</span>' : ''}</div>
+          <div style="font-size:12px;color:var(--purple);font-weight:600">${weekLabel}</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${pesoTxt ? `<div style="background:var(--surface2);border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">Peso</span><span style="display:block;font-size:13px;font-weight:700">${pesoTxt}${deltaTxt ? ' <span style="color:var(--orange)">' + deltaTxt + '</span>' : ''}</span></div>` : ''}
+          ${aderenza !== null ? `<div style="background:var(--surface2);border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">Aderenza sett.</span><span style="display:block;font-size:13px;font-weight:700">${aderenza}%</span></div>` : ''}
+          ${woLabel ? `<div style="background:var(--surface2);border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">Workout</span><span style="display:block;font-size:13px;font-weight:700">${woLabel}</span></div>` : ''}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="background:#fdf2ff;border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--purple);text-transform:uppercase;letter-spacing:.03em">🩸 A T1 (12 set)</span><span style="display:block;font-size:13px;font-weight:700;color:var(--purple)">${t1Label}</span></div>
+          <div style="background:#fdf2ff;border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--purple);text-transform:uppercase;letter-spacing:.03em">🩸 A T2 (7 nov)</span><span style="display:block;font-size:13px;font-weight:700;color:var(--purple)">${t2Label}</span></div>
+        </div>
       </div>
     </div>`;
   }).join('') + `</div>`;
@@ -11717,13 +11741,14 @@ function fotoRenderGriglia() {
 
   el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;max-width:1100px;margin:0 auto">` +
     sorted.map((entry, idx) => {
-      const { dayLabel, pesoTxt, deltaTxt, aderenza, woLabel } = fotoComputeEntryData(entry);
+      const { dayLabel, pesoTxt, deltaTxt, aderenza, woLabel, t1Label, t2Label } = fotoComputeEntryData(entry);
       const imgId = 'foto-grid-img-' + idx;
       const substats = [
         pesoTxt ? 'Peso ' + pesoTxt : '',
         aderenza !== null ? 'Ader. ' + aderenza + '%' : '',
         woLabel ? 'WO ' + woLabel : ''
       ].filter(Boolean).join(' · ');
+      const t1t2 = `T1 ${t1Label} · T2 ${t2Label}`;
 
       return `<div onclick="fotoOpenLightbox(${idx})" style="position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--surface2);cursor:pointer">
         <img id="${imgId}" class="foto-photo" style="width:100%;height:100%;object-fit:cover;display:block">
@@ -11732,6 +11757,7 @@ function fotoRenderGriglia() {
         <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.6);color:#fff;padding:5px 7px">
           <div style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${fotoFormatDateShort(entry.date)}${entry.luogo ? ' · ' + entry.luogo : ''}${dayLabel ? ' · ' + dayLabel.replace('Giorno ','G').replace('/'+CICLO1_DAYS,'') : ''}</div>
           ${substats ? `<div style="font-size:9px;opacity:.9;margin-top:1px">${substats}</div>` : ''}
+          <div style="font-size:9px;color:#e0b3ff;margin-top:1px">${t1t2}</div>
         </div>
       </div>`;
     }).join('') + `</div>`;
@@ -11778,12 +11804,14 @@ function fotoLightboxUpdate(idx) {
   const entry = _fotoGrigliaSorted[idx];
   if (!entry) return;
   _fotoLightboxIdx = idx;
-  const { dayLabel, pesoTxt, deltaTxt, aderenza, woLabel } = fotoComputeEntryData(entry);
+  const { dayLabel, pesoTxt, deltaTxt, aderenza, woLabel, t1Label, t2Label } = fotoComputeEntryData(entry);
   const substats = [
     pesoTxt ? 'Peso ' + pesoTxt : '',
     deltaTxt ? deltaTxt + ' vs T0' : '',
     aderenza !== null ? 'Aderenza ' + aderenza + '%' : '',
-    woLabel ? 'Workout ' + woLabel : ''
+    woLabel ? 'Workout ' + woLabel : '',
+    'A T1 ' + t1Label,
+    'A T2 ' + t2Label
   ].filter(Boolean).join(' · ');
 
   fotoLoadImage(entry.filename, 'foto-lightbox-img');
@@ -11950,13 +11978,13 @@ function fotoScrubberUpdate(idx) {
   idx = parseInt(idx, 10);
   const entry = _fotoScrubberSorted[idx];
   if (!entry) return;
-  const { dayLabel, pesoTxt } = fotoComputeEntryData(entry);
+  const { dayLabel, pesoTxt, t1Label, t2Label } = fotoComputeEntryData(entry);
   fotoLoadImage(entry.filename, 'foto-scrub-img');
   if (_fotoBlurred) { const img = document.getElementById('foto-scrub-img'); if (img) img.style.filter = 'blur(16px)'; }
   const caption = document.getElementById('foto-scrub-caption');
   const sub = document.getElementById('foto-scrub-sub');
   if (caption) caption.textContent = fotoFormatDate(entry.date) + fotoFormatTimeLoc(entry);
-  if (sub) sub.textContent = [pesoTxt, dayLabel].filter(Boolean).join(' · ');
+  if (sub) sub.textContent = [pesoTxt, dayLabel, 'A T1 ' + t1Label, 'A T2 ' + t2Label].filter(Boolean).join(' · ');
 }
 
 // F6 (06/08/2026): Vista Per settimana — raggruppa le foto per settimana/
@@ -12094,9 +12122,9 @@ function fotoRenderConfronto() {
     <div style="margin-top:12px">
       <input type="range" id="foto-cmp-opacity" min="0" max="100" value="${_fotoCmpOpacity}" oninput="fotoUpdateOverlayOpacity(this.value)" style="width:100%;accent-color:var(--blue)">
       <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:4px">
-        <div style="font-size:11px;color:var(--muted);text-align:left"><b style="color:var(--text)">${fotoFormatDate(entryA.date)}</b>${fotoFormatTimeLoc(entryA)}${dataA.pesoTxt ? '<br>' + dataA.pesoTxt : ''}</div>
+        <div style="font-size:11px;color:var(--muted);text-align:left"><b style="color:var(--text)">${fotoFormatDate(entryA.date)}</b>${fotoFormatTimeLoc(entryA)}${dataA.pesoTxt ? '<br>' + dataA.pesoTxt : ''}<br><span style="color:var(--purple)">T1 ${dataA.t1Label} · T2 ${dataA.t2Label}</span></div>
         <div id="foto-cmp-opacity-label" style="font-size:11px;font-weight:700;color:var(--blue)">${_fotoCmpOpacity}%</div>
-        <div style="font-size:11px;color:var(--muted);text-align:right"><b style="color:var(--text)">${fotoFormatDate(entryB.date)}</b>${fotoFormatTimeLoc(entryB)}${dataB.pesoTxt ? '<br>' + dataB.pesoTxt : ''}</div>
+        <div style="font-size:11px;color:var(--muted);text-align:right"><b style="color:var(--text)">${fotoFormatDate(entryB.date)}</b>${fotoFormatTimeLoc(entryB)}${dataB.pesoTxt ? '<br>' + dataB.pesoTxt : ''}<br><span style="color:var(--purple)">T1 ${dataB.t1Label} · T2 ${dataB.t2Label}</span></div>
       </div>
     </div>
     ${fotoZoomControlsHtml()}`;
@@ -12113,13 +12141,13 @@ function fotoRenderConfronto() {
       <div style="width:100%;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:var(--surface2)">
         <img id="foto-cmp-img-a" class="foto-photo" onpointerdown="fotoStartDrag(event,'a')" style="width:100%;height:100%;object-fit:cover;display:block;transform:scale(1);transform-origin:center top;cursor:grab;touch-action:none">
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${fotoFormatDate(entryA.date)}</b>${fotoFormatTimeLoc(entryA)}${dataA.pesoTxt ? '<br>' + dataA.pesoTxt : ''}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${fotoFormatDate(entryA.date)}</b>${fotoFormatTimeLoc(entryA)}${dataA.pesoTxt ? '<br>' + dataA.pesoTxt : ''}<br><span style="color:var(--purple);font-size:11px">T1 ${dataA.t1Label} · T2 ${dataA.t2Label}</span></div>
     </div>
     <div style="flex:1;text-align:center">
       <div style="width:100%;aspect-ratio:3/4;border-radius:14px;overflow:hidden;background:var(--surface2)">
         <img id="foto-cmp-img-b" class="foto-photo" onpointerdown="fotoStartDrag(event,'b')" style="width:100%;height:100%;object-fit:cover;display:block;transform:scale(1);transform-origin:center top;cursor:grab;touch-action:none">
       </div>
-      <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${fotoFormatDate(entryB.date)}</b>${fotoFormatTimeLoc(entryB)}${dataB.pesoTxt ? '<br>' + dataB.pesoTxt : ''}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px"><b style="color:var(--text)">${fotoFormatDate(entryB.date)}</b>${fotoFormatTimeLoc(entryB)}${dataB.pesoTxt ? '<br>' + dataB.pesoTxt : ''}<br><span style="color:var(--purple);font-size:11px">T1 ${dataB.t1Label} · T2 ${dataB.t2Label}</span></div>
     </div>
   </div>
   ${fotoZoomControlsHtml()}`;
