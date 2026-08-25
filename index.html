@@ -6991,6 +6991,31 @@ function buildDashboard() {
       </div>
     </div>
 
+    <!-- ══ SEZ. PATTERN & CORRELAZIONI (25/08/2026, Livello 1 roadmap 17.5) ══ -->
+    <div class="dash-section">
+      <div class="dash-section-title">Pattern & correlazioni</div>
+      <div class="dash-two-col">
+        <div class="charts-card">
+          <div class="dash-card-title">Energia soggettiva ↔ ore di sonno</div>
+          <div style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:6px">Stesso giorno</div>
+          <canvas class="dash-chart" id="dc-energia-sonno" height="130"></canvas>
+          <div id="dc-energia-sonno-note" style="font-size: var(--fs-xs);color:var(--muted);margin-top:6px"></div>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">Recupero soggettivo ↔ ore di sonno</div>
+          <div style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:6px">Stesso giorno</div>
+          <canvas class="dash-chart" id="dc-recupero-sonno" height="130"></canvas>
+          <div id="dc-recupero-sonno-note" style="font-size: var(--fs-xs);color:var(--muted);margin-top:6px"></div>
+        </div>
+      </div>
+      <div class="charts-card" style="margin-top:12px">
+        <div class="dash-card-title">Ultimi 14 giorni vs 14 precedenti</div>
+        <div style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:8px">Diventerà 30gg/30gg (Livello 1 della roadmap) quando i dati saranno sufficienti</div>
+        <div id="dc-period-compare" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      </div>
+      <div style="font-size: var(--fs-2xs);color:var(--muted);margin-top:8px;font-style:italic">Correlazioni indicative su un campione ancora piccolo, non causali. Nessuna previsione numerica: con un solo ciclo di dati sarebbe overfitting travestito da previsione.</div>
+    </div>
+
     <!-- ══ SEZ. ANDAMENTO SONNO ══════════════════════════════ -->
     ${inV2?`<div class="dash-section">
       <div class="dash-section-title">Andamento sonno · dal Test Protocollo</div>
@@ -7445,6 +7470,22 @@ function refreshDashCharts() {
     {field:'pienezza_add', name:'Pienezza addominale', max:3, labels:['Normale','Lieve','Moderata','Intensa']},
   ], 30);
 
+  // ── Pearson + nota interpretativa, fattorizzata qui (25/08/2026) da
+  // quella che prima era inline solo nel blocco Sonno->HRV sotto — ora
+  // riusata anche dalle 2 nuove card Energia/Recupero<->Sonno, invece di
+  // triplicare lo stesso calcolo copiato a mano.
+  function pearsonNote(points, unitLabel) {
+    if (points.length < 3) return `${points.length} giorni con entrambi i dati — servono almeno 3.`;
+    const n=points.length;
+    const sx=points.reduce((a,p)=>a+p.x,0), sy=points.reduce((a,p)=>a+p.y,0);
+    const sxy=points.reduce((a,p)=>a+p.x*p.y,0), sx2=points.reduce((a,p)=>a+p.x*p.x,0), sy2=points.reduce((a,p)=>a+p.y*p.y,0);
+    const den=Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));
+    const r = den===0 ? 0 : (n*sxy-sx*sy)/den;
+    const forza = Math.abs(r)<0.2?'nessuna':Math.abs(r)<0.4?'debole':Math.abs(r)<0.6?'moderata':'forte';
+    const verso = r>0?'positiva':'negativa';
+    return `${n} ${unitLabel||'giorni'} · correlazione ${forza}${Math.abs(r)>=0.2?' '+verso:''} (r = ${r.toFixed(2)}). Indicativo, non causale.`;
+  }
+
   // ── Sonno → HRV giorno dopo (60gg) ─────────────────────────
   const hrvAll60 = getDayDataAll('hrv', 60);
   const shPoints = [];
@@ -7455,20 +7496,61 @@ function refreshDashCharts() {
   }
   drawXYScatter('dc-sleep-hrv', shPoints, {height:150, color:'#34c759', xLabel:'ore di sonno'});
   const shNote = document.getElementById('dc-sleep-hrv-note');
-  if (shNote) {
-    if (shPoints.length < 3) {
-      shNote.textContent = `${shPoints.length} notti con entrambi i dati — servono almeno 3 giorni.`;
-    } else {
-      const n=shPoints.length;
-      const sx=shPoints.reduce((a,p)=>a+p.x,0), sy=shPoints.reduce((a,p)=>a+p.y,0);
-      const sxy=shPoints.reduce((a,p)=>a+p.x*p.y,0), sx2=shPoints.reduce((a,p)=>a+p.x*p.x,0), sy2=shPoints.reduce((a,p)=>a+p.y*p.y,0);
-      const den=Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));
-      const r = den===0 ? 0 : (n*sxy-sx*sy)/den;
-      const forza = Math.abs(r)<0.2?'nessuna':Math.abs(r)<0.4?'debole':Math.abs(r)<0.6?'moderata':'forte';
-      const verso = r>0?'positiva':'negativa';
-      shNote.textContent = `${n} notti · correlazione ${forza}${Math.abs(r)>=0.2?' '+verso:''} (r = ${r.toFixed(2)}). Indicativo, non causale.`;
-    }
+  if (shNote) shNote.textContent = pearsonNote(shPoints, 'notti');
+
+  // ── Pattern & correlazioni (25/08/2026, Livello 1 roadmap 17.5) ──
+  // Energia/Recupero <-> Sonno stesso giorno: le due correlazioni piu'
+  // forti trovate nell'analisi manuale del 25/08 (r=+0.74 e +0.69 su 37-39
+  // giorni) - qui ricalcolate dal vivo, non hardcoded, cosi' si aggiornano
+  // da sole man mano che arrivano nuovi dati.
+  const energia30 = getDayDataAll('energia', 30);
+  const recupero30 = getDayDataAll('recupero', 30);
+  const sonno30 = getSonnoOreAll(30);
+  const esPoints = [], rsPoints = [];
+  for (let i=0; i<sonno30.length; i++) {
+    const s = sonno30[i].value;
+    if (s===null) continue;
+    if (energia30[i] && energia30[i].value!==null) esPoints.push({x:s, y:energia30[i].value});
+    if (recupero30[i] && recupero30[i].value!==null) rsPoints.push({x:s, y:recupero30[i].value});
   }
+  drawXYScatter('dc-energia-sonno', esPoints, {height:130, color:'#ff9500', xLabel:'ore di sonno'});
+  const esNote = document.getElementById('dc-energia-sonno-note');
+  if (esNote) esNote.textContent = pearsonNote(esPoints, 'giorni');
+  drawXYScatter('dc-recupero-sonno', rsPoints, {height:130, color:'#5856d6', xLabel:'ore di sonno'});
+  const rsNote = document.getElementById('dc-recupero-sonno-note');
+  if (rsNote) rsNote.textContent = pearsonNote(rsPoints, 'giorni');
+
+  // ── Confronto ultimi 14gg vs 14gg precedenti ────────────────
+  // Versione ridotta del "30gg vs 30gg" della roadmap - diventera' un
+  // vero 30/30 quando ci saranno abbastanza giorni di ciclo (~meta'
+  // settembre). Riusa getDayDataAll/getSonnoOreAll gia' esistenti.
+  (function renderPeriodCompare() {
+    const el = document.getElementById('dc-period-compare');
+    if (!el) return;
+    function avgLastN(arr, offset, n) {
+      const slice = arr.slice(arr.length - offset - n, arr.length - offset).filter(p => p.value !== null);
+      if (!slice.length) return null;
+      return slice.reduce((a, p) => a + p.value, 0) / slice.length;
+    }
+    const metrics = [
+      { label: 'HRV', data: getDayDataAll('hrv', 28), unit: 'ms', decimals: 1 },
+      { label: 'RHR', data: getDayDataAll('rhr', 28), unit: 'bpm', decimals: 1 },
+      { label: 'Sonno', data: getSonnoOreAll(28), unit: 'h', decimals: 1 },
+      { label: 'Peso', data: getDayDataAll('peso', 28), unit: 'kg', decimals: 1 },
+    ];
+    el.innerHTML = metrics.map(m => {
+      const recent = avgLastN(m.data, 0, 14);
+      const prior = avgLastN(m.data, 14, 14);
+      if (recent === null || prior === null) return `<div style="flex:1;min-width:100px;background:var(--surface-2);border-radius:10px;padding:8px 10px"><div style="font-size: var(--fs-2xs);color:var(--muted)">${m.label}</div><div style="font-size: var(--fs-xs);color:var(--muted)">dati insuff.</div></div>`;
+      const delta = recent - prior;
+      const deltaColor = Math.abs(delta) < 0.05 ? 'var(--muted)' : (delta > 0 ? '#34c759' : '#ff9500');
+      return `<div style="flex:1;min-width:100px;background:var(--surface-2);border-radius:10px;padding:8px 10px">
+        <div style="font-size: var(--fs-2xs);color:var(--muted);text-transform:uppercase;letter-spacing:.03em">${m.label}</div>
+        <div style="font-size: var(--fs-sm);font-weight: var(--fw-bold)">${prior.toFixed(m.decimals)} → ${recent.toFixed(m.decimals)} ${m.unit}</div>
+        <div style="font-size: var(--fs-2xs);font-weight: var(--fw-semi);color:${deltaColor}">${delta>=0?'+':''}${delta.toFixed(m.decimals)}</div>
+      </div>`;
+    }).join('');
+  })();
 
   // ── Allenamento sessioni (60gg WU+V2) ──────────────────────
   const sessions = getSessionsAll(60);
