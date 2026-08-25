@@ -8369,7 +8369,32 @@ function buildCycleCard2(container) {
     const daysToT2 = Math.round((t2Date-today)/86400000);
     const t1Txt = daysToT1 > 0 ? `T1 tra ${daysToT1}gg` : (daysToT1 === 0 ? 'T1 oggi' : 'T1 ✓ fatto');
     const t2Txt = daysToT2 > 0 ? `T2 tra ${daysToT2}gg` : (daysToT2 === 0 ? 'T2 oggi' : 'T2 ✓ fatto');
-    infoHtml = `<h3>Settimana ${wk} · ${ph.label}</h3><p>Giorno ${elapsed+1} di ${CICLO1_DAYS} · ${CICLO1_DAYS-elapsed-1} giorni al termine</p><div class="cycle-next">⟶ ${nextEv}</div><div class="cycle-next" style="margin-top:4px;color:var(--purple)">🩸 ${t1Txt} · ${t2Txt}</div>`;
+
+    // Mini-timeline visiva del ciclo (25/08/2026, richiesta di Giorgio,
+    // "lo spazio c'è") — stessa riga temporale della card, ma come barra
+    // invece che solo testo: segmenti di fase (tacche a 28/56/84gg), marker
+    // T1/Mallorca/T2 posizionati in proporzione ai loro giorni reali dal
+    // 20/7, pallino "oggi" sul bordo del riempimento blu. Giorni calcolati
+    // una sola volta qui (non richiamano getPhase2 per le soglie, sono le
+    // stesse costanti 28/56/84 già usate in getNextEvent2 sopra).
+    const pct = v => Math.max(0, Math.min(100, (v/CICLO1_DAYS)*100));
+    const dayT1 = Math.round((t1Date-start)/86400000);
+    const dayMallorca = Math.round((new Date('2026-10-20')-start)/86400000);
+    const dayT2 = Math.round((t2Date-start)/86400000);
+    const pctToday = pct(elapsed), pctT1 = pct(dayT1), pctMallorca = pct(dayMallorca), pctT2 = pct(dayT2);
+    const miniTimelineHtml = `<div style="position:relative;height:16px;margin-top:8px">
+      <div style="position:absolute;top:5px;left:0;right:0;height:5px;background:#e8e8ed;border-radius:3px"></div>
+      <div style="position:absolute;top:5px;left:0;width:${pctToday.toFixed(1)}%;height:5px;background:#0071e3;border-radius:3px"></div>
+      <div style="position:absolute;top:3px;left:${pct(28).toFixed(1)}%;width:1px;height:9px;background:#c7c7cc"></div>
+      <div style="position:absolute;top:3px;left:${pct(56).toFixed(1)}%;width:1px;height:9px;background:#c7c7cc"></div>
+      <div style="position:absolute;top:3px;left:${pct(84).toFixed(1)}%;width:1px;height:9px;background:#c7c7cc"></div>
+      <div title="T1 · 12 set" style="position:absolute;top:2px;left:${pctT1.toFixed(1)}%;width:7px;height:7px;border-radius:50%;background:var(--purple);transform:translateX(-50%)"></div>
+      <div title="Mallorca · 20-22 ott" style="position:absolute;top:2px;left:${pctMallorca.toFixed(1)}%;width:7px;height:7px;border-radius:50%;background:#5ac8fa;transform:translateX(-50%)"></div>
+      <div title="T2 · 7 nov" style="position:absolute;top:2px;left:${pctT2.toFixed(1)}%;width:7px;height:7px;border-radius:50%;background:var(--purple);transform:translateX(-50%)"></div>
+      <div title="Oggi" style="position:absolute;top:0px;left:${pctToday.toFixed(1)}%;width:11px;height:11px;border-radius:50%;background:#fff;border:2.5px solid #0071e3;transform:translateX(-50%)"></div>
+    </div>`;
+
+    infoHtml = `<h3>Settimana ${wk} · ${ph.label}</h3><p>Giorno ${elapsed+1} di ${CICLO1_DAYS} · ${CICLO1_DAYS-elapsed-1} giorni al termine</p><div class="cycle-next">⟶ ${nextEv}</div><div class="cycle-next" style="margin-top:4px;color:var(--purple)">🩸 ${t1Txt} · ${t2Txt}</div>${miniTimelineHtml}`;
   }
 
   const card = document.createElement('div');
