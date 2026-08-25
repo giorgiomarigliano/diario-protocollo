@@ -3514,6 +3514,54 @@ const DEXA_T0 = {
   vat_cm2: '72', vat_g: '299', bmd: '1.314'
 };
 
+// p0_sant promosso a globale il 25/08/2026 (era locale a buildMedView()) per
+// essere leggibile anche da exportPDF() — stesso identico contenuto, nessuna
+// altra modifica. DEXA_T0 sopra era già globale. Quando arriveranno i panel
+// T1 (12/9) e T2 (7/11), stessa cosa: dichiarare i nuovi oggetti (es.
+// DEXA_T1/p_t1_sant) qui a livello globale invece che dentro buildMedView(),
+// così restano automaticamente disponibili al PDF senza altri interventi.
+const p0_sant = {
+  date: '13 luglio 2026', label: 'Panel T0 Santagostino (pre-v2)',
+  note: 'Codice 00K24KC2 · Prelievo ore 08:32 · Risultati 14/07/2026',
+  cats: [
+    { cat: 'Ematologia', items: [
+      { name:'Globuli Bianchi (WBC)', val:'9.41 ×10⁹/L', ref:'4.00–10.00', ok:true },
+      { name:'Globuli Rossi (RBC)', val:'4.01 ×10¹²/L', ref:'4.20–6.00', ok:false, note:'↓ Basso — confermato cronico' },
+      { name:'Emoglobina (Hb)', val:'118.0 g/L', ref:'140–180', ok:false, note:'🔴 Bassa — stabile bassa (119→118)' },
+      { name:'Ematocrito (Hct)', val:'37.1%', ref:'37.0–54.0', ok:true },
+      { name:'MCV', val:'92.5 fL', ref:'80–95', ok:true },
+      { name:'MCHC', val:'318 g/L', ref:'320–380', ok:false, note:'Lievemente bassa' },
+      { name:'Piastrine', val:'237 ×10⁹/L', ref:'150–450', ok:true },
+    ]},
+    { cat: 'Chimica clinica', items: [
+      { name:'Glucosio', val:'82 mg/dL', ref:'70–100', ok:true },
+      { name:'Insulina', val:'3.6 µU/mL', ref:'2.6–24.0', ok:true },
+      { name:'HOMA Index', val:'0.73', ref:'<2.5', ok:true, note:'Calcolato da gluc × insul / 405' },
+      { name:'Creatinina', val:'1.28 mg/dL', ref:'0.73–1.18', ok:false, note:'⚠️ Sopra range (trend 1.13→1.29→1.32→1.28)' },
+      { name:'Trigliceridi', val:'50 mg/dL', ref:'≤170', ok:true },
+      { name:'Colesterolo HDL', val:'32 mg/dL', ref:'≥40', ok:false, note:'↓ Basso — persistente' },
+      { name:'Colesterolo LDL', val:'49 mg/dL', ref:'<115', ok:true },
+      { name:'PCR (alta sensibilità)', val:'0.40 mg/L', ref:'≤5.00', ok:true, note:'Bassa — buon controllo infiammazione' },
+    ]},
+    { cat: 'Immunologia & asse ormonale', items: [
+      { name:'LH', val:'14.24 mUI/mL', ref:'0.57–12.7 (uomo)', ok:false, note:'🔴 PEGGIORATO — +30% vs 03/07 (10.9→14.24) ↑↑', sev:'alert' },
+      { name:'FSH', val:'24.27 mIU/mL', ref:'0.95–11.95 (uomo)', ok:false, note:'🔴 PEGGIORATO — +14% vs 03/07 (21.2→24.27) ↑', sev:'alert' },
+      { name:'Testosterone totale', val:'526.20 ng/dL', ref:'127.18–1020.36 (uomo)', ok:true, note:'Nel range medio-basso · CDI 03/07 era 6.85 — unità da confermare (µg/L→685ng/dL oppure nmol/L→~198ng/dL: risultati molto diversi, verificare referto originale)' },
+      { name:'Testosterone libero', val:'18.80 pg/mL', ref:'9.57–40.60', ok:true, note:'Nella parte bassa del range' },
+      { name:'SHBG', val:'54.10 nmol/L', ref:'11.20–78.10', ok:true, note:'🔴 CALO SIGNIFICATIVO — -26% vs 03/07 (72.80→54.10) ↓↓' },
+      { name:'Estradiolo (E2)', val:'<24 pg/mL', ref:'<44 (uomo)', ok:true, note:'Sotto limite rilevabilità' },
+      { name:'IGF-1', val:'86.00 µg/L', ref:'55–248', ok:false, note:'🔴 CALATO — -8.5% vs 20/05 (94→86) ↓ · Target Tesamorelin 115–150+' },
+    ]},
+    { cat: 'Discrepanze vs CDI 03/07', items: [
+      { name:'LH: 10.9 → 14.24', val:'+30% ↑↑', ref:'—', ok:false, note:'Peggioramento in 10 giorni durante warm-up', sev:'alert' },
+      { name:'FSH: 21.2 → 24.27', val:'+14% ↑', ref:'—', ok:false, note:'Lieve peggioramento asse ipofisario' },
+      { name:'SHBG: 72.80 → 54.10', val:'-26% ↓↓', ref:'—', ok:false, note:'Calo rapido anomalo in 10 giorni', sev:'alert' },
+      { name:'IGF-1: 94 → 86', val:'-8.5% ↓', ref:'—', ok:false, note:'Continua trend negativo da maggio' },
+      { name:'Hb: 119 → 118', val:'Stabile bassa', ref:'—', ok:false, note:'Cronico — RBC anche basso', sev:'warn' },
+    ]},
+  ]
+};
+
 // Card 1: quadro generale pre-protocollo (CDI) — sempre completata, riferimento storico
 const LAB_CDI_CARD = {id:'lab_cdi_quadro', label:'Quadro generale pre-protocollo · CDI', badge:'p1b', locked:true, openDefault:false, sub:'Ultimo panel CDI (20 mag 2026) — riferimento storico, non è il T0 ufficiale'};
 
@@ -4195,47 +4243,8 @@ function buildMedView() {
     ]
   };
 
-  const p0_sant = {
-    date: '13 luglio 2026', label: 'Panel T0 Santagostino (pre-v2)',
-    note: 'Codice 00K24KC2 · Prelievo ore 08:32 · Risultati 14/07/2026',
-    cats: [
-      { cat: 'Ematologia', items: [
-        { name:'Globuli Bianchi (WBC)', val:'9.41 ×10⁹/L', ref:'4.00–10.00', ok:true },
-        { name:'Globuli Rossi (RBC)', val:'4.01 ×10¹²/L', ref:'4.20–6.00', ok:false, note:'↓ Basso — confermato cronico' },
-        { name:'Emoglobina (Hb)', val:'118.0 g/L', ref:'140–180', ok:false, note:'🔴 Bassa — stabile bassa (119→118)' },
-        { name:'Ematocrito (Hct)', val:'37.1%', ref:'37.0–54.0', ok:true },
-        { name:'MCV', val:'92.5 fL', ref:'80–95', ok:true },
-        { name:'MCHC', val:'318 g/L', ref:'320–380', ok:false, note:'Lievemente bassa' },
-        { name:'Piastrine', val:'237 ×10⁹/L', ref:'150–450', ok:true },
-      ]},
-      { cat: 'Chimica clinica', items: [
-        { name:'Glucosio', val:'82 mg/dL', ref:'70–100', ok:true },
-        { name:'Insulina', val:'3.6 µU/mL', ref:'2.6–24.0', ok:true },
-        { name:'HOMA Index', val:'0.73', ref:'<2.5', ok:true, note:'Calcolato da gluc × insul / 405' },
-        { name:'Creatinina', val:'1.28 mg/dL', ref:'0.73–1.18', ok:false, note:'⚠️ Sopra range (trend 1.13→1.29→1.32→1.28)' },
-        { name:'Trigliceridi', val:'50 mg/dL', ref:'≤170', ok:true },
-        { name:'Colesterolo HDL', val:'32 mg/dL', ref:'≥40', ok:false, note:'↓ Basso — persistente' },
-        { name:'Colesterolo LDL', val:'49 mg/dL', ref:'<115', ok:true },
-        { name:'PCR (alta sensibilità)', val:'0.40 mg/L', ref:'≤5.00', ok:true, note:'Bassa — buon controllo infiammazione' },
-      ]},
-      { cat: 'Immunologia & asse ormonale', items: [
-        { name:'LH', val:'14.24 mUI/mL', ref:'0.57–12.7 (uomo)', ok:false, note:'🔴 PEGGIORATO — +30% vs 03/07 (10.9→14.24) ↑↑', sev:'alert' },
-        { name:'FSH', val:'24.27 mIU/mL', ref:'0.95–11.95 (uomo)', ok:false, note:'🔴 PEGGIORATO — +14% vs 03/07 (21.2→24.27) ↑', sev:'alert' },
-        { name:'Testosterone totale', val:'526.20 ng/dL', ref:'127.18–1020.36 (uomo)', ok:true, note:'Nel range medio-basso · CDI 03/07 era 6.85 — unità da confermare (µg/L→685ng/dL oppure nmol/L→~198ng/dL: risultati molto diversi, verificare referto originale)' },
-        { name:'Testosterone libero', val:'18.80 pg/mL', ref:'9.57–40.60', ok:true, note:'Nella parte bassa del range' },
-        { name:'SHBG', val:'54.10 nmol/L', ref:'11.20–78.10', ok:true, note:'🔴 CALO SIGNIFICATIVO — -26% vs 03/07 (72.80→54.10) ↓↓' },
-        { name:'Estradiolo (E2)', val:'<24 pg/mL', ref:'<44 (uomo)', ok:true, note:'Sotto limite rilevabilità' },
-        { name:'IGF-1', val:'86.00 µg/L', ref:'55–248', ok:false, note:'🔴 CALATO — -8.5% vs 20/05 (94→86) ↓ · Target Tesamorelin 115–150+' },
-      ]},
-      { cat: 'Discrepanze vs CDI 03/07', items: [
-        { name:'LH: 10.9 → 14.24', val:'+30% ↑↑', ref:'—', ok:false, note:'Peggioramento in 10 giorni durante warm-up', sev:'alert' },
-        { name:'FSH: 21.2 → 24.27', val:'+14% ↑', ref:'—', ok:false, note:'Lieve peggioramento asse ipofisario' },
-        { name:'SHBG: 72.80 → 54.10', val:'-26% ↓↓', ref:'—', ok:false, note:'Calo rapido anomalo in 10 giorni', sev:'alert' },
-        { name:'IGF-1: 94 → 86', val:'-8.5% ↓', ref:'—', ok:false, note:'Continua trend negativo da maggio' },
-        { name:'Hb: 119 → 118', val:'Stabile bassa', ref:'—', ok:false, note:'Cronico — RBC anche basso', sev:'warn' },
-      ]},
-    ]
-  };
+  // p0_sant: nessuna dichiarazione locale qui - risolve per scope lessicale
+  // alla const globale definita sopra (riga ~3523), promossa il 25/08/2026.
 
   const p_visita_seregni = {
     date: '14 luglio 2026', label: 'Visita endocrinologica · Dr. Seregni CDI',
@@ -6487,59 +6496,62 @@ async function exportPDF() {
     footer('pagina 3 di 6');
 
     // ══ PARTE 3 — LABORATORIO ═════════════════════════════════════
-    // Semplificata su richiesta di Giorgio (24/08/2026): la versione
-    // precedente (cronologia multi-pannello + tabella trend + box "da
-    // monitorare") era poco chiara. Sostituita con la fotografia
-    // completa del T0 — unico riferimento, DEXA + Panel Santagostino,
-    // valori esatti dal referto originale (Santagostino_T0.pdf) con gli
-    // stessi flag * fuori range del referto.
+    // Semplificata su richiesta di Giorgio (24/08/2026): fotografia
+    // completa del T0 — DEXA + Panel Santagostino, gli stessi due
+    // riferimenti usati per valutare l'andamento del protocollo.
+    // Resa DINAMICA il 25/08/2026: legge direttamente da DEXA_T0 e
+    // p0_sant.cats (entrambi promossi a globali, vedi sopra) invece di
+    // valori duplicati a mano — se quei due oggetti vengono corretti in
+    // futuro, il PDF resta automaticamente allineato senza bisogno di
+    // toccare anche questa funzione. Il flag "*" per i valori fuori
+    // range viene dalla proprietà ok:false di ogni marker, non da un
+    // asterisco scritto a mano nella stringa.
+    // ⚠️ QUANDO ARRIVANO T1 (12/9) e T2 (7/11): aggiungere i nuovi dati
+    // come oggetti globali con lo stesso schema (es. DEXA_T1 = {...},
+    // p_t1_sant = {date, label, note, cats:[...]}), poi aggiungerli agli
+    // array DEXA_CHECKPOINTS/SANT_CHECKPOINTS qui sotto — l'intera Parte
+    // 3 diventerà automaticamente un confronto multi-colonna T0→T1→T2
+    // senza altre modifiche a questa funzione.
+    const DEXA_CHECKPOINTS = [{ label: 'T0 — 9 maggio 2026', data: DEXA_T0 }];
+    if (typeof DEXA_T1 !== 'undefined') DEXA_CHECKPOINTS.push({ label: 'T1 — 12 settembre 2026', data: DEXA_T1 });
+    if (typeof DEXA_T2 !== 'undefined') DEXA_CHECKPOINTS.push({ label: 'T2 — 7 novembre 2026', data: DEXA_T2 });
+    const SANT_CHECKPOINTS = [{ label: 'T0', panel: p0_sant }];
+    if (typeof p_t1_sant !== 'undefined') SANT_CHECKPOINTS.push({ label: 'T1', panel: p_t1_sant });
+    if (typeof p_t2_sant !== 'undefined') SANT_CHECKPOINTS.push({ label: 'T2', panel: p_t2_sant });
+
     doc.addPage();
     y = header('Parte 3 di 3', 'Laboratorio — fotografia T0');
-    y = bodyText(y, 'Le due misurazioni di riferimento prima dell\'inizio del protocollo: DEXA per la composizione corporea (9 maggio) e pannello ematico completo (13 luglio, appena prima del Test Protocollo del 18 luglio). Il prossimo confronto reale arriva con T1 (DEXA + pannello) il 12 settembre.');
+    y = bodyText(y, 'Le due misurazioni di riferimento prima dell\'inizio del protocollo: DEXA per la composizione corporea (9 maggio) e pannello ematico completo (13 luglio, appena prima del Test Protocollo del 18 luglio). Il prossimo confronto reale arriva con T1 (DEXA + pannello) il 12 settembre.' + (DEXA_CHECKPOINTS.length > 1 || SANT_CHECKPOINTS.length > 1 ? ' Da qui in avanti la tabella confronta automaticamente tutti i checkpoint disponibili.' : ''));
 
-    y = sectionTitle(y, 'DEXA T0 — 9 maggio 2026');
+    y = sectionTitle(y, DEXA_CHECKPOINTS.length > 1 ? 'DEXA — confronto checkpoint' : 'DEXA T0 — 9 maggio 2026');
+    const dexaFieldLabels = [
+      ['peso', 'Peso', ' kg'], ['bf_pct', 'Massa grassa (BF%)', '%'],
+      ['lean_pct', 'Massa magra (Lean)', '%'], ['lean_kg', 'Massa magra (kg)', ' kg'],
+      ['vat_cm2', 'Grasso viscerale (VAT)', ' cm²'], ['bmd', 'Densità ossea (BMD)', ''],
+    ];
     doc.autoTable({
       startY: y, margin: { left: marginL, right: marginR },
-      body: [
-        ['Peso', '71.1 kg'],
-        ['Massa grassa (BF%)', '18.2%'],
-        ['Massa magra (Lean)', '77.8% (~55.4 kg)'],
-        ['Grasso viscerale (VAT)', '72 cm² / 299 g'],
-        ['Rapporto Androide/Ginoide', '0.80'],
-        ['Densità ossea (BMD)', '1.314 · T-Score 0.0'],
-      ],
+      head: DEXA_CHECKPOINTS.length > 1 ? [['Parametro', ...DEXA_CHECKPOINTS.map(c => c.label)]] : undefined,
+      body: dexaFieldLabels.map(([key, label, unit]) => [label, ...DEXA_CHECKPOINTS.map(c => c.data[key] ? c.data[key] + unit : '—')]),
       styles: { fontSize: 9, cellPadding: 3 },
       columnStyles: { 0: { fontStyle: 'bold', cellWidth: 70 } },
-      theme: 'plain',
+      theme: DEXA_CHECKPOINTS.length > 1 ? 'striped' : 'plain',
+      headStyles: { fillColor: [245, 245, 247], textColor: [134, 134, 139], fontStyle: 'bold', fontSize: 7 },
     });
     y = doc.lastAutoTable.finalY + 10;
 
-    y = sectionTitle(y, 'Panel Santagostino T0 — 13 luglio 2026 (codice 00K24KC2)');
+    y = sectionTitle(y, 'Panel Santagostino T0 — ' + p0_sant.date + ' (' + p0_sant.note.split('·')[0].trim() + ')');
+    const santRows = [];
+    p0_sant.cats.forEach(catGroup => {
+      if (catGroup.cat.toLowerCase().includes('discrepanze')) return; // derivato, non un marker diretto
+      catGroup.items.forEach(item => {
+        santRows.push([item.name, item.val + (item.ok === false ? ' *' : ''), item.ref || '—']);
+      });
+    });
     doc.autoTable({
       startY: y, margin: { left: marginL, right: marginR },
       head: [['Esame', 'Risultato', 'Range di riferimento']],
-      body: [
-        ['Glucosio', '82 mg/dL', '70–100'],
-        ['Creatinina', '1.28 mg/dL *', '0.73–1.18'],
-        ['Trigliceridi', '50 mg/dL', '≤170'],
-        ['Colesterolo HDL', '32 mg/dL *', '≥40'],
-        ['Colesterolo LDL', '49 mg/dL', '≤115'],
-        ['PCR alta sensibilità', '<0.40 mg/L', '≤5.00'],
-        ['Insulina', '3.6 µU/mL', '2.6–24.0'],
-        ['LH', '14.24 mUI/mL *', '0.57–12.7 (uomini)'],
-        ['FSH', '24.27 mIU/mL *', '0.95–11.95 (uomini)'],
-        ['E2 (Estradiolo)', '<24 pg/mL', '<44 (uomini)'],
-        ['Testosterone totale', '526.20 ng/dL', '127.18–1020.36'],
-        ['Testosterone libero', '18.80 pg/mL', '9.57–40.60'],
-        ['SHBG', '54.10 nmol/L', '11.20–78.10'],
-        ['IGF-1', '86.00 µg/L', '55.00–248.00'],
-        ['Globuli rossi (RBC)', '4.01 ×10¹²/L *', '4.20–6.00'],
-        ['Emoglobina (Hb)', '118.0 g/L *', '140.0–180.0'],
-        ['Ematocrito', '37.1%', '37.0–54.0'],
-        ['MCHC', '318 g/L *', '320–380'],
-        ['Globuli bianchi (WBC)', '9.41 ×10⁹/L', '4.00–10.00'],
-        ['Piastrine', '237 ×10⁹/L', '150–450'],
-      ],
+      body: santRows,
       styles: { fontSize: 7.5, cellPadding: 2 },
       headStyles: { fillColor: [245, 245, 247], textColor: [134, 134, 139], fontStyle: 'bold', fontSize: 7 },
       theme: 'striped',
@@ -6551,7 +6563,7 @@ async function exportPDF() {
     });
     y = doc.lastAutoTable.finalY + 6;
     doc.setFont('helvetica', 'italic'); doc.setFontSize(7.5); doc.setTextColor(134, 134, 139);
-    doc.text('* fuori range di riferimento (come segnalato nel referto originale)', marginL, y);
+    doc.text('* fuori range di riferimento (' + santRows.filter(r => r[1].includes('*')).length + ' su ' + santRows.length + ' marker)', marginL, y);
     footer('pagina 5-6 di 6');
 
     doc.save('diario_protocollo_report_' + today.toISOString().slice(0, 10) + '.pdf');
@@ -11496,8 +11508,17 @@ function buildHistoryTab() {
   const muscleVol = (_lastData && _lastData.muscle_volume_summary) || [];
 
   const TYPE_COLOR = {
-    Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#0071e3'
+    Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#0071e3',
+    Riposo:'#8e8e93', 'Allenamento BKK':'#5ac8fa', BKK_FREE:'#5ac8fa'
   };
+  // Euristica sul titolo tenuta SOLO come fallback per le sessioni pre-8/6/2026
+  // (prima di START, fuori range di resolveDay() — 20 sessioni reali, il
+  // tracciamento strutturato per giorno-settimana non esisteva ancora).
+  // Per tutte le altre, resolveDay(s.date).workout.type e' la fonte di verita'
+  // reale gia' usata ovunque nell'app (sentinel matching, PDF, dashboard) -
+  // verificato che l'euristica sul titolo da sola sbagliava 9 sessioni su 74
+  // (12%), finite tutte in "Altro" pur essendo giorni Pull/Push regolari con
+  // titoli meno standard (es. "Mercoledì Sera Dorsali Bicipiti Spalle e Trapezi").
   function guessType(title) {
     const t = title.toLowerCase();
     if (t.includes('gambe') || t.includes('glute')) return 'Legs';
@@ -11506,6 +11527,11 @@ function buildHistoryTab() {
     if (t.includes('sabato')) return 'Upper Sab';
     if (t.includes('mattina') && (t.includes('spalle') || t.includes('parte superiore'))) return 'Upper Dom';
     return 'Altro';
+  }
+  function sessionType(s) {
+    const rd = resolveDay(s.date);
+    if (rd.workout && rd.workout.type) return rd.workout.type;
+    return guessType(s.title);
   }
 
   let searchQ = '';
@@ -11521,7 +11547,7 @@ function buildHistoryTab() {
 
     return filtered.map((s) => {
       const realIdx = sessions.indexOf(s);
-      const type = guessType(s.title);
+      const type = sessionType(s);
       const color = TYPE_COLOR[type] || '#8e8e93';
       const isOpen = expandedIdx === realIdx;
       const dateObj = new Date(s.date + 'T00:00:00');
@@ -12451,7 +12477,7 @@ function fotoRenderSettimana() {
       const { pesoTxt } = fotoComputeEntryData(entry);
       const imgId = 'foto-wk-img-' + key + '-' + i;
       return `<div style="text-align:center;flex-shrink:0">
-        <img id="${imgId}" class="foto-photo" style="width:64px;height:80px;border-radius:8px;object-fit:cover;background:var(--surface2);display:block">
+        <img id="${imgId}" class="foto-photo" style="width:84px;height:105px;border-radius:8px;object-fit:cover;background:var(--surface2);display:block">
         ${pesoTxt ? `<div style="font-size:10px;color:var(--muted);margin-top:3px">${pesoTxt}</div>` : ''}
       </div>`;
     }).join('');
