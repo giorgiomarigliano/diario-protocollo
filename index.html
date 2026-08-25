@@ -8359,7 +8359,17 @@ function buildCycleCard2(container) {
       <circle cx="36" cy="36" r="30" fill="none" stroke="#0071e3" stroke-width="5"
         stroke-dasharray="${C.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}" stroke-linecap="round"/>
     </svg><div class="cycle-ring-label"><span class="cycle-ring-pct">${pct}%</span><span class="cycle-ring-sub">ciclo</span></div>`;
-    infoHtml = `<h3>Settimana ${wk} · ${ph.label}</h3><p>Giorno ${elapsed+1} di ${CICLO1_DAYS} · ${CICLO1_DAYS-elapsed-1} giorni al termine</p><div class="cycle-next">⟶ ${nextEv}</div>`;
+    // Countdown T1/T2 (25/08/2026, richiesta di Giorgio) — a differenza
+    // dell'analogo countdown nel tab Foto (calcolato rispetto alla DATA
+    // DELLA FOTO, quindi uno snapshot storico fisso), qui è relativo a
+    // OGGI e si aggiorna da solo ogni volta che la Dashboard viene aperta,
+    // perché questa è una card "di stato attuale", non uno storico.
+    const t1Date = new Date('2026-09-12'), t2Date = new Date('2026-11-07');
+    const daysToT1 = Math.round((t1Date-today)/86400000);
+    const daysToT2 = Math.round((t2Date-today)/86400000);
+    const t1Txt = daysToT1 > 0 ? `T1 tra ${daysToT1}gg` : (daysToT1 === 0 ? 'T1 oggi' : 'T1 ✓ fatto');
+    const t2Txt = daysToT2 > 0 ? `T2 tra ${daysToT2}gg` : (daysToT2 === 0 ? 'T2 oggi' : 'T2 ✓ fatto');
+    infoHtml = `<h3>Settimana ${wk} · ${ph.label}</h3><p>Giorno ${elapsed+1} di ${CICLO1_DAYS} · ${CICLO1_DAYS-elapsed-1} giorni al termine</p><div class="cycle-next">⟶ ${nextEv}</div><div class="cycle-next" style="margin-top:4px;color:var(--purple)">🩸 ${t1Txt} · ${t2Txt}</div>`;
   }
 
   const card = document.createElement('div');
