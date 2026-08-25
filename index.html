@@ -1570,6 +1570,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   <div class="main-nav-tab" id="main-tab-food" onclick="switchView('food')">Alimenti</div>
   <div class="main-nav-tab" id="main-tab-history" onclick="switchView('history')">Storico</div>
   <div class="main-nav-tab" id="main-tab-foto" onclick="switchView('foto')">Foto</div>
+  <div class="main-nav-tab" id="main-tab-insights" onclick="switchView('insights')">Insights</div>
   <!-- tab obsoleti nascosti -->
   <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')" style="display:none">Stock v1</div>
   <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')" style="display:none">Proto v2</div>
@@ -1608,6 +1609,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 <div class="med-view" id="food-view"></div>
 <div class="med-view" id="history-view"></div>
 <div class="med-view" id="foto-view"></div>
+<div class="med-view" id="insights-view"></div>
 <div class="diary-view hidden" id="proto2-view"></div>
 
 <div class="save-bar">
@@ -3944,6 +3946,7 @@ function switchView(view) {
   const foodView = document.getElementById('food-view');
   const historyView = document.getElementById('history-view');
   const fotoView = document.getElementById('foto-view');
+  const insightsView = document.getElementById('insights-view');
   const tabOrari = document.getElementById('main-tab-orari');
   // Reset all
   diary.classList.add('hidden'); dash.classList.remove('active');
@@ -3954,6 +3957,7 @@ function switchView(view) {
   if(foodView) foodView.classList.remove('visible');
   if(historyView) historyView.classList.remove('visible');
   if(fotoView) fotoView.classList.remove('visible');
+  if(insightsView) insightsView.classList.remove('visible');
   proto2View.classList.add('hidden');
   navStrip.style.display = 'none';
   tabDiary.classList.remove('on'); tabDash.classList.remove('on');
@@ -3964,6 +3968,7 @@ function switchView(view) {
   const _fdTab=document.getElementById('main-tab-food'); if(_fdTab) _fdTab.classList.remove('on');
   const _hsTab=document.getElementById('main-tab-history'); if(_hsTab) _hsTab.classList.remove('on');
   const _ftTab=document.getElementById('main-tab-foto'); if(_ftTab) _ftTab.classList.remove('on');
+  const _inTab=document.getElementById('main-tab-insights'); if(_inTab) _inTab.classList.remove('on');
   if (view === 'dash') {
     dash.classList.add('active');
     tabDash.classList.add('on');
@@ -4010,6 +4015,11 @@ function switchView(view) {
     fotoView.classList.add('visible');
     if(_ftTab) _ftTab.classList.add('on');
     buildFotoTab();
+  } else if (view === 'insights') {
+    insightsView.classList.add('visible');
+    if(_inTab) _inTab.classList.add('on');
+    buildInsightsTab();
+    requestAnimationFrame(() => requestAnimationFrame(refreshInsightsCharts));
   } else {
     diary.classList.remove('hidden');
     navStrip.style.display = '';
@@ -5854,6 +5864,22 @@ function getDayDataV2(field, days) {
 }
 
 // ── Dati unificati WU + V2 (ultimi N giorni) ──────────────────
+// Pearson + nota interpretativa (25/08/2026, promossa a globale il
+// 25/08/2026 in occasione dello split Dashboard/Insights) — usata dal
+// grafico Sonno->HRV rimasto in Dashboard E dalle card Energia/Recupero
+// <->Sonno nel nuovo tab Insights, invece di duplicare lo stesso calcolo.
+function pearsonNote(points, unitLabel) {
+  if (points.length < 3) return `${points.length} giorni con entrambi i dati — servono almeno 3.`;
+  const n=points.length;
+  const sx=points.reduce((a,p)=>a+p.x,0), sy=points.reduce((a,p)=>a+p.y,0);
+  const sxy=points.reduce((a,p)=>a+p.x*p.y,0), sx2=points.reduce((a,p)=>a+p.x*p.x,0), sy2=points.reduce((a,p)=>a+p.y*p.y,0);
+  const den=Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));
+  const r = den===0 ? 0 : (n*sxy-sx*sy)/den;
+  const forza = Math.abs(r)<0.2?'nessuna':Math.abs(r)<0.4?'debole':Math.abs(r)<0.6?'moderata':'forte';
+  const verso = r>0?'positiva':'negativa';
+  return `${n} ${unitLabel||'giorni'} · correlazione ${forza}${Math.abs(r)>=0.2?' '+verso:''} (r = ${r.toFixed(2)}). Indicativo, non causale.`;
+}
+
 function getDayDataAll(field, days) {
   // D5 (Fase D, 28/07/2026): migrata a resolveDay() -- ultima delle 4
   // migrazioni del Gruppo 2. Nessun bug qui: gestiva gia' correttamente
@@ -6991,80 +7017,6 @@ function buildDashboard() {
       </div>
     </div>
 
-    <!-- ══ SEZ. PATTERN & CORRELAZIONI (25/08/2026, Livello 1 roadmap 17.5) ══ -->
-    <div class="dash-section">
-      <div class="dash-section-title">Pattern & correlazioni</div>
-      <div class="dash-two-col">
-        <div class="charts-card">
-          <div class="dash-card-title">Energia soggettiva ↔ ore di sonno</div>
-          <div style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:6px">Stesso giorno</div>
-          <canvas class="dash-chart" id="dc-energia-sonno" height="130"></canvas>
-          <div id="dc-energia-sonno-note" style="font-size: var(--fs-xs);color:var(--muted);margin-top:6px"></div>
-        </div>
-        <div class="charts-card">
-          <div class="dash-card-title">Recupero soggettivo ↔ ore di sonno</div>
-          <div style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:6px">Stesso giorno</div>
-          <canvas class="dash-chart" id="dc-recupero-sonno" height="130"></canvas>
-          <div id="dc-recupero-sonno-note" style="font-size: var(--fs-xs);color:var(--muted);margin-top:6px"></div>
-        </div>
-      </div>
-      <div class="charts-card" style="margin-top:12px">
-        <div class="dash-card-title">Ultimi 14 giorni vs 14 precedenti</div>
-        <div style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:8px">Diventerà 30gg/30gg (Livello 1 della roadmap) quando i dati saranno sufficienti</div>
-        <div id="dc-period-compare" style="display:flex;gap:8px;flex-wrap:wrap"></div>
-      </div>
-      <div style="font-size: var(--fs-2xs);color:var(--muted);margin-top:8px;font-style:italic">Correlazioni indicative su un campione ancora piccolo, non causali. Nessuna previsione numerica: con un solo ciclo di dati sarebbe overfitting travestito da previsione.</div>
-    </div>
-
-    <!-- ══ SEZ. ANDAMENTO SONNO ══════════════════════════════ -->
-    ${inV2?`<div class="dash-section">
-      <div class="dash-section-title">Andamento sonno · dal Test Protocollo</div>
-      <div class="dash-three-col">
-        <div class="charts-card">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">Ore totali</div>
-            <div id="dc-sleep-hours-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
-          </div>
-          <canvas class="dash-chart" id="dc-sleep-hours" height="90"></canvas>
-        </div>
-        <div class="charts-card">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">Minuti veglia</div>
-            <div id="dc-sleep-wakemin-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
-          </div>
-          <canvas class="dash-chart" id="dc-sleep-wakemin" height="90"></canvas>
-        </div>
-        <div class="charts-card">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">Numero risvegli</div>
-            <div id="dc-sleep-wakecount-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
-          </div>
-          <canvas class="dash-chart" id="dc-sleep-wakecount" height="90"></canvas>
-        </div>
-        <div class="charts-card">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">REM</div>
-            <div id="dc-sleep-rem-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
-          </div>
-          <canvas class="dash-chart" id="dc-sleep-rem" height="90"></canvas>
-        </div>
-        <div class="charts-card">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">Sonno principale</div>
-            <div id="dc-sleep-principale-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
-          </div>
-          <canvas class="dash-chart" id="dc-sleep-principale" height="90"></canvas>
-        </div>
-        <div class="charts-card">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
-            <div class="dash-card-title">Sonno profondo</div>
-            <div id="dc-sleep-profondo-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
-          </div>
-          <canvas class="dash-chart" id="dc-sleep-profondo" height="90"></canvas>
-        </div>
-      </div>
-    </div>`:''}
-
     <!-- ══ SEZ. ALLENAMENTO ═══════════════════════════════════ -->
     <div class="dash-section">
       <div class="dash-section-title">Allenamento · ultimi 60 giorni</div>
@@ -7083,115 +7035,6 @@ function buildDashboard() {
         <div class="charts-card">
           <div class="dash-card-title">RPE sessioni</div>
           <canvas class="dash-chart" id="dc-rpe" height="120"></canvas>
-        </div>
-      </div>
-
-      <!-- Sentinel lifts per gruppo muscolare -->
-      <div style="margin-top:10px">
-        <div class="dash-section-title" style="margin-top:16px">Sentinel lifts · per gruppo muscolare</div>
-        <div id="dash-ready-flags"></div>
-
-        <!-- PETTO -->
-        <div class="dash-section-label">🫁 Petto</div>
-        <div class="dash-three-col">
-          <div class="charts-card">
-            <div class="dash-card-title">BB Bench Press (kg)</div>
-            <canvas class="dash-chart" id="dc-bench" height="90"></canvas>
-          </div>
-          <div class="charts-card">
-            <div class="dash-card-title">Mac Incline Bench (kg)</div>
-            <canvas class="dash-chart" id="dc-incbench" height="90"></canvas>
-          </div>
-          <div class="charts-card">
-            <div class="dash-card-title">Pec Fly / Pec Dec (kg)</div>
-            <canvas class="dash-chart" id="dc-pecfly" height="90"></canvas>
-          </div>
-        </div>
-
-        <!-- DORSO -->
-        <div class="dash-section-label" style="margin-top:14px">🔙 Dorso</div>
-        <div class="dash-three-col">
-          <div class="charts-card">
-            <div class="dash-card-title">Lat Machine Wide-Grip (kg)</div>
-            <canvas class="dash-chart" id="dc-lat" height="90"></canvas>
-          </div>
-          <div class="charts-card">
-            <div class="dash-card-title">T-Bar Row (kg)</div>
-            <canvas class="dash-chart" id="dc-tbar" height="90"></canvas>
-          </div>
-          <div class="charts-card">
-            <div class="dash-card-title">BB Bent Over Row (kg)</div>
-            <canvas class="dash-chart" id="dc-bbrow" height="90"></canvas>
-          </div>
-        </div>
-
-        <!-- SPALLE -->
-        <div class="dash-section-label" style="margin-top:14px">💪 Spalle</div>
-        <div class="dash-three-col">
-          <div class="charts-card">
-            <div class="dash-card-title">BB OHP in piedi (kg)</div>
-            <canvas class="dash-chart" id="dc-bbohp" height="90"></canvas>
-          </div>
-          <div class="charts-card">
-            <div class="dash-card-title">DB Shoulder Press seduto (kg)</div>
-            <canvas class="dash-chart" id="dc-dbpress" height="90"></canvas>
-          </div>
-          <div class="charts-card">
-            <div class="dash-card-title">DB Lateral Raise (kg)</div>
-            <canvas class="dash-chart" id="dc-dblateral" height="90"></canvas>
-          </div>
-        </div>
-
-        <!-- BICIPITI + TRICIPITI -->
-        <div class="dash-section-label" style="margin-top:14px">💪 Braccia</div>
-        <div class="dash-two-col">
-          <div class="charts-card">
-            <div class="dash-card-title">Bicipiti</div>
-            <div class="chart-legend">
-              <span class="chart-legend-item"><span class="chart-legend-line" style="background:var(--orange)"></span>DB Curl</span>
-              <span class="chart-legend-item"><span class="chart-legend-line" style="background:var(--red)"></span>Hammer Curl</span>
-            </div>
-            <canvas class="dash-chart" id="dc-bicep" height="90"></canvas>
-          </div>
-          <div class="charts-card">
-            <div class="dash-card-title">Tricipiti</div>
-            <div class="chart-legend">
-              <span class="chart-legend-item"><span class="chart-legend-line" style="background:var(--purple)"></span>Rope Pushdown</span>
-              <span class="chart-legend-item"><span class="chart-legend-line" style="background:#ff9f0a"></span>Rope Overhead</span>
-            </div>
-            <canvas class="dash-chart" id="dc-tricep" height="90"></canvas>
-          </div>
-        </div>
-
-        <!-- GAMBE -->
-        <div class="dash-section-label" style="margin-top:14px">🦵 Gambe</div>
-        <div class="dash-three-col">
-          <div class="charts-card">
-            <div class="dash-card-title">Leg Extension (kg)</div>
-            <canvas class="dash-chart" id="dc-legext" height="90"></canvas>
-          </div>
-          <div class="charts-card">
-            <div class="dash-card-title">Leg Press (kg)</div>
-            <canvas class="dash-chart" id="dc-legpress" height="90"></canvas>
-          </div>
-          <div class="charts-card">
-            <div class="dash-card-title">RDL (kg)</div>
-            <canvas class="dash-chart" id="dc-rdl" height="90"></canvas>
-          </div>
-        </div>
-        <div class="dash-three-col" style="margin-top:10px">
-          <div class="charts-card">
-            <div class="dash-card-title">Hip Thrust (kg)</div>
-            <canvas class="dash-chart" id="dc-hipthrust" height="90"></canvas>
-          </div>
-          <div class="charts-card">
-            <div class="dash-card-title">Calf Raise seduto (kg)</div>
-            <canvas class="dash-chart" id="dc-calf" height="90"></canvas>
-          </div>
-          <div class="charts-card">
-            <div class="dash-card-title">Leg Curl (kg)</div>
-            <canvas class="dash-chart" id="dc-legcurl" height="90"></canvas>
-          </div>
         </div>
       </div>
 
@@ -7378,16 +7221,6 @@ function refreshDashCharts() {
   renderBackupStatus(_lastData && _lastData.backup_status);
   renderSettimanaTipo();
 
-  // ── Badge "pronti per aumentare il carico" ──────────────────
-  const _readyEl = document.getElementById('dash-ready-flags');
-  if (_readyEl) {
-    const flags = (_lastData && _lastData.ready_to_progress) || [];
-    _readyEl.innerHTML = flags.length ? `<div style="background:rgba(52,199,89,.08);border:0.5px solid rgba(52,199,89,.3);border-radius:10px;padding:10px 14px;margin-bottom:14px">
-      <div style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--green-dark);margin-bottom:4px">💪 Pronti per aumentare il carico</div>
-      <div style="font-size: var(--fs-sm);color:var(--text-secondary)">${flags.map(f=>`<strong style="color:var(--text-primary)">${f.label}</strong> ${f.weight}kg`).join(' · ')}</div>
-    </div>` : '';
-  }
-
   // ── Biometria (60gg unificata WU+V2) ──────────────────────
   const peso60 = getDayDataAll('peso', 60);
   const hrv60  = getDayDataAll('hrv',  60);
@@ -7470,22 +7303,6 @@ function refreshDashCharts() {
     {field:'pienezza_add', name:'Pienezza addominale', max:3, labels:['Normale','Lieve','Moderata','Intensa']},
   ], 30);
 
-  // ── Pearson + nota interpretativa, fattorizzata qui (25/08/2026) da
-  // quella che prima era inline solo nel blocco Sonno->HRV sotto — ora
-  // riusata anche dalle 2 nuove card Energia/Recupero<->Sonno, invece di
-  // triplicare lo stesso calcolo copiato a mano.
-  function pearsonNote(points, unitLabel) {
-    if (points.length < 3) return `${points.length} giorni con entrambi i dati — servono almeno 3.`;
-    const n=points.length;
-    const sx=points.reduce((a,p)=>a+p.x,0), sy=points.reduce((a,p)=>a+p.y,0);
-    const sxy=points.reduce((a,p)=>a+p.x*p.y,0), sx2=points.reduce((a,p)=>a+p.x*p.x,0), sy2=points.reduce((a,p)=>a+p.y*p.y,0);
-    const den=Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));
-    const r = den===0 ? 0 : (n*sxy-sx*sy)/den;
-    const forza = Math.abs(r)<0.2?'nessuna':Math.abs(r)<0.4?'debole':Math.abs(r)<0.6?'moderata':'forte';
-    const verso = r>0?'positiva':'negativa';
-    return `${n} ${unitLabel||'giorni'} · correlazione ${forza}${Math.abs(r)>=0.2?' '+verso:''} (r = ${r.toFixed(2)}). Indicativo, non causale.`;
-  }
-
   // ── Sonno → HRV giorno dopo (60gg) ─────────────────────────
   const hrvAll60 = getDayDataAll('hrv', 60);
   const shPoints = [];
@@ -7497,60 +7314,6 @@ function refreshDashCharts() {
   drawXYScatter('dc-sleep-hrv', shPoints, {height:150, color:'#34c759', xLabel:'ore di sonno'});
   const shNote = document.getElementById('dc-sleep-hrv-note');
   if (shNote) shNote.textContent = pearsonNote(shPoints, 'notti');
-
-  // ── Pattern & correlazioni (25/08/2026, Livello 1 roadmap 17.5) ──
-  // Energia/Recupero <-> Sonno stesso giorno: le due correlazioni piu'
-  // forti trovate nell'analisi manuale del 25/08 (r=+0.74 e +0.69 su 37-39
-  // giorni) - qui ricalcolate dal vivo, non hardcoded, cosi' si aggiornano
-  // da sole man mano che arrivano nuovi dati.
-  const energia30 = getDayDataAll('energia', 30);
-  const recupero30 = getDayDataAll('recupero', 30);
-  const sonno30 = getSonnoOreAll(30);
-  const esPoints = [], rsPoints = [];
-  for (let i=0; i<sonno30.length; i++) {
-    const s = sonno30[i].value;
-    if (s===null) continue;
-    if (energia30[i] && energia30[i].value!==null) esPoints.push({x:s, y:energia30[i].value});
-    if (recupero30[i] && recupero30[i].value!==null) rsPoints.push({x:s, y:recupero30[i].value});
-  }
-  drawXYScatter('dc-energia-sonno', esPoints, {height:130, color:'#ff9500', xLabel:'ore di sonno'});
-  const esNote = document.getElementById('dc-energia-sonno-note');
-  if (esNote) esNote.textContent = pearsonNote(esPoints, 'giorni');
-  drawXYScatter('dc-recupero-sonno', rsPoints, {height:130, color:'#5856d6', xLabel:'ore di sonno'});
-  const rsNote = document.getElementById('dc-recupero-sonno-note');
-  if (rsNote) rsNote.textContent = pearsonNote(rsPoints, 'giorni');
-
-  // ── Confronto ultimi 14gg vs 14gg precedenti ────────────────
-  // Versione ridotta del "30gg vs 30gg" della roadmap - diventera' un
-  // vero 30/30 quando ci saranno abbastanza giorni di ciclo (~meta'
-  // settembre). Riusa getDayDataAll/getSonnoOreAll gia' esistenti.
-  (function renderPeriodCompare() {
-    const el = document.getElementById('dc-period-compare');
-    if (!el) return;
-    function avgLastN(arr, offset, n) {
-      const slice = arr.slice(arr.length - offset - n, arr.length - offset).filter(p => p.value !== null);
-      if (!slice.length) return null;
-      return slice.reduce((a, p) => a + p.value, 0) / slice.length;
-    }
-    const metrics = [
-      { label: 'HRV', data: getDayDataAll('hrv', 28), unit: 'ms', decimals: 1 },
-      { label: 'RHR', data: getDayDataAll('rhr', 28), unit: 'bpm', decimals: 1 },
-      { label: 'Sonno', data: getSonnoOreAll(28), unit: 'h', decimals: 1 },
-      { label: 'Peso', data: getDayDataAll('peso', 28), unit: 'kg', decimals: 1 },
-    ];
-    el.innerHTML = metrics.map(m => {
-      const recent = avgLastN(m.data, 0, 14);
-      const prior = avgLastN(m.data, 14, 14);
-      if (recent === null || prior === null) return `<div style="flex:1;min-width:100px;background:var(--surface-2);border-radius:10px;padding:8px 10px"><div style="font-size: var(--fs-2xs);color:var(--muted)">${m.label}</div><div style="font-size: var(--fs-xs);color:var(--muted)">dati insuff.</div></div>`;
-      const delta = recent - prior;
-      const deltaColor = Math.abs(delta) < 0.05 ? 'var(--muted)' : (delta > 0 ? '#34c759' : '#ff9500');
-      return `<div style="flex:1;min-width:100px;background:var(--surface-2);border-radius:10px;padding:8px 10px">
-        <div style="font-size: var(--fs-2xs);color:var(--muted);text-transform:uppercase;letter-spacing:.03em">${m.label}</div>
-        <div style="font-size: var(--fs-sm);font-weight: var(--fw-bold)">${prior.toFixed(m.decimals)} → ${recent.toFixed(m.decimals)} ${m.unit}</div>
-        <div style="font-size: var(--fs-2xs);font-weight: var(--fw-semi);color:${deltaColor}">${delta>=0?'+':''}${delta.toFixed(m.decimals)}</div>
-      </div>`;
-    }).join('');
-  })();
 
   // ── Allenamento sessioni (60gg WU+V2) ──────────────────────
   const sessions = getSessionsAll(60);
@@ -7644,11 +7407,282 @@ function refreshDashCharts() {
   }
 
   // ── Sentinel lifts (dati da DOM e _lastData/_lastData2) ────
+  // Spostato in refreshInsightsCharts() il 25/08/2026 - vedi li' sotto.
+  // Andamento sonno (dal Test Protocollo, 18/7) spostato anch'esso.
+}
+
+// ══════════════════════════════════════════════════════════════════
+// TAB INSIGHTS (25/08/2026) — spostato fuori da Dashboard su richiesta
+// esplicita di Giorgio dopo la valutazione "tenere tutto li' o spostare
+// qualcosa in un tab dedicato": buildDashboard() era arrivata a 1093
+// righe/10 sezioni, mescolando "colpo d'occhio quotidiano" con "analisi
+// approfondita". Qui vive la parte di analisi: Pattern & correlazioni,
+// Andamento sonno dettagliato, Sentinel lifts per gruppo muscolare.
+// Stesso pattern di caching/doppio-rAF di buildDashboard/refreshDashCharts
+// (i canvas hanno bisogno del DOM visibile con dimensioni reali).
+// ══════════════════════════════════════════════════════════════════
+let insightsBuilt = false;
+
+function buildInsightsTab() {
+  const el = document.getElementById('insights-view');
+  if (insightsBuilt) { requestAnimationFrame(() => requestAnimationFrame(refreshInsightsCharts)); return; }
+  insightsBuilt = true;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const startV2 = new Date(START2); startV2.setHours(0,0,0,0);
+  const elapsedV2 = Math.floor((today-startV2)/86400000);
+  const inV2 = elapsedV2 >= 0;
+
+  el.innerHTML = `<div class="app-view-inner view-wrap">
+
+    <!-- ══ SEZ. PATTERN & CORRELAZIONI (Livello 1 roadmap 17.5) ══ -->
+    <div class="dash-section">
+      <div class="dash-section-title">Pattern & correlazioni</div>
+      <div class="dash-two-col">
+        <div class="charts-card">
+          <div class="dash-card-title">Energia soggettiva ↔ ore di sonno</div>
+          <div style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:6px">Stesso giorno</div>
+          <canvas class="dash-chart" id="dc-energia-sonno" height="130"></canvas>
+          <div id="dc-energia-sonno-note" style="font-size: var(--fs-xs);color:var(--muted);margin-top:6px"></div>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">Recupero soggettivo ↔ ore di sonno</div>
+          <div style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:6px">Stesso giorno</div>
+          <canvas class="dash-chart" id="dc-recupero-sonno" height="130"></canvas>
+          <div id="dc-recupero-sonno-note" style="font-size: var(--fs-xs);color:var(--muted);margin-top:6px"></div>
+        </div>
+      </div>
+      <div class="charts-card" style="margin-top:12px">
+        <div class="dash-card-title">Ultimi 14 giorni vs 14 precedenti</div>
+        <div style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:8px">Diventerà 30gg/30gg (Livello 1 della roadmap) quando i dati saranno sufficienti</div>
+        <div id="dc-period-compare" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      </div>
+      <div style="font-size: var(--fs-2xs);color:var(--muted);margin-top:8px;font-style:italic">Correlazioni indicative su un campione ancora piccolo, non causali. Nessuna previsione numerica: con un solo ciclo di dati sarebbe overfitting travestito da previsione.</div>
+    </div>
+
+    <!-- ══ SEZ. ANDAMENTO SONNO ══════════════════════════════ -->
+    ${inV2?`<div class="dash-section">
+      <div class="dash-section-title">Andamento sonno · dal Test Protocollo</div>
+      <div class="dash-three-col">
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Ore totali</div>
+            <div id="dc-sleep-hours-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-hours" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Minuti veglia</div>
+            <div id="dc-sleep-wakemin-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-wakemin" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Numero risvegli</div>
+            <div id="dc-sleep-wakecount-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-wakecount" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">REM</div>
+            <div id="dc-sleep-rem-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-rem" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Sonno principale</div>
+            <div id="dc-sleep-principale-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-principale" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px">
+            <div class="dash-card-title">Sonno profondo</div>
+            <div id="dc-sleep-profondo-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
+          </div>
+          <canvas class="dash-chart" id="dc-sleep-profondo" height="90"></canvas>
+        </div>
+      </div>
+    </div>`:''}
+
+    <!-- ══ SEZ. SENTINEL LIFTS ═══════════════════════════════ -->
+    <div class="dash-section">
+      <div class="dash-section-title">Sentinel lifts · per gruppo muscolare</div>
+      <div id="dash-ready-flags"></div>
+
+      <!-- PETTO -->
+      <div class="dash-section-label">🫁 Petto</div>
+      <div class="dash-three-col">
+        <div class="charts-card">
+          <div class="dash-card-title">BB Bench Press (kg)</div>
+          <canvas class="dash-chart" id="dc-bench" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">Mac Incline Bench (kg)</div>
+          <canvas class="dash-chart" id="dc-incbench" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">Pec Fly / Pec Dec (kg)</div>
+          <canvas class="dash-chart" id="dc-pecfly" height="90"></canvas>
+        </div>
+      </div>
+
+      <!-- DORSO -->
+      <div class="dash-section-label" style="margin-top:14px">🔙 Dorso</div>
+      <div class="dash-three-col">
+        <div class="charts-card">
+          <div class="dash-card-title">Lat Machine Wide-Grip (kg)</div>
+          <canvas class="dash-chart" id="dc-lat" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">T-Bar Row (kg)</div>
+          <canvas class="dash-chart" id="dc-tbar" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">BB Bent Over Row (kg)</div>
+          <canvas class="dash-chart" id="dc-bbrow" height="90"></canvas>
+        </div>
+      </div>
+
+      <!-- SPALLE -->
+      <div class="dash-section-label" style="margin-top:14px">💪 Spalle</div>
+      <div class="dash-three-col">
+        <div class="charts-card">
+          <div class="dash-card-title">BB OHP in piedi (kg)</div>
+          <canvas class="dash-chart" id="dc-bbohp" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">DB Shoulder Press seduto (kg)</div>
+          <canvas class="dash-chart" id="dc-dbpress" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">DB Lateral Raise (kg)</div>
+          <canvas class="dash-chart" id="dc-dblateral" height="90"></canvas>
+        </div>
+      </div>
+
+      <!-- BICIPITI + TRICIPITI -->
+      <div class="dash-section-label" style="margin-top:14px">💪 Braccia</div>
+      <div class="dash-two-col">
+        <div class="charts-card">
+          <div class="dash-card-title">Bicipiti</div>
+          <div class="chart-legend">
+            <span class="chart-legend-item"><span class="chart-legend-line" style="background:var(--orange)"></span>DB Curl</span>
+            <span class="chart-legend-item"><span class="chart-legend-line" style="background:var(--red)"></span>Hammer Curl</span>
+          </div>
+          <canvas class="dash-chart" id="dc-bicep" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">Tricipiti</div>
+          <div class="chart-legend">
+            <span class="chart-legend-item"><span class="chart-legend-line" style="background:var(--purple)"></span>Rope Pushdown</span>
+            <span class="chart-legend-item"><span class="chart-legend-line" style="background:#ff9f0a"></span>Rope Overhead</span>
+          </div>
+          <canvas class="dash-chart" id="dc-tricep" height="90"></canvas>
+        </div>
+      </div>
+
+      <!-- GAMBE -->
+      <div class="dash-section-label" style="margin-top:14px">🦵 Gambe</div>
+      <div class="dash-three-col">
+        <div class="charts-card">
+          <div class="dash-card-title">Leg Extension (kg)</div>
+          <canvas class="dash-chart" id="dc-legext" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">Leg Press (kg)</div>
+          <canvas class="dash-chart" id="dc-legpress" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">RDL (kg)</div>
+          <canvas class="dash-chart" id="dc-rdl" height="90"></canvas>
+        </div>
+      </div>
+      <div class="dash-three-col" style="margin-top:10px">
+        <div class="charts-card">
+          <div class="dash-card-title">Hip Thrust (kg)</div>
+          <canvas class="dash-chart" id="dc-hipthrust" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">Calf Raise seduto (kg)</div>
+          <canvas class="dash-chart" id="dc-calf" height="90"></canvas>
+        </div>
+        <div class="charts-card">
+          <div class="dash-card-title">Leg Curl (kg)</div>
+          <canvas class="dash-chart" id="dc-legcurl" height="90"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>`;
+
+  refreshInsightsCharts();
+}
+
+function refreshInsightsCharts() {
+  // ── Badge "pronti per aumentare il carico" ──────────────────
+  const _readyEl = document.getElementById('dash-ready-flags');
+  if (_readyEl) {
+    const flags = (_lastData && _lastData.ready_to_progress) || [];
+    _readyEl.innerHTML = flags.length ? `<div style="background:rgba(52,199,89,.08);border:0.5px solid rgba(52,199,89,.3);border-radius:10px;padding:10px 14px;margin-bottom:14px">
+      <div style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--green-dark);margin-bottom:4px">💪 Pronti per aumentare il carico</div>
+      <div style="font-size: var(--fs-sm);color:var(--text-secondary)">${flags.map(f=>`<strong style="color:var(--text-primary)">${f.label}</strong> ${f.weight}kg`).join(' · ')}</div>
+    </div>` : '';
+  }
+
+  // ── Pattern & correlazioni ──────────────────────────────────
+  const energia30 = getDayDataAll('energia', 30);
+  const recupero30 = getDayDataAll('recupero', 30);
+  const sonno30 = getSonnoOreAll(30);
+  const esPoints = [], rsPoints = [];
+  for (let i=0; i<sonno30.length; i++) {
+    const s = sonno30[i].value;
+    if (s===null) continue;
+    if (energia30[i] && energia30[i].value!==null) esPoints.push({x:s, y:energia30[i].value});
+    if (recupero30[i] && recupero30[i].value!==null) rsPoints.push({x:s, y:recupero30[i].value});
+  }
+  drawXYScatter('dc-energia-sonno', esPoints, {height:130, color:'#ff9500', xLabel:'ore di sonno'});
+  const esNote = document.getElementById('dc-energia-sonno-note');
+  if (esNote) esNote.textContent = pearsonNote(esPoints, 'giorni');
+  drawXYScatter('dc-recupero-sonno', rsPoints, {height:130, color:'#5856d6', xLabel:'ore di sonno'});
+  const rsNote = document.getElementById('dc-recupero-sonno-note');
+  if (rsNote) rsNote.textContent = pearsonNote(rsPoints, 'giorni');
+
+  // ── Confronto ultimi 14gg vs 14gg precedenti ────────────────
+  (function renderPeriodCompare() {
+    const el = document.getElementById('dc-period-compare');
+    if (!el) return;
+    function avgLastN(arr, offset, n) {
+      const slice = arr.slice(arr.length - offset - n, arr.length - offset).filter(p => p.value !== null);
+      if (!slice.length) return null;
+      return slice.reduce((a, p) => a + p.value, 0) / slice.length;
+    }
+    const metrics = [
+      { label: 'HRV', data: getDayDataAll('hrv', 28), unit: 'ms', decimals: 1 },
+      { label: 'RHR', data: getDayDataAll('rhr', 28), unit: 'bpm', decimals: 1 },
+      { label: 'Sonno', data: getSonnoOreAll(28), unit: 'h', decimals: 1 },
+      { label: 'Peso', data: getDayDataAll('peso', 28), unit: 'kg', decimals: 1 },
+    ];
+    el.innerHTML = metrics.map(m => {
+      const recent = avgLastN(m.data, 0, 14);
+      const prior = avgLastN(m.data, 14, 14);
+      if (recent === null || prior === null) return `<div style="flex:1;min-width:100px;background:var(--surface-2);border-radius:10px;padding:8px 10px"><div style="font-size: var(--fs-2xs);color:var(--muted)">${m.label}</div><div style="font-size: var(--fs-xs);color:var(--muted)">dati insuff.</div></div>`;
+      const delta = recent - prior;
+      const deltaColor = Math.abs(delta) < 0.05 ? 'var(--muted)' : (delta > 0 ? '#34c759' : '#ff9500');
+      return `<div style="flex:1;min-width:100px;background:var(--surface-2);border-radius:10px;padding:8px 10px">
+        <div style="font-size: var(--fs-2xs);color:var(--muted);text-transform:uppercase;letter-spacing:.03em">${m.label}</div>
+        <div style="font-size: var(--fs-sm);font-weight: var(--fw-bold)">${prior.toFixed(m.decimals)} → ${recent.toFixed(m.decimals)} ${m.unit}</div>
+        <div style="font-size: var(--fs-2xs);font-weight: var(--fw-semi);color:${deltaColor}">${delta>=0?'+':''}${delta.toFixed(m.decimals)}</div>
+      </div>`;
+    }).join('');
+  })();
+
+  // ── Sentinel lifts (dati da DOM e _lastData/_lastData2) ────
   function sentData(fieldId, days) {
-    // D6 (Fase D, 28/07/2026): migrata a resolveDay() invece della logica
-    // scritta a mano — risolve anche un bug attivo mai scoperto prima: il
-    // ramo Test Protocollo (18-19/7) mancava completamente, quindi un
-    // sentinel lift loggato quei 2 giorni spariva silenziosamente dal grafico.
     const result=[];
     const today=new Date(); today.setHours(0,0,0,0);
     const hist = (_lastData && _lastData.history_sentinels) || {};
@@ -7665,7 +7699,6 @@ function refreshDashCharts() {
         const fv=parseFloat(rec['sl_'+fieldId+'_kg'])||parseFloat(rec['sent_'+fieldId]);
         if(!isNaN(fv))v=fv;
       } else if (rd.period==='before_start') {
-        // Dati storici pre-warm-up (sessioni Motra importate, keyed by data reale YYYY-MM-DD)
         const dstr = localDateStr(d);
         const rec = hist[dstr];
         if(rec){ const fv=parseFloat(rec['sl_'+fieldId+'_kg']); if(!isNaN(fv)) v=fv; }
@@ -7674,7 +7707,6 @@ function refreshDashCharts() {
     }
     return result;
   }
-  // Baseline T0 (15/05/2026, pre-WU)
   const T0date = new Date('2026-05-15'); T0date.setHours(0,0,0,0);
   function withT0(data, baseKg) {
     if (!baseKg) return data;
@@ -7695,26 +7727,17 @@ function refreshDashCharts() {
     ], {height:90, minPts:1});
   }
 
-  // PETTO
   dc('dc-bench',    'bench',    '#0071e3', 55);
   dc('dc-incbench', 'incbench', '#5ac8fa', null);
   dc('dc-pecfly',   'pecfly',   '#34aadc', null);
-
-  // DORSO
   dc('dc-lat',   'lat',   '#34c759', null);
   dc('dc-tbar',  'tbar',  '#30d158', null);
   dc('dc-bbrow', 'bbrow', '#00b341', null);
-
-  // SPALLE
   dc('dc-bbohp',    'bbohp',    '#ff9500', 40);
   dc('dc-dbpress',  'dbpress',  '#ff6b00', null);
   dc('dc-dblateral','dblateral','#ffcc02', 12);
-
-  // BRACCIA
   dc2('dc-bicep',  'dbcurl',   'hammercurl', '#ff9500','#ff3b30', null, null);
   dc2('dc-tricep', 'tridown',  'triover',    '#af52de','#ff9f0a', 50,   35);
-
-  // GAMBE
   dc('dc-legext',   'legext',   '#ff3b30', 80);
   dc('dc-legpress', 'legpress', '#ff6b6b', 117.5);
   dc('dc-rdl',      'rdl',      '#0071e3', 60);
@@ -7723,8 +7746,6 @@ function refreshDashCharts() {
   dc('dc-legcurl',  'legcurl',  '#ff9500', null);
 
   // ── Andamento sonno (dal Test Protocollo, 18/7) ────────────
-  // Finestra ampia a sufficienza per coprire da TEST_PROTO_START a oggi;
-  // getDayDataAll gestisce gia' Test Protocollo (test_proto_N) + v2 (p2_day_N).
   function sleepChart(id, field, color, transform, unit) {
     let pts = getDayDataAll(field, 120).filter(p => p.value !== null);
     if (transform) pts = pts.map(p => ({date:p.date, value:transform(p.value)}));
@@ -7744,8 +7765,6 @@ function refreshDashCharts() {
   sleepChart('dc-sleep-hours',     'ore_sonno',        '#5856d6', parseSonnoHours, 'h');
   sleepChart('dc-sleep-wakemin',   'sonno_veglia_min', '#ff9500', null, 'min');
   sleepChart('dc-sleep-wakecount', 'sonno_risvegli',   '#ff3b30', null, '');
-  // Fasi sonno dettagliate (30/07/2026) — dati retroattivi dal Test Protocollo
-  // in poi, recuperati dagli screenshot "Tutti i dati salvati" di Salute.
   sleepChart('dc-sleep-rem',        'sonno_rem_min',        '#5ac8fa', null, 'min');
   sleepChart('dc-sleep-principale', 'sonno_principale_min', '#0071e3', null, 'min');
   sleepChart('dc-sleep-profondo',   'sonno_profondo_min',   '#2e2a6e', null, 'min');
