@@ -3370,6 +3370,7 @@ async function loadFromCloud(){
     }
     setTimeout(refreshCharts,200);
     setTimeout(refreshDashChartsIfBuilt,200);
+    setTimeout(refreshInsightsChartsIfBuilt,200);
     // Ricostruisce il tab Protocollo v2 se era gia' stato aperto: senza questo,
     // card come "Riepilogo Settimana" restano congelate allo stato di quando
     // sono state costruite la prima volta, anche dopo un Sync riuscito (bug
@@ -3388,6 +3389,7 @@ async function loadFromCloud(){
     setSyncStatus('err');
     setTimeout(refreshCharts,200);
     setTimeout(refreshDashChartsIfBuilt,200);
+    setTimeout(refreshInsightsChartsIfBuilt,200);
   }
   refreshWeekSummary();
 }
@@ -3404,6 +3406,19 @@ function refreshDashChartsIfBuilt(){
   if (typeof dashBuilt !== 'undefined' && dashBuilt) {
     const dash = document.getElementById('dash-view');
     if (dash) { dashBuilt = false; dash.innerHTML=''; buildDashboard(); }
+  }
+}
+
+// Equivalente per Insights (26/08/2026, richiesta esplicita di Giorgio dopo
+// aver notato che mancava). Più semplice della versione Dashboard sopra:
+// buildInsightsTab() non scrive nessun valore dinamico direttamente
+// nell'HTML iniziale (niente equivalente delle KPI card di buildDashboard())
+// — tutti i numeri/grafici sono scritti da refreshInsightsCharts(), quindi
+// richiamarla di nuovo basta, non serve azzerare insightsBuilt e ricostruire
+// da zero come per Dashboard.
+function refreshInsightsChartsIfBuilt(){
+  if (typeof insightsBuilt !== 'undefined' && insightsBuilt) {
+    refreshInsightsCharts();
   }
 }
 
@@ -11140,6 +11155,7 @@ window.addEventListener('load',async()=>{
     if(lr2){try{_lastData2=JSON.parse(lr2);applyAll(_lastData2);applyProto2Data();}catch(e2){}}
     setTimeout(refreshCharts,200);
     setTimeout(refreshDashChartsIfBuilt,200);
+    setTimeout(refreshInsightsChartsIfBuilt,200);
   }
   if (loadingEl) loadingEl.style.display='none';
 });
