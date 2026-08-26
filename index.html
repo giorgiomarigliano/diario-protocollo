@@ -12449,13 +12449,13 @@ function fotoRenderGriglia() {
 
   el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;max-width:1100px;margin:0 auto">` +
     sorted.map((entry, idx) => {
-      const { dayLabel, pesoTxt, deltaTxt, woLabel, t1Label, t2Label, injLabel, integrLabel } = fotoComputeEntryData(entry);
+      const { dayLabel, pesoTxt, deltaTxt, t1Label, t2Label, injLabel, integrLabel, woWeekLabel } = fotoComputeEntryData(entry);
       const imgId = 'foto-grid-img-' + idx;
       const substats = [
         pesoTxt ? 'Peso ' + pesoTxt : '',
         injLabel ? 'Inj ' + injLabel : '',
         integrLabel ? 'Integr ' + integrLabel : '',
-        woLabel ? 'WO ' + woLabel : ''
+        (woWeekLabel && woWeekLabel !== '—') ? 'WO ' + woWeekLabel : ''
       ].filter(Boolean).join(' · ');
       const t1t2 = `T1 ${t1Label} · T2 ${t2Label}`;
 
