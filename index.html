@@ -7491,8 +7491,8 @@ function buildInsightsTab() {
         </div>
       </div>
       <div class="charts-card" style="margin-top:12px">
-        <div class="dash-card-title">Ultimi 14 giorni vs 14 precedenti</div>
-        <div style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:8px">Diventerà 30gg/30gg (Livello 1 della roadmap) quando i dati saranno sufficienti</div>
+        <div class="dash-card-title" id="dc-period-compare-title">Ultimi 14 giorni vs 14 precedenti</div>
+        <div id="dc-period-compare-sub" style="font-size: var(--fs-xs);color:var(--muted);margin-bottom:8px"></div>
         <div id="dc-period-compare" style="display:flex;gap:8px;flex-wrap:wrap"></div>
         <div style="font-size: var(--fs-2xs);color:var(--muted);margin-top:8px;line-height:1.4">🟢 verde = direzione favorevole per quella metrica (HRV/Sonno più alti, RHR più basso) · 🟠 arancione = direzione opposta, da tenere d'occhio · Peso resta neutro (grigio): in ricomposizione un aumento non è automaticamente negativo, può riflettere massa magra oltre che ritenzione.</div>
       </div>
@@ -7695,10 +7695,25 @@ function refreshInsightsCharts() {
   const rsExplain = document.getElementById('dc-recupero-sonno-explain');
   if (rsExplain) rsExplain.textContent = pearsonExplain(rsPoints, 'quanto dormi', 'quanto ti senti recuperato');
 
-  // ── Confronto ultimi 14gg vs 14gg precedenti ────────────────
+  // ── Confronto ultimi Ngg vs Ngg precedenti (finestra dinamica) ──────
+  // N cresce automaticamente con i dati disponibili invece di restare
+  // fisso a 14 — 26/08/2026, Livello 1 roadmap (sezione 17.5): diventa
+  // 30/30 da solo appena ci sono abbastanza giorni dal Test Protocollo
+  // (18/7), senza bisogno di tornare a modificare il codice a metà
+  // settembre come previsto nella nota precedente.
   (function renderPeriodCompare() {
     const el = document.getElementById('dc-period-compare');
     if (!el) return;
+    const titleEl = document.getElementById('dc-period-compare-title');
+    const subEl = document.getElementById('dc-period-compare-sub');
+    const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+    const testStart0 = new Date(TEST_PROTO_START); testStart0.setHours(0, 0, 0, 0);
+    const daysAvail = Math.floor((today0 - testStart0) / 86400000) + 1;
+    const cmpN = Math.max(7, Math.min(30, Math.floor(daysAvail / 2)));
+    if (titleEl) titleEl.textContent = 'Ultimi ' + cmpN + ' giorni vs ' + cmpN + ' precedenti';
+    if (subEl) subEl.textContent = cmpN < 30
+      ? ('Finestra ' + cmpN + 'gg/' + cmpN + 'gg — crescerà fino a 30gg/30gg (Livello 1 della roadmap) man mano che si accumulano dati')
+      : 'Finestra piena 30gg/30gg (Livello 1 della roadmap)';
     function avgLastN(arr, offset, n) {
       const slice = arr.slice(arr.length - offset - n, arr.length - offset).filter(p => p.value !== null);
       if (!slice.length) return null;
@@ -7710,14 +7725,14 @@ function refreshInsightsCharts() {
     // stessa regola "delta positivo = verde", sbagliata per RHR (dove salire
     // e' la direzione da monitorare, non quella favorevole).
     const metrics = [
-      { label: 'HRV', data: getDayDataAll('hrv', 28), unit: 'ms', decimals: 1, goodDir: 1 },
-      { label: 'RHR', data: getDayDataAll('rhr', 28), unit: 'bpm', decimals: 1, goodDir: -1 },
-      { label: 'Sonno', data: getSonnoOreAll(28), unit: 'h', decimals: 1, goodDir: 1 },
-      { label: 'Peso', data: getDayDataAll('peso', 28), unit: 'kg', decimals: 1, goodDir: 0 },
+      { label: 'HRV', data: getDayDataAll('hrv', cmpN * 2), unit: 'ms', decimals: 1, goodDir: 1 },
+      { label: 'RHR', data: getDayDataAll('rhr', cmpN * 2), unit: 'bpm', decimals: 1, goodDir: -1 },
+      { label: 'Sonno', data: getSonnoOreAll(cmpN * 2), unit: 'h', decimals: 1, goodDir: 1 },
+      { label: 'Peso', data: getDayDataAll('peso', cmpN * 2), unit: 'kg', decimals: 1, goodDir: 0 },
     ];
     el.innerHTML = metrics.map(m => {
-      const recent = avgLastN(m.data, 0, 14);
-      const prior = avgLastN(m.data, 14, 14);
+      const recent = avgLastN(m.data, 0, cmpN);
+      const prior = avgLastN(m.data, cmpN, cmpN);
       if (recent === null || prior === null) return `<div style="flex:1;min-width:100px;background:var(--surface-2);border-radius:10px;padding:8px 10px"><div style="font-size: var(--fs-2xs);color:var(--muted)">${m.label}</div><div style="font-size: var(--fs-xs);color:var(--muted)">dati insuff.</div></div>`;
       const delta = recent - prior;
       let deltaColor = 'var(--muted)';
