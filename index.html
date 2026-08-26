@@ -12745,7 +12745,8 @@ function fotoRenderSettimana() {
       const imgId = 'foto-wk-img-' + key + '-' + i;
       return `<div style="text-align:center;flex-shrink:0">
         <img id="${imgId}" class="foto-photo" style="width:84px;height:105px;border-radius:8px;object-fit:cover;background:var(--surface2);display:block">
-        ${pesoTxt ? `<div style="font-size:10px;color:var(--muted);margin-top:3px">${pesoTxt}</div>` : ''}
+        <div style="font-size:10px;font-weight:600;color:var(--text);margin-top:3px">${fotoFormatDateShort(entry.date)}</div>
+        ${pesoTxt ? `<div style="font-size:9px;color:var(--muted)">${pesoTxt}</div>` : ''}
       </div>`;
     }).join('');
 
