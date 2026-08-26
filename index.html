@@ -12236,20 +12236,79 @@ function fotoFormatTimeLoc(entry) {
 function fotoComputeEntryData(entry) {
   const rd = resolveDay(entry.date);
   let dayLabel = '', weekLabel = 'Pre-ciclo', peso = NaN, aderenza = null, woLabel = '';
+  // Dati giornalieri (25/08/2026, richiesta di Giorgio: stessa granularità
+  // della card collassata nel Diario, non la media/aderenza settimanale
+  // "sempre corrente" che confondeva perché uguale su più foto della
+  // stessa settimana). null finché non calcolati sotto (solo v2/test_proto).
+  let hrv = null, sonnoTxt = '', injLabel = '', injColor = '', integrLabel = '', integrColor = '',
+    woType = '', woBadgeClass = '', woStatus = null, woWeekLabel = '';
 
   if (rd.period === 'v2' || rd.period === 'test_proto') {
     const rec = (_lastData2 && _lastData2[rd.id]) || {};
     peso = parseFloat(rec.peso);
+    // dayIdx reale per getWorkout2/getInjectionSlots2: in v2 coincide con
+    // rd.index, in test_proto va riportato a -2/-1 (stesso offset usato
+    // ovunque altrove, es. exportAllCSV/exportPDF).
+    const dayIdx = rd.period === 'v2' ? rd.index : rd.index - TEST_PROTO_DAYS;
+
+    const hrvVal = parseFloat(rec.hrv); if (!isNaN(hrvVal)) hrv = hrvVal;
+    sonnoTxt = rec.ore_sonno || '';
+
+    const slots = getInjectionSlots2(dayIdx);
+    let doneInj = 0, totalInj = 0;
+    slots.forEach(s => s.fields.forEach(f => {
+      const v = rec['inj_' + s.n + '_' + f.replace(/[\s\-]/g, '_')] || '';
+      if (v === 'skip' || v === 'na') return;
+      totalInj++; if (v === 'fatto') doneInj++;
+    }));
+    if (totalInj > 0) {
+      injLabel = doneInj + '/' + totalInj;
+      injColor = doneInj === totalInj ? '#34c759' : (doneInj > 0 ? '#ff9500' : '#ff3b30');
+    }
+    const suppFields = ['ck_d3', 'ck_omega', 'ck_creat', 'ck_zinc', 'ck_b12', 'ck_norm', 'ck_mag', 'ck_gly', 'ck_melatonina'];
+    let suppTaken = 0, suppPossible = 0;
+    suppFields.forEach(s => {
+      if (rec[s + '_skip']) return;
+      suppPossible++; if (rec[s] === '1') suppTaken++;
+    });
+    if (suppPossible > 0) {
+      integrLabel = Math.round(suppTaken / suppPossible * 100) + '%';
+      integrColor = suppTaken === suppPossible ? '#34c759' : (suppTaken > 0 ? '#ff9500' : '#ff3b30');
+    }
+
+    const wo = getWorkout2(dayIdx);
+    woType = wo.label; woBadgeClass = wo.badge;
+    if (wo.type !== 'Riposo') {
+      const kcal = parseFloat(rec.wo_kcal), vol = parseFloat(rec.wo_volume), rpeV = parseFloat(rec.rpe);
+      woStatus = ((!isNaN(kcal) && kcal > 0) || (!isNaN(vol) && vol > 0) || !isNaN(rpeV)) ? 'done' : 'missed';
+    }
+
     if (rd.period === 'v2') {
       dayLabel = `Giorno ${rd.index}/${CICLO1_DAYS}`;
       const wkIdx = Math.floor(rd.index / 7);
       weekLabel = `Settimana ${wkIdx + 1}`;
       const st = computeWeekStats2(wkIdx);
       aderenza = st.aderenzaPct; woLabel = st.doneWo + '/' + st.totalWo;
+      // Workout settimanale CONGELATO alla data della foto (non a "oggi"
+      // come computeWeekStats2 sopra, tenuto per compatibilità altrove) -
+      // stesso identico criterio "fatto" (kcal/volume/rpe), ma il taglio
+      // dei giorni futuri è la data di questa foto, non la data odierna.
+      const wkStart = wkIdx * 7;
+      let totalWoF = 0, doneWoF = 0;
+      for (let i = wkStart; i <= dayIdx; i++) {
+        const woF = getWorkout2(i);
+        if (woF.type === 'Riposo') continue;
+        totalWoF++;
+        const recF = (_lastData2 && _lastData2['p2_day_' + i]) || {};
+        const kcalF = parseFloat(recF.wo_kcal), volF = parseFloat(recF.wo_volume), rpeF = parseFloat(recF.rpe);
+        if ((!isNaN(kcalF) && kcalF > 0) || (!isNaN(volF) && volF > 0) || !isNaN(rpeF)) doneWoF++;
+      }
+      woWeekLabel = totalWoF > 0 ? doneWoF + '/' + totalWoF : '—';
     } else {
       dayLabel = 'Test Protocollo'; weekLabel = 'Test Protocollo';
       const st = computeWeekStats2(0);
       aderenza = st.aderenzaPct; woLabel = st.doneWo + '/' + st.totalWo;
+      woWeekLabel = '—'; // Test Protocollo non ha una "settimana" propria per questo conteggio
     }
   } else if (rd.period === 'warmup') {
     // Fix (06/08/2026): il tab Foto ignorava il periodo warm-up (8 giu–17
@@ -12298,7 +12357,8 @@ function fotoComputeEntryData(entry) {
   const t1Label = daysToT1 > 0 ? daysToT1 + 'gg' : (daysToT1 === 0 ? 'Oggi' : '✓ fatto');
   const t2Label = daysToT2 > 0 ? daysToT2 + 'gg' : (daysToT2 === 0 ? 'Oggi' : '✓ fatto');
 
-  return { dayLabel, weekLabel, peso, pesoTxt, deltaTxt, aderenza, woLabel, t1Label, t2Label };
+  return { dayLabel, weekLabel, peso, pesoTxt, deltaTxt, aderenza, woLabel, t1Label, t2Label,
+    hrv, sonnoTxt, injLabel, injColor, integrLabel, integrColor, woType, woBadgeClass, woStatus, woWeekLabel };
 }
 
 function fotoRenderLista() {
@@ -12312,8 +12372,26 @@ function fotoRenderLista() {
   const sorted = [...photoLog].sort((a, b) => fotoDateTimeKey(b).localeCompare(fotoDateTimeKey(a)));
 
   el.innerHTML = `<div style="max-width:640px;margin:0 auto">` + sorted.map((entry, idx) => {
-    const { dayLabel, weekLabel, pesoTxt, deltaTxt, aderenza, woLabel, t1Label, t2Label } = fotoComputeEntryData(entry);
+    const { dayLabel, weekLabel, pesoTxt, deltaTxt, t1Label, t2Label,
+      hrv, sonnoTxt, injLabel, injColor, integrLabel, integrColor,
+      woType, woBadgeClass, woStatus, woWeekLabel } = fotoComputeEntryData(entry);
     const imgId = 'foto-list-img-' + idx;
+
+    // Opzione B approvata da Giorgio il 26/08/2026 dopo mockup: sostituisce
+    // "Aderenza sett." (stesso numero su più foto della stessa settimana,
+    // confuso) con i dati giornalieri veri, stessa granularità della card
+    // collassata nel Diario. "Workout sett." ora congelato alla data della
+    // foto (vedi fotoComputeEntryData) invece che a "oggi".
+    const woBadge = woType ? `<span class="day-badge ${woBadgeClass}" style="display:inline-flex;align-items:center;gap:5px">${woType}${woStatus ? `<span style="width:6px;height:6px;border-radius:50%;background:${woStatus === 'done' ? '#34c759' : '#ff3b30'};display:inline-block"></span>` : ''}</span>` : '';
+    const chip = (label, val, color) => val ? `<div style="text-align:center;flex:1;min-width:0"><div style="font-size:13px;font-weight:700${color ? ';color:' + color : ''}">${val}</div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em">${label}</div></div>` : '';
+    const statsRow = [
+      chip('kg', pesoTxt.replace(' kg', '')),
+      chip('HRV', hrv !== null ? hrv : ''),
+      chip('sonno', sonnoTxt),
+      chip('inj', injLabel, injColor),
+      chip('integr%', integrLabel, integrColor),
+      chip('wo sett.', woWeekLabel),
+    ].join('');
 
     return `<div style="position:relative;display:flex;gap:16px;background:var(--surface);border-radius:14px;padding:10px;margin-bottom:10px;border:1px solid var(--border)">
       <button onclick="fotoDeleteEntry('${entry.filename}')" title="Elimina foto" style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--red,#ff3b30);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">✕</button>
@@ -12323,11 +12401,9 @@ function fotoRenderLista() {
           <div style="font-size:14px;font-weight:600">${fotoFormatDate(entry.date)}${fotoFormatTimeLoc(entry)}${dayLabel ? ' <span style="font-size:11px;color:var(--muted);font-weight:500">· ' + dayLabel + '</span>' : ''}</div>
           <div style="font-size:12px;color:var(--purple);font-weight:600">${weekLabel}</div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          ${pesoTxt ? `<div style="background:var(--surface2);border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">Peso</span><span style="display:block;font-size:13px;font-weight:700">${pesoTxt}${deltaTxt ? ' <span style="color:var(--orange)">' + deltaTxt + '</span>' : ''}</span></div>` : ''}
-          ${aderenza !== null ? `<div style="background:var(--surface2);border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">Aderenza sett.</span><span style="display:block;font-size:13px;font-weight:700">${aderenza}%</span></div>` : ''}
-          ${woLabel ? `<div style="background:var(--surface2);border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em">Workout</span><span style="display:block;font-size:13px;font-weight:700">${woLabel}</span></div>` : ''}
-        </div>
+        ${woBadge ? `<div>${woBadge}</div>` : ''}
+        <div style="display:flex;gap:4px;background:var(--surface2);border-radius:9px;padding:8px 4px;flex-wrap:wrap">${statsRow}</div>
+        ${pesoTxt && deltaTxt ? `<div style="font-size:10px;color:var(--muted)">${deltaTxt} <span style="color:var(--orange)">vs T0</span></div>` : ''}
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <div style="background:#fdf2ff;border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--purple);text-transform:uppercase;letter-spacing:.03em">🩸 A T1 (12 set)</span><span style="display:block;font-size:13px;font-weight:700;color:var(--purple)">${t1Label}</span></div>
           <div style="background:#fdf2ff;border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--purple);text-transform:uppercase;letter-spacing:.03em">🩸 A T2 (7 nov)</span><span style="display:block;font-size:13px;font-weight:700;color:var(--purple)">${t2Label}</span></div>
@@ -12420,12 +12496,17 @@ function fotoLightboxUpdate(idx) {
   const entry = _fotoGrigliaSorted[idx];
   if (!entry) return;
   _fotoLightboxIdx = idx;
-  const { dayLabel, pesoTxt, deltaTxt, aderenza, woLabel, t1Label, t2Label } = fotoComputeEntryData(entry);
+  const { dayLabel, pesoTxt, deltaTxt, t1Label, t2Label,
+    hrv, sonnoTxt, injLabel, integrLabel, woType, woWeekLabel } = fotoComputeEntryData(entry);
   const substats = [
     pesoTxt ? 'Peso ' + pesoTxt : '',
     deltaTxt ? deltaTxt + ' vs T0' : '',
-    aderenza !== null ? 'Aderenza ' + aderenza + '%' : '',
-    woLabel ? 'Workout ' + woLabel : '',
+    hrv !== null ? 'HRV ' + hrv : '',
+    sonnoTxt ? 'Sonno ' + sonnoTxt : '',
+    injLabel ? 'Inj ' + injLabel : '',
+    integrLabel ? 'Integr ' + integrLabel : '',
+    woType ? woType : '',
+    woWeekLabel && woWeekLabel !== '—' ? 'WO sett. ' + woWeekLabel : '',
     'A T1 ' + t1Label,
     'A T2 ' + t2Label
   ].filter(Boolean).join(' · ');
@@ -12594,13 +12675,22 @@ function fotoScrubberUpdate(idx) {
   idx = parseInt(idx, 10);
   const entry = _fotoScrubberSorted[idx];
   if (!entry) return;
-  const { dayLabel, pesoTxt, t1Label, t2Label } = fotoComputeEntryData(entry);
+  const { dayLabel, pesoTxt, t1Label, t2Label, hrv, sonnoTxt, injLabel, integrLabel, woType, woWeekLabel } = fotoComputeEntryData(entry);
   fotoLoadImage(entry.filename, 'foto-scrub-img');
   if (_fotoBlurred) { const img = document.getElementById('foto-scrub-img'); if (img) img.style.filter = 'blur(16px)'; }
   const caption = document.getElementById('foto-scrub-caption');
   const sub = document.getElementById('foto-scrub-sub');
   if (caption) caption.textContent = fotoFormatDate(entry.date) + fotoFormatTimeLoc(entry);
-  if (sub) sub.textContent = [pesoTxt, dayLabel, 'A T1 ' + t1Label, 'A T2 ' + t2Label].filter(Boolean).join(' · ');
+  if (sub) sub.textContent = [
+    pesoTxt, dayLabel,
+    hrv !== null ? 'HRV ' + hrv : '',
+    sonnoTxt ? 'Sonno ' + sonnoTxt : '',
+    injLabel ? 'Inj ' + injLabel : '',
+    integrLabel ? 'Integr ' + integrLabel : '',
+    woType || '',
+    woWeekLabel && woWeekLabel !== '—' ? 'WO sett. ' + woWeekLabel : '',
+    'A T1 ' + t1Label, 'A T2 ' + t2Label
+  ].filter(Boolean).join(' · ');
 }
 
 // F6 (06/08/2026): Vista Per settimana — raggruppa le foto per settimana/
