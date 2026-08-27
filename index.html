@@ -12433,8 +12433,8 @@ function fotoRenderLista() {
     return `<div style="position:relative;display:flex;gap:16px;background:var(--surface);border-radius:14px;padding:10px;margin-bottom:10px;border:1px solid var(--border)">
       <button onclick="fotoDeleteEntry('${entry.filename}')" title="Elimina foto" style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--red,#ff3b30);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">✕</button>
       <img id="${imgId}" class="foto-photo" style="width:clamp(90px,26vw,140px);height:clamp(112px,32vw,175px);border-radius:8px;flex-shrink:0;object-fit:cover;background:var(--surface2)">
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;padding-right:26px">
-        <div>
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0">
+        <div style="padding-right:26px">
           <div style="font-size:14px;font-weight:600">${fotoFormatDate(entry.date)}${fotoFormatTimeLoc(entry)}${dayLabel ? ' <span style="font-size:11px;color:var(--muted);font-weight:500">· ' + dayLabel + '</span>' : ''}</div>
           <div style="font-size:12px;color:var(--purple);font-weight:600">${weekLabel}</div>
         </div>
