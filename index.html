@@ -12413,10 +12413,15 @@ function fotoRenderLista() {
     // confuso) con i dati giornalieri veri, stessa granularità della card
     // collassata nel Diario. "Workout sett." ora congelato alla data della
     // foto (vedi fotoComputeEntryData) invece che a "oggi".
-    const woBadge = woType ? `<span class="day-badge ${woBadgeClass}" style="display:inline-flex;align-items:center;gap:5px">${woType}${woStatus ? `<span style="width:6px;height:6px;border-radius:50%;background:${woStatus === 'done' ? '#34c759' : '#ff3b30'};display:inline-block"></span>` : ''}</span>` : '';
+    // Foto ingrandita e delta integrato nella chip "kg" (25/08->27/08/2026,
+    // richiesta di Giorgio "ingrandisci la foto e sistema i dati per
+    // sfruttare meglio lo spazio da mobile") - il delta vs T0 non è più una
+    // riga separata sotto la griglia, libera spazio verticale per la foto
+    // più grande senza allungare la card.
+    const pesoChip = pesoTxt ? `<div style="text-align:center;flex:1;min-width:0"><div style="font-size:13px;font-weight:700">${pesoTxt.replace(' kg', '')}${deltaTxt ? ` <span style="font-size:9px;font-weight:700;color:var(--orange)">${deltaTxt}</span>` : ''}</div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em">kg</div></div>` : '';
     const chip = (label, val, color) => val ? `<div style="text-align:center;flex:1;min-width:0"><div style="font-size:13px;font-weight:700${color ? ';color:' + color : ''}">${val}</div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em">${label}</div></div>` : '';
     const statsRow = [
-      chip('kg', pesoTxt.replace(' kg', '')),
+      pesoChip,
       chip('HRV', hrv !== null ? hrv : ''),
       chip('sonno', sonnoTxt),
       chip('inj', injLabel, injColor),
@@ -12426,7 +12431,7 @@ function fotoRenderLista() {
 
     return `<div style="position:relative;display:flex;gap:16px;background:var(--surface);border-radius:14px;padding:10px;margin-bottom:10px;border:1px solid var(--border)">
       <button onclick="fotoDeleteEntry('${entry.filename}')" title="Elimina foto" style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--red,#ff3b30);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">✕</button>
-      <img id="${imgId}" class="foto-photo" style="width:clamp(64px,20vw,130px);height:clamp(80px,25vw,162px);border-radius:8px;flex-shrink:0;object-fit:cover;background:var(--surface2)">
+      <img id="${imgId}" class="foto-photo" style="width:clamp(90px,26vw,140px);height:clamp(112px,32vw,175px);border-radius:8px;flex-shrink:0;object-fit:cover;background:var(--surface2)">
       <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;padding-right:26px">
         <div>
           <div style="font-size:14px;font-weight:600">${fotoFormatDate(entry.date)}${fotoFormatTimeLoc(entry)}${dayLabel ? ' <span style="font-size:11px;color:var(--muted);font-weight:500">· ' + dayLabel + '</span>' : ''}</div>
@@ -12434,7 +12439,6 @@ function fotoRenderLista() {
         </div>
         ${woBadge ? `<div>${woBadge}</div>` : ''}
         <div style="display:flex;gap:4px;background:var(--surface2);border-radius:9px;padding:8px 4px;flex-wrap:wrap">${statsRow}</div>
-        ${pesoTxt && deltaTxt ? `<div style="font-size:10px;color:var(--muted)">${deltaTxt} <span style="color:var(--orange)">vs T0</span></div>` : ''}
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <div style="background:#fdf2ff;border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--purple);text-transform:uppercase;letter-spacing:.03em">🩸 A T1 (12 set)</span><span style="display:block;font-size:13px;font-weight:700;color:var(--purple)">${t1Label}</span></div>
           <div style="background:#fdf2ff;border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--purple);text-transform:uppercase;letter-spacing:.03em">🩸 A T2 (7 nov)</span><span style="display:block;font-size:13px;font-weight:700;color:var(--purple)">${t2Label}</span></div>
