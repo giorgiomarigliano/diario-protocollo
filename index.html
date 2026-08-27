@@ -1618,6 +1618,54 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 </div>
 
 <script>
+// ══════════════════════════════════════════════════════════════════
+// RILEVATORE DI ERRORI GLOBALE (27/08/2026, richiesta esplicita di
+// Giorgio dopo il terzo incidente "schermo vuoto senza nessun indizio"
+// in pochi giorni: variabile ridichiarata in TDZ, variabile non
+// dichiarata, vista rotta che nasconde il contenuto vero). Non previene
+// i bug futuri (impossibile promettere una cosa simile), ma garantisce
+// che se un errore JS non gestito blocca qualcosa, SI VEDA un messaggio
+// invece di una pagina muta — Giorgio può fare uno screenshot del
+// banner e mandarlo direttamente, invece di dover descrivere "vedo
+// schermo vuoto" e aspettare che venga diagnosticato alla cieca.
+// Messo come primissima istruzione del primo <script> per catturare
+// anche errori che accadono prestissimo nel caricamento.
+// ══════════════════════════════════════════════════════════════════
+let _jsErrorBannerShown = false;
+function showJsErrorBanner(message, lineno) {
+  if (_jsErrorBannerShown) return; // il primo errore e' di solito la causa reale, non spammare banner a cascata
+  _jsErrorBannerShown = true;
+  try {
+    const banner = document.createElement('div');
+    banner.id = 'js-error-banner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999999;background:#ff3b30;color:#fff;padding:12px 16px;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Arial,sans-serif;font-size:13px;line-height:1.5;box-shadow:0 2px 8px rgba(0,0,0,.25)';
+    banner.innerHTML = `
+      <div style="max-width:900px;margin:0 auto;display:flex;align-items:flex-start;gap:12px">
+        <span style="font-size:18px;flex-shrink:0">⚠️</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;margin-bottom:2px">Si è verificato un errore imprevisto</div>
+          <div style="opacity:.95;word-break:break-word">${message}${lineno ? ' (riga ' + lineno + ')' : ''}</div>
+          <div style="opacity:.8;font-size:11px;margin-top:4px">Fai uno screenshot di questo messaggio e mandalo in chat — aiuta a trovare la causa molto più in fretta.</div>
+        </div>
+        <button onclick="location.reload()" style="background:#fff;color:#ff3b30;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0">Ricarica</button>
+        <button onclick="document.getElementById('js-error-banner').remove()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:8px;padding:8px 10px;font-size:12px;cursor:pointer;flex-shrink:0">✕</button>
+      </div>`;
+    (document.body || document.documentElement).insertBefore(banner, (document.body || document.documentElement).firstChild);
+  } catch (bannerErr) {
+    // Se anche mostrare il banner fallisce (es. document.body non ancora
+    // pronto), non c'e' altro da fare se non evitare un secondo errore
+    // silenzioso — nessuna azione ulteriore.
+  }
+}
+window.addEventListener('error', function (e) {
+  showJsErrorBanner(e.message || 'Errore sconosciuto', e.lineno);
+});
+window.addEventListener('unhandledrejection', function (e) {
+  const reason = e.reason;
+  const msg = (reason && reason.message) ? reason.message : String(reason);
+  showJsErrorBanner('Promise non gestita: ' + msg);
+});
+
 const START = new Date('2026-06-08');
 // Formatta una data come YYYY-MM-DD usando i componenti LOCALI (evita lo shift di toISOString che converte in UTC)
 function localDateStr(d) {
@@ -2827,7 +2875,13 @@ function checkMissingYesterday(data) {
     entry = (_lastData2 || {})['test_proto_' + t];
     missing = computeMissingForV2Day(entry, t - TEST_PROTO_DAYS);
     dismissKey = 'missing_dismissed_test_' + t;
-    view = 'proto2'; cardId = 'card-test_proto_' + t;
+    // 'diary' e non 'proto2' (27/08/2026): 'proto2' e' una vista rotta che
+    // nasconde #diary-view (dove vive #container2, il contenitore REALE
+    // popolato da buildProtoV2()) e mostra al suo posto #proto2-view, un
+    // div separato mai popolato da nessuna funzione - schermo vuoto
+    // garantito. #container2 vive dentro #diary-view, quindi la vista
+    // giusta da mostrare e' sempre 'diary', per ogni periodo.
+    view = 'diary'; cardId = 'card-test_proto_' + t;
   } else if (yesterday >= s2) {
     // Ciclo v2 ufficiale (dal 20 lug)
     const dayIdx = Math.round((yesterday - s2) / 86400000);
@@ -2835,7 +2889,7 @@ function checkMissingYesterday(data) {
     entry = (_lastData2 || {})['p2_day_' + dayIdx];
     missing = computeMissingForV2Day(entry, dayIdx);
     dismissKey = 'missing_dismissed_p2_' + dayIdx;
-    view = 'proto2'; cardId = 'card-p2_day_' + dayIdx;
+    view = 'diary'; cardId = 'card-p2_day_' + dayIdx;
   } else {
     // Warm-up (v1, prima del Test Protocollo)
     const dayIdx = Math.round((yesterday - s0) / 86400000);
