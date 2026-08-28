@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Passkey — Diario Protocollo (pagina isolata)</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 480px; margin: 40px auto; padding: 0 20px; color: #1c1c1e; }
+  h1 { font-size: 20px; }
+  .warn { background: #fff8ec; border: 1px solid #ffe4b3; border-radius: 10px; padding: 12px 14px; font-size: 13px; margin-bottom: 20px; }
+  .card { background: #f5f5f7; border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+  .card h2 { font-size: 15px; margin: 0 0 10px; }
+  input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #d1d1d6; margin-bottom: 8px; font-size: 14px; box-sizing: border-box; }
+  button { width: 100%; padding: 11px; border-radius: 8px; border: none; background: #0071e3; color: #fff; font-weight: 600; font-size: 14px; cursor: pointer; margin-bottom: 6px; }
+  button:disabled { background: #c7c7cc; cursor: not-allowed; }
+  button.secondary { background: #af52de; }
+  #status { font-size: 13px; white-space: pre-wrap; background: #fff; border-radius: 8px; padding: 10px; border: 1px solid #e5e5ea; min-height: 40px; margin-top: 10px; }
+  .ok { color: #34c759; } .err { color: #ff3b30; }
+</style>
+</head>
+<body>
+  <h1>🔑 Test Passkey — pagina isolata</h1>
+  <div class="warn">Pagina di test scollegata dal Diario Protocollo reale. Non tocca né legge i dati del protocollo — serve solo a verificare che login + Face ID/Touch ID funzionino con la configurazione appena impostata su Supabase.</div>
+
+  <div class="card">
+    <h2>1. Accedi con email/password</h2>
+    <input id="email" type="email" placeholder="Email" value="g.marigliano@gmail.com">
+    <input id="password" type="password" placeholder="Password">
+    <button id="btnLogin">Accedi</button>
+  </div>
+
+  <div class="card">
+    <h2>2. Registra una passkey (Face ID / Touch ID)</h2>
+    <button id="btnRegister" class="secondary" disabled>Aggiungi passkey su questo dispositivo</button>
+  </div>
+
+  <div class="card">
+    <h2>3. Prova l'accesso SOLO con la passkey</h2>
+    <button id="btnSignOut" disabled>Esci (per testare il punto 4)</button>
+    <button id="btnPasskeySignIn" class="secondary">Accedi con passkey</button>
+  </div>
+
+  <div id="status">Pronto.</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+  const SUPABASE_URL = 'https://viarmvaukgwdoursfnwu.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_ppqlo1IbPDjWqnkw_h5wuA_WH8dCtPx';
+
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { experimental: { passkey: true } }
+  });
+
+  const statusEl = document.getElementById('status');
+  function log(msg, cls) {
+    const line = document.createElement('div');
+    if (cls) line.className = cls;
+    line.textContent = msg;
+    statusEl.prepend(line);
+  }
+
+  document.getElementById('btnLogin').onclick = async () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    log('Accesso in corso...');
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) { log('Errore login: ' + error.message, 'err'); return; }
+    log('✅ Loggato come ' + data.user.email, 'ok');
+    document.getElementById('btnRegister').disabled = false;
+    document.getElementById('btnSignOut').disabled = false;
+  };
+
+  document.getElementById('btnRegister').onclick = async () => {
+    log('Avvio registrazione passkey — segui il prompt Face ID/Touch ID...');
+    try {
+      const { data, error } = await sb.auth.registerPasskey();
+      if (error) { log('Errore registrazione: ' + error.message, 'err'); return; }
+      log('✅ Passkey registrata con successo!', 'ok');
+    } catch (e) {
+      log('Eccezione: ' + e.message, 'err');
+    }
+  };
+
+  document.getElementById('btnSignOut').onclick = async () => {
+    await sb.auth.signOut();
+    log('Uscito. Ora prova il punto 3 per accedere SOLO con la passkey.');
+    document.getElementById('btnRegister').disabled = true;
+    document.getElementById('btnSignOut').disabled = true;
+  };
+
+  document.getElementById('btnPasskeySignIn').onclick = async () => {
+    log('Avvio accesso con passkey — segui il prompt Face ID/Touch ID...');
+    try {
+      const { data, error } = await sb.auth.signInWithPasskey();
+      if (error) { log('Errore accesso passkey: ' + error.message, 'err'); return; }
+      log('✅ Accesso riuscito con passkey come ' + data.user.email + ' — FUNZIONA!', 'ok');
+      document.getElementById('btnRegister').disabled = false;
+      document.getElementById('btnSignOut').disabled = false;
+    } catch (e) {
+      log('Eccezione: ' + e.message, 'err');
+    }
+  };
+</script>
+</body>
+</html>
