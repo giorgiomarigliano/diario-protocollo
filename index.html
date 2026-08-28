@@ -12473,8 +12473,8 @@ function fotoRenderLista() {
     // riga separata sotto la griglia, libera spazio verticale per la foto
     // più grande senza allungare la card.
     const woBadge = woType ? `<span class="day-badge ${woBadgeClass}" style="display:inline-flex;align-items:center;gap:5px">${woType}${woStatus ? `<span style="width:6px;height:6px;border-radius:50%;background:${woStatus === 'done' ? '#34c759' : '#ff3b30'};display:inline-block"></span>` : ''}</span>` : '';
-    const pesoChip = pesoTxt ? `<div style="text-align:center;flex:1;min-width:0"><div style="font-size:13px;font-weight:700">${pesoTxt.replace(' kg', '')}${deltaTxt ? ` <span style="font-size:9px;font-weight:700;color:var(--orange)">${deltaTxt}</span>` : ''}</div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em">kg</div></div>` : '';
-    const chip = (label, val, color) => val ? `<div style="text-align:center;flex:1;min-width:0"><div style="font-size:13px;font-weight:700${color ? ';color:' + color : ''}">${val}</div><div style="font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.02em">${label}</div></div>` : '';
+    const pesoChip = pesoTxt ? `<div style="text-align:center;flex:1;min-width:0"><div style="font-size:13px;font-weight:700">${pesoTxt.replace(' kg', '')}${deltaTxt ? ` <span style="font-size:9px;font-weight:700;color:var(--orange)">${deltaTxt}</span>` : ''}</div><div style="font-size:var(--fs-3xs);color:var(--muted);text-transform:uppercase;letter-spacing:.02em">kg</div></div>` : '';
+    const chip = (label, val, color) => val ? `<div style="text-align:center;flex:1;min-width:0"><div style="font-size:13px;font-weight:700${color ? ';color:' + color : ''}">${val}</div><div style="font-size:var(--fs-3xs);color:var(--muted);text-transform:uppercase;letter-spacing:.02em">${label}</div></div>` : '';
     const statsRow = [
       pesoChip,
       chip('HRV', hrv !== null ? hrv : ''),
