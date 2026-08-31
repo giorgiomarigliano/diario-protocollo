@@ -10857,8 +10857,10 @@ function buildStockView2() {
       .stock-vchip summary::marker{content:''}
       .stock-vchip[open] summary{border-radius:8px 8px 0 0}
     </style>
-    <div style="font-size:var(--fs-20);font-weight:var(--fw-bold);color:var(--text);letter-spacing:-.02em;margin-bottom:4px">Stock peptidi · Ciclo 1</div>
-    <div style="font-size:var(--fs-sm);color:var(--muted);margin-bottom:16px">20 lug – 8 nov 2026 · 112 giorni</div>
+    <div style="margin-bottom:16px">
+      <div class="t-page-title">Stock peptidi · Ciclo 1</div>
+      <div class="t-page-sub">20 lug – 8 nov 2026 · 112 giorni</div>
+    </div>
 
     <div style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);padding:16px;margin-bottom:16px">
       <div style="font-size:var(--fs-14);font-weight:var(--fw-bold);color:var(--text);margin-bottom:2px">🧮 Unit Converter</div>
@@ -11986,7 +11988,10 @@ function buildProtocolloTimeline() {
   wnav += '</div>';
 
   el.innerHTML = `<div class="app-view-inner view-wrap">
-    <div class="week-hdr" style="margin-bottom:1.5rem"><h2>Timeline protocollo v2</h2><span class="week-range">Effetti attesi · 16 settimane · 6 molecole · dal 20 lug 2026 (confermato)</span></div>
+    <div style="margin-bottom:16px">
+      <div class="t-page-title">Timeline protocollo v2</div>
+      <div class="t-page-sub">Effetti attesi · 16 settimane · 6 molecole · dal 20 lug 2026 (confermato)</div>
+    </div>
     ${mfilter}${pbar}${legend}${wnav}
     <div id="tl-body"></div>
   </div>`;
@@ -12232,9 +12237,9 @@ function buildFoodTab() {
 
   // HTML struttura
   el.innerHTML = `<div class="app-view-inner view-wrap">
-    <div class="week-hdr" style="margin-bottom:1.25rem">
-      <h2>Leggenda alimenti</h2>
-      <span class="week-range">Macro di riferimento + costruttore pasto</span>
+    <div style="margin-bottom:16px">
+      <div class="t-page-title">Leggenda alimenti</div>
+      <div class="t-page-sub">Macro di riferimento + costruttore pasto</div>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start">
@@ -12620,9 +12625,9 @@ function buildHistoryTab() {
     const avgDur = sessions.length ? Math.round(sessions.reduce((a,s)=>a+(s.duration_min||0),0)/sessions.length) : 0;
 
     el.innerHTML = `<div class="app-view-inner view-wrap">
-      <div class="week-hdr" style="margin-bottom:1.25rem">
-        <h2>Storico allenamenti</h2>
-        <span class="week-range">${totalSessions} sessioni · ${(totalVol/1000).toFixed(1)}t volume totale · ${avgDur}' durata media</span>
+      <div style="margin-bottom:16px">
+        <div class="t-page-title">Storico allenamenti</div>
+        <div class="t-page-sub">${totalSessions} sessioni · ${(totalVol/1000).toFixed(1)}t volume totale · ${avgDur}' durata media</div>
       </div>
 
       ${renderReadyFlags()}
