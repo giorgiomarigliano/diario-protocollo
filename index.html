@@ -1017,9 +1017,8 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 
 
 /* ── Tab Checkpoint (T0 · T1 · T2) — 31/08/2026 ── */
-.ck-page-hdr{margin:24px 0 4px}
-.ck-page-hdr h1{font-size: var(--fs-2xl);font-weight: var(--fw-bold);letter-spacing:-.02em;margin:0}
-.ck-page-sub{font-size: var(--fs-sm);color:var(--muted);margin-top:3px}
+/* ck-page-hdr/ck-page-sub rimosse (V14 Lotto B2, 31/08/2026): Checkpoint ora usa
+   t-page-title/t-page-sub come tutti gli altri tab migrati */
 
 .ck-stepper{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 18px 16px;margin:16px 0 24px}
 .ck-step{flex:1;text-align:center;position:relative}
@@ -4287,9 +4286,9 @@ function buildCheckpointTab() {
   const t2Badge = t2Days > 0 ? `Tra ${t2Days} giorni` : (t2Days === 0 ? 'Oggi' : 'Completato');
 
   let html = `<div class="app-view-inner view-wrap">
-    <div class="ck-page-hdr">
-      <h1>Checkpoint</h1>
-      <div class="ck-page-sub">Confronto T0 · T1 · T2 — ematici, DEXA e parametri vitali</div>
+    <div style="margin-bottom:16px">
+      <div class="t-page-title">Checkpoint</div>
+      <div class="t-page-sub">Confronto T0 · T1 · T2 — ematici, DEXA e parametri vitali</div>
     </div>
 
     <div class="ck-stepper">
@@ -5205,7 +5204,7 @@ function buildMedView() {
   <!-- TIMELINE CLINICA VISIVA -->
   <div class="med-panel" style="margin-bottom:20px">
     <div class="med-panel-hdr"><div>
-      <div class="med-panel-title">🗓 Timeline clinica</div>
+      <div class="med-panel-title">Timeline clinica</div>
       <div class="med-panel-sub">Cronologia eventi, esami e milestone</div>
     </div></div>
 
@@ -5330,7 +5329,7 @@ function buildMedView() {
   // Trend storici
   html += `<div class="med-panel">
     <div class="med-panel-hdr"><div>
-      <div class="med-panel-title">📊 Trend Storici — Markers Chiave</div>
+      <div class="med-panel-title">Trend Storici — Markers Chiave</div>
       <div class="med-panel-sub">Confronto cronologico nei panel CDI Bicocca</div>
     </div></div>`;
   trends.forEach(t => {
@@ -5354,7 +5353,7 @@ function buildMedView() {
   // Azioni correttive
   html += `<div class="med-panel">
     <div class="med-panel-hdr"><div>
-      <div class="med-panel-title">💊 Azioni in corso sui valori alterati</div>
+      <div class="med-panel-title">Azioni in corso sui valori alterati</div>
       <div class="med-panel-sub">Supplementazione attiva · Obiettivi mid-cycle</div>
     </div></div>
     <div style="display:grid;gap:8px">`;
@@ -5371,7 +5370,7 @@ function buildMedView() {
   // Mini-panel mid-cycle
   html += `<div class="med-panel" style="margin-bottom:40px">
     <div class="med-panel-hdr"><div>
-      <div class="med-panel-title">🔬 Mini-panel Mid-cycle previsto (settimane 8–10)</div>
+      <div class="med-panel-title">Mini-panel Mid-cycle previsto (settimane 8–10)</div>
       <div class="med-panel-sub">T0 · T1 (sett. 8) · T2 (fine ciclo) · Santagostino · Da concordare con Dr. Seregni</div>
     </div></div>
     <div style="display:flex;flex-wrap:wrap;gap:7px">
@@ -7711,7 +7710,7 @@ function buildDashboard() {
         <div id="settimana-tipo-wo"></div>
       </div>
       <div class="charts-card" style="margin-top:10px">
-        <div class="dash-card-title">💬 Commento</div>
+        <div class="dash-card-title">Commento</div>
         <div id="settimana-tipo-commento"></div>
       </div>
     </div>
@@ -7722,7 +7721,7 @@ function buildDashboard() {
       <div id="backup-status-card"></div>
       <div class="med-panel" style="margin-top:12px">
         <div class="med-panel-hdr"><div>
-          <div class="med-panel-title">📤 Esporta dati</div>
+          <div class="med-panel-title">Esporta dati</div>
           <div class="med-panel-sub">Excel a 3 tab (dati grezzi) o PDF narrativo (percorso + protocollo + laboratorio) — dal Test Protocollo (18/7) a oggi</div>
         </div></div>
         <div style="display:flex;gap:8px;margin-top:8px">
@@ -8160,7 +8159,7 @@ function buildInsightsTab() {
       <div id="dash-ready-flags"></div>
 
       <!-- PETTO -->
-      <div class="dash-section-label">🫁 Petto</div>
+      <div class="dash-section-label">Petto</div>
       <div class="dash-three-col">
         <div class="charts-card">
           <div class="dash-card-title">BB Bench Press (kg)</div>
@@ -8177,7 +8176,7 @@ function buildInsightsTab() {
       </div>
 
       <!-- DORSO -->
-      <div class="dash-section-label" style="margin-top:14px">🔙 Dorso</div>
+      <div class="dash-section-label" style="margin-top:14px">Dorso</div>
       <div class="dash-three-col">
         <div class="charts-card">
           <div class="dash-card-title">Lat Machine Wide-Grip (kg)</div>
@@ -8194,7 +8193,7 @@ function buildInsightsTab() {
       </div>
 
       <!-- SPALLE -->
-      <div class="dash-section-label" style="margin-top:14px">💪 Spalle</div>
+      <div class="dash-section-label" style="margin-top:14px">Spalle</div>
       <div class="dash-three-col">
         <div class="charts-card">
           <div class="dash-card-title">BB OHP in piedi (kg)</div>
@@ -8211,7 +8210,7 @@ function buildInsightsTab() {
       </div>
 
       <!-- BICIPITI + TRICIPITI -->
-      <div class="dash-section-label" style="margin-top:14px">💪 Braccia</div>
+      <div class="dash-section-label" style="margin-top:14px">Braccia</div>
       <div class="dash-two-col">
         <div class="charts-card">
           <div class="dash-card-title">Bicipiti</div>
@@ -8232,7 +8231,7 @@ function buildInsightsTab() {
       </div>
 
       <!-- GAMBE -->
-      <div class="dash-section-label" style="margin-top:14px">🦵 Gambe</div>
+      <div class="dash-section-label" style="margin-top:14px">Gambe</div>
       <div class="dash-three-col">
         <div class="charts-card">
           <div class="dash-card-title">Leg Extension (kg)</div>
@@ -9622,7 +9621,7 @@ function isBkkDate(d) {
 function buildTestProtoCards(container) {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'margin-bottom:18px';
-  wrap.innerHTML = `<div class="section-label" style="margin-bottom:8px">🧪 Test Protocollo · rodaggio pre-ciclo (non conteggiato nei 112 giorni)</div>`;
+  wrap.innerHTML = `<div class="section-label" style="margin-bottom:8px">Test Protocollo · rodaggio pre-ciclo (non conteggiato nei 112 giorni)</div>`;
 
   for (let t = 0; t < TEST_PROTO_DAYS; t++) {
     const dayOffsetFromStart2 = t - TEST_PROTO_DAYS; // -2, -1 relativo a START2 (lun 20/7)
@@ -10863,7 +10862,7 @@ function buildStockView2() {
     </div>
 
     <div style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);padding:16px;margin-bottom:16px">
-      <div style="font-size:var(--fs-14);font-weight:var(--fw-bold);color:var(--text);margin-bottom:2px">🧮 Unit Converter</div>
+      <div style="font-size:var(--fs-14);font-weight:var(--fw-bold);color:var(--text);margin-bottom:2px">Unit Converter</div>
       <div style="font-size:var(--fs-xs);color:var(--muted);margin-bottom:14px">Volume di prelievo su siringa da insulina U-100</div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px">
@@ -10907,7 +10906,7 @@ function buildStockView2() {
     </div>
 
     <div style="background:var(--surface,#fff);border-radius:14px;border:1px solid var(--border,#e8e8ed);box-shadow:0 1px 6px rgba(0,0,0,.06);padding:16px;margin-bottom:16px">
-      <div style="font-size:var(--fs-14);font-weight:var(--fw-bold);color:var(--text);margin-bottom:2px">🧪 Tabella Ricostituzione</div>
+      <div style="font-size:var(--fs-14);font-weight:var(--fw-bold);color:var(--text);margin-bottom:2px">Tabella Ricostituzione</div>
       <div style="font-size:var(--fs-xs);color:var(--muted);margin-bottom:12px">Diluizione effettiva dei vial ricostituiti · modifica vial/BAC per aggiornare i calcoli</div>
       <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:var(--fs-xs)">
@@ -11596,14 +11595,14 @@ function buildMedDash() {
   let html = `<div class="app-view-inner view-wrap">
 
   <!-- KPI GRID — organizzata per categoria clinica -->
-  <div class="section-label" style="margin-top:0">🩺 Asse renale</div>
+  <div class="section-label" style="margin-top:0">Asse renale</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
     ${kpiCard('Creatinina', DATA.creatinina, 'mg/dL', undefined, 1.2, 'target ≤1.20', '#8e8e93')}
     ${kpiCard('eGFR', DATA.egfr, 'mL/min', 90, undefined, 'target ≥90', '#5856d6')}
     ${kpiCard('ACR urinario', DATA.acr, 'mg/g cre', undefined, 30, 'target <30 (normoalbuminuria)', '#34c759')}
   </div>
 
-  <div class="section-label">⚖️ Asse gonadico</div>
+  <div class="section-label">Asse gonadico</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
     ${kpiCard('Testosterone tot.', DATA.testTotale, 'ng/dL', 127.18, 1020.36, 'range 127.18–1020.36 (Sant\'Agostino)', '#0071e3')}
     ${kpiCard('Testosterone lib.', DATA.testLibero, 'pg/mL', 9.57, 40.60, 'range 9.57–40.60 (Sant\'Agostino)', '#0071e3')}
@@ -11612,19 +11611,19 @@ function buildMedDash() {
     ${kpiCard('LH', DATA.lh, 'mUI/mL', 0.57, 12.7, 'range 0.57–12.7 (Sant\'Agostino)', '#ff3b30')}
   </div>
 
-  <div class="section-label">🫀 Lipidi</div>
+  <div class="section-label">Lipidi</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
     ${kpiCard('HDL', DATA.hdl, 'mg/dL', 40, undefined, 'target ≥40', '#ff9500')}
   </div>
 
-  <div class="section-label">🔥 Infiammazione</div>
+  <div class="section-label">Infiammazione</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
     ${kpiCard('Omocisteina', DATA.omocist, 'µmol/L', undefined, 13, 'target ≤13', '#0071e3')}
     ${kpiCard('VES', DATA.ves, 'mm/h', undefined, 15, 'target ≤15', '#ff9500')}
     ${kpiCard('PCR', DATA.crp, 'mg/L', undefined, 3.3, 'target ≤3.3', '#8e8e93')}
   </div>
 
-  <div class="section-label">🧬 Altro / quadro generale</div>
+  <div class="section-label">Altro / quadro generale</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:28px">
     ${kpiCard('IGF-1', DATA.igf1, 'µg/L', 115, 300, 'target 150–180+ (post Tesa)', '#af52de')}
     ${kpiCard('Vitamina D', DATA.vitd, 'µg/L', 50, undefined, 'target ≥50', '#34c759')}
@@ -12676,7 +12675,7 @@ async function buildFotoTab() {
   el.innerHTML = `
     <div class="app-view-inner view-wrap">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div class="dash-card-title">📷 Ricomposizione</div>
+        <div class="dash-card-title">Ricomposizione</div>
         <div id="foto-blur-btn" onclick="fotoToggleBlur()" style="width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer">🙈</div>
       </div>
 
