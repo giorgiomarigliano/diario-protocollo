@@ -212,14 +212,17 @@ body {
 /* ── Sistema badge/pill unificato (V14, 31/08/2026) ──────────────────────
    Il sistema tipografico t-page-title/t-page-sub/t-section-title sopra
    esisteva già ma era usato solo da Orari — audit del 31/08/2026 ha trovato
-   8 famiglie di badge diverse sparse nell'app (today-badge, pre-proto-badge,
-   lab-status-badge, ck-badge, ck-step-badge, rich-kpi-badge, day-badge,
-   tag-pill), ciascuna con padding/radius propri per lo stesso ruolo visivo
-   (etichetta di stato colorata). t-badge le sostituirà gradualmente — vedi
-   KB sezione 24 per il piano di migrazione a lotti. Puramente additivo:
-   nessuna classe esistente è stata toccata in questo lotto. */
+   8 famiglie di badge diverse sparse nell'app (poi salite a 10, vedi B2).
+   Lotto C (stesso giorno) ha consolidato in t-badge: lab-status-badge,
+   ck-badge, ck-step-badge, rich-kpi-badge, tag-pill (quest'ultima era anche
+   doppiamente definita con valori in conflitto — bug corretto). Rimaste
+   intenzionalmente distinte, non forzate in t-badge perché visivamente/
+   semanticamente diverse: today-badge (chip pieno blu, marcatore "oggi",
+   non uno stato), pre-proto-badge (bordata, uppercase, header di sezione
+   collassabile), day-badge (badge più grande, un solo uso attuale). Vedi
+   KB sezione 24 per il dettaglio completo. */
 .t-badge{display:inline-block;font-size:var(--fs-3xs);font-weight:var(--fw-semi);padding:2px 8px;border-radius:20px;letter-spacing:.02em;line-height:1.4;white-space:nowrap}
-.t-badge.neutral{background:#f2f2f7;color:var(--muted)}
+.t-badge.neutral{background:var(--surface2);color:var(--muted)}
 .t-badge.good{background:var(--green-light);color:var(--green-dark)}
 .t-badge.bad{background:var(--red-light);color:var(--red-dark)}
 .t-badge.warn{background:rgba(255,149,0,.1);color:var(--orange)}
@@ -1006,7 +1009,9 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .photo-note input{flex:1;background:transparent;border:none;outline:none;font-size: var(--fs-body);color:var(--text);font-family:inherit}
 .photo-note input::placeholder{color:var(--faint)}
 
-.tag-pill{display:inline-block;font-size: var(--fs-2xs);font-weight: var(--fw-med);padding:2px 8px;border-radius:980px;background:var(--blue-light);color:var(--blue);margin-right:4px}
+/* tag-pill rimossa (V14 Lotto C, 31/08/2026): era definita due volte con
+   valori in conflitto (bug) ed era comunque sempre sovrascritta da style
+   inline nell'unico punto d'uso (calcDexaDelta) — sostituita da t-badge */
 
 @media(max-width:600px){
   .lab-grid{grid-template-columns:repeat(2,1fr)}
@@ -1031,9 +1036,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .ck-step.done .ck-step-line{background:var(--green)}
 .ck-step-label{font-size: var(--fs-body);font-weight: var(--fw-semi)}
 .ck-step-date{font-size: var(--fs-2xs);color:var(--muted);margin-top:1px}
-.ck-step-badge{display:inline-block;margin-top:6px;font-size: var(--fs-3xs);font-weight: var(--fw-semi);padding:2px 8px;border-radius:20px;letter-spacing:.02em;background:#f2f2f7;color:var(--muted)}
-.ck-step.done .ck-step-badge{background:var(--green-light);color:var(--green-dark)}
-.ck-step.next .ck-step-badge{background:var(--blue-light);color:var(--blue)}
+/* ck-step-badge rimossa (V14 Lotto C, 31/08/2026): sostituita da t-badge good/info/neutral */
 
 .ck-cat-label{font-size: var(--fs-sm);font-weight: var(--fw-semi);color:var(--text2);margin:16px 0 8px}
 .ck-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
@@ -1042,7 +1045,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .ck-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px}
 .ck-name{font-size: var(--fs-body);font-weight: var(--fw-med)}
 .ck-ref{font-size: var(--fs-3xs);color:var(--faint);margin-top:1px}
-.ck-badge{font-size: var(--fs-3xs);font-weight: var(--fw-bold);padding:0 6px;border-radius:20px;line-height:17px;white-space:nowrap}
+/* ck-badge rimossa (V14 Lotto C, 31/08/2026): sostituita da t-badge good/warn/bad */
 .ck-body{display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:10px}
 .ck-vals{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
 .ck-val-row{display:flex;align-items:baseline;gap:5px}
@@ -1113,7 +1116,6 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .ws-val{font-size:var(--fs-lg);font-weight:var(--fw-semi);color:var(--text);letter-spacing:-0.03em;line-height:1}
 .ws-lbl{font-size: var(--fs-2xs);color:var(--muted);margin-top:3px}
 .bkk-banner{background:#e8f1fb;border-radius:var(--radius-xs);padding:10px 14px;margin-bottom:10px;font-size: var(--fs-sm);color:var(--blue);font-weight: var(--fw-med)}
-.tag-pill{display:inline-block;font-size: var(--fs-2xs);font-weight: var(--fw-med);padding:2px 8px;border-radius:980px;margin-right:4px;margin-top:2px}
 @media(max-width:600px){
   .lab-grid{grid-template-columns:repeat(2,1fr)}
   .dexa-grid{grid-template-columns:repeat(2,1fr)}
@@ -1183,7 +1185,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .rich-kpi-head-left{display:flex;align-items:center;gap:7px;min-width:0;flex:1}
 .rich-kpi-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size: var(--fs-14);flex-shrink:0}
 .rich-kpi-lbl{font-size: var(--fs-body);font-weight: var(--fw-semi);color:var(--text);line-height:1.15;word-break:normal}
-.rich-kpi-badge{font-size: var(--fs-2xs);font-weight: var(--fw-semi);padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--muted);flex-shrink:0;white-space:nowrap}
+/* rich-kpi-badge rimossa (V14 Lotto C, 31/08/2026): sostituita da t-badge neutral */
 .rich-kpi-range-select{appearance:none;-webkit-appearance:none;border:none;cursor:pointer;font-family:inherit}
 .rich-kpi-value{font-size: var(--fs-2xl);font-weight: var(--fw-bold);letter-spacing:-0.02em;color:var(--text);line-height:1;margin-bottom:6px}
 .rich-kpi-value span{font-size: var(--fs-body);font-weight: var(--fw-reg)}
@@ -1283,7 +1285,6 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .rich-kpi-value{font-size: var(--fs-xl);margin-bottom:3px}
   .rich-kpi-icon{width:26px;height:26px;font-size: var(--fs-sm)}
   .rich-kpi-lbl{font-size: var(--fs-sm)}
-  .rich-kpi-badge{font-size: var(--fs-3xs);padding:2px 7px}
   .rich-kpi-delta-row{font-size: var(--fs-2xs);margin-top:1px}
   .rich-kpi-chart{margin-top:2px}
   .rich-kpi-summary{margin-top:2px;padding-top:6px;font-size: var(--fs-2xs)}
@@ -3216,9 +3217,7 @@ function refreshLabRangeStatus(cardId) {
         badge.style.display = '';
         badge.title = statusTitle;
         badge.textContent = `${statusLabel} ${statusTitle}`;
-        badge.style.color = st.dot;
-        badge.style.background = st.bg === 'transparent' ? '#f2f2f7' : st.bg;
-        badge.style.borderColor = st.dot;
+        badge.className = `t-badge lab-status-badge ${status === 'ok' ? 'good' : status === 'low' ? 'warn' : 'bad'}`;
       } else {
         badge.style.display = 'none';
       }
@@ -3903,7 +3902,7 @@ function buildLabSection(container) {
         <div class="lab-box" id="labbox-${m.id}-${k}" data-ref="${f.ref}" style="border-left:3px solid ${st.border};background:${st.bg};border-radius:8px;padding:10px 12px;position:relative">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
             <label style="margin:0">${f.label} <span style="color:var(--faint);font-weight: var(--fw-reg)">${f.unit}</span></label>
-            <span class="lab-status-badge" title="${statusTitle}" style="font-size: var(--fs-xs);font-weight: var(--fw-bold);color:${st.dot};background:${st.bg === 'transparent' ? '#f2f2f7' : st.bg};border:1px solid ${st.dot};border-radius:20px;padding:0px 6px;line-height:18px${statusLabel ? '' : ';display:none'}">${statusLabel} ${statusTitle}</span>
+            <span class="t-badge lab-status-badge ${status === 'ok' ? 'good' : status === 'low' ? 'warn' : status === 'high' ? 'bad' : 'neutral'}" title="${statusTitle}" style="${statusLabel ? '' : 'display:none'}">${statusLabel} ${statusTitle}</span>
           </div>
           <input type="text" placeholder="${isBaseline ? f.val : '—'}"
             data-id="${m.id}" data-f="lab_${k}"
@@ -4029,7 +4028,7 @@ function calcDexaDelta(milestoneId) {
     const diff = (v - parseFloat(fd.t0)).toFixed(1);
     const sign = diff > 0 ? '+' : '';
     const cls = (fd.better === 'down' && diff < 0) || (fd.better === 'up' && diff > 0) ? 'up' : diff == 0 ? 'neutral' : 'down';
-    return `<span class="tag-pill" style="background:${cls==='up'?'var(--green-light)':cls==='down'?'var(--red-light)':'#f5f5f7'};color:${cls==='up'?'var(--green-dark)':cls==='down'?'var(--red-dark)':'#6e6e73'}">${fd.label} ${sign}${diff}${fd.unit}</span>`;
+    return `<span class="t-badge ${cls === 'up' ? 'good' : cls === 'down' ? 'bad' : 'neutral'}">${fd.label} ${sign}${diff}${fd.unit}</span>`;
   }).filter(Boolean);
   const el = document.getElementById('dexa-delta-' + milestoneId);
   if (el) el.innerHTML = deltas.length ? deltas.join('') : 'Inserisci i valori per calcolare il delta';
@@ -4173,7 +4172,7 @@ function ckMetricCard(cfg) {
         <div class="ck-name">${name}</div>
         ${ref ? `<div class="ck-ref">Ref: ${ref}</div>` : ''}
       </div>
-      ${badgeTxt ? `<span class="ck-badge" style="color:${st.dot};background:${st.bg==='transparent'?'#f2f2f7':st.bg};border:1px solid ${st.dot}">${badgeTxt}</span>` : ''}
+      ${badgeTxt ? `<span class="t-badge ${status === 'ok' ? 'good' : status === 'low' ? 'warn' : 'bad'}">${badgeTxt}</span>` : ''}
     </div>
     <div class="ck-body">
       <div class="ck-vals">
@@ -4290,6 +4289,8 @@ function buildCheckpointTab() {
   const t1Badge = t1Days > 0 ? `Tra ${t1Days} giorni` : (t1Days === 0 ? 'Oggi' : 'Completato');
   const t2StepClass = t2Days <= 0 ? (t1Days <= 0 ? 'done' : 'next') : 'future';
   const t2Badge = t2Days > 0 ? `Tra ${t2Days} giorni` : (t2Days === 0 ? 'Oggi' : 'Completato');
+  // Mapping stato stepper -> variante t-badge (done=good, next=info, future=neutral)
+  const ckStepBadgeCls = { done: 'good', next: 'info', future: 'neutral' };
 
   let html = `<div class="app-view-inner view-wrap">
     <div style="margin-bottom:16px">
@@ -4303,20 +4304,20 @@ function buildCheckpointTab() {
         <div class="ck-step-dot"></div>
         <div class="ck-step-label">T0</div>
         <div class="ck-step-date">DEXA 9 mag · Ematici 13 lug 2026</div>
-        <div class="ck-step-badge">Completato</div>
+        <div class="t-badge good">Completato</div>
       </div>
       <div class="ck-step ${t1StepClass}">
         <div class="ck-step-line"></div>
         <div class="ck-step-dot"></div>
         <div class="ck-step-label">T1</div>
         <div class="ck-step-date">12 settembre 2026</div>
-        <div class="ck-step-badge">${t1Badge}</div>
+        <div class="t-badge ${ckStepBadgeCls[t1StepClass]}">${t1Badge}</div>
       </div>
       <div class="ck-step ${t2StepClass}">
         <div class="ck-step-dot"></div>
         <div class="ck-step-label">T2</div>
         <div class="ck-step-date">7 novembre 2026</div>
-        <div class="ck-step-badge">${t2Badge}</div>
+        <div class="t-badge ${ckStepBadgeCls[t2StepClass]}">${t2Badge}</div>
       </div>
     </div>
 
@@ -7407,9 +7408,9 @@ function buildDashboard() {
 
     const days = cfg.rangeDays || 7;
     const badgeHtml = cfg.rangeKey ? `
-        <select class="rich-kpi-badge rich-kpi-range-select" onchange="setRichKpiRange('${cfg.rangeKey}', this.value)">
+        <select class="t-badge neutral rich-kpi-range-select" onchange="setRichKpiRange('${cfg.rangeKey}', this.value)">
           ${[7,14,30,60].map(n=>`<option value="${n}"${n===days?' selected':''}>${n} giorni</option>`).join('')}
-        </select>` : `<span class="rich-kpi-badge">${days} giorni</span>`;
+        </select>` : `<span class="t-badge neutral">${days} giorni</span>`;
 
     return `<div class="rich-kpi-card">
       <div class="rich-kpi-head">
@@ -7553,7 +7554,7 @@ function buildDashboard() {
           <span class="rich-kpi-icon" style="background:#ece7fb">🧬</span>
           <span class="rich-kpi-lbl">Protocollo</span>
         </div>
-        <span class="rich-kpi-badge">${weeks} settimane</span>
+        <span class="t-badge neutral">${weeks} settimane</span>
       </div>
       <div class="rich-kpi-value">${valueTxt}</div>
       <div class="rich-kpi-progress-row">
