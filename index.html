@@ -1053,6 +1053,16 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .ck-pending{font-size: var(--fs-2xs);color:var(--faint);margin-top:9px;font-style:italic}
 .ck-footnote{margin-top:32px;padding:14px 16px;background:var(--blue-light);border-radius:var(--radius-xs);font-size: var(--fs-xs);color:var(--text2);line-height:1.5}
 .ck-footnote b{color:var(--blue)}
+.ck-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.ck-photo-card{background:var(--surface);border-radius:var(--radius-sm);box-shadow:var(--shadow);padding:10px;text-align:center}
+.ck-photo-img-wrap{width:100%;aspect-ratio:3/4;border-radius:var(--radius-xs);overflow:hidden;background:var(--surface2)}
+.ck-photo-img{width:100%;height:100%;object-fit:cover;display:block}
+.ck-photo-placeholder{width:100%;aspect-ratio:3/4;border-radius:var(--radius-xs);border:2px dashed var(--border2);background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.ck-photo-cam{font-size:28px;opacity:.5}
+.ck-photo-pending-txt{font-size: var(--fs-xs);color:var(--faint);font-style:italic}
+.ck-photo-label{font-size: var(--fs-body);font-weight: var(--fw-semi);margin-top:8px}
+.ck-photo-sub{font-size: var(--fs-2xs);color:var(--muted);margin-top:2px}
+.ck-photo-approx{color:var(--faint)}
 @media(max-width:600px){
   .ck-stepper{padding:14px 10px 12px}
   .ck-step-date{font-size:8px}
@@ -4178,6 +4188,49 @@ function fmtNum(v, dec) {
   return (dec === undefined ? v : v.toFixed(dec));
 }
 
+// Trova, in photo_log, la foto cronologicamente più vicina a una data di
+// checkpoint, entro una finestra di tolleranza (le foto non sono
+// giornaliere come i vitali, quindi non ci si aspetta un match esatto —
+// ma un match esatto, quando esiste, vince sempre su uno approssimato).
+// Ritorna {entry, diffDays} oppure null se non c'è nulla entro la finestra.
+function ckClosestPhoto(anchorDate, maxDays) {
+  const photoLog = (_lastData && Array.isArray(_lastData.photo_log)) ? _lastData.photo_log : [];
+  if (!photoLog.length) return null;
+  const anchor = new Date(anchorDate); anchor.setHours(0, 0, 0, 0);
+  let best = null, bestDiff = Infinity;
+  photoLog.forEach(entry => {
+    const d = new Date(entry.date); d.setHours(0, 0, 0, 0);
+    const diff = Math.abs(Math.round((d - anchor) / 86400000));
+    if (diff < bestDiff) { bestDiff = diff; best = entry; }
+  });
+  if (best && bestDiff <= maxDays) return { entry: best, diffDays: bestDiff };
+  return null;
+}
+
+const CK_PHOTO_WINDOW_DAYS = 5;
+
+function ckPhotoCard(label, anchorDate, imgId, pendingWindowLabel) {
+  const match = ckClosestPhoto(anchorDate, CK_PHOTO_WINDOW_DAYS);
+  if (!match) {
+    return `<div class="ck-photo-card ck-photo-pending">
+      <div class="ck-photo-placeholder">
+        <div class="ck-photo-cam">📷</div>
+        <div class="ck-photo-pending-txt">In attesa</div>
+      </div>
+      <div class="ck-photo-label">${label}</div>
+      <div class="ck-photo-sub">${pendingWindowLabel}</div>
+    </div>`;
+  }
+  const { entry, diffDays } = match;
+  const dateTxt = fotoFormatDate(entry.date) + (entry.luogo ? ` · ${entry.luogo}` : '');
+  const approxTxt = diffDays > 0 ? ` <span class="ck-photo-approx">(±${diffDays}gg)</span>` : '';
+  return `<div class="ck-photo-card">
+    <div class="ck-photo-img-wrap"><img id="${imgId}" class="ck-photo-img" alt="Foto ${label}"></div>
+    <div class="ck-photo-label">${label}</div>
+    <div class="ck-photo-sub">${dateTxt}${approxTxt}</div>
+  </div>`;
+}
+
 function buildCheckpointTab() {
   const el = document.getElementById('checkpoint-view');
   if (el.dataset.built) return;
@@ -4228,6 +4281,13 @@ function buildCheckpointTab() {
         <div class="ck-step-date">7 novembre 2026</div>
         <div class="ck-step-badge">${t2Badge}</div>
       </div>
+    </div>
+
+    <div class="section-label">Foto ricomposizione corporea <span class="count">· la più vicina a ciascuna data, entro ${CK_PHOTO_WINDOW_DAYS}gg</span></div>
+    <div class="ck-photo-grid">
+      ${ckPhotoCard('T0', CHECKPOINT_DATES.t0_lab, 'ck-photo-t0', 'Riferimento 13 lug 2026')}
+      ${ckPhotoCard('T1', CHECKPOINT_DATES.t1, 'ck-photo-t1', 'Attesa intorno al 12 set 2026')}
+      ${ckPhotoCard('T2', CHECKPOINT_DATES.t2, 'ck-photo-t2', 'Attesa intorno al 7 nov 2026')}
     </div>
 
     <div class="section-label">Parametri vitali <span class="count">· media mobile 7gg, ancorata al 13 luglio (T0), dal Diario</span></div>
@@ -4308,6 +4368,18 @@ function buildCheckpointTab() {
   </div>`;
 
   el.innerHTML = html;
+
+  // Le foto si caricano dopo l'inserimento nel DOM (fotoLoadImage cerca
+  // l'elemento per id) — stesso pattern già usato da Lista/Griglia/Scrubber
+  // del tab Foto. Solo per i checkpoint dove è stato trovato un match.
+  [
+    ['ck-photo-t0', CHECKPOINT_DATES.t0_lab],
+    ['ck-photo-t1', CHECKPOINT_DATES.t1],
+    ['ck-photo-t2', CHECKPOINT_DATES.t2],
+  ].forEach(([imgId, anchor]) => {
+    const match = ckClosestPhoto(anchor, CK_PHOTO_WINDOW_DAYS);
+    if (match) fotoLoadImage(match.entry.filename, imgId);
+  });
 }
 
 function buildWeekSummary(container, wkIdx) {
