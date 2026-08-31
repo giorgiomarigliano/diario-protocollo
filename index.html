@@ -45,6 +45,18 @@
   --text2: #424245;
   --muted: #6e6e73;
   --faint: #aeaeb2;
+  /* Alias per nomi legacy mai rimossi dopo la rinomina dei token (bug
+     scoperto 31/08/2026, V14 Lotto B4): --text-muted/--text-primary/
+     --text-secondary erano usate in 63 punti del file ma non erano mai
+     state definite in :root — var() con custom property inesistente non
+     applica nessun colore (non nero, non grigio: la dichiarazione risulta
+     invalida e il colore eredita dal genitore), quindi quei 63 elementi
+     non avevano mai davvero il colore muted/secondario voluto. Alias
+     invece di riscrivere i 63 punti: stesso risultato visivo, zero rischio
+     di markup. */
+  --text-primary: var(--text);
+  --text-secondary: var(--text2);
+  --text-muted: var(--muted);
   --blue: #0071e3;
   --blue-hover: #0077ed;
   --blue-light: #e8f1fb;
@@ -1131,7 +1143,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .app-view-inner{width:100%;box-sizing:border-box;padding:24px 20px 120px;margin:0 auto}
 .dash-two-col{display:grid;grid-template-columns:1fr;gap:0}
 .dash-three-col{display:grid;grid-template-columns:1fr;gap:10px}
-.dash-section-label{font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--text-muted);text-transform:uppercase;letter-spacing:.07em;margin:14px 0 6px}
+.dash-section-label{font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:14px 0 6px}
 @media(min-width:768px){.dash-three-col{grid-template-columns:repeat(3,1fr)}}
 @media(min-width:1024px){
   .dash-two-col{grid-template-columns:1fr 1fr;gap:24px;align-items:stretch}
@@ -1157,7 +1169,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .dash-section{margin-bottom:28px}
 .dash-section-title{font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--muted);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
 .dash-card{background:var(--surface);border-radius:var(--radius-sm);padding:18px 20px;box-shadow:var(--shadow);margin-bottom:10px}
-.dash-card-title{font-size: var(--fs-sm);font-weight: var(--fw-semi);color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;margin-bottom:14px}
+.dash-card-title{font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
 
 /* Legenda grafici — riga separata dal titolo, mai inline/compressa, va sempre a capo su mobile */
 .chart-legend{display:flex;flex-wrap:wrap;gap:12px 16px;margin:-6px 0 12px}
