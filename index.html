@@ -208,6 +208,22 @@ body {
 .t-card-title   { font-size: var(--fs-body); font-weight: var(--fw-semi); letter-spacing: -.1px; }
 .t-card-sub     { font-size: var(--fs-2xs);   color: var(--muted); margin-top: 2px; }
 .t-label        { font-size: var(--fs-xs);   color: var(--muted); margin-top: 4px; }
+
+/* ── Sistema badge/pill unificato (V14, 31/08/2026) ──────────────────────
+   Il sistema tipografico t-page-title/t-page-sub/t-section-title sopra
+   esisteva già ma era usato solo da Orari — audit del 31/08/2026 ha trovato
+   8 famiglie di badge diverse sparse nell'app (today-badge, pre-proto-badge,
+   lab-status-badge, ck-badge, ck-step-badge, rich-kpi-badge, day-badge,
+   tag-pill), ciascuna con padding/radius propri per lo stesso ruolo visivo
+   (etichetta di stato colorata). t-badge le sostituirà gradualmente — vedi
+   KB sezione 24 per il piano di migrazione a lotti. Puramente additivo:
+   nessuna classe esistente è stata toccata in questo lotto. */
+.t-badge{display:inline-block;font-size:var(--fs-3xs);font-weight:var(--fw-semi);padding:2px 8px;border-radius:20px;letter-spacing:.02em;line-height:1.4;white-space:nowrap}
+.t-badge.neutral{background:#f2f2f7;color:var(--muted)}
+.t-badge.good{background:var(--green-light);color:var(--green-dark)}
+.t-badge.bad{background:var(--red-light);color:var(--red-dark)}
+.t-badge.warn{background:rgba(255,149,0,.1);color:var(--orange)}
+.t-badge.info{background:var(--blue-light);color:var(--blue)}
 .t-value-lg     { font-size: var(--fs-2xl);  font-weight: var(--fw-bold); letter-spacing: -.03em; line-height: 1; }
 .t-value-md     { font-size: var(--fs-lg);   font-weight: var(--fw-semi); letter-spacing: -.02em; line-height: 1; }
 .t-value-sm     { font-size: var(--fs-md);   font-weight: var(--fw-semi); }
@@ -1735,6 +1751,22 @@ window.addEventListener('unhandledrejection', function (e) {
   const msg = (reason && reason.message) ? reason.message : String(reason);
   showJsErrorBanner('Promise non gestita: ' + msg);
 });
+
+// ── Palette colori condivisa (V14, 31/08/2026) ──────────────────────────
+// Audit del 31/08/2026: ogni grafico dell'app definiva i propri hex
+// hardcoded invece di richiamare i design token --green/--red/--orange/ecc
+// già esistenti in :root — risultato, colori concettualmente identici (es.
+// "verde=buono") leggermente diversi da tab a tab. T_PALETTE è la fonte
+// unica per nuovi grafici; i grafici esistenti verranno migrati a lotti
+// (vedi KB sezione 24), non tutti insieme. Puramente additivo per ora.
+const T_PALETTE = {
+  blue: '#0071e3', green: '#34c759', red: '#ff3b30', orange: '#ff9500',
+  purple: '#af52de', teal: '#5ac8fa', pink: '#ff2d55', gray: '#8e8e93',
+};
+// Sequenza ordinata per grafici multi-serie (es. volume per gruppo
+// muscolare, scatter multi-categoria): stessa posizione = stesso colore in
+// ogni grafico dell'app che la adotta.
+const T_PALETTE_SEQUENCE = [T_PALETTE.blue, T_PALETTE.green, T_PALETTE.red, T_PALETTE.purple, T_PALETTE.orange, T_PALETTE.teal, T_PALETTE.pink, T_PALETTE.gray];
 
 const START = new Date('2026-06-08');
 // Formatta una data come YYYY-MM-DD usando i componenti LOCALI (evita lo shift di toISOString che converte in UTC)
