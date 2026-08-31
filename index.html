@@ -1036,6 +1036,14 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .ck-val-row.dim .ck-v{color:var(--faint);font-size: var(--fs-body);font-weight: var(--fw-reg)}
 .ck-val-row .ck-u{font-size: var(--fs-2xs);color:var(--muted)}
 .ck-n-note{font-size: var(--fs-3xs);color:var(--faint);margin-top:6px}
+.ck-verdict{margin-top:8px;padding-top:8px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:6px;font-size: var(--fs-xs);font-weight: var(--fw-med)}
+.ck-verdict-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ck-verdict.good{color:var(--green-dark)}
+.ck-verdict.good .ck-verdict-dot{background:var(--green)}
+.ck-verdict.bad{color:var(--red-dark)}
+.ck-verdict.bad .ck-verdict-dot{background:var(--red)}
+.ck-verdict.neu{color:var(--muted)}
+.ck-verdict.neu .ck-verdict-dot{background:var(--faint)}
 .ck-delta{margin-top:9px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .ck-delta-lbl{font-size: var(--fs-2xs);color:var(--muted)}
 .ck-delta-val{font-size: var(--fs-2xs);font-weight: var(--fw-semi);padding:1px 7px;border-radius:10px}
@@ -4102,6 +4110,11 @@ function ckMetricCard(cfg) {
     footHtml = ckDeltaPillHtml(t1, t0, unit, better, 'T0');
   }
 
+  const judgment = pending ? null : ckJudgment(t0, t1, better, status);
+  const verdictHtml = judgment
+    ? `<div class="ck-verdict ${judgment.cls}"><span class="ck-verdict-dot"></span>${judgment.text}</div>`
+    : '';
+
   let extraNote = '';
   if (cfg.n7 !== undefined) {
     extraNote = `<div class="ck-n-note">media 7gg (n=${cfg.n7}${cfg.exact != null ? `) · giorno esatto: ${fmtNum(cfg.exact, cfg.dec)}` : ')'}</div>`;
@@ -4123,8 +4136,41 @@ function ckMetricCard(cfg) {
       ${ckSparkline3(t0, t1, t2, color)}
     </div>
     ${extraNote}
+    ${verdictHtml}
     ${footHtml}
   </div>`;
+}
+
+// Giudizio breve sull'andamento di un parametro alla luce del protocollo:
+// incrocia la direzione del movimento T0→T1 con la direzione "attesa"
+// (stesso flag 'better' già usato per la pillola di delta — up/down/neutral)
+// e con lo stato di range (getRangeStatus, già calcolato dal chiamante).
+// Sotto STABLE_PCT il movimento è trattato come rumore, non trend, a
+// prescindere dal segno. Poche parole per scelta esplicita di Giorgio —
+// non è un giudizio clinico, solo un confronto automatico atteso/osservato;
+// va sempre letto insieme al parere di Dr. Seregni, specialmente sui casi
+// "controtendenza".
+const CK_STABLE_PCT = 2;
+
+function ckJudgment(t0, t1, better, status) {
+  if (t0 == null || t1 == null) return null;
+  const diff = t1 - t0;
+  const pct = t0 !== 0 ? Math.abs(diff / t0) * 100 : 0;
+  const dir = pct < CK_STABLE_PCT ? 'stable' : (diff > 0 ? 'up' : 'down');
+  const inRange = (status === 'ok' || status === 'neutral');
+
+  if (better === 'neutral') {
+    if (dir === 'stable') return { text: 'Stabile', cls: 'good' };
+    return inRange ? { text: 'Variazione, nel range', cls: 'neu' } : { text: 'Variazione, fuori range', cls: 'bad' };
+  }
+  if (dir === 'stable') {
+    return inRange ? { text: 'Stabile, nel range', cls: 'neu' } : { text: 'Stabile, da monitorare', cls: 'bad' };
+  }
+  const matches = (better === 'up' && dir === 'up') || (better === 'down' && dir === 'down');
+  if (matches) {
+    return inRange ? { text: 'Come atteso', cls: 'good' } : { text: 'Migliora, non ancora in range', cls: 'neu' };
+  }
+  return { text: 'Controtendenza, da monitorare', cls: 'bad' };
 }
 
 function fmtNum(v, dec) {
@@ -4257,7 +4303,7 @@ function buildCheckpointTab() {
 
   html += `
     <div class="ck-footnote">
-      <b>Come leggere questa vista:</b> "Checkpoint" è un pannello di sola visualizzazione — i valori T1/T2 di ematici e DEXA si inseriscono come sempre nelle card del tab <b>Referti</b>; qui compaiono automaticamente non appena salvati. I parametri vitali invece non si inseriscono manualmente: sono calcolati come media mobile di 7 giorni a ritroso dai dati reali del Diario, per ridurre il rumore fisiologico giorno-per-giorno (idratazione, sonno, stress) rispetto a un singolo valore puntuale.
+      <b>Come leggere questa vista:</b> "Checkpoint" è un pannello di sola visualizzazione — i valori T1/T2 di ematici e DEXA si inseriscono come sempre nelle card del tab <b>Referti</b>; qui compaiono automaticamente non appena salvati. I parametri vitali invece non si inseriscono manualmente: sono calcolati come media mobile di 7 giorni a ritroso dai dati reali del Diario, per ridurre il rumore fisiologico giorno-per-giorno (idratazione, sonno, stress) rispetto a un singolo valore puntuale. La riga di giudizio sotto ogni card confronta la direzione osservata con quella attesa dal protocollo per quel parametro — è un confronto automatico, non un parere clinico: i casi "controtendenza" vanno sempre discussi con Dr. Seregni, non presi come diagnosi.
     </div>
   </div>`;
 
