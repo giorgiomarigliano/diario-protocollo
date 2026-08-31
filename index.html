@@ -1661,6 +1661,12 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 </div>
 <div class="nav-strip" id="nav-strip"></div>
 <div class="diary-view" id="diary-view">
+  <div class="container" style="padding-bottom:0">
+    <div style="margin-bottom:16px">
+      <div class="t-page-title">Diario giornaliero</div>
+      <div class="t-page-sub">Ciclo 1 · 20 lug – 8 nov 2026 · 112 giorni</div>
+    </div>
+  </div>
   <!-- SEZIONE 1: Pre-Protocollo collassabile (8-28 giu) -->
   <div id="pre-proto-section">
     <div class="container">
@@ -5201,6 +5207,11 @@ function buildMedView() {
   // ── RENDER ────────────────────────────────────────────────────────────────
   let html = `<div class="app-view-inner view-wrap">
 
+  <div style="margin-bottom:16px">
+    <div class="t-page-title">Referti</div>
+    <div class="t-page-sub">Esami, DEXA e visite — quadro clinico completo del ciclo</div>
+  </div>
+
   <!-- TIMELINE CLINICA VISIVA -->
   <div class="med-panel" style="margin-bottom:20px">
     <div class="med-panel-hdr"><div>
@@ -7558,6 +7569,11 @@ function buildDashboard() {
 
   dash.innerHTML = `<div class="dash-inner view-wrap">
 
+    <div style="margin-bottom:16px">
+      <div class="t-page-title">Dashboard</div>
+      <div class="t-page-sub">Panoramica in tempo reale del Ciclo 1</div>
+    </div>
+
     <!-- ══ SEZ. STATO ══════════════════════════════════════════ -->
     <div class="dash-section">
       <div class="dash-section-title">Stato ciclo</div>
@@ -8075,6 +8091,11 @@ function buildInsightsTab() {
   const inV2 = elapsedV2 >= 0;
 
   el.innerHTML = `<div class="app-view-inner view-wrap">
+
+    <div style="margin-bottom:16px">
+      <div class="t-page-title">Insights</div>
+      <div class="t-page-sub">Pattern, correlazioni e analisi statistiche dal Diario</div>
+    </div>
 
     <!-- ══ SEZ. PATTERN & CORRELAZIONI (Livello 1 roadmap 17.5) ══ -->
     <div class="dash-section">
@@ -11594,6 +11615,11 @@ function buildMedDash() {
   // ══════════════════════════════════════════════
   let html = `<div class="app-view-inner view-wrap">
 
+  <div style="margin-bottom:16px">
+    <div class="t-page-title">Andamento marker di laboratorio</div>
+    <div class="t-page-sub">Trend storico per asse clinico, dal 2020 a oggi</div>
+  </div>
+
   <!-- KPI GRID — organizzata per categoria clinica -->
   <div class="section-label" style="margin-top:0">Asse renale</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
@@ -12674,9 +12700,12 @@ async function buildFotoTab() {
 
   el.innerHTML = `
     <div class="app-view-inner view-wrap">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-        <div class="dash-card-title">Ricomposizione</div>
-        <div id="foto-blur-btn" onclick="fotoToggleBlur()" style="width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer">🙈</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:12px">
+        <div>
+          <div class="t-page-title">Ricomposizione corporea</div>
+          <div class="t-page-sub">Timeline, confronti e andamento del percorso fotografico</div>
+        </div>
+        <div id="foto-blur-btn" onclick="fotoToggleBlur()" style="width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;flex-shrink:0">🙈</div>
       </div>
 
       <div style="display:flex;gap:8px;margin-bottom:16px">
