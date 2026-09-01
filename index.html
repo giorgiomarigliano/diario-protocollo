@@ -168,17 +168,10 @@ body {
 .prog-bar { height: 3px; background: var(--blue); transition: width .4s ease; border-radius: 0 2px 2px 0; }
 
 /* Week navigation */
-.nav-strip {
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  padding: 0 24px;
-  display: flex;
-  overflow-x: auto;
-  scrollbar-width: none;
-  gap: 0;
-}
+/* .nav-strip (barra fissa in cima) rimossa il 01/09/2026: le pillole WK1-6
+   ora vivono dentro l'accordion Pre-Protocollo (.nav-strip-inner,
+   #pre-proto-nav-strip) — puntavano a contenuto nascosto per default,
+   scrollIntoView non aveva mai nulla su cui scorrere. Vedi KB. */
 .nav-strip-inner {
   background: rgba(255,255,255,0.85);
   backdrop-filter: blur(20px);
@@ -193,7 +186,6 @@ body {
   margin-bottom: 8px;
 }
 .nav-strip-inner::-webkit-scrollbar { display: none; }
-.nav-strip::-webkit-scrollbar { display: none; }
 .nav-tab {
   padding: 10px 14px;
   font-size: var(--fs-body);
@@ -890,7 +882,6 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
   }
   .header { padding: 0 16px; }
   .container { padding: 20px 12px 110px; }
-  .nav-strip { padding: 0 16px; }
   .charts-grid { grid-template-columns: 1fr; }
   .cycle-card { flex-direction: column; text-align: center; }
   .field-row.tri { grid-template-columns: 1fr 1fr; }
@@ -1343,7 +1334,6 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   /* ── Header e nav più ampi ── */
   .header            { padding: 0 40px; }
   .main-nav          { padding: 0 40px; }
-  .nav-strip         { padding: 0 40px; }
   .save-bar          { padding: 12px 40px; }
 
   /* ── Day card aperto: layout 3 zone ── */
@@ -1403,7 +1393,6 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .save-bar          { padding: 12px 60px; }
   .header            { padding: 0 60px; }
   .main-nav          { padding: 0 60px; }
-  .nav-strip         { padding: 0 60px; }
   .day-card.open .day-body.day-body-desktop { grid-template-columns: 440px 1fr; }
 }
 
@@ -1685,7 +1674,6 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   <div class="main-nav-tab" id="main-tab-stock" onclick="switchView('stock')" style="display:none">Stock v1</div>
   <div class="main-nav-tab" id="main-tab-proto2" onclick="switchView('proto2')" style="display:none">Proto v2</div>
 </div>
-<div class="nav-strip" id="nav-strip"></div>
 <div class="diary-view" id="diary-view">
   <div class="container" style="padding-bottom:0">
     <div style="margin-bottom:16px">
@@ -1705,6 +1693,7 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
         <span class="pre-proto-chev" id="pre-proto-chev">›</span>
       </div>
       <div id="pre-proto-body" class="pre-proto-body">
+        <div class="nav-strip-inner" id="pre-proto-nav-strip" style="margin-top:4px"></div>
         <div id="warmup-assessment-card"></div>
         <div id="container"></div>
       </div>
@@ -2053,7 +2042,8 @@ function getNextEvent(elapsed){
 }
 
 function buildNav(){
-  const nav=document.getElementById('nav-strip');
+  const nav=document.getElementById('pre-proto-nav-strip');
+  if (!nav) return;
   // Il warm-up copre solo dall'8 giu al giorno prima del Test Protocollo (17 lug):
   // genera solo le settimane realmente presenti, non 16 fisse (le altre appartengono
   // al Protocollo v2, che ha il suo tab e la sua nav dedicata).
@@ -4577,7 +4567,6 @@ function switchView(view) {
   const meddash = document.getElementById('meddash-view');
   const stockView = document.getElementById('stock-view');
   const proto2View = document.getElementById('proto2-view');
-  const navStrip = document.getElementById('nav-strip');
   const tabDiary = document.getElementById('main-tab-diary');
   const tabDash = document.getElementById('main-tab-dash');
   const tabMed = document.getElementById('main-tab-med');
@@ -4606,7 +4595,6 @@ function switchView(view) {
   if(insightsView) insightsView.classList.remove('visible');
   if(checkpointView) checkpointView.classList.remove('visible');
   proto2View.classList.add('hidden');
-  navStrip.style.display = 'none';
   tabDiary.classList.remove('on'); tabDash.classList.remove('on');
   tabMed.classList.remove('on'); tabMedDash.classList.remove('on');
   tabStock.classList.remove('on'); tabProto2.classList.remove('on');
@@ -4674,7 +4662,6 @@ function switchView(view) {
     buildCheckpointTab();
   } else {
     diary.classList.remove('hidden');
-    navStrip.style.display = '';
     tabDiary.classList.add('on');
     // Aggiorna KPI se presenti
     if (typeof updateKpiStrip === 'function') updateKpiStrip();
