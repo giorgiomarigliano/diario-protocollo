@@ -4676,9 +4676,9 @@ function buildMedView() {
   // ── HELPER ──────────────────────────────────────────────────────────────
   function flag(ok, severity) {
     // severity: 'warn' | 'alert' | auto
-    if (ok) return { color:'#34c759', bg:'rgba(52,199,89,.08)' };
-    if (severity==='alert') return { color:'#ff3b30', bg:'rgba(255,59,48,.08)' };
-    return { color:'#ff9500', bg:'rgba(255,149,0,.08)' };
+    if (ok) return { color:T_PALETTE.green, bg:'rgba(52,199,89,.08)' };
+    if (severity==='alert') return { color:T_PALETTE.red, bg:'rgba(255,59,48,.08)' };
+    return { color:T_PALETTE.orange, bg:'rgba(255,149,0,.08)' };
   }
   function renderPanel(p) {
     let h = `<div class="med-panel">
@@ -7912,9 +7912,9 @@ function refreshDashCharts() {
   // sera) — niente di miracoloso: un grafico annotato ha bisogno di un
   // minimo di spazio verticale, ma su mobile lo teniamo più compatto.
   const _dashChartH = window.innerWidth <= 600 ? 100 : 130;
-  drawRichKpiChart('rk-peso',  getDayDataAll('peso', richKpiRangeDays.peso), {height:_dashChartH, color:'#0071e3', decimals:1, showTrend:true});
-  drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  richKpiRangeDays.hrv),  {height:_dashChartH, color:'#34c759', decimals:0, showTrend:true});
-  drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  richKpiRangeDays.rhr + 1).slice(0, -1),  {height:_dashChartH, color:'#ff3b30', decimals:0, showTrend:true});
+  drawRichKpiChart('rk-peso',  getDayDataAll('peso', richKpiRangeDays.peso), {height:_dashChartH, color:T_PALETTE.blue, decimals:1, showTrend:true});
+  drawRichKpiChart('rk-hrv',   getDayDataAll('hrv',  richKpiRangeDays.hrv),  {height:_dashChartH, color:T_PALETTE.green, decimals:0, showTrend:true});
+  drawRichKpiChart('rk-rhr',   getDayDataAll('rhr',  richKpiRangeDays.rhr + 1).slice(0, -1),  {height:_dashChartH, color:T_PALETTE.red, decimals:0, showTrend:true});
   drawRichKpiChart('rk-sonno', getSonnoOreAll(richKpiRangeDays.sonno), {height:_dashChartH, color:'#5856d6', decimals:1, showTrend:true});
 
   // ── Grafici biometria ──────────────────────────────────────
@@ -8033,7 +8033,7 @@ function refreshDashCharts() {
       .reverse();
     const tblEl = document.getElementById('dc-scatter-table');
     if (tblEl) {
-      const C = {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'};
+      const C = {Push:T_PALETTE.red,Pull:T_PALETTE.green,Legs:T_PALETTE.orange,'Upper Sab':T_PALETTE.purple,'Upper Dom':T_PALETTE.blue};
       tblEl.innerHTML = sessionRows.length ? `<table style="width:100%;border-collapse:collapse;font-size: var(--fs-sm)">
         <thead><tr style="color:var(--muted);font-size: var(--fs-2xs);border-bottom:1px solid var(--border)">
           <th style="text-align:left;padding:4px 6px">Data</th><th style="text-align:left;padding:4px 6px">Tipo</th>
@@ -8323,7 +8323,7 @@ function refreshInsightsCharts() {
     if (energia30[i] && energia30[i].value!==null) esPoints.push({x:s, y:energia30[i].value});
     if (recupero30[i] && recupero30[i].value!==null) rsPoints.push({x:s, y:recupero30[i].value});
   }
-  drawXYScatter('dc-energia-sonno', esPoints, {height:130, color:'#ff9500', xLabel:'ore di sonno'});
+  drawXYScatter('dc-energia-sonno', esPoints, {height:130, color:T_PALETTE.orange, xLabel:'ore di sonno'});
   const esNote = document.getElementById('dc-energia-sonno-note');
   if (esNote) esNote.textContent = pearsonNote(esPoints, 'giorni');
   const esExplain = document.getElementById('dc-energia-sonno-explain');
@@ -11376,6 +11376,11 @@ function stockSetStato(cid, sup, vn, stato) {
 
 
 function buildMedDash() {
+  // V14 Lotto D (31/08/2026): tutti i colori qui sotto che coincidevano
+  // esattamente con T_PALETTE sono stati sostituiti col riferimento condiviso
+  // (zero cambio visivo). Trovata e corretta anche una vera duplicazione:
+  // SHBG/Zinco usavano un viola diverso (#8e44ad) da quello di IGF-1
+  // (T_PALETTE.purple, #af52de) per lo stesso concetto — ora uniforme.
   const el = document.getElementById('meddash-view');
   if (el.dataset.built) return;
   el.dataset.built = '1';
@@ -11502,7 +11507,7 @@ function buildMedDash() {
 
     const dots = pts.map((p,i) => {
       const ok = (refMin === undefined || p.v >= refMin) && (refMax === undefined || p.v <= refMax);
-      const dc = ok ? color : '#ff3b30';
+      const dc = ok ? color : T_PALETTE.red;
       return `<circle cx="${toX(i)}" cy="${toY(p.v)}" r="3" fill="${dc}" stroke="white" stroke-width="1.5"/>`;
     }).join('');
 
@@ -11522,11 +11527,11 @@ function buildMedDash() {
   function progressBar(current, target, max, color, label) {
     const pct = Math.min(100, (current/target)*100).toFixed(0);
     const warn = current < target;
-    const barColor = warn ? '#ff9500' : color;
+    const barColor = warn ? T_PALETTE.orange : color;
     return `<div style="margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;font-size: var(--fs-sm);margin-bottom:5px">
         <span style="font-weight: var(--fw-med)">${label}</span>
-        <span style="color:${warn?'#ff9500':'#34c759'};font-weight: var(--fw-semi)">${current} <span style="color:var(--muted);font-weight: var(--fw-reg)">/ target ${target}</span></span>
+        <span style="color:${warn?T_PALETTE.orange:T_PALETTE.green};font-weight: var(--fw-semi)">${current} <span style="color:var(--muted);font-weight: var(--fw-reg)">/ target ${target}</span></span>
       </div>
       <div style="background:var(--border);border-radius:4px;height:6px;overflow:hidden">
         <div style="background:${barColor};height:6px;width:${pct}%;border-radius:4px;transition:width .5s ease"></div>
@@ -11540,10 +11545,10 @@ function buildMedDash() {
     const prev = pts[pts.length-2];
     const delta = prev ? (last.v - prev.v) : null;
     const isOk = (refMin === undefined || last.v >= refMin) && (refMax === undefined || last.v <= refMax);
-    const valColor = isOk ? '#34c759' : (Math.abs(last.v - (refMin||refMax)) < (refMin||refMax)*0.15 ? '#ff9500' : '#ff3b30');
+    const valColor = isOk ? T_PALETTE.green : (Math.abs(last.v - (refMin||refMax)) < (refMin||refMax)*0.15 ? T_PALETTE.orange : T_PALETTE.red);
     const arrow = delta === null ? '' : delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
     const arrowColor = delta === null ? '' :
-      (refMin && delta > 0) || (refMax && delta < 0) ? '#34c759' : '#ff3b30';
+      (refMin && delta > 0) || (refMax && delta < 0) ? T_PALETTE.green : T_PALETTE.red;
     const spark = sparkline(pts, 120, 50, color, refMin, refMax);
     return `<div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:6px">
       <div class="t-section-title" style="margin-bottom:6px">${label}</div>
@@ -11611,7 +11616,7 @@ function buildMedDash() {
       lines += `<polyline points="${polyPts}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
       validPts.forEach(p => {
         const ok = (s.refMin===undefined||p.v>=s.refMin)&&(s.refMax===undefined||p.v<=s.refMax);
-        dots += `<circle cx="${toX(p.t)}" cy="${toY(p.v)}" r="3.5" fill="${ok?s.color:'#ff3b30'}" stroke="white" stroke-width="1.5"/>`;
+        dots += `<circle cx="${toX(p.t)}" cy="${toY(p.v)}" r="3.5" fill="${ok?s.color:T_PALETTE.red}" stroke="white" stroke-width="1.5"/>`;
       });
       // label ultimo valore
       const lastP = validPts[validPts.length-1];
@@ -11636,52 +11641,52 @@ function buildMedDash() {
   <!-- KPI GRID — organizzata per categoria clinica -->
   <div class="section-label" style="margin-top:0">Asse renale</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
-    ${kpiCard('Creatinina', DATA.creatinina, 'mg/dL', undefined, 1.2, 'target ≤1.20', '#8e8e93')}
+    ${kpiCard('Creatinina', DATA.creatinina, 'mg/dL', undefined, 1.2, 'target ≤1.20', T_PALETTE.gray)}
     ${kpiCard('eGFR', DATA.egfr, 'mL/min', 90, undefined, 'target ≥90', '#5856d6')}
-    ${kpiCard('ACR urinario', DATA.acr, 'mg/g cre', undefined, 30, 'target <30 (normoalbuminuria)', '#34c759')}
+    ${kpiCard('ACR urinario', DATA.acr, 'mg/g cre', undefined, 30, 'target <30 (normoalbuminuria)', T_PALETTE.green)}
   </div>
 
   <div class="section-label">Asse gonadico</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
-    ${kpiCard('Testosterone tot.', DATA.testTotale, 'ng/dL', 127.18, 1020.36, 'range 127.18–1020.36 (Sant\'Agostino)', '#0071e3')}
-    ${kpiCard('Testosterone lib.', DATA.testLibero, 'pg/mL', 9.57, 40.60, 'range 9.57–40.60 (Sant\'Agostino)', '#0071e3')}
-    ${kpiCard('SHBG', DATA.shbg, 'nmol/L', 11.20, 78.10, 'range 11.20–78.10 (Sant\'Agostino)', '#8e44ad')}
-    ${kpiCard('FSH', DATA.fsh, 'mIU/mL', 0.95, 11.95, 'range 0.95–11.95 (Sant\'Agostino)', '#ff3b30')}
-    ${kpiCard('LH', DATA.lh, 'mUI/mL', 0.57, 12.7, 'range 0.57–12.7 (Sant\'Agostino)', '#ff3b30')}
+    ${kpiCard('Testosterone tot.', DATA.testTotale, 'ng/dL', 127.18, 1020.36, 'range 127.18–1020.36 (Sant\'Agostino)', T_PALETTE.blue)}
+    ${kpiCard('Testosterone lib.', DATA.testLibero, 'pg/mL', 9.57, 40.60, 'range 9.57–40.60 (Sant\'Agostino)', T_PALETTE.blue)}
+    ${kpiCard('SHBG', DATA.shbg, 'nmol/L', 11.20, 78.10, 'range 11.20–78.10 (Sant\'Agostino)', T_PALETTE.purple)}
+    ${kpiCard('FSH', DATA.fsh, 'mIU/mL', 0.95, 11.95, 'range 0.95–11.95 (Sant\'Agostino)', T_PALETTE.red)}
+    ${kpiCard('LH', DATA.lh, 'mUI/mL', 0.57, 12.7, 'range 0.57–12.7 (Sant\'Agostino)', T_PALETTE.red)}
   </div>
 
   <div class="section-label">Lipidi</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
-    ${kpiCard('HDL', DATA.hdl, 'mg/dL', 40, undefined, 'target ≥40', '#ff9500')}
+    ${kpiCard('HDL', DATA.hdl, 'mg/dL', 40, undefined, 'target ≥40', T_PALETTE.orange)}
   </div>
 
   <div class="section-label">Infiammazione</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:20px">
-    ${kpiCard('Omocisteina', DATA.omocist, 'µmol/L', undefined, 13, 'target ≤13', '#0071e3')}
-    ${kpiCard('VES', DATA.ves, 'mm/h', undefined, 15, 'target ≤15', '#ff9500')}
-    ${kpiCard('PCR', DATA.crp, 'mg/L', undefined, 3.3, 'target ≤3.3', '#8e8e93')}
+    ${kpiCard('Omocisteina', DATA.omocist, 'µmol/L', undefined, 13, 'target ≤13', T_PALETTE.blue)}
+    ${kpiCard('VES', DATA.ves, 'mm/h', undefined, 15, 'target ≤15', T_PALETTE.orange)}
+    ${kpiCard('PCR', DATA.crp, 'mg/L', undefined, 3.3, 'target ≤3.3', T_PALETTE.gray)}
   </div>
 
   <div class="section-label">Altro / quadro generale</div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:28px">
-    ${kpiCard('IGF-1', DATA.igf1, 'µg/L', 115, 300, 'target 150–180+ (post Tesa)', '#af52de')}
-    ${kpiCard('Vitamina D', DATA.vitd, 'µg/L', 50, undefined, 'target ≥50', '#34c759')}
-    ${kpiCard('Emoglobina', DATA.emoglobina, 'g/L', 133, undefined, 'target ≥133', '#ff3b30')}
-    ${kpiCard('Zinco', DATA.zinco, 'µg/dL', 60, 106, 'target 60–106', '#8e44ad')}
-    ${kpiCard('PSA', DATA.psa, 'µg/L', undefined, 4, 'target ≤4', '#34c759')}
-    ${kpiCard('Ferritina', DATA.ferritina, 'µg/L', 22, 322, 'target 22–322', '#ff9500')}
-    ${kpiCard('Cortisolo urinario 24h', DATA.cortisolUrin, 'µg/24h', 4.2, 60.0, 'range 4.2–60.0', '#ff9500')}
+    ${kpiCard('IGF-1', DATA.igf1, 'µg/L', 115, 300, 'target 150–180+ (post Tesa)', T_PALETTE.purple)}
+    ${kpiCard('Vitamina D', DATA.vitd, 'µg/L', 50, undefined, 'target ≥50', T_PALETTE.green)}
+    ${kpiCard('Emoglobina', DATA.emoglobina, 'g/L', 133, undefined, 'target ≥133', T_PALETTE.red)}
+    ${kpiCard('Zinco', DATA.zinco, 'µg/dL', 60, 106, 'target 60–106', T_PALETTE.purple)}
+    ${kpiCard('PSA', DATA.psa, 'µg/L', undefined, 4, 'target ≤4', T_PALETTE.green)}
+    ${kpiCard('Ferritina', DATA.ferritina, 'µg/L', 22, 322, 'target 22–322', T_PALETTE.orange)}
+    ${kpiCard('Cortisolo urinario 24h', DATA.cortisolUrin, 'µg/24h', 4.2, 60.0, 'range 4.2–60.0', T_PALETTE.orange)}
   </div>
 
   <!-- OBIETTIVI PROTOCOLLO -->
   <div style="background:var(--surface);border-radius:12px;padding:20px;box-shadow:var(--shadow);margin-bottom:20px">
     <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px">🎯 Obiettivi protocollo — baseline vs target</div>
-    ${progressBar(94, 165, 300, '#af52de', 'IGF-1 (µg/L) · target 150–180+')}
-    ${progressBar(32, 40, 60, '#ff9500', 'HDL (mg/dL) · target ≥40')}
-    ${progressBar(22, 50, 100, '#34c759', 'Vitamina D (µg/L) · target ≥50')}
-    ${progressBar(17.5, 13, 25, '#0071e3', 'Omocisteina (µmol/L) · target ≤13 — barra inversa: più alta = peggio')}
-    ${progressBar(119, 133, 180, '#ff3b30', 'Emoglobina (g/L) · target ≥133')}
-    ${progressBar(50.3, 70, 106, '#8e44ad', 'Zinco (µg/dL) · target 70–80')}
+    ${progressBar(94, 165, 300, T_PALETTE.purple, 'IGF-1 (µg/L) · target 150–180+')}
+    ${progressBar(32, 40, 60, T_PALETTE.orange, 'HDL (mg/dL) · target ≥40')}
+    ${progressBar(22, 50, 100, T_PALETTE.green, 'Vitamina D (µg/L) · target ≥50')}
+    ${progressBar(17.5, 13, 25, T_PALETTE.blue, 'Omocisteina (µmol/L) · target ≤13 — barra inversa: più alta = peggio')}
+    ${progressBar(119, 133, 180, T_PALETTE.red, 'Emoglobina (g/L) · target ≥133')}
+    ${progressBar(50.3, 70, 106, T_PALETTE.purple, 'Zinco (µg/dL) · target 70–80')}
   </div>
 
   <!-- GRAFICI LIPIDI -->
@@ -11691,13 +11696,13 @@ function buildMedDash() {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">HDL <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≥40</span></div>
-        ${lineChart([{label:'HDL',pts:DATA.hdl,color:'#ff9500',refMin:40}], 400, 140)}
+        ${lineChart([{label:'HDL',pts:DATA.hdl,color:T_PALETTE.orange,refMin:40}], 400, 140)}
       </div>
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">LDL + Trigliceridi <span style="color:var(--muted);font-weight: var(--fw-reg)">target LDL ≤115 · TG ≤150</span></div>
         ${lineChart([
-          {label:'LDL',pts:DATA.ldl,color:'#0071e3',refMin:undefined,refMax:115},
-          {label:'TG',pts:DATA.tg,color:'#ff9500',refMin:undefined,refMax:150}
+          {label:'LDL',pts:DATA.ldl,color:T_PALETTE.blue,refMin:undefined,refMax:115},
+          {label:'TG',pts:DATA.tg,color:T_PALETTE.orange,refMin:undefined,refMax:150}
         ], 400, 140)}
       </div>
     </div>
@@ -11709,19 +11714,19 @@ function buildMedDash() {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Emoglobina <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≥133 g/L</span></div>
-        ${lineChart([{label:'Hb',pts:DATA.emoglobina,color:'#ff3b30',refMin:133}], 400, 120)}
+        ${lineChart([{label:'Hb',pts:DATA.emoglobina,color:T_PALETTE.red,refMin:133}], 400, 120)}
       </div>
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Omocisteina <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≤13 µmol/L</span></div>
-        ${lineChart([{label:'Omocist',pts:DATA.omocist,color:'#0071e3',refMax:13}], 400, 120)}
+        ${lineChart([{label:'Omocist',pts:DATA.omocist,color:T_PALETTE.blue,refMax:13}], 400, 120)}
       </div>
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Vitamina D <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≥50 µg/L</span></div>
-        ${lineChart([{label:'VitD',pts:DATA.vitd,color:'#34c759',refMin:50}], 400, 120)}
+        ${lineChart([{label:'VitD',pts:DATA.vitd,color:T_PALETTE.green,refMin:50}], 400, 120)}
       </div>
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Zinco <span style="color:var(--muted);font-weight: var(--fw-reg)">target 60–106 µg/dL</span></div>
-        ${lineChart([{label:'Zinco',pts:DATA.zinco,color:'#8e44ad',refMin:60}], 400, 120)}
+        ${lineChart([{label:'Zinco',pts:DATA.zinco,color:T_PALETTE.purple,refMin:60}], 400, 120)}
       </div>
     </div>
   </div>
@@ -11732,11 +11737,11 @@ function buildMedDash() {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">PSA totale <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≤4 µg/L</span></div>
-        ${lineChart([{label:'PSA',pts:DATA.psa,color:'#34c759',refMax:4}], 400, 120)}
+        ${lineChart([{label:'PSA',pts:DATA.psa,color:T_PALETTE.green,refMax:4}], 400, 120)}
       </div>
       <div>
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">Creatinina <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≤1.20 mg/dL</span></div>
-        ${lineChart([{label:'Creat',pts:DATA.creatinina,color:'#8e8e93',refMax:1.2}], 400, 120)}
+        ${lineChart([{label:'Creat',pts:DATA.creatinina,color:T_PALETTE.gray,refMax:1.2}], 400, 120)}
       </div>
       <div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">eGFR <span style="color:var(--muted);font-weight: var(--fw-reg)">target ≥90 mL/min/1.73mq</span></div>
@@ -11744,7 +11749,7 @@ function buildMedDash() {
       </div>
       <div style="background:var(--surface);border-radius:12px;padding:16px;box-shadow:var(--shadow)">
         <div style="font-size:var(--fs-xs);font-weight:var(--fw-semi);margin-bottom:6px">FSH + LH <span style="color:var(--muted);font-weight: var(--fw-reg)">asse gonadico · range Sant'Agostino FSH 0.95–11.95 · LH 0.57–12.7</span></div>
-        ${lineChart([{label:'FSH',pts:DATA.fsh,color:'#ff3b30',refMax:11.95},{label:'LH',pts:DATA.lh,color:'#ff9500',refMax:12.7}], 400, 120)}
+        ${lineChart([{label:'FSH',pts:DATA.fsh,color:T_PALETTE.red,refMax:11.95},{label:'LH',pts:DATA.lh,color:T_PALETTE.orange,refMax:12.7}], 400, 120)}
       </div>
     </div>
   </div>
@@ -12442,13 +12447,13 @@ function buildHistoryTab() {
     const LABELS_IT = {shoulders:'Spalle', lats:'Dorso (lat)', chest:'Petto', triceps:'Tricipiti',
       quads:'Quadricipiti', glutes:'Glutei', traps:'Trapezi', biceps:'Bicipiti',
       hamstrings:'Femorali', calves:'Polpacci', lowerBack:'Lombari', unknown:'Altro'};
-    const COLORS = {shoulders:'#0071e3', lats:'#34c759', chest:'#ff3b30', triceps:'#af52de',
-      quads:'#ff9500', glutes:'#ff2d55', traps:'#5ac8fa', biceps:'#ffcc00',
-      hamstrings:'#34aadc', calves:'#8e8e93', lowerBack:'#a2845e', unknown:'#c7c7cc'};
+    const COLORS = {shoulders:T_PALETTE.blue, lats:T_PALETTE.green, chest:T_PALETTE.red, triceps:T_PALETTE.purple,
+      quads:T_PALETTE.orange, glutes:T_PALETTE.pink, traps:T_PALETTE.teal, biceps:'#ffcc00',
+      hamstrings:'#34aadc', calves:T_PALETTE.gray, lowerBack:'#a2845e', unknown:'#c7c7cc'};
     return muscleVol.map(m => {
       const pct = (m.volume_kg / max * 100).toFixed(0);
       const label = LABELS_IT[m.muscle] || m.muscle;
-      const color = COLORS[m.muscle] || '#8e8e93';
+      const color = COLORS[m.muscle] || T_PALETTE.gray;
       return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <div style="width:90px;font-size: var(--fs-xs);color:var(--text-secondary);flex-shrink:0;text-align:right">${label}</div>
         <div style="flex:1;height:16px;background:var(--surface-1);border-radius:4px;overflow:hidden">
