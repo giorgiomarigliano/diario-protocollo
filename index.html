@@ -13128,7 +13128,7 @@ function fotoRenderGriglia() {
   }
   const sorted = [...photoLog].sort((a, b) => fotoDateTimeKey(b).localeCompare(fotoDateTimeKey(a)));
 
-  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;max-width:1100px">` +
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;max-width:1320px">` +
     sorted.map((entry, idx) => {
       const { dayLabel, pesoTxt, deltaTxt, t1Label, t2Label, injLabel, integrLabel, woWeekLabel } = fotoComputeEntryData(entry);
       const imgId = 'foto-grid-img-' + idx;
