@@ -13067,7 +13067,7 @@ function fotoRenderLista() {
   }
   const sorted = [...photoLog].sort((a, b) => fotoDateTimeKey(b).localeCompare(fotoDateTimeKey(a)));
 
-  el.innerHTML = `<div style="max-width:640px;margin:0 auto">` + sorted.map((entry, idx) => {
+  el.innerHTML = `<div style="max-width:720px">` + sorted.map((entry, idx) => {
     const { dayLabel, weekLabel, pesoTxt, deltaTxt, t1Label, t2Label,
       hrv, sonnoTxt, injLabel, injColor, integrLabel, integrColor,
       woType, woBadgeClass, woStatus, woWeekLabel } = fotoComputeEntryData(entry);
@@ -13132,7 +13132,7 @@ function fotoRenderGriglia() {
   }
   const sorted = [...photoLog].sort((a, b) => fotoDateTimeKey(b).localeCompare(fotoDateTimeKey(a)));
 
-  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;max-width:1100px;margin:0 auto">` +
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;max-width:1100px">` +
     sorted.map((entry, idx) => {
       const { dayLabel, pesoTxt, deltaTxt, t1Label, t2Label, injLabel, integrLabel, woWeekLabel } = fotoComputeEntryData(entry);
       const imgId = 'foto-grid-img-' + idx;
