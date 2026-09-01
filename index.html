@@ -233,6 +233,19 @@ body {
    non uno stato), pre-proto-badge (bordata, uppercase, header di sezione
    collassabile), day-badge (badge più grande, un solo uso attuale). Vedi
    KB sezione 24 per il dettaglio completo. */
+/* ── Switcher unificato (V14 Lotto E, 31/08/2026) ─────────────────────────
+   Sostituisce 3 pattern diversi per lo stesso ruolo (scegliere una modalità
+   esclusiva): blocchi rettangolari di Foto (.foto-tab, .foto-tlmode) e
+   pillole colorate-per-categoria di Orari (.orari-btn, inline). Il filtro
+   Molecola di Timeline resta volutamente distinto — è un filtro/evidenzia-
+   tore su un grafico, non uno switcher di modalità, ruolo diverso. Un solo
+   colore d'accento (blu) invece dei colori-per-categoria: nelle viste dove
+   servisse ancora comunicare la categoria via colore (es. Orari), quel
+   colore resta disponibile altrove nell'interfaccia (bordo dei pannelli),
+   solo non più nel bottone di selezione stesso. */
+.t-switcher{display:flex;gap:6px;flex-wrap:wrap}
+.t-switch-btn{padding:7px 16px;border-radius:980px;border:1.5px solid var(--border2);background:var(--surface);color:var(--text2);font-size:var(--fs-sm);font-weight:var(--fw-med);cursor:pointer;font-family:inherit;transition:all .15s}
+.t-switch-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
 .t-badge{display:inline-block;font-size:var(--fs-3xs);font-weight:var(--fw-semi);padding:2px 8px;border-radius:20px;letter-spacing:.02em;line-height:1.4;white-space:nowrap}
 .t-badge.neutral{background:var(--surface2);color:var(--muted)}
 .t-badge.good{background:var(--green-light);color:var(--green-dark)}
@@ -12726,19 +12739,19 @@ async function buildFotoTab() {
         <div id="foto-blur-btn" onclick="fotoToggleBlur()" style="width:34px;height:34px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;flex-shrink:0">🙈</div>
       </div>
 
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        <div class="foto-tab" data-tab="timeline" onclick="fotoSetView('timeline')" style="flex:1;text-align:center;padding:9px 2px;font-size:12px;font-weight:700;border-radius:10px;cursor:pointer;background:var(--blue);color:#fff;border:1.5px solid var(--blue);box-shadow:0 2px 6px rgba(0,113,227,.3)">Timeline</div>
-        <div class="foto-tab" data-tab="confronto" onclick="fotoSetView('confronto')" style="flex:1;text-align:center;padding:9px 2px;font-size:12px;font-weight:700;border-radius:10px;cursor:pointer;background:var(--surface);color:var(--blue);border:1.5px solid var(--blue)">Confronto</div>
-        <div class="foto-tab" data-tab="andamento" onclick="fotoSetView('andamento')" style="flex:1;text-align:center;padding:9px 2px;font-size:12px;font-weight:700;border-radius:10px;cursor:pointer;background:var(--surface);color:var(--blue);border:1.5px solid var(--blue)">Andamento</div>
-        <div class="foto-tab" data-tab="nuovo" onclick="fotoSetView('nuovo')" style="flex:1;text-align:center;padding:9px 2px;font-size:12px;font-weight:700;border-radius:10px;cursor:pointer;background:var(--surface);color:var(--blue);border:1.5px solid var(--blue)">Nuovo scatto</div>
+      <div class="t-switcher" style="margin-bottom:16px">
+        <button class="t-switch-btn foto-tab active" data-tab="timeline" onclick="fotoSetView('timeline')">Timeline</button>
+        <button class="t-switch-btn foto-tab" data-tab="confronto" onclick="fotoSetView('confronto')">Confronto</button>
+        <button class="t-switch-btn foto-tab" data-tab="andamento" onclick="fotoSetView('andamento')">Andamento</button>
+        <button class="t-switch-btn foto-tab" data-tab="nuovo" onclick="fotoSetView('nuovo')">Nuovo scatto</button>
       </div>
 
       <div id="foto-sub-timeline" class="foto-sub">
-        <div style="display:flex;gap:8px;margin-bottom:14px">
-          <div class="foto-tlmode" data-mode="lista" onclick="fotoSetTlMode('lista')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--purple);color:#fff;cursor:pointer">Lista</div>
-          <div class="foto-tlmode" data-mode="griglia" onclick="fotoSetTlMode('griglia')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Griglia</div>
-          <div class="foto-tlmode" data-mode="settimana" onclick="fotoSetTlMode('settimana')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Settimana</div>
-          <div class="foto-tlmode" data-mode="scrubber" onclick="fotoSetTlMode('scrubber')" style="flex:1;text-align:center;padding:7px;font-size:12px;font-weight:600;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer">Scrubber</div>
+        <div class="t-switcher" style="margin-bottom:14px">
+          <button class="t-switch-btn foto-tlmode active" data-mode="lista" onclick="fotoSetTlMode('lista')">Lista</button>
+          <button class="t-switch-btn foto-tlmode" data-mode="griglia" onclick="fotoSetTlMode('griglia')">Griglia</button>
+          <button class="t-switch-btn foto-tlmode" data-mode="settimana" onclick="fotoSetTlMode('settimana')">Settimana</button>
+          <button class="t-switch-btn foto-tlmode" data-mode="scrubber" onclick="fotoSetTlMode('scrubber')">Scrubber</button>
         </div>
         <div id="foto-tl-content"></div>
       </div>
@@ -12823,10 +12836,7 @@ function fotoSetView(view) {
     if (sub) sub.style.display = (v === view) ? 'block' : 'none';
   });
   document.querySelectorAll('.foto-tab').forEach(t => {
-    const on = t.dataset.tab === view;
-    t.style.background = on ? 'var(--blue)' : 'var(--surface)';
-    t.style.color = on ? '#fff' : 'var(--blue)';
-    t.style.boxShadow = on ? '0 2px 6px rgba(0,113,227,.3)' : 'none';
+    t.classList.toggle('active', t.dataset.tab === view);
   });
   if (view === 'confronto') fotoInitConfronto();
   if (view === 'andamento') fotoRenderAndamento();
@@ -12834,9 +12844,7 @@ function fotoSetView(view) {
 
 function fotoSetTlMode(mode) {
   document.querySelectorAll('.foto-tlmode').forEach(t => {
-    const on = t.dataset.mode === mode;
-    t.style.background = on ? 'var(--purple)' : 'var(--surface2)';
-    t.style.color = on ? '#fff' : 'var(--muted)';
+    t.classList.toggle('active', t.dataset.mode === mode);
   });
   if (mode === 'lista') fotoRenderLista();
   else if (mode === 'griglia') fotoRenderGriglia();
@@ -14107,12 +14115,9 @@ function buildOrariView() {
   </div>`;
 
   // Day type selector tabs
-  html += `<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">`;
+  html += `<div class="t-switcher" style="margin-bottom:20px">`;
   days.forEach((d,i) => {
-    html += `<button onclick="orariShowDay('${d.id}')" id="orari-btn-${d.id}"
-      style="padding:8px 18px;border-radius:980px;border:1.5px solid ${d.color};
-      background:${i===0 ? d.color : 'transparent'};color:${i===0 ? '#fff' : d.color};
-      font-size: var(--fs-body);font-weight: var(--fw-med);cursor:pointer;font-family:inherit;transition:all .15s">
+    html += `<button class="t-switch-btn${i===0 ? ' active' : ''}" onclick="orariShowDay('${d.id}')" id="orari-btn-${d.id}">
       ${d.label}
     </button>`;
   });
@@ -14241,16 +14246,10 @@ function buildOrariView() {
   // Selector function
   window.orariShowDay = function(id) {
     const dayDefs = ['wo','rest','wknd','bkk'];
-    const colors = {'wo':'#0071e3','rest':'#aeaeb2','wknd':'#af52de','bkk':'#c0392b'};
     dayDefs.forEach(d => {
       document.getElementById('orari-panel-' + d).style.display = (d === id) ? 'block' : 'none';
       const btn = document.getElementById('orari-btn-' + d);
-      const c = colors[d];
-      if (d === id) {
-        btn.style.background = c; btn.style.color = '#fff';
-      } else {
-        btn.style.background = 'transparent'; btn.style.color = c;
-      }
+      btn.classList.toggle('active', d === id);
     });
   };
 }
