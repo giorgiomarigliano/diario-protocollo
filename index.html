@@ -12210,14 +12210,14 @@ function buildFoodTab() {
         const unitLabel = f.unit === 'porz' ? 'porz' : f.unit === 'barr' ? 'barr' : 'g';
         html += `<div class="fd-row ${inMeal?'fd-in-meal':''}" data-id="${f.id}" style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;border:0.5px solid ${inMeal?ci.color:'transparent'};background:${inMeal?ci.color+'10':'transparent'};transition:background .12s;margin-bottom:2px" onclick="fdToggle('${f.id}')">
           <div style="flex:1;min-width:0">
-            <div style="font-size: var(--fs-body);font-weight: var(--fw-med);color:var(--text-primary)">${f.name}</div>
+            <div style="font-size: var(--fs-md);font-weight: var(--fw-semi);color:var(--text-primary)">${f.name}</div>
             <div style="font-size: var(--fs-xs);color:var(--text-muted)">${f.ref}${unitLabel} · ${f.note}</div>
           </div>
           <div style="display:flex;gap:12px;flex-shrink:0;text-align:right">
-            <div><span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--text-primary)">${m.kcal}</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">kcal</span></div>
-            <div><span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--green-dark)">${m.p}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">prot</span></div>
-            <div><span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:#185fa5">${m.c}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">carb</span></div>
-            <div><span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:#854f0b">${m.g}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">gras</span></div>
+            <div><span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:var(--text-primary)">${m.kcal}</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">kcal</span></div>
+            <div><span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:var(--green-dark)">${m.p}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">prot</span></div>
+            <div><span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:#185fa5">${m.c}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">carb</span></div>
+            <div><span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:#854f0b">${m.g}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">gras</span></div>
           </div>
           <div style="font-size: var(--fs-18);color:${inMeal?ci.color:'var(--border-strong)'};flex-shrink:0;width:20px;text-align:center">${inMeal?'✓':'+'}</div>
         </div>`;
@@ -12253,7 +12253,7 @@ function buildFoodTab() {
       const unitLabel = food.unit === 'porz' ? 'porzione' : food.unit === 'barr' ? 'barr × 50g' : 'g';
       html += `<div style="border:0.5px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:3px solid ${ci.color}">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-          <span style="font-size: var(--fs-body);font-weight: var(--fw-med);flex:1;color:var(--text-primary)">${food.name}</span>
+          <span style="font-size: var(--fs-md);font-weight: var(--fw-semi);flex:1;color:var(--text-primary)">${food.name}</span>
           <button onclick="fdRemove('${food.id}')" style="font-size: var(--fs-xs);padding:2px 8px;border-radius:10px;border:0.5px solid var(--border);background:var(--surface-1);color:var(--text-muted);cursor:pointer">rimuovi</button>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
@@ -12262,10 +12262,10 @@ function buildFoodTab() {
             onchange="fdUpdate('${food.id}', this.value)">
           <span style="font-size: var(--fs-xs);color:var(--text-muted)">${unitLabel}</span>
           <div style="flex:1;display:flex;gap:10px;justify-content:flex-end">
-            <span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--text-primary)">${m.kcal} kcal</span>
-            <span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:var(--green-dark)">${m.p}g P</span>
-            <span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:#185fa5">${m.c}g C</span>
-            <span style="font-size: var(--fs-sm);font-weight: var(--fw-med);color:#854f0b">${m.g}g G</span>
+            <span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:var(--text-primary)">${m.kcal} kcal</span>
+            <span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:var(--green-dark)">${m.p}g P</span>
+            <span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:#185fa5">${m.c}g C</span>
+            <span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:#854f0b">${m.g}g G</span>
           </div>
         </div>
       </div>`;
@@ -12342,10 +12342,10 @@ function buildFoodTab() {
           <div id="fd-totals" style="display:none;margin-top:10px;background:var(--surface-1);border-radius:var(--radius);padding:10px 12px">
             <div style="font-size: var(--fs-2xs);font-weight: var(--fw-med);text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:8px">Totale pasto</div>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center">
-              <div><div style="font-size: var(--fs-18);font-weight: var(--fw-med);color:var(--text-primary)" id="fd-tot-kcal">0</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">kcal</div></div>
-              <div><div style="font-size: var(--fs-18);font-weight: var(--fw-med);color:var(--green-dark)" id="fd-tot-p">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">proteine</div></div>
-              <div><div style="font-size: var(--fs-18);font-weight: var(--fw-med);color:#185fa5" id="fd-tot-c">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">carb</div></div>
-              <div><div style="font-size: var(--fs-18);font-weight: var(--fw-med);color:#854f0b" id="fd-tot-g">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">grassi</div></div>
+              <div><div style="font-size: var(--fs-xl);font-weight: var(--fw-bold);color:var(--text-primary)" id="fd-tot-kcal">0</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">kcal</div></div>
+              <div><div style="font-size: var(--fs-xl);font-weight: var(--fw-bold);color:var(--green-dark)" id="fd-tot-p">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">proteine</div></div>
+              <div><div style="font-size: var(--fs-xl);font-weight: var(--fw-bold);color:#185fa5" id="fd-tot-c">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">carb</div></div>
+              <div><div style="font-size: var(--fs-xl);font-weight: var(--fw-bold);color:#854f0b" id="fd-tot-g">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">grassi</div></div>
             </div>
           </div>
         </div>
@@ -13067,47 +13067,43 @@ function fotoRenderLista() {
   }
   const sorted = [...photoLog].sort((a, b) => fotoDateTimeKey(b).localeCompare(fotoDateTimeKey(a)));
 
-  el.innerHTML = `<div style="max-width:720px">` + sorted.map((entry, idx) => {
+  // Redesign approvato da Giorgio il 01/09/2026 dopo mockup: griglia a 2
+  // colonne invece di colonna singola centrata (lasciava metà schermo bianca
+  // su monitor larghi), foto ingrandita (~210x270 invece di clamp 90-140),
+  // pillole statistiche indipendenti in griglia 3x2 invece di 6 celle
+  // compresse in un'unica striscia grigia. Stessa fonte dati
+  // (fotoComputeEntryData), cambia solo il layout.
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:16px">` + sorted.map((entry, idx) => {
     const { dayLabel, weekLabel, pesoTxt, deltaTxt, t1Label, t2Label,
       hrv, sonnoTxt, injLabel, injColor, integrLabel, integrColor,
       woType, woBadgeClass, woStatus, woWeekLabel } = fotoComputeEntryData(entry);
     const imgId = 'foto-list-img-' + idx;
 
-    // Opzione B approvata da Giorgio il 26/08/2026 dopo mockup: sostituisce
-    // "Aderenza sett." (stesso numero su più foto della stessa settimana,
-    // confuso) con i dati giornalieri veri, stessa granularità della card
-    // collassata nel Diario. "Workout sett." ora congelato alla data della
-    // foto (vedi fotoComputeEntryData) invece che a "oggi".
-    // Foto ingrandita e delta integrato nella chip "kg" (25/08->27/08/2026,
-    // richiesta di Giorgio "ingrandisci la foto e sistema i dati per
-    // sfruttare meglio lo spazio da mobile") - il delta vs T0 non è più una
-    // riga separata sotto la griglia, libera spazio verticale per la foto
-    // più grande senza allungare la card.
     const woBadge = woType ? `<span class="day-badge ${woBadgeClass}" style="display:inline-flex;align-items:center;gap:5px">${woType}${woStatus ? `<span style="width:6px;height:6px;border-radius:50%;background:${woStatus === 'done' ? '#34c759' : '#ff3b30'};display:inline-block"></span>` : ''}</span>` : '';
-    const pesoChip = pesoTxt ? `<div style="text-align:center;flex:1;min-width:0"><div style="font-size:13px;font-weight:700">${pesoTxt.replace(' kg', '')}${deltaTxt ? ` <span style="font-size:9px;font-weight:700;color:var(--orange)">${deltaTxt}</span>` : ''}</div><div style="font-size:var(--fs-3xs);color:var(--muted);text-transform:uppercase;letter-spacing:.02em">kg</div></div>` : '';
-    const chip = (label, val, color) => val ? `<div style="text-align:center;flex:1;min-width:0"><div style="font-size:13px;font-weight:700${color ? ';color:' + color : ''}">${val}</div><div style="font-size:var(--fs-3xs);color:var(--muted);text-transform:uppercase;letter-spacing:.02em">${label}</div></div>` : '';
-    const statsRow = [
-      pesoChip,
-      chip('HRV', hrv !== null ? hrv : ''),
-      chip('sonno', sonnoTxt),
-      chip('inj', injLabel, injColor),
-      chip('integr%', integrLabel, integrColor),
-      chip('wo sett.', woWeekLabel),
+    const pill = (label, val, color) => val ? `<div style="background:var(--surface2);border-radius:12px;padding:14px 8px;text-align:center"><div style="font-size:var(--fs-xl);font-weight:var(--fw-bold);letter-spacing:-.01em${color ? ';color:' + color : ''}">${val}</div><div style="font-size:var(--fs-2xs);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px">${label}</div></div>` : '';
+    const pesoPill = pesoTxt ? `<div style="background:var(--surface2);border-radius:12px;padding:14px 8px;text-align:center"><div style="font-size:var(--fs-xl);font-weight:var(--fw-bold);letter-spacing:-.01em">${pesoTxt.replace(' kg', '')}${deltaTxt ? ` <span style="font-size:var(--fs-2xs);font-weight:var(--fw-semi);color:var(--orange)">${deltaTxt}</span>` : ''}</div><div style="font-size:var(--fs-2xs);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:4px">kg</div></div>` : '';
+    const statsGrid = [
+      pesoPill,
+      pill('HRV', hrv !== null ? hrv : ''),
+      pill('sonno', sonnoTxt),
+      pill('inj', injLabel, injColor),
+      pill('integr%', integrLabel, integrColor),
+      pill('wo sett.', woWeekLabel),
     ].join('');
 
-    return `<div style="position:relative;display:flex;gap:16px;background:var(--surface);border-radius:14px;padding:10px;margin-bottom:10px;border:1px solid var(--border)">
-      <button onclick="fotoDeleteEntry('${entry.filename}')" title="Elimina foto" style="position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--red,#ff3b30);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">✕</button>
-      <img id="${imgId}" class="foto-photo" style="width:clamp(90px,26vw,140px);height:clamp(112px,32vw,175px);border-radius:8px;flex-shrink:0;object-fit:cover;background:var(--surface2)">
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0">
+    return `<div style="position:relative;display:flex;gap:18px;background:var(--surface);border-radius:var(--radius-sm,14px);padding:16px;box-shadow:var(--shadow,0 2px 12px rgba(0,0,0,.07))">
+      <button onclick="fotoDeleteEntry('${entry.filename}')" title="Elimina foto" style="position:absolute;top:12px;right:12px;width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--red,#ff3b30);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:1">✕</button>
+      <img id="${imgId}" class="foto-photo" style="width:clamp(120px,30vw,210px);height:clamp(150px,38vw,270px);border-radius:12px;flex-shrink:0;object-fit:cover;background:var(--surface2)">
+      <div style="flex:1;display:flex;flex-direction:column;gap:10px;min-width:0">
         <div style="padding-right:26px">
-          <div style="font-size:14px;font-weight:600">${fotoFormatDate(entry.date)}${fotoFormatTimeLoc(entry)}${dayLabel ? ' <span style="font-size:11px;color:var(--muted);font-weight:500">· ' + dayLabel + '</span>' : ''}</div>
-          <div style="font-size:12px;color:var(--purple);font-weight:600">${weekLabel}</div>
+          <div style="font-size:var(--fs-md);font-weight:var(--fw-semi)">${fotoFormatDate(entry.date)}${fotoFormatTimeLoc(entry)}${dayLabel ? ' <span style="font-size:var(--fs-sm);color:var(--muted);font-weight:var(--fw-med)">· ' + dayLabel + '</span>' : ''}</div>
+          <div style="font-size:var(--fs-sm);color:var(--purple);font-weight:var(--fw-semi);margin-top:2px">${weekLabel}</div>
         </div>
         ${woBadge ? `<div>${woBadge}</div>` : ''}
-        <div style="display:flex;gap:4px;background:var(--surface2);border-radius:9px;padding:8px 4px;flex-wrap:wrap">${statsRow}</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <div style="background:#fdf2ff;border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--purple);text-transform:uppercase;letter-spacing:.03em">🩸 A T1 (12 set)</span><span style="display:block;font-size:13px;font-weight:700;color:var(--purple)">${t1Label}</span></div>
-          <div style="background:#fdf2ff;border-radius:9px;padding:6px 10px;flex:1;min-width:100px"><span style="display:block;font-size:9px;color:var(--purple);text-transform:uppercase;letter-spacing:.03em">🩸 A T2 (7 nov)</span><span style="display:block;font-size:13px;font-weight:700;color:var(--purple)">${t2Label}</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${statsGrid}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:auto">
+          <div style="background:#fdf2ff;border-radius:10px;padding:8px 12px;flex:1;min-width:120px"><span style="display:block;font-size:var(--fs-2xs);color:var(--purple);text-transform:uppercase;letter-spacing:.03em">🩸 A T1 (12 set)</span><span style="display:block;font-size:var(--fs-md);font-weight:var(--fw-bold);color:var(--purple)">${t1Label}</span></div>
+          <div style="background:#fdf2ff;border-radius:10px;padding:8px 12px;flex:1;min-width:120px"><span style="display:block;font-size:var(--fs-2xs);color:var(--purple);text-transform:uppercase;letter-spacing:.03em">🩸 A T2 (7 nov)</span><span style="display:block;font-size:var(--fs-md);font-weight:var(--fw-bold);color:var(--purple)">${t2Label}</span></div>
         </div>
       </div>
     </div>`;
