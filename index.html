@@ -13078,7 +13078,7 @@ function fotoRenderLista() {
       pill('wo sett.', woWeekLabel),
     ].join('');
 
-    return `<div style="position:relative;display:flex;gap:18px;background:var(--surface);border-radius:var(--radius-sm,14px);padding:16px;box-shadow:var(--shadow,0 2px 12px rgba(0,0,0,.07))">
+    return `<div style="position:relative;display:flex;align-items:flex-start;gap:18px;background:var(--surface);border-radius:var(--radius-sm,14px);padding:16px;box-shadow:var(--shadow,0 2px 12px rgba(0,0,0,.07))">
       <button onclick="fotoDeleteEntry('${entry.filename}')" title="Elimina foto" style="position:absolute;top:12px;right:12px;width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--red,#ff3b30);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:1">✕</button>
       <img id="${imgId}" class="foto-photo" style="width:clamp(120px,30vw,210px);height:clamp(150px,38vw,270px);border-radius:12px;flex-shrink:0;object-fit:cover;background:var(--surface2)">
       <div style="flex:1;display:flex;flex-direction:column;gap:10px;min-width:0">
@@ -13088,7 +13088,7 @@ function fotoRenderLista() {
         </div>
         ${woBadge ? `<div>${woBadge}</div>` : ''}
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${statsGrid}</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:auto">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
           <div style="background:#fdf2ff;border-radius:10px;padding:8px 12px;flex:1;min-width:120px"><span style="display:block;font-size:var(--fs-2xs);color:var(--purple);text-transform:uppercase;letter-spacing:.03em">🩸 A T1 (12 set)</span><span style="display:block;font-size:var(--fs-md);font-weight:var(--fw-bold);color:var(--purple)">${t1Label}</span></div>
           <div style="background:#fdf2ff;border-radius:10px;padding:8px 12px;flex:1;min-width:120px"><span style="display:block;font-size:var(--fs-2xs);color:var(--purple);text-transform:uppercase;letter-spacing:.03em">🩸 A T2 (7 nov)</span><span style="display:block;font-size:var(--fs-md);font-weight:var(--fw-bold);color:var(--purple)">${t2Label}</span></div>
         </div>
