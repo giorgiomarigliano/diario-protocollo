@@ -13060,7 +13060,7 @@ function fotoRenderLista() {
   // pillole statistiche indipendenti in griglia 3x2 invece di 6 celle
   // compresse in un'unica striscia grigia. Stessa fonte dati
   // (fotoComputeEntryData), cambia solo il layout.
-  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(480px,1fr));gap:16px">` + sorted.map((entry, idx) => {
+  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(480px,100%),1fr));gap:16px">` + sorted.map((entry, idx) => {
     const { dayLabel, weekLabel, pesoTxt, deltaTxt, t1Label, t2Label,
       hrv, sonnoTxt, injLabel, injColor, integrLabel, integrColor,
       woType, woBadgeClass, woStatus, woWeekLabel } = fotoComputeEntryData(entry);
