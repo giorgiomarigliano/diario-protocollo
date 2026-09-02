@@ -7758,7 +7758,7 @@ function buildDashboard() {
       </div>
       <div class="charts-card" style="margin-top:10px">
         <div class="dash-card-title">Completamento per tipo di allenamento</div>
-        <div class="dash-card-sub" style="font-size: var(--fs-xs);color:var(--muted);margin-top:-2px;margin-bottom:8px">Solo periodo pre-Bangkok (split fisso)</div>
+        <div class="dash-card-sub" style="font-size: var(--fs-xs);color:var(--muted);margin-top:-2px;margin-bottom:8px">Ciclo v2 dal 20 lug a oggi, esclusa la finestra di viaggio a Bangkok (7-21 ago)</div>
         <div id="settimana-tipo-wo"></div>
       </div>
       <div class="charts-card" style="margin-top:10px">
@@ -7862,10 +7862,10 @@ function renderSettimanaTipo() {
   if (woEl) {
     const types = Object.keys(woByType);
     if (!types.length) {
-      woEl.innerHTML = '<p style="font-size: var(--fs-xs);color:var(--muted)">Nessun dato ancora (periodo pre-BKK).</p>';
+      woEl.innerHTML = '<p style="font-size: var(--fs-xs);color:var(--muted)">Nessun dato ancora.</p>';
     } else {
       const badgeClass = { Push:'badge-push', Pull:'badge-pull', Legs:'badge-legs', 'Upper Sab':'badge-upper', 'Upper Dom':'badge-upper-dom' };
-      const barColor = { Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#0071e3' };
+      const barColor = { Push:T_PALETTE.red, Pull:T_PALETTE.green, Legs:T_PALETTE.orange, 'Upper Sab':T_PALETTE.purple, 'Upper Dom':T_PALETTE.blue };
       woEl.innerHTML = types.map(t => {
         const { done, total } = woByType[t];
         const pct = total ? Math.round(done / total * 100) : 0;
@@ -9364,7 +9364,16 @@ function computeSettimanaTipo() {
   const today = new Date(); today.setHours(0,0,0,0);
   const startV2 = new Date(START2); startV2.setHours(0,0,0,0);
   const elapsedV2 = Math.floor((today - startV2) / 86400000);
+  // Fix 02/09/2026: prima si fermava per sempre al 6/8 ("solo pre-Bangkok"),
+  // restando congelato a una manciata di giorni iniziali per il resto del
+  // ciclo — non più uno strumento utile dopo un mese. Lo split settimanale
+  // (splitMap sotto) non è mai cambiato: verificato che coincide ancora
+  // oggi con getWorkout2(). Esteso a tutto il ciclo v2, escludendo solo la
+  // vera finestra di viaggio Bangkok (7-21/8, orari/routine irregolari,
+  // include-erroneamente giorni con un tipo non paragonabile allo split
+  // fisso) invece di tutto ciò che viene dopo il 6/8.
   const bkkStart = new Date('2026-08-07'); bkkStart.setHours(0,0,0,0);
+  const bkkEnd = new Date('2026-08-21'); bkkEnd.setHours(0,0,0,0);
 
   const wdNames = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
   const splitMap = {0:'Riposo',1:'Push',2:'Pull',3:'Riposo',4:'Legs',5:'Upper Sab',6:'Upper Dom'};
@@ -9384,7 +9393,7 @@ function computeSettimanaTipo() {
       if (!isNaN(v)) byWd[wd][key].push(v);
     });
 
-    if (d < bkkStart) {
+    if (d < bkkStart || d > bkkEnd) {
       const wtype = splitMap[wd];
       if (wtype !== 'Riposo') {
         if (!woByType[wtype]) woByType[wtype] = { done: 0, total: 0 };
