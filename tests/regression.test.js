@@ -142,6 +142,7 @@ console.log('\n═══ 2. Buco Test Protocollo in getSessionsAll ═══');
     ${extractFunction(source, 'getWorkout')}
     ${extractFunction(source, 'getWorkout2')}
     ${extractFunction(source, 'resolveDay')}
+    ${extractFunction(source, 'getWorkoutVolume2')}
     ${extractFunction(source, 'getSessionsAll')}
   `, ctx);
 
