@@ -2753,7 +2753,8 @@ function computeWarmupSummary(data) {
       else if (entry[s] === '1') suppTaken++;
     });
 
-    if (entry.wo_volume) { const v = parseFloat(entry.wo_volume); if (!isNaN(v)) { woVolumeTot += v; woCount++; } }
+    const woVolFallback = getWorkoutVolume2(entry);
+    if (woVolFallback !== null) { woVolumeTot += woVolFallback; woCount++; }
     if (entry.wo_durata) { const v = parseFloat(entry.wo_durata); if (!isNaN(v)) { woDurataSum += v; woDurataN++; } }
 
     Object.keys(entry).forEach(k => {
@@ -6885,7 +6886,13 @@ function getWorkoutComplianceV2() {
     if (rd.workout.type==='Riposo') continue; // i giorni di riposo non contano come workout mancato
     total++;
     const rec=_lastData2[rd.id]||{};
-    const kcal=parseFloat(rec.wo_kcal), vol=parseFloat(rec.wo_volume), rpe=parseFloat(rec.rpe);
+    // Fix 02/09/2026: era parseFloat(rec.wo_volume) diretto, senza fallback
+    // su motra_log — stessa famiglia di bug di getSessionsAll. Qui l'RPE
+    // fungeva quasi sempre da rete di sicurezza involontaria (quasi sempre
+    // compilato), ma non è una garanzia: un giorno con solo motra_log e RPE
+    // non ancora inserito sarebbe stato contato come saltato per errore.
+    const kcal=parseFloat(rec.wo_kcal), rpe=parseFloat(rec.rpe);
+    const volRaw=getWorkoutVolume2(rec), vol=(volRaw===null)?NaN:volRaw;
     if ((!isNaN(kcal)&&kcal>0) || (!isNaN(vol)&&vol>0) || !isNaN(rpe)) done++;
   }
   return {done,total,pct:total?Math.round((done/total)*100):0};
@@ -6948,8 +6955,9 @@ function exportAllCSV() {
     protoRows.push([dateStr, giornoCiclo, injPct, suppPct]);
 
     const woType = rd.workout ? rd.workout.type : '';
-    const woFatto = (woType && woType !== 'Riposo' && (rec.wo_volume || rec.wo_durata || rec.wo_kcal)) ? 1 : 0;
-    woRows.push([dateStr, giornoCiclo, woFatto, woType, rec.wo_durata || '', rec.wo_volume || '', rec.wo_kcal || '']);
+    const woVolExport = getWorkoutVolume2(rec);
+    const woFatto = (woType && woType !== 'Riposo' && (woVolExport !== null || rec.wo_durata || rec.wo_kcal)) ? 1 : 0;
+    woRows.push([dateStr, giornoCiclo, woFatto, woType, rec.wo_durata || '', rec.wo_volume || (woVolExport !== null ? String(woVolExport) : ''), rec.wo_kcal || '']);
   }
 
   const wb = XLSX.utils.book_new();
@@ -8854,7 +8862,8 @@ function getPhaseAverages() {
 
     if (rd.workout && rd.workout.type !== 'Riposo') {
       b.woTotal++;
-      const vol = parseFloat(rec.wo_volume);
+      const volRaw = getWorkoutVolume2(rec);
+      const vol = (volRaw===null) ? NaN : volRaw;
       const rpe = parseFloat(rd.period==='warmup' ? rec.wo_rpe : rec.rpe);
       const kcal = parseFloat(rec.wo_kcal);
       const woDone = (!isNaN(vol)&&vol>0) || !isNaN(rpe) || (!isNaN(kcal)&&kcal>0);
@@ -12994,7 +13003,9 @@ function fotoComputeEntryData(entry) {
     const wo = getWorkout2(dayIdx);
     woType = wo.label; woBadgeClass = wo.badge;
     if (wo.type !== 'Riposo') {
-      const kcal = parseFloat(rec.wo_kcal), vol = parseFloat(rec.wo_volume), rpeV = parseFloat(rec.rpe);
+      const kcal = parseFloat(rec.wo_kcal), rpeV = parseFloat(rec.rpe);
+      const volRaw = getWorkoutVolume2(rec);
+      const vol = (volRaw===null) ? NaN : volRaw;
       woStatus = ((!isNaN(kcal) && kcal > 0) || (!isNaN(vol) && vol > 0) || !isNaN(rpeV)) ? 'done' : 'missed';
     }
 
@@ -13015,7 +13026,9 @@ function fotoComputeEntryData(entry) {
         if (woF.type === 'Riposo') continue;
         totalWoF++;
         const recF = (_lastData2 && _lastData2['p2_day_' + i]) || {};
-        const kcalF = parseFloat(recF.wo_kcal), volF = parseFloat(recF.wo_volume), rpeF = parseFloat(recF.rpe);
+        const kcalF = parseFloat(recF.wo_kcal), rpeF = parseFloat(recF.rpe);
+        const volRawF = getWorkoutVolume2(recF);
+        const volF = (volRawF===null) ? NaN : volRawF;
         if ((!isNaN(kcalF) && kcalF > 0) || (!isNaN(volF) && volF > 0) || !isNaN(rpeF)) doneWoF++;
       }
       woWeekLabel = totalWoF > 0 ? doneWoF + '/' + totalWoF : '—';
