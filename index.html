@@ -2726,7 +2726,6 @@ function computeWarmupSummary(data) {
   const biom = { peso: [], hrv: [], rhr: [], ore_sonno: [] };
   const subj = { energia: [], recupero: [], umore: [] };
   const lifts = {};
-  const suppFields = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm','ck_mag','ck_gly','ck_melatonina'];
   let suppTaken = 0, suppSkipped = 0, suppPossible = 0;
   let woCount = 0, woVolumeTot = 0, woDurataSum = 0, woDurataN = 0, daysWithData = 0;
 
@@ -2747,11 +2746,8 @@ function computeWarmupSummary(data) {
       if (!isNaN(v)) subj[f].push(v);
     });
 
-    suppFields.forEach(s => {
-      suppPossible++;
-      if (entry[s + '_skip']) { suppSkipped++; suppPossible--; } // saltato apposta non conta nel denominatore
-      else if (entry[s] === '1') suppTaken++;
-    });
+    const suppR = getSuppComplianceForRecord(entry);
+    suppTaken += suppR.done; suppPossible += suppR.total; suppSkipped += suppR.skipped;
 
     const woVolFallback = getWorkoutVolume2(entry);
     if (woVolFallback !== null) { woVolumeTot += woVolFallback; woCount++; }
@@ -4486,7 +4482,8 @@ function buildWeekSummary(container, wkIdx) {
       // Considera eseguito se: RPE compilato OPPURE kcal>0 (Motra) OPPURE volume>0
       const rpe = parseFloat(get(id, 'wo_rpe'));
       const kcal = parseFloat(get(id, 'wo_kcal'));
-      const vol = parseFloat(get(id, 'wo_volume'));
+      const volRawWK = getWorkoutVolume2(_lastData[id] || {});
+      const vol = (volRawWK===null) ? NaN : volRawWK;
       const woEseguito = !isNaN(rpe) || (!isNaN(kcal) && kcal > 0) || (!isNaN(vol) && vol > 0);
       if (woEseguito) {
         doneWo++;
@@ -5493,7 +5490,8 @@ function getComplianceData() {
     if (wo.type !== 'Riposo') {
       woPrev++;
       const _ld = _lastData[id] || {};
-      const _woExec = (_ld['wo_rpe']) || (_ld['wo_kcal'] && parseFloat(_ld['wo_kcal']) > 0) || (_ld['wo_volume'] && parseFloat(_ld['wo_volume']) > 0);
+      const _volFallback = getWorkoutVolume2(_ld);
+      const _woExec = (_ld['wo_rpe']) || (_ld['wo_kcal'] && parseFloat(_ld['wo_kcal']) > 0) || (_volFallback !== null && _volFallback > 0);
       if (_woExec) woDone++;
     }
     // Stack
@@ -5510,7 +5508,8 @@ function getComplianceData() {
     if (wo2.type in woCounts) {
       woCounts[wo2.type]++;
       const _ld2 = _lastData['day_' + i] || {};
-      const _exec2 = (_ld2['wo_rpe']) || (_ld2['wo_kcal'] && parseFloat(_ld2['wo_kcal']) > 0) || (_ld2['wo_volume'] && parseFloat(_ld2['wo_volume']) > 0);
+      const _volFallback2 = getWorkoutVolume2(_ld2);
+      const _exec2 = (_ld2['wo_rpe']) || (_ld2['wo_kcal'] && parseFloat(_ld2['wo_kcal']) > 0) || (_volFallback2 !== null && _volFallback2 > 0);
       if (_exec2) woDones[wo2.type]++;
     }
   }
@@ -6133,7 +6132,8 @@ function getWorkoutSessions(days) {
     const wo = getWorkout(i);
     if (wo.type === 'Riposo') continue;
     const _s = _lastData[id] || {};
-    const vol  = parseFloat(_s['wo_volume']) || NaN;
+    const volRawGS = getWorkoutVolume2(_s);
+    const vol  = (volRawGS===null) ? NaN : volRawGS;
     const kcal = parseFloat(_s['wo_kcal'])   || NaN;
     const dur  = parseFloat(_s['wo_durata']) || NaN;
     const rpe  = parseFloat(_s['wo_rpe'])    || NaN;
@@ -6178,7 +6178,8 @@ function getWeeklyVolume(weeks) {
     for (let d = w * 7; d < (w + 1) * 7 && d < TOTAL_DAYS; d++) {
       const id = 'day_' + d;
       const wo = getWorkout(d);
-      const vol = parseFloat((_lastData[id] || {})['wo_volume']) || NaN;
+      const volRawWV = getWorkoutVolume2(_lastData[id] || {});
+      const vol = (volRawWV===null) ? NaN : volRawWV;
       if (isNaN(vol) || !vol) continue;
       entry.total += vol;
       if (wo.type === 'Push') entry.push += vol;
@@ -6222,7 +6223,8 @@ function getHrvVsVolume(days) {
     const id = 'day_' + i;
     const _dd = _lastData[id] || {};
     const hrv = parseFloat(_dd['hrv']) || NaN;
-    const vol = parseFloat(_dd['wo_volume']) || NaN;
+    const volRawHV = getWorkoutVolume2(_dd);
+    const vol = (volRawHV===null) ? NaN : volRawHV;
     if (!isNaN(hrv) && hrv > 0 && !isNaN(vol) && vol > 0)
       points.push({ hrv, vol });
   }
@@ -6820,17 +6822,13 @@ function getSuppComplianceV2() {
   const today=new Date(); today.setHours(0,0,0,0);
   const testStart=new Date(TEST_PROTO_START); testStart.setHours(0,0,0,0);
   if (today<testStart) return {done:0,total:0,pct:0};
-  const suppFields = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm','ck_mag','ck_gly','ck_melatonina'];
   let done=0,total=0;
   for (let d=new Date(testStart); d<=today; d.setDate(d.getDate()+1)) {
     const rd = resolveDay(d);
     if (rd.period!=='test_proto' && rd.period!=='v2') continue;
     const rec=_lastData2[rd.id]||{};
-    suppFields.forEach(s=>{
-      if (rec[s+'_skip']) return; // skippato: non conta ne' a favore ne' contro
-      total++;
-      if (rec[s]==='1') done++;
-    });
+    const suppR = getSuppComplianceForRecord(rec);
+    done += suppR.done; total += suppR.total;
   }
   return {done,total,pct:total?Math.round((done/total)*100):0};
 }
@@ -6842,7 +6840,6 @@ function getSuppComplianceV2() {
 // stesso criterio skip di getSuppComplianceV2(), solo applicato giorno per
 // giorno invece che sommato sull'intero ciclo.
 function getSuppComplianceDaily(days) {
-  const suppFields = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm','ck_mag','ck_gly','ck_melatonina'];
   const today = new Date(); today.setHours(0,0,0,0);
   const testStart = new Date(TEST_PROTO_START); testStart.setHours(0,0,0,0);
   const result = [];
@@ -6860,12 +6857,8 @@ function getSuppComplianceDaily(days) {
       const rd = resolveDay(d);
       if (rd.period === 'test_proto' || rd.period === 'v2') {
         const rec = (_lastData2 || {})[rd.id] || {};
-        let done = 0, total = 0;
-        suppFields.forEach(s => {
-          if (rec[s + '_skip']) return;
-          total++;
-          if (rec[s] === '1') done++;
-        });
+        const suppR = getSuppComplianceForRecord(rec);
+        const done = suppR.done, total = suppR.total;
         if (total > 0) value = Math.round((done / total) * 100);
       }
     }
@@ -6915,7 +6908,6 @@ function getWorkoutComplianceV2() {
 function exportAllCSV() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const testStart = new Date(TEST_PROTO_START); testStart.setHours(0, 0, 0, 0);
-  const suppFields = ['ck_d3', 'ck_omega', 'ck_creat', 'ck_zinc', 'ck_b12', 'ck_norm', 'ck_mag', 'ck_gly', 'ck_melatonina'];
 
   const bioRows = [['data', 'giorno_ciclo', 'settimana', 'peso_kg', 'bp_sys', 'bp_dia', 'hrv_ms', 'rhr_bpm', 'ore_sonno', 'sonno_veglia_min', 'sonno_rem_min', 'sonno_principale_min', 'sonno_profondo_min', 'sonno_risvegli']];
   const protoRows = [['data', 'giorno_ciclo', 'ader_iniezioni_pct', 'ader_integratori_pct']];
@@ -6946,10 +6938,8 @@ function exportAllCSV() {
       if (total > 0) injPct = Math.round((done / total) * 100);
 
       let sdone = 0, stotal = 0;
-      suppFields.forEach(s => {
-        if (rec[s + '_skip']) return;
-        stotal++; if (rec[s] === '1') sdone++;
-      });
+      const suppRExp = getSuppComplianceForRecord(rec);
+      sdone = suppRExp.done; stotal = suppRExp.total;
       if (stotal > 0) suppPct = Math.round((sdone / stotal) * 100);
     }
     protoRows.push([dateStr, giornoCiclo, injPct, suppPct]);
@@ -9157,6 +9147,24 @@ function buildCharts2(container) {
 // (numerico), altrimenti fa fallback sul parsing di motra_log.volume (stringa
 // tipo "11,4K kg") — stessa logica di importMotra(), cosi' il grafico funziona
 // anche per giorni dove il campo derivato non e' stato salvato esplicitamente.
+// Consolidamento 02/09/2026: stessa lista integratori + stessa logica di
+// conteggio erano duplicate manualmente in 7 punti del file (computeWarmup
+// Summary, getSuppComplianceV2, getSuppComplianceDaily, exportAllCSV,
+// computeWeekStats2, fotoComputeEntryData) — stessa identica fragilità già
+// vista per wo_volume/motra_log: oggi tutte le copie erano coerenti, ma un
+// domani cambio alla lista integratori richiederebbe aggiornarle tutte a
+// mano, facile dimenticarne una. Unica fonte di verità da qui in poi.
+const SUPP_FIELDS = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm','ck_mag','ck_gly','ck_melatonina'];
+function getSuppComplianceForRecord(rec) {
+  let done = 0, total = 0, skipped = 0;
+  SUPP_FIELDS.forEach(s => {
+    if (rec[s + '_skip']) { skipped++; return; }
+    total++;
+    if (rec[s] === '1') done++;
+  });
+  return { done, total, skipped };
+}
+
 function getWorkoutVolume2(rec) {
   if (!rec) return null;
   if (rec.wo_volume) {
@@ -9471,7 +9479,6 @@ function computeWeekStats2(wkIdx) {
   const start = new Date(START2); start.setHours(0,0,0,0);
   const elapsed = Math.floor((today - start) / 86400000);
   const get = (id, f) => (_lastData2[id] && _lastData2[id][f]) || '';
-  const suppFields = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm','ck_mag','ck_gly','ck_melatonina'];
 
   // Elenco giorni della settimana: la settimana 1 include anche i 2 giorni di
   // Test Protocollo (18-19 lug), che vivono in test_proto_0/1 e non in p2_day_N.
@@ -9506,7 +9513,9 @@ function computeWeekStats2(wkIdx) {
       const wo = getWorkout2(dayIdx);
       if (wo.type !== 'Riposo') {
         totalWo++;
-        const kcal=parseFloat(get(id,'wo_kcal')), vol=parseFloat(get(id,'wo_volume')), rpe=parseFloat(get(id,'rpe'));
+        const kcal=parseFloat(get(id,'wo_kcal')), rpe=parseFloat(get(id,'rpe'));
+        const volRawWS2 = getWorkoutVolume2(_lastData2[id]||{});
+        const vol = (volRawWS2===null) ? NaN : volRawWS2;
         if ((!isNaN(kcal)&&kcal>0) || (!isNaN(vol)&&vol>0) || !isNaN(rpe)) {
           doneWo++;
           if (!isNaN(rpe)) { rpeSum+=rpe; rpeCount++; }
@@ -9520,11 +9529,8 @@ function computeWeekStats2(wkIdx) {
       const en   = parseFloat(get(id,'energia')); if(!isNaN(en))    { energiaSum+=en;  energiaCount++; }
       const kcal2= parseFloat(get(id,'wo_kcal')); if(!isNaN(kcal2)) kcalTotal+=kcal2;
 
-      suppFields.forEach(s => {
-        suppPossible++;
-        if (get(id, s+'_skip')) { suppPossible--; }
-        else if (get(id, s) === '1') suppTaken++;
-      });
+      const suppRWk = getSuppComplianceForRecord(_lastData2[id] || {});
+      suppPossible += suppRWk.total; suppTaken += suppRWk.done;
 
       const rit = get(id,'ritenzione');    if (rit!=='' && parseInt(rit)>0) ritenzioneGg++;
       const form= get(id,'formicolio');    if (form!=='' && parseInt(form)>0) formicolioGg++;
@@ -12989,12 +12995,8 @@ function fotoComputeEntryData(entry) {
       injLabel = doneInj + '/' + totalInj;
       injColor = doneInj === totalInj ? '#34c759' : (doneInj > 0 ? '#ff9500' : '#ff3b30');
     }
-    const suppFields = ['ck_d3', 'ck_omega', 'ck_creat', 'ck_zinc', 'ck_b12', 'ck_norm', 'ck_mag', 'ck_gly', 'ck_melatonina'];
-    let suppTaken = 0, suppPossible = 0;
-    suppFields.forEach(s => {
-      if (rec[s + '_skip']) return;
-      suppPossible++; if (rec[s] === '1') suppTaken++;
-    });
+    const suppRFoto = getSuppComplianceForRecord(rec);
+    const suppTaken = suppRFoto.done, suppPossible = suppRFoto.total;
     if (suppPossible > 0) {
       integrLabel = Math.round(suppTaken / suppPossible * 100) + '%';
       integrColor = suppTaken === suppPossible ? '#34c759' : (suppTaken > 0 ? '#ff9500' : '#ff3b30');
