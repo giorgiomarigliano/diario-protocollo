@@ -6761,7 +6761,13 @@ function getSessionsAll(days) {
     let sess = null;
     if (rd.period==='v2' || rd.period==='test_proto') {
       const rec=_lastData2[rd.id]||{};
-      const vol=parseFloat(rec.wo_volume)||NaN, rpe=parseFloat(rec.rpe)||NaN, hrv=parseFloat(rec.hrv);
+      // Fix 02/09/2026: prima leggeva solo rec.wo_volume, sottostimando le
+      // sessioni reali (27 giorni nel solo Ciclo v2 avevano wo_volume vuoto
+      // ma motra_log completo — non solo durante Bangkok, il buco è più
+      // diffuso). getWorkoutVolume2() replica il fallback corretto, già
+      // usato altrove nell'app per lo stesso identico problema.
+      const volRaw=getWorkoutVolume2(rec), rpe=parseFloat(rec.rpe)||NaN, hrv=parseFloat(rec.hrv);
+      const vol=(volRaw===null)?NaN:volRaw;
       sess={date:d,type:rd.workout.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,phase:rd.period==='v2'?'v2':'test'};
     } else if (rd.period==='warmup') {
       const rec=_lastData[rd.id]||{};
