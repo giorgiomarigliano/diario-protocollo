@@ -1460,6 +1460,15 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .pre-proto-title { font-size: var(--fs-14); }
 }
 
+/* Foto — vista Lista: su schermi stretti la foto+dati affiancati lascia
+   troppo poco spazio alla colonna dati (pillole compresse). Sotto i 600px
+   si passa a foto sopra a piena larghezza, dati sotto — richiesto da
+   Giorgio il 02/09/2026 dopo verifica diretta su mobile. */
+@media (max-width: 600px) {
+  .foto-lista-card { flex-direction: column; }
+  .foto-lista-photo { width: 100% !important; height: auto !important; aspect-ratio: 3/4; }
+}
+
 /* Soggettivo select — stile coerente con bio-box input */
 .bio-box select {
   width: 100%;
@@ -13078,9 +13087,9 @@ function fotoRenderLista() {
       pill('wo sett.', woWeekLabel),
     ].join('');
 
-    return `<div style="position:relative;display:flex;align-items:flex-start;gap:18px;background:var(--surface);border-radius:var(--radius-sm,14px);padding:16px;box-shadow:var(--shadow,0 2px 12px rgba(0,0,0,.07))">
+    return `<div class="foto-lista-card" style="position:relative;display:flex;align-items:flex-start;gap:18px;background:var(--surface);border-radius:var(--radius-sm,14px);padding:16px;box-shadow:var(--shadow,0 2px 12px rgba(0,0,0,.07))">
       <button onclick="fotoDeleteEntry('${entry.filename}')" title="Elimina foto" style="position:absolute;top:12px;right:12px;width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--red,#ff3b30);font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:1">✕</button>
-      <img id="${imgId}" class="foto-photo" style="width:clamp(120px,30vw,210px);height:clamp(150px,38vw,270px);border-radius:12px;flex-shrink:0;object-fit:cover;background:var(--surface2)">
+      <img id="${imgId}" class="foto-photo foto-lista-photo" style="width:clamp(120px,30vw,210px);height:clamp(150px,38vw,270px);border-radius:12px;flex-shrink:0;object-fit:cover;background:var(--surface2)">
       <div style="flex:1;display:flex;flex-direction:column;gap:10px;min-width:0">
         <div style="padding-right:26px">
           <div style="font-size:var(--fs-md);font-weight:var(--fw-semi)">${fotoFormatDate(entry.date)}${fotoFormatTimeLoc(entry)}${dayLabel ? ' <span style="font-size:var(--fs-sm);color:var(--muted);font-weight:var(--fw-med)">· ' + dayLabel + '</span>' : ''}</div>
