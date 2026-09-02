@@ -1467,6 +1467,14 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
 @media (max-width: 600px) {
   .foto-lista-card { flex-direction: column; }
   .foto-lista-photo { width: 100% !important; height: auto !important; aspect-ratio: 3/4; }
+  /* Senza questa regola, sotto i 480px la Griglia collassa a 1 colonna
+     (minmax 240px non ci sta più in 2 copie) e diventa visivamente quasi
+     identica alla Lista appena impilata sopra — perdendo lo scopo stesso
+     della vista Griglia (tante foto piccole in rapida sequenza visiva,
+     non un dettaglio alla volta). Forzata a restare sempre 2 colonne,
+     foto più piccole ma la griglia resta una griglia. Richiesto da
+     Giorgio il 02/09/2026. */
+  .foto-griglia-grid { grid-template-columns: repeat(2, 1fr) !important; }
 }
 
 /* Soggettivo select — stile coerente con bio-box input */
@@ -13124,7 +13132,7 @@ function fotoRenderGriglia() {
   }
   const sorted = [...photoLog].sort((a, b) => fotoDateTimeKey(b).localeCompare(fotoDateTimeKey(a)));
 
-  el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;max-width:1320px">` +
+  el.innerHTML = `<div class="foto-griglia-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;max-width:1320px">` +
     sorted.map((entry, idx) => {
       const { dayLabel, pesoTxt, deltaTxt, t1Label, t2Label, injLabel, integrLabel, woWeekLabel } = fotoComputeEntryData(entry);
       const imgId = 'foto-grid-img-' + idx;
