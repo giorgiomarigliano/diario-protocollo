@@ -2748,7 +2748,11 @@ function computeWarmupSummary(data) {
     daysWithData++;
 
     ['peso', 'hrv', 'rhr', 'ore_sonno'].forEach(f => {
-      const v = parseFloat(String(entry[f]).replace(',', '.'));
+      // Fix 03/09/2026: stesso bug di computeSettimanaTipo — 'ore_sonno' va
+      // convertito da notazione H.MM con parseSonnoHours(), non trattato
+      // come decimale puro. Qui alterava media/min/max/andamento del sonno
+      // nel riepilogo warm-up.
+      const v = f === 'ore_sonno' ? parseSonnoHours(entry[f]) : parseFloat(String(entry[f]).replace(',', '.'));
       if (!isNaN(v)) biom[f].push({ day: i, val: v });
     });
     ['energia','recupero','umore'].forEach(f => {
@@ -9484,7 +9488,13 @@ function computeSettimanaTipo() {
     const rec = _lastData2['p2_day_' + i] || {};
 
     metricKeys.forEach(key => {
-      const v = parseFloat(rec[key]);
+      // Fix 03/09/2026: 'ore_sonno' è inserito in notazione H.MM (es. "5.18"
+      // = 5h18min), non decimale puro — mediarlo con parseFloat trattava
+      // "5.18" come 5,18 ore vere, alterando la media (e quindi anche quale
+      // giorno risulta "migliore/peggiore" nella tabella Insights). Stessa
+      // fonte canonica (parseSonnoHours) già usata correttamente in
+      // getPhaseAverages() per lo stesso identico calcolo.
+      const v = key === 'ore_sonno' ? parseSonnoHours(rec[key]) : parseFloat(rec[key]);
       if (!isNaN(v)) byWd[wd][key].push(v);
     });
 
