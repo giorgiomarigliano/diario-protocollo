@@ -10805,7 +10805,7 @@ function buildStockView2() {
 
   const compounds = [
     { id:'tesa',    name:'Tesamorelin',      emoji:'🧬', color:'#0071e3', bg:'rgba(0,113,227,.08)',
-      dose:'2mg/sera · SC',           dose_mcg:2000, mgNeeded:224, fab_detail:'112gg × 2mg/die',
+      dose:'2mg/sera · SC',           dose_mcg:2000, voltePerDie:1, mgNeeded:224, fab_detail:'112gg × 2mg/die',
       stabilityDays:21, stabilityNote:'21 gg frigo · sensibile alla luce',
       mgOptions:[2,5,10], bacOptions:[0.5,1.0,2.0], defaultMg:10, defaultBac:2.0,
       suppliers:[
@@ -10813,14 +10813,14 @@ function buildStockView2() {
         { key:'limitless', vials:[{n:1,stato:'perso'},{n:2,stato:'perso'},{n:3,stato:'intatto'},{n:4,stato:'intatto'},{n:5,stato:'intatto'},{n:6,stato:'intatto'},{n:7,stato:'intatto'},{n:8,stato:'intatto'},{n:9,stato:'intatto'},{n:10,stato:'intatto'},{n:11,stato:'intatto'},{n:12,stato:'intatto'}] },
       ] },
     { id:'fragment',name:'Fragment 176-191', emoji:'🔥', color:'#ff3b30', bg:'rgba(255,59,48,.08)',
-      dose:'250mcg × 2/die · SC',     dose_mcg:250,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
+      dose:'250mcg × 2/die · SC',     dose_mcg:250,  voltePerDie:2, mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
       stabilityDays:30, stabilityNote:'30 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
       suppliers:[
         { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(6,'intatto') },
       ] },
     { id:'ipa',     name:'Ipamorelin',        emoji:'⚡', color:'#34c759', bg:'rgba(52,199,89,.08)',
-      dose:'100mcg/sera · SC',        dose_mcg:100,  mgNeeded:11.2,fab_detail:'112gg × 100mcg/die',
+      dose:'100mcg/sera · SC',        dose_mcg:100,  voltePerDie:1, mgNeeded:11.2,fab_detail:'112gg × 100mcg/die',
       stabilityDays:30, stabilityNote:'30 gg frigo',
       mgOptions:[2,5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
       suppliers:[
@@ -10834,7 +10834,7 @@ function buildStockView2() {
         { key:'bachem', arrivo:'15 lug 2026', vials:mkVials(4,'intatto') },
       ] },
     { id:'bpc',     name:'BPC-157',            emoji:'🔧', color:'#ff9500', bg:'rgba(255,149,0,.08)',
-      dose:'250mcg × 2/die · SC',     dose_mcg:250,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
+      dose:'250mcg × 2/die · SC',     dose_mcg:250,  voltePerDie:2, mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
       stabilityDays:28, stabilityNote:'28 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
       suppliers:[
@@ -10842,7 +10842,7 @@ function buildStockView2() {
         { key:'limitless', vials:[{n:1,stato:'in_uso'},{n:2,stato:'intatto'}] },
       ] },
     { id:'tb500',   name:'TB-500',             emoji:'🩹', color:'#5856d6', bg:'rgba(88,86,214,.08)',
-      dose:'500mcg/sera · SC',        dose_mcg:500,  mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
+      dose:'500mcg/sera · SC',        dose_mcg:500,  voltePerDie:1, mgNeeded:56,  fab_detail:'112gg × 500mcg/die',
       stabilityDays:28, stabilityNote:'28 gg frigo',
       mgOptions:[5,10], bacOptions:[1.0,2.0], defaultMg:10, defaultBac:2.0,
       suppliers:[
@@ -10901,7 +10901,17 @@ function buildStockView2() {
   const TRAINING_DAYS_RATIO = 5/7;
   compounds.forEach(c => {
     if (c.offProtocol || !c.dose_mcg) { c.dailyRateMg = null; c.exhaustDays = null; c.exhaustDate = null; return; }
-    const rateMcgDay = c.id === 'igf' ? c.dose_mcg * TRAINING_DAYS_RATIO : c.dose_mcg;
+    // Fix 03/09/2026: dose_mcg è la dose per SINGOLA iniezione, non il
+    // totale giornaliero — per i composti dosati più volte al giorno
+    // (Fragment, BPC-157: 250mcg × 2/die) il calcolo usava dose_mcg da
+    // solo, dimezzando il consumo reale e quindi raddoppiando la data di
+    // esaurimento prevista rispetto alla realtà (verificato: Fragment
+    // mostrava ~120 giorni di copertura invece dei ~60 veri). mgNeeded
+    // (112gg × 500mcg/die, coerente col fabbisogno totale) già usava il
+    // valore corretto — solo questo calcolo derivava male il tasso
+    // giornaliero. voltePerDie esplicito invece di dedurlo dal testo di
+    // 'dose', più robusto.
+    const rateMcgDay = c.id === 'igf' ? c.dose_mcg * TRAINING_DAYS_RATIO : c.dose_mcg * (c.voltePerDie || 1);
     c.dailyRateMg = Math.round((rateMcgDay/1000) * 1000) / 1000;
     if (c.dailyRateMg > 0 && c.disponibile !== null) {
       c.exhaustDays = Math.floor(c.disponibile / c.dailyRateMg);
@@ -10984,7 +10994,7 @@ function buildStockView2() {
     const nDaysHome = onlyTraining ? _trainingDaysToDeparture : _daysToDeparture;
     const vialMg = c.defaultMg || 10;
     const vialMcg = vialMg * 1000;
-    const consumedMcg = c.dose_mcg * nDaysHome;
+    const consumedMcg = c.dose_mcg * (c.id === 'igf' ? 1 : (c.voltePerDie || 1)) * nDaysHome;
     const resto = consumedMcg % vialMcg;
     const residuoMcg = resto === 0 ? vialMcg : (vialMcg - resto);
     c.bkkResiduoMg = Math.round(residuoMcg/1000*100)/100;
