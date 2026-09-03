@@ -9448,17 +9448,16 @@ function computeSettimanaTipo() {
   const elapsedV2 = Math.floor((today - startV2) / 86400000);
   // Fix 02/09/2026: prima si fermava per sempre al 6/8 ("solo pre-Bangkok"),
   // restando congelato a una manciata di giorni iniziali per il resto del
-  // ciclo — non più uno strumento utile dopo un mese. Lo split settimanale
-  // (splitMap sotto) non è mai cambiato: verificato che coincide ancora
-  // oggi con getWorkout2(). Esteso a tutto il ciclo v2, escludendo solo la
-  // vera finestra di viaggio Bangkok (7-21/8, orari/routine irregolari,
-  // include-erroneamente giorni con un tipo non paragonabile allo split
-  // fisso) invece di tutto ciò che viene dopo il 6/8.
+  // ciclo — non più uno strumento utile dopo un mese. Esteso a tutto il
+  // ciclo v2, escludendo solo la vera finestra di viaggio Bangkok (7-21/8,
+  // orari/routine irregolari, includerebbe erroneamente giorni con un tipo
+  // non paragonabile allo split fisso) invece di tutto ciò che viene dopo
+  // il 6/8. Consolidamento 03/09/2026: il tipo giornata ora viene sempre
+  // da getWorkout2() (fonte unica), non più da una mappa locale duplicata.
   const bkkStart = new Date(BKK_START); bkkStart.setHours(0,0,0,0);
   const bkkEnd = new Date(BKK_END); bkkEnd.setHours(0,0,0,0);
 
   const wdNames = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
-  const splitMap = {0:'Riposo',1:'Push',2:'Pull',3:'Riposo',4:'Legs',5:'Upper Sab',6:'Upper Dom'};
   const metricKeys = ['hrv','ore_sonno','energia','recupero','umore'];
 
   const byWd = {};
@@ -9476,7 +9475,7 @@ function computeSettimanaTipo() {
     });
 
     if (d < bkkStart || d > bkkEnd) {
-      const wtype = splitMap[wd];
+      const wtype = getWorkout2(i).type;
       if (wtype !== 'Riposo') {
         if (!woByType[wtype]) woByType[wtype] = { done: 0, total: 0 };
         woByType[wtype].total++;
