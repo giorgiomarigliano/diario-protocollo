@@ -4054,19 +4054,33 @@ function buildLabSection(container) {
 function calcDexaDelta(milestoneId) {
   const get = f => parseFloat(document.querySelector(`[data-id="${milestoneId}"][data-f="${f}"]`)?.value) || null;
   const t0 = DEXA_T0;
+  // Consolidamento 03/09/2026: 'better' per ogni campo veniva ridichiarato
+  // qui a mano invece di leggerlo da DEXA_BETTER (fonte canonica, già usata
+  // dal Checkpoint) — per il peso questo aveva introdotto una vera
+  // discrepanza attiva: qui 'down' (dimagrire = sempre "buono"), in
+  // DEXA_BETTER 'neutral' (il peso da solo non dice se è stato perso grasso
+  // o muscolo — corretto durante una ricomposizione corporea). Ora legge
+  // sempre da DEXA_BETTER, un solo posto da aggiornare se mai cambiasse.
   const fields = [
-    {f:'dexa_peso', label:'Peso', t0:t0.peso, unit:'kg', better:'down'},
-    {f:'dexa_bf_pct', label:'BF', t0:t0.bf_pct, unit:'%', better:'down'},
-    {f:'dexa_fat_kg', label:'Fat', t0:t0.fat_kg, unit:'kg', better:'down'},
-    {f:'dexa_lean_kg', label:'Lean', t0:t0.lean_kg, unit:'kg', better:'up'},
-    {f:'dexa_vat_cm2', label:'VAT', t0:t0.vat_cm2, unit:'cm²', better:'down'},
+    {f:'dexa_peso', label:'Peso', t0:t0.peso, unit:'kg', better:DEXA_BETTER.peso},
+    {f:'dexa_bf_pct', label:'BF', t0:t0.bf_pct, unit:'%', better:DEXA_BETTER.bf_pct},
+    {f:'dexa_fat_kg', label:'Fat', t0:t0.fat_kg, unit:'kg', better:DEXA_BETTER.fat_kg},
+    {f:'dexa_lean_kg', label:'Lean', t0:t0.lean_kg, unit:'kg', better:DEXA_BETTER.lean_kg},
+    {f:'dexa_vat_cm2', label:'VAT', t0:t0.vat_cm2, unit:'cm²', better:DEXA_BETTER.vat_cm2},
   ];
   const deltas = fields.map(fd => {
     const v = get(fd.f);
     if (v === null) return null;
     const diff = (v - parseFloat(fd.t0)).toFixed(1);
     const sign = diff > 0 ? '+' : '';
-    const cls = (fd.better === 'down' && diff < 0) || (fd.better === 'up' && diff > 0) ? 'up' : diff == 0 ? 'neutral' : 'down';
+    // Fix collaterale trovato correggendo il punto sopra: un campo
+    // 'neutral' con delta diverso da zero cadeva nel ramo finale
+    // (diff==0 ? 'neutral' : 'down'), mostrando "bad" per qualunque
+    // variazione non nulla anche quando nessuna direzione è giusta o
+    // sbagliata. Ora resta sempre neutro quando better è 'neutral'.
+    const cls = fd.better === 'neutral' ? 'neutral'
+      : (fd.better === 'down' && diff < 0) || (fd.better === 'up' && diff > 0) ? 'up'
+      : diff == 0 ? 'neutral' : 'down';
     return `<span class="t-badge ${cls === 'up' ? 'good' : cls === 'down' ? 'bad' : 'neutral'}">${fd.label} ${sign}${diff}${fd.unit}</span>`;
   }).filter(Boolean);
   const el = document.getElementById('dexa-delta-' + milestoneId);
