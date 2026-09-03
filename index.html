@@ -7562,9 +7562,9 @@ function buildDashboard() {
     const dayIdx = d => Math.round((d - START2) / 86400000);
     const pct = idx => Math.max(0, Math.min(100, idx / CICLO1_DAYS * 100));
 
-    const bkkStart = new Date('2026-08-07'), bkkEnd = new Date('2026-08-21');
+    const bkkStart = BKK_START, bkkEnd = BKK_END;
     const mallStart = new Date('2026-10-20'), mallEnd = new Date('2026-10-22');
-    const t1Date = new Date('2026-09-12'), t2Date = new Date('2026-11-07');
+    const t1Date = T1_DATE, t2Date = T2_DATE;
 
     function eventInfo(start, end) {
       const startIdx = dayIdx(start), endIdx = dayIdx(end) + 1; // +1 = fine giornata inclusa
@@ -8861,8 +8861,8 @@ let   _lastData2  = {};
 // sempre coerenti anche se START2 dovesse mai essere corretta in futuro.
 function getBKKWeekInfo() {
   const s = new Date(START2); s.setHours(0,0,0,0);
-  const bkkS = new Date('2026-08-07'); bkkS.setHours(0,0,0,0);
-  const bkkE = new Date('2026-08-21'); bkkE.setHours(0,0,0,0);
+  const bkkS = new Date(BKK_START); bkkS.setHours(0,0,0,0);
+  const bkkE = new Date(BKK_END); bkkE.setHours(0,0,0,0);
   const dayStart = Math.round((bkkS - s) / 86400000);
   const dayEnd   = Math.round((bkkE - s) / 86400000);
   const wkStart  = Math.floor(dayStart/7)+1;
@@ -9120,7 +9120,7 @@ function buildCycleCard2(container) {
     // DELLA FOTO, quindi uno snapshot storico fisso), qui è relativo a
     // OGGI e si aggiorna da solo ogni volta che la Dashboard viene aperta,
     // perché questa è una card "di stato attuale", non uno storico.
-    const t1Date = new Date('2026-09-12'), t2Date = new Date('2026-11-07');
+    const t1Date = T1_DATE, t2Date = T2_DATE;
     const daysToT1 = Math.round((t1Date-today)/86400000);
     const daysToT2 = Math.round((t2Date-today)/86400000);
     const t1Txt = daysToT1 > 0 ? `T1 tra ${daysToT1}gg` : (daysToT1 === 0 ? 'T1 oggi' : 'T1 ✓ fatto');
@@ -9454,8 +9454,8 @@ function computeSettimanaTipo() {
   // vera finestra di viaggio Bangkok (7-21/8, orari/routine irregolari,
   // include-erroneamente giorni con un tipo non paragonabile allo split
   // fisso) invece di tutto ciò che viene dopo il 6/8.
-  const bkkStart = new Date('2026-08-07'); bkkStart.setHours(0,0,0,0);
-  const bkkEnd = new Date('2026-08-21'); bkkEnd.setHours(0,0,0,0);
+  const bkkStart = new Date(BKK_START); bkkStart.setHours(0,0,0,0);
+  const bkkEnd = new Date(BKK_END); bkkEnd.setHours(0,0,0,0);
 
   const wdNames = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom'];
   const splitMap = {0:'Riposo',1:'Push',2:'Pull',3:'Riposo',4:'Legs',5:'Upper Sab',6:'Upper Dom'};
@@ -9757,6 +9757,13 @@ const TEST_PROTO_DAYS  = 2;
 // solo per queste date. Vedi getWorkout2() e getInjectionSlots2().
 const BKK_START = new Date('2026-08-07');
 const BKK_END   = new Date('2026-08-21');
+// Milestone cliniche T1/T2 (consolidamento 03/09/2026): erano scritte come
+// data letterale in 3 punti diversi del file (Timeline eventi Referti,
+// Dashboard, Foto), una copia recava già un commento che segnalava il
+// problema senza risolverlo — stessa fragilità già vista per Bangkok e per
+// la lista integratori. Un'unica fonte di verità da qui in poi.
+const T1_DATE = new Date('2026-09-12');
+const T2_DATE = new Date('2026-11-07');
 function isBkkDate(d) {
   const s = new Date(BKK_START); s.setHours(0,0,0,0);
   const e = new Date(BKK_END); e.setHours(0,0,0,0);
@@ -10905,8 +10912,6 @@ function buildStockView2() {
   // ── Fabbisogno viaggio Bangkok (7-21 agosto, date fisse confermate) ──
   // Calcolato sul tempo REALE fuori casa (giorno di partenza e rientro inclusi),
   // non solo sui giorni "in loco" — parte la sera del 7, rientra la sera del 21.
-  const BKK_START = new Date('2026-08-07'); BKK_START.setHours(0,0,0,0);
-  const BKK_END   = new Date('2026-08-21'); BKK_END.setHours(0,0,0,0);
   const bkkTotalDays = Math.round((BKK_END - BKK_START)/86400000) + 1;
   const s0v2 = new Date(START2); s0v2.setHours(0,0,0,0);
   // A Bangkok l'allenamento e' previsto TUTTI i giorni (incluso leg day), non sullo
@@ -13142,10 +13147,10 @@ function fotoComputeEntryData(entry) {
   // "Opzione A" approvato): quanto mancava a T1 (12/9, sangue+DEXA) e T2
   // (7/11, DEXA finale) VISTO DALLA DATA DI QUESTA FOTO, non da oggi — è
   // uno snapshot storico coerente con deltaTxt (anche quello è calcolato
-  // vs T0, non vs "oggi"). Stessa coppia di date letterali già in uso
-  // altrove nell'app (es. timeline eventi Referti) — non promosse a
-  // costante condivisa per non toccare codice non-Foto in questa sessione.
-  const t1Date = new Date('2026-09-12'), t2Date = new Date('2026-11-07');
+  // vs T0, non vs "oggi"). Consolidamento 03/09/2026: questa coppia di
+  // date letterali era duplicata in 3 punti dell'app (qui, Dashboard,
+  // Timeline eventi Referti) — ora T1_DATE/T2_DATE, costante condivisa.
+  const t1Date = T1_DATE, t2Date = T2_DATE;
   const entryDateObj = new Date(entry.date);
   const daysToT1 = Math.round((t1Date - entryDateObj) / 86400000);
   const daysToT2 = Math.round((t2Date - entryDateObj) / 86400000);
