@@ -8078,7 +8078,7 @@ function refreshDashCharts() {
     const volBars = sessions.filter(s=>s.volume).map(s=>({
       label: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}),
       value: s.volume/1000,
-      color: {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'}[s.type]||'#aeaeb2'
+      color: {Push:T_PALETTE.red,Pull:T_PALETTE.green,Legs:T_PALETTE.orange,'Upper Sab':T_PALETTE.purple,'Upper Dom':T_PALETTE.blue}[s.type]||'#aeaeb2'
     }));
     if(volBars.length) drawBarChart('dc-vol', volBars, {height:120, unit:'t'});
 
@@ -8093,7 +8093,7 @@ function refreshDashCharts() {
     sessions.filter(s=>s.volume!==null).forEach(s=>{breakdown[s.type]=(breakdown[s.type]||0)+1;});
     const bdEl = document.getElementById('dc-breakdown');
     if(bdEl){
-      const colors={Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3'};
+      const colors={Push:T_PALETTE.red,Pull:T_PALETTE.green,Legs:T_PALETTE.orange,'Upper Sab':T_PALETTE.purple,'Upper Dom':T_PALETTE.blue};
       const tot=Object.values(breakdown).reduce((a,b)=>a+b,0);
       bdEl.innerHTML=Object.entries(breakdown).map(([type,n])=>`
         <div class="comp-bar-row">
@@ -9039,7 +9039,7 @@ function resolveDay(date) {
 }
 
 function getDotColor2(type) {
-  const m = {Push:'#ff3b30',Pull:'#34c759',Legs:'#ff9500','Upper Sab':'#af52de','Upper Dom':'#0071e3',Riposo:'#c7c7cc','Allenamento BKK':'#c0392b'};
+  const m = {Push:T_PALETTE.red,Pull:T_PALETTE.green,Legs:T_PALETTE.orange,'Upper Sab':T_PALETTE.purple,'Upper Dom':T_PALETTE.blue,Riposo:'#c7c7cc','Allenamento BKK':'#c0392b'};
   return m[type]||'#c7c7cc';
 }
 
@@ -12487,8 +12487,8 @@ function buildHistoryTab() {
   const muscleVol = (_lastData && _lastData.muscle_volume_summary) || [];
 
   const TYPE_COLOR = {
-    Push:'#ff3b30', Pull:'#34c759', Legs:'#ff9500', 'Upper Sab':'#af52de', 'Upper Dom':'#0071e3',
-    Riposo:'#8e8e93', 'Allenamento BKK':'#5ac8fa', BKK_FREE:'#5ac8fa'
+    Push:T_PALETTE.red, Pull:T_PALETTE.green, Legs:T_PALETTE.orange, 'Upper Sab':T_PALETTE.purple, 'Upper Dom':T_PALETTE.blue,
+    Riposo:T_PALETTE.gray, 'Allenamento BKK':T_PALETTE.teal, BKK_FREE:T_PALETTE.teal
   };
   // Euristica sul titolo tenuta SOLO come fallback per le sessioni pre-8/6/2026
   // (prima di START, fuori range di resolveDay() — 20 sessioni reali, il
