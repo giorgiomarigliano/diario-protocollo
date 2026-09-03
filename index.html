@@ -1477,6 +1477,16 @@ canvas.dash-chart{width:100%;display:block;border-radius:6px}
   .foto-griglia-grid { grid-template-columns: repeat(2, 1fr) !important; }
 }
 
+/* Alimenti — sotto i 900px la colonna fissa 340px del Costruttore pasto non
+   ci sta accanto alla lista e viene tagliata a destra (segnalato da
+   Giorgio il 03/09/2026). Sotto quella soglia si impila sotto la lista,
+   niente più taglio, e si disattiva lo sticky (avrebbe comportamento
+   strano una volta impilato in fondo a una lista lunga). */
+@media (max-width: 900px) {
+  .fd-layout { grid-template-columns: 1fr !important; }
+  .fd-builder-col { position: static !important; top: auto !important; }
+}
+
 /* Soggettivo select — stile coerente con bio-box input */
 .bio-box select {
   width: 100%;
@@ -12387,7 +12397,7 @@ function buildFoodTab() {
       <div class="t-page-sub">Macro di riferimento + costruttore pasto</div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start">
+    <div class="fd-layout" style="display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start">
 
       <!-- Colonna sinistra: lista alimenti -->
       <div>
@@ -12420,7 +12430,7 @@ function buildFoodTab() {
       </div>
 
       <!-- Colonna destra: builder pasto -->
-      <div style="position:sticky;top:80px">
+      <div class="fd-builder-col" style="position:sticky;top:80px">
         <div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:1rem">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <div style="font-size: var(--fs-body);font-weight: var(--fw-med);color:var(--text-primary)">Costruttore pasto</div>
