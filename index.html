@@ -6992,7 +6992,7 @@ function exportAllCSV() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const testStart = new Date(TEST_PROTO_START); testStart.setHours(0, 0, 0, 0);
 
-  const bioRows = [['data', 'giorno_ciclo', 'settimana', 'peso_kg', 'bp_sys', 'bp_dia', 'hrv_ms', 'rhr_bpm', 'ore_sonno', 'sonno_veglia_min', 'sonno_rem_min', 'sonno_principale_min', 'sonno_profondo_min', 'sonno_risvegli']];
+  const bioRows = [['data', 'giorno_ciclo', 'settimana', 'peso_kg', 'bp_sys', 'bp_dia', 'hrv_ms', 'rhr_bpm', 'ore_sonno_decimali', 'sonno_veglia_min', 'sonno_rem_min', 'sonno_principale_min', 'sonno_profondo_min', 'sonno_risvegli']];
   const protoRows = [['data', 'giorno_ciclo', 'ader_iniezioni_pct', 'ader_integratori_pct']];
   const woRows = [['data', 'giorno_ciclo', 'workout_fatto', 'wo_tipo', 'wo_durata_min', 'wo_volume_kg', 'wo_kcal']];
 
@@ -7005,7 +7005,14 @@ function exportAllCSV() {
     const settimana = rd.period === 'v2' ? Math.floor(rd.index / 7) + 1 : '';
     const isToday = d.getTime() === today.getTime();
 
-    bioRows.push([dateStr, giornoCiclo, settimana, rec.peso || '', rec.bp_sys || '', rec.bp_dia || '', rec.hrv || '', rec.rhr || '', rec.ore_sonno || '', rec.sonno_veglia_min || '', rec.sonno_rem_min || '', rec.sonno_principale_min || '', rec.sonno_profondo_min || '', rec.sonno_risvegli || '']);
+    // Fix 04/09/2026: esportava rec.ore_sonno grezzo (notazione H.MM, es.
+    // "5.18" = 5h18m) senza convertirlo — in un documento per uso medico,
+    // un lettore esterno leggerebbe "5.18" come 5,18 ore decimali (5h11m),
+    // non le vere 5h18m. Convertito con parseSonnoHours() (stessa fonte
+    // canonica già corretta in altri 2 punti, sezione 26.14 KB) e
+    // arrotondato a 2 decimali per un export leggibile.
+    const sonnoDecOut = (() => { const v = parseSonnoHours(rec.ore_sonno); return isNaN(v) ? '' : Math.round(v*100)/100; })();
+    bioRows.push([dateStr, giornoCiclo, settimana, rec.peso || '', rec.bp_sys || '', rec.bp_dia || '', rec.hrv || '', rec.rhr || '', sonnoDecOut, rec.sonno_veglia_min || '', rec.sonno_rem_min || '', rec.sonno_principale_min || '', rec.sonno_profondo_min || '', rec.sonno_risvegli || '']);
 
     let injPct = '', suppPct = '';
     if (!isToday) {
