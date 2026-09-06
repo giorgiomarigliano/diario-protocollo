@@ -1849,6 +1849,7 @@ const SENTINELS = [
   {id:'bench',      name:'BB Bench Press',             group:'chest',    baseline:'55kg · 4×8',   motra:'Barbell Bench Press'},
   {id:'incbench',   name:'Mac Incline Bench Press',    group:'chest',    baseline:'—',             motra:'Machine Incline Bench Press'},
   {id:'pecfly',     name:'Pec Fly (Pec Dec)',           group:'chest',    baseline:'—',             motra:'Machine Fly (Pec Dec)'},
+  {id:'cablefly',   name:'Cable Fly',                   group:'chest',    baseline:'—',             motra:'Cable Fly High'},
   // DORSO — esercizi master
   {id:'lat',        name:'Lat Machine Wide-Grip',      group:'back',     baseline:'—',             motra:'Machine Lat Pull Down Wide-Grip'},
   {id:'tbar',       name:'T-Bar Row',                  group:'back',     baseline:'—',             motra:'Machine T-Bar Row'},
@@ -1873,12 +1874,12 @@ const SENTINELS = [
 ];
 
 const SESSION_SENTINELS = {
-  'Push':       ['bench','incbench','pecfly','bbohp','dbpress','dblateral','tridown','triover'],
+  'Push':       ['bench','incbench','pecfly','cablefly','bbohp','dbpress','dblateral','tridown','triover'],
   'Pull':       ['lat','tbar','bbrow','dbcurl','hammercurl'],
   'Legs':       ['legext','legpress','rdl','calf','hipthrust','legcurl'],
   'Upper Sab':  ['bbohp','dbpress','dblateral','dbcurl','hammercurl','tridown','triover'],
-  'Upper Dom':  ['bench','incbench','pecfly','lat','tbar','bbrow','bbohp','dblateral'],
-  'Upper Body': ['bench','incbench','pecfly','bbohp','dblateral','tridown','triover'],
+  'Upper Dom':  ['bench','incbench','pecfly','cablefly','lat','tbar','bbrow','bbohp','dblateral'],
+  'Upper Body': ['bench','incbench','pecfly','cablefly','bbohp','dblateral','tridown','triover'],
 };
 
 const SESSION_EXERCISES = {
@@ -2815,7 +2816,7 @@ function computeWarmupSummary(data) {
 
 const LIFT_LABELS = {
   sl_bench_kg:'Panca piana', sl_incbench_kg:'Panca inclinata', sl_dbpress_kg:'Distensioni manubri',
-  sl_pecfly_kg:'Pectoral fly', sl_legpress_kg:'Leg Press', sl_legext_kg:'Leg Extension',
+  sl_pecfly_kg:'Pectoral fly', sl_cablefly_kg:'Cable fly', sl_legpress_kg:'Leg Press', sl_legext_kg:'Leg Extension',
   sl_legcurl_kg:'Leg Curl', sl_rdl_kg:'RDL', sl_hipthrust_kg:'Hip Thrust', sl_calf_kg:'Calf',
   sl_lat_kg:'Lat Machine', sl_bbrow_kg:'Rematore bilanciere', sl_tbar_kg:'T-Bar Row',
   sl_bbohp_kg:'Military Press', sl_dblateral_kg:'Alzate laterali', sl_dbcurl_kg:'Curl manubri',
@@ -6540,7 +6541,7 @@ function drawScatterChart(canvasId, points, options = {}) {
 
 // Sentinel lift group definitions for dashboard tabs — esercizi master
 const SENTINEL_GROUPS = {
-  chest:    { ids:['bench','incbench','pecfly'],      colors:['#0071e3','#5ac8fa','#34aadc'],              labels:['BB Bench Press','Mac Incline','Pec Fly'] },
+  chest:    { ids:['bench','incbench','pecfly','cablefly'], colors:['#0071e3','#5ac8fa','#34aadc','#64d2ff'],   labels:['BB Bench Press','Mac Incline','Pec Fly','Cable Fly'] },
   back:     { ids:['lat','tbar','bbrow'],            colors:['#34c759','#30d158','#00b341'],              labels:['Lat Wide-Grip','T-Bar Row','BB Bent Row'] },
   shoulder: { ids:['bbohp','dbpress','dblateral'],   colors:['#ff9500','#ff6b00','#ffcc02'],              labels:['BB OHP','DB Press','DB Lateral'] },
   bicep:    { ids:['dbcurl','hammercurl'],            colors:['#ff9500','#ff3b30'],                        labels:['DB Curl','Hammer Curl'] },
@@ -8318,6 +8319,10 @@ function buildInsightsTab() {
           <div class="dash-card-title">Pec Fly / Pec Dec (kg)</div>
           <canvas class="dash-chart" id="dc-pecfly" height="90"></canvas>
         </div>
+        <div class="charts-card">
+          <div class="dash-card-title">Cable Fly (kg)</div>
+          <canvas class="dash-chart" id="dc-cablefly" height="90"></canvas>
+        </div>
       </div>
 
       <!-- DORSO -->
@@ -8546,6 +8551,7 @@ function refreshInsightsCharts() {
   dc('dc-bench',    'bench',    '#0071e3', 55);
   dc('dc-incbench', 'incbench', '#5ac8fa', null);
   dc('dc-pecfly',   'pecfly',   '#34aadc', null);
+  dc('dc-cablefly', 'cablefly', '#64d2ff', null);
   dc('dc-lat',   'lat',   '#34c759', null);
   dc('dc-tbar',  'tbar',  '#30d158', null);
   dc('dc-bbrow', 'bbrow', '#00b341', null);
@@ -8677,18 +8683,22 @@ function parseMotraText(text) {
 //   - legpress (commento esplicito: "macchina fissa, NON moving chair"):
 //     matchava anche la variante Moving Chair — l'esclusione era dichiarata
 //     nel commento ma mai implementata nel codice.
-// pecfly e hammercurl matchano più varianti anche dopo il controllo, ma
-// sembra intenzionale (pecfly include esplicitamente sia Cable che Machine
-// nel nome del sentinel; hammercurl Cross-Body resta comunque manubri, non
-// un attrezzo diverso) — non toccati, sono giudizi di metodologia di
-// allenamento che non spetta a Claude decidere da solo.
+// Fix 06/09/2026: pecfly era stato lasciato con match multiplo (Cable +
+// Machine) nel controllo del 13/08, liquidato come "sembra intenzionale
+// — giudizio di metodologia allenamento". Feedback diretto di Giorgio:
+// sono due esercizi realmente diversi (macchina a camme fisse vs cavo,
+// angolo alto), con curve di resistenza diverse — non lo stesso sentinel.
+// hammercurl (Cross-Body resta comunque manubri, non un attrezzo diverso)
+// non è affetto dallo stesso problema, lasciato invariato.
 const MOTRA_SENTINEL_MAP = {
   // PETTO — BB Bench Press (bilanciere, panca piana)
   'bench':      { kw: ['barbell bench press','bb bench press','panca piana bilanciere'], ex: [] },
   // PETTO — Machine Incline Bench Press
   'incbench':   { kw: ['machine incline bench press','incline bench press machine','incline bench press'], ex: ['dumbbell','smith machine'] },
-  // PETTO — Pec Fly / Pec Dec (Cable o Machine, entrambi validi di proposito)
-  'pecfly':     { kw: ['machine fly','pec dec','pec-dec','cable fly','crossover','chest fly','pectoral'], ex: [] },
+  // PETTO — Pec Fly / Pec Dec (solo Machine)
+  'pecfly':     { kw: ['machine fly','pec dec','pec-dec'], ex: ['cable'] },
+  // PETTO — Cable Fly / Crossover (solo Cable)
+  'cablefly':   { kw: ['cable fly','crossover','cable crossover'], ex: ['machine'] },
   // DORSO — Lat Machine Wide-Grip
   'lat':        { kw: ['lat pull down wide','lat pulldown wide','wide grip pulldown','wide-grip pulldown','wide grip lat','machine lat pull down wide'], ex: ['cable'] },
   // DORSO — T-Bar Row
