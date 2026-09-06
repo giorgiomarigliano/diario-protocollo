@@ -280,11 +280,14 @@ console.log('\n═══ 6. MOTRA_SENTINEL_MAP — esclusioni equipaggiamento (R
   assertTrue(matches('legpress', 'Machine Leg Press'), "legpress matcha Machine Leg Press");
   assertTrue(!matches('legpress', 'Machine Leg Press (Moving Chair)'), "legpress NON matcha Moving Chair (commento lo escludeva già)");
 
-  // pecfly e hammercurl: multi-match VOLUTO, non toccati dal fix — verifica
-  // che restino così (se un giorno qualcuno li stringesse per errore
-  // pensando fossero bug, questo test si romperebbe e farebbe da promemoria).
-  assertTrue(matches('pecfly', 'Cable Fly Mid') && matches('pecfly', 'Machine Fly (Pec Dec)'),
-    "pecfly matcha sia Cable che Machine (voluto, non un bug)");
+  // Fix 06/09/2026: pecfly e cablefly erano un unico sentinel multi-match,
+  // liquidato come "voluto" — feedback diretto di Giorgio ha corretto
+  // questa assunzione: sono esercizi diversi (macchina vs cavo), separati
+  // in due sentinel reciprocamente esclusivi.
+  assertTrue(matches('pecfly', 'Machine Fly (Pec Dec)'), "pecfly matcha Machine Fly");
+  assertTrue(!matches('pecfly', 'Cable Fly High'), "pecfly NON matcha Cable Fly (ora separato)");
+  assertTrue(matches('cablefly', 'Cable Fly High'), "cablefly matcha Cable Fly High");
+  assertTrue(!matches('cablefly', 'Machine Fly (Pec Dec)'), "cablefly NON matcha Machine Fly (ora separato)");
 }
 
 console.log('\n═══ 7. getWorkout2 durante BKK (07/08/2026) ═══');
