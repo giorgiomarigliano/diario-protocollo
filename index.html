@@ -9005,11 +9005,27 @@ function getNextEvent2(elapsed) {
 
 function getWorkout2(dayIdx) {
   const d = new Date(START2); d.setDate(d.getDate()+dayIdx);
+  const id = 'p2_day_' + dayIdx;
+  const rec = (typeof _lastData2 !== 'undefined' && _lastData2 && _lastData2[id]) || {};
+  const badges = {Riposo:'badge-rest',Push:'badge-push',Pull:'badge-pull',Legs:'badge-legs','Upper Sab':'badge-upper','Upper Dom':'badge-upper-dom','Allenamento BKK':'badge-bkk'};
+
+  // Override manuale generale (09/09/2026): permette di segnare esplicitamente
+  // un giorno come un tipo diverso da quello che il calendario assegnerebbe
+  // di default — per recuperare un allenamento saltato su un giorno di
+  // riposo, o per saltare un giorno normalmente previsto. Priorità massima,
+  // anche su Bangkok. Stesso pattern già in uso per bkk_riposo qui sotto,
+  // esteso a qualunque giorno invece che alla sola trasferta.
+  // getInjectionSlots2() ne beneficia automaticamente (chiama già questa
+  // funzione per decidere se il giorno è di allenamento, incluso lo slot
+  // Post-WO per IGF-1 DES) — nessuna modifica necessaria lì.
+  if (rec.wo_override) {
+    const type = rec.wo_override;
+    return { type, badge: badges[type]||'badge-rest', label: type.toUpperCase(), overridden: true };
+  }
+
   if (isBkkDate(d)) {
     // Trasferta BKK: allenamento di default ogni giorno, salvo override manuale
     // "Riposo" impostato dalla card stessa (split irregolare, attrezzatura limitata).
-    const id = 'p2_day_' + dayIdx;
-    const rec = (typeof _lastData2 !== 'undefined' && _lastData2 && _lastData2[id]) || {};
     if (rec.bkk_riposo === '1') {
       return { type:'Riposo', badge:'badge-rest', label:'RIPOSO' };
     }
@@ -9017,7 +9033,6 @@ function getWorkout2(dayIdx) {
   }
   const dow = d.getDay(); // 0=dom
   const map = {0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
-  const badges = {Riposo:'badge-rest',Push:'badge-push',Pull:'badge-pull',Legs:'badge-legs','Upper Sab':'badge-upper','Upper Dom':'badge-upper-dom'};
   const type = map[dow]||'Riposo';
   return {type, badge:badges[type]||'badge-rest', label:type.toUpperCase()};
 }
@@ -10267,6 +10282,27 @@ function buildProtoV2() {
             <option value="1" ${(_lastData2[id]&&_lastData2[id].bkk_riposo)==='1'?'selected':''}>Riposo</option>
           </select>
         </div>` : ''}
+
+        ${(() => {
+          // Override tipo giornata (09/09/2026): disponibile per qualunque
+          // giorno, non solo Bangkok. "Default" ricalcola qui lo stesso
+          // giorno-della-settimana → tipo di getWorkout2(), solo per
+          // etichettare correttamente l'opzione (getWorkout2 restituirebbe
+          // già il valore forzato se chiamato ora, non il default originale).
+          const dowLbl = new Date(d).getDay();
+          const mapLbl = {0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
+          const defaultType = isBkkDate(d) ? 'Allenamento BKK' : (mapLbl[dowLbl]||'Riposo');
+          const current = (_lastData2[id] && _lastData2[id].wo_override) || '';
+          const opts = ['Riposo','Push','Pull','Legs','Upper Sab','Upper Dom'];
+          return `
+        <div style="background:var(--bg-secondary,#f5f5f7);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--text-secondary);white-space:nowrap">Tipo giornata</span>
+          <select data-id="${id}" data-f="wo_override" onchange="_lastData2['${id}']=_lastData2['${id}']||{};_lastData2['${id}'].wo_override=this.value;localStorage.setItem(KEY2,JSON.stringify(_lastData2));_proto2Built=false;const c2=document.getElementById('container2');if(c2){c2.innerHTML='';buildProtoV2();}" style="flex:1;min-width:160px;font-size: var(--fs-body);padding:7px 8px;border:1px solid var(--border,#e8e8ed);border-radius:6px;background:var(--surface,#fff);color:var(--text);font-family:inherit">
+            <option value="" ${!current?'selected':''}>Predefinito (${defaultType})</option>
+            ${opts.map(o => `<option value="${o}" ${current===o?'selected':''}>${o}${o===defaultType?' — uguale al predefinito':''}</option>`).join('')}
+          </select>
+        </div>`;
+        })()}
 
         <div class="section-label">Biometria</div>
         <div class="bio-grid">
