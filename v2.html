@@ -86,6 +86,56 @@
 
   .subj-select{font-size:14px;color:var(--ink);background:var(--surf2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;}
   .rest-msg{padding:24px 0;text-align:center;color:var(--ink2);font-size:14px;}
+
+  /* ══ Navigazione giorno/settimana + card riepilogo — aggiunte 09/09/2026
+     per portare il resto del mockup "Diario - Palette navy" approvato da
+     Giorgio. Nessun colore nuovo: riusa le stesse variabili sopra. ══ */
+  .oggi-top{display:flex;flex-direction:column;gap:10px;max-width:600px;margin-bottom:10px;}
+  .view-toggle{display:flex;gap:2px;background:var(--surf2);border-radius:9px;padding:3px;align-self:flex-start;}
+  .view-toggle button{border:none;background:transparent;padding:6px 14px;border-radius:7px;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer;}
+  .view-toggle button.active{background:var(--surf);color:var(--ink);box-shadow:var(--shadow);}
+  .week-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;}
+  .week-tab{flex:0 0 auto;border:1px solid var(--line);background:var(--surf);color:var(--ink2);font-size:12.5px;font-weight:600;padding:7px 12px;border-radius:9px;cursor:pointer;white-space:nowrap;}
+  .week-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .day-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .day-pill{border:1px solid var(--line);background:var(--surf);border-radius:10px;padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .day-pill.active{background:var(--accent);border-color:var(--accent);}
+  .day-pill.active .day-pill-dow,.day-pill.active .day-pill-num{color:#fff;}
+  .day-pill-dow{font-size:10.5px;font-weight:600;color:var(--ink2);text-transform:uppercase;}
+  .day-pill-num{font-size:14px;font-weight:600;color:var(--ink);}
+  .day-pill-dot{width:5px;height:5px;border-radius:50%;background:var(--idle);}
+  .day-pill-dot.has-data{background:var(--ok);}
+  .day-pill-dot.is-future{background:transparent;}
+
+  .hero-card{background:var(--hero);color:#fff;border-radius:var(--r-card);padding:20px 22px;max-width:600px;box-shadow:var(--shadow);}
+  .hero-status{display:flex;align-items:center;gap:6px;font-size:12px;color:#9d9da6;margin-bottom:10px;}
+  .hero-status-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);}
+  .hero-title{font-size:19px;font-weight:700;line-height:1.3;margin-bottom:8px;letter-spacing:-.01em;}
+  .hero-text{font-size:13.5px;line-height:1.55;color:#c8c8ce;}
+
+  .weight-card{background:var(--surf);border-radius:var(--r-card);box-shadow:var(--shadow);padding:18px 22px;max-width:600px;margin-top:10px;}
+  .weight-card-hdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;}
+  .weight-value-row{display:flex;align-items:baseline;gap:6px;}
+  .weight-value{font-size:32px;font-weight:700;letter-spacing:-.02em;}
+  .weight-unit{font-size:14px;color:var(--ink3);}
+  .weight-delta{font-size:13px;font-weight:600;color:var(--ok);}
+  .weight-delta.neg{color:var(--bad);}
+  .weight-chart-wrap{position:relative;margin:10px 0 6px;}
+  .weight-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .weight-trend-note{font-size:12px;color:var(--ink2);}
+  .range-btns{display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;}
+  .range-btns button{border:none;background:transparent;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer;}
+  .range-btns button.active{background:var(--surf);color:var(--ink);box-shadow:var(--shadow);}
+
+  .adherence-card{background:var(--surf);border-radius:var(--r-card);box-shadow:var(--shadow);padding:18px 22px;max-width:600px;margin-top:10px;}
+  .adherence-title{font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;margin-bottom:14px;}
+  .adherence-grid{display:flex;justify-content:space-between;gap:10px;}
+  .adherence-item{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;}
+  .adherence-ring-wrap{position:relative;width:56px;height:56px;}
+  .adherence-ring-wrap canvas{position:absolute;top:0;left:0;}
+  .adherence-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--ink);}
+  .adherence-label{font-size:12.5px;font-weight:600;color:var(--ink);text-align:center;}
+  .adherence-sub{font-size:11px;color:var(--ink3);}
 </style>
 </head>
 <body>
@@ -467,6 +517,15 @@ const OLD_ANCHORS = { andamento: 'dashboard', clinica: 'referti', gestione: 'sto
 let tab = location.hash.replace('#', '') || 'oggi';
 let mode = 'day';
 let today = new Date().toISOString().slice(0, 10);
+// Giorno visualizzato/editato nella card sotto — di default oggi, ma
+// selezionabile dalla nuova barra settimane/giorni. 'today' resta la data
+// reale odierna (serve altrove); 'selDate' è quella che l'utente sta guardando.
+let selDate = today;
+let oggiViewMode = 'day'; // 'day' | 'week' — toggle Giorno/Settimana (settimana: vista minima, da rifinire)
+let pesoRange = 30; // finestra corrente del grafico peso: 7 | 14 | 30 | 60 giorni
+// Peso di riferimento T0 — DEXA T0 9 mag 2026 (stesso valore di dexa_t0.peso
+// in index.html). Se in futuro T0 cambia riferimento, aggiornare qui e lì insieme.
+const T0_PESO = 71.1;
 
 function render() {
   const L = t();
@@ -497,7 +556,7 @@ function render() {
     </header>
 
     <main style="padding:12px;">
-      ${!store.loaded ? '<p style="padding:24px;color:var(--ink2)">Caricamento…</p>' : (MIGRATED[tab] ? renderOggi() : renderNotMigrated(tab))}
+      ${!store.loaded ? '<p style="padding:24px;color:var(--ink2)">Caricamento…</p>' : (MIGRATED[tab] ? renderOggiFull() : renderNotMigrated(tab))}
     </main>
   `;
 
@@ -556,20 +615,272 @@ function stateDot(state, onclick, label) {
 }
 
 /* ------------------------------------------------------------
+   Storico peso + trend — nuovo (09/09/2026), nessun equivalente in
+   index.html da copiare verbatim (funzione non-MIRROR, prima stesura).
+   ------------------------------------------------------------ */
+function weightHistory(days, anchorISO) {
+  const dIdx = dayIdxFromISO(anchorISO);
+  const from = Math.max(0, dIdx - days + 1);
+  const arr = [];
+  for (let i = from; i <= dIdx; i++) {
+    const rec = (store.blob && store.blob['p2_day_' + i]) || {};
+    const v = parseFloat(rec.peso);
+    arr.push(isNaN(v) ? null : v);
+  }
+  return arr;
+}
+// Regressione lineare semplice sui punti non nulli; ritorna kg/settimana
+// (slope giornaliero * 7), o null se meno di 2 punti validi.
+function weeklyTrend(values) {
+  const pts = values.map((v, i) => ({ x: i, y: v })).filter(p => p.y !== null);
+  if (pts.length < 2) return null;
+  const n = pts.length;
+  const sx = pts.reduce((s, p) => s + p.x, 0), sy = pts.reduce((s, p) => s + p.y, 0);
+  const sxx = pts.reduce((s, p) => s + p.x * p.x, 0), sxy = pts.reduce((s, p) => s + p.x * p.y, 0);
+  const denom = (n * sxx - sx * sx) || 1;
+  const slope = (n * sxy - sx * sy) / denom;
+  return slope * 7;
+}
+
+// MIRROR · drawComplianceRing — verbatim da index.html (riga 6183).
+function drawComplianceRing(canvasId, pct, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = 56 * dpr; canvas.height = 56 * dpr;
+  ctx.scale(dpr, dpr);
+  const cx = 28, cy = 28, r = 22, C = 2 * Math.PI * r;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = '#e8e8ed'; ctx.lineWidth = 5; ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + (pct / 100) * Math.PI * 2);
+  ctx.strokeStyle = color; ctx.lineWidth = 5; ctx.lineCap = 'round'; ctx.stroke();
+}
+
+// Grafico peso — adattato da drawChart (index.html riga 2203): stessa
+// tecnica (fill a gradiente + linea + puntino), ma senza l'etichetta
+// fluttuante sull'ultimo punto (il numero grande è già mostrato sopra
+// il grafico nella nuova card).
+function drawWeightChart(id, data, color) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const W = rect.width || 300, H = 70;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  ctx.scale(dpr, dpr);
+  const pts = data.filter(v => v !== null);
+  if (pts.length < 2) {
+    ctx.font = '12px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillStyle = '#aeaeb2'; ctx.fillText('Dati insufficienti', 8, 36);
+    return;
+  }
+  const TOP_PAD = 8, BOTTOM_PAD = 8;
+  const mn = Math.min(...pts) * 0.997, mx = Math.max(...pts) * 1.003, rng = mx - mn || 1;
+  const valid = data.map((v, i) => v !== null ? {
+    x: i / (data.length - 1) * (W - 8) + 4,
+    y: H - BOTTOM_PAD - ((v - mn) / rng) * (H - TOP_PAD - BOTTOM_PAD), v
+  } : null);
+  ctx.beginPath(); let st = false;
+  valid.forEach(p => { if (!p) return; if (!st) { ctx.moveTo(p.x, p.y); st = true; } else ctx.lineTo(p.x, p.y); });
+  const lp = valid.filter(Boolean).pop(), fp = valid.filter(Boolean)[0];
+  if (lp && fp) {
+    ctx.lineTo(lp.x, H); ctx.lineTo(fp.x, H); ctx.closePath();
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, color + '28'); g.addColorStop(1, color + '00');
+    ctx.fillStyle = g; ctx.fill();
+  }
+  ctx.beginPath(); st = false;
+  valid.forEach(p => { if (!p) return; if (!st) { ctx.moveTo(p.x, p.y); st = true; } else ctx.lineTo(p.x, p.y); });
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+  if (lp) { ctx.beginPath(); ctx.arc(lp.x, lp.y, 3, 0, Math.PI * 2); ctx.fillStyle = color; ctx.fill(); }
+}
+
+/* ------------------------------------------------------------
+   Card narrativa — PRIMA STESURA, non-MIRROR (nessun testo simile
+   esiste già in index.html da copiare). Regole/soglie scelte qui
+   sono un punto di partenza ragionevole, NON ancora approvate da
+   Giorgio nei dettagli — da rivedere con lui alla prima occasione
+   utile, in particolare: soglie "segnale da tenere d'occhio" e
+   soglia di "HRV fermo" (±1ms/settimana).
+   ------------------------------------------------------------ */
+function buildHeroNarrative(a, wTrend, hrvTrend) {
+  const signals = [];
+  if (a.inj < 90) signals.push('iniezioni');
+  if (a.supp < 85) signals.push('integratori');
+  if (a.wo < 85) signals.push('allenamenti');
+  if (wTrend !== null && wTrend > 0.35) signals.push('peso in salita rapida');
+  if (wTrend !== null && wTrend < -0.35) signals.push('peso in calo rapido');
+  if (hrvTrend !== null && hrvTrend < -3) signals.push('HRV in calo');
+
+  const tone = signals.length === 0 ? 'good' : signals.length <= 2 ? 'warn' : 'bad';
+  const title = tone === 'good'
+    ? 'Il ciclo tiene, tutto sotto controllo.'
+    : `Il ciclo tiene, con ${signals.length} segnal${signals.length === 1 ? 'e' : 'i'} da tenere d'occhio.`;
+
+  const wTrendTxt = wTrend === null ? 'il peso (dati insufficienti)'
+    : `il peso, che ${wTrend > 0.05 ? 'sale' : wTrend < -0.05 ? 'scende' : 'resta stabile'} di ${Math.abs(wTrend).toFixed(2)} kg a settimana`;
+  const hrvTxt = hrvTrend === null ? 'HRV (dati insufficienti)'
+    : `l'HRV è ${Math.abs(hrvTrend) < 1 ? 'fermo' : hrvTrend > 0 ? 'in salita' : 'in calo'}`;
+
+  const text = `Reggono l'aderenza alle iniezioni (${a.inj}%), ${wTrendTxt} e gli allenamenti (${a.wo}%). Gli integratori sono al ${a.supp}% e ${hrvTxt}.`;
+  return { title, text, tone };
+}
+
+/* ------------------------------------------------------------
+   Navigazione settimana/giorno — nuovo (09/09/2026). Settimane 1..16
+   (CFG.CYCLE_DAYS/7), giorni della settimana selezionata Lun→Dom.
+   Il pallino sotto ogni giorno è un'euristica minima (verde se esiste
+   almeno un dato loggato per quel giorno, altrimenti grigio) — non
+   ancora la logica di "giorno completo" vera, da rifinire se serve.
+   ------------------------------------------------------------ */
+function dayHasAnyData(dayIdx) {
+  const rec = (store.blob && store.blob['p2_day_' + dayIdx]) || {};
+  return !!(rec.peso || rec.wo_durata || rec.motra_log || Object.keys(rec).some(k => k.startsWith('inj_') && rec[k] === 'fatto'));
+}
+function renderDayNav() {
+  const L = t();
+  const selIdx = dayIdxFromISO(selDate);
+  const totalWeeks = Math.ceil(CFG.CYCLE_DAYS / 7);
+  const selWeek = Math.floor(selIdx / 7); // 0-based
+  const todayIdx = dayIdxFromISO(today);
+
+  const weekTabs = Array.from({ length: totalWeeks }, (_, w) => w).map(w => `
+    <button class="week-tab ${w === selWeek ? 'active' : ''}" onclick="jumpToWeek(${w})">WK${w + 1}</button>
+  `).join('');
+
+  const weekStartIdx = selWeek * 7;
+  const dowNames = LANG === 'it' ? ['LUN','MAR','MER','GIO','VEN','SAB','DOM'] : ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  const dayPills = Array.from({ length: 7 }, (_, i) => weekStartIdx + i).map((dIdx, i) => {
+    if (dIdx < 0 || dIdx >= CFG.CYCLE_DAYS) return `<div></div>`;
+    const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + dIdx);
+    const iso = d.toISOString().slice(0, 10);
+    const isFuture = dIdx > todayIdx;
+    const dotCls = isFuture ? 'is-future' : (dayHasAnyData(dIdx) ? 'has-data' : '');
+    return `
+      <button class="day-pill ${iso === selDate ? 'active' : ''}" onclick="selDate='${iso}'; render();">
+        <span class="day-pill-dow">${dowNames[i]}</span>
+        <span class="day-pill-num">${d.getDate()}</span>
+        <span class="day-pill-dot ${dotCls}"></span>
+      </button>`;
+  }).join('');
+
+  return `
+    <div class="oggi-top">
+      <div class="view-toggle">
+        <button class="${oggiViewMode === 'day' ? 'active' : ''}" onclick="oggiViewMode='day'; render();">${L.day === 'Giorno' || L.day === 'Day' ? (LANG==='it'?'Giorno':'Day') : 'Giorno'}</button>
+        <button class="${oggiViewMode === 'week' ? 'active' : ''}" onclick="oggiViewMode='week'; render();">${LANG === 'it' ? 'Settimana' : 'Week'}</button>
+      </div>
+      <div class="week-tabs">${weekTabs}</div>
+      <div class="day-strip">${dayPills}</div>
+    </div>
+  `;
+}
+function jumpToWeek(w) {
+  // Porta selDate al lunedì della settimana scelta, mantenendo il giorno
+  // della settimana se possibile (semplice: vai al primo giorno valido).
+  const targetIdx = Math.min(Math.max(w * 7, 0), CFG.CYCLE_DAYS - 1);
+  const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + targetIdx);
+  selDate = d.toISOString().slice(0, 10);
+  render();
+}
+
+/* ------------------------------------------------------------
    Vista Oggi — porting di day_card_mockup_v2.html (approvato dopo
    due iterazioni). Stesso pattern a righe per ogni sezione, stesso
    pallino di stato tappabile per iniezioni/integratori.
    ------------------------------------------------------------ */
+/* ------------------------------------------------------------
+   Vista Oggi completa — nav settimana/giorno + card riepilogo
+   (nuove, 09/09/2026) sopra la day-card esistente (invariata).
+   ------------------------------------------------------------ */
+function renderOggiFull() {
+  const a = adherence(store.blob);
+  const wHist = weightHistory(pesoRange, selDate);
+  const wTrend = weeklyTrend(wHist);
+  const hrvHist = (() => {
+    const dIdx = dayIdxFromISO(selDate), from = Math.max(0, dIdx - 13);
+    const arr = [];
+    for (let i = from; i <= dIdx; i++) {
+      const v = parseFloat(((store.blob && store.blob['p2_day_' + i]) || {}).hrv);
+      arr.push(isNaN(v) ? null : v);
+    }
+    return arr;
+  })();
+  const hrvTrend = weeklyTrend(hrvHist);
+  const hero = buildHeroNarrative(a, wTrend, hrvTrend);
+
+  const lastPeso = wHist.filter(v => v !== null).pop();
+  const pesoDelta = (lastPeso !== undefined) ? (lastPeso - T0_PESO) : null;
+  const trendTxt = wTrend === null ? '—' : `${wTrend >= 0 ? '+' : ''}${wTrend.toFixed(2)} kg / sett. su ${pesoRange}gg`;
+
+  return `
+    ${renderDayNav()}
+
+    <div class="hero-card">
+      <div class="hero-status"><span class="hero-status-dot"></span>${LANG === 'it' ? 'In linea' : 'On track'}</div>
+      <div class="hero-title">${hero.title}</div>
+      <div class="hero-text">${hero.text}</div>
+    </div>
+
+    <div class="weight-card">
+      <div class="weight-card-hdr">
+        <div class="section-label" style="margin:0">${L2().weight}</div>
+      </div>
+      <div class="weight-value-row">
+        <span class="weight-value">${lastPeso !== undefined ? lastPeso.toFixed(1).replace('.', ',') : '—'}</span>
+        <span class="weight-unit">kg</span>
+        ${pesoDelta !== null ? `<span class="weight-delta ${pesoDelta < 0 ? 'neg' : ''}" style="margin-left:auto">${pesoDelta >= 0 ? '+' : ''}${pesoDelta.toFixed(1).replace('.', ',')} da T0</span>` : ''}
+      </div>
+      <div class="weight-chart-wrap">
+        <canvas id="peso-chart-canvas" style="width:100%;height:70px;display:block"></canvas>
+      </div>
+      <div class="weight-foot">
+        <span class="weight-trend-note">${trendTxt}</span>
+        <div class="range-btns">
+          ${[7, 14, 30, 60].map(r => `<button class="${pesoRange === r ? 'active' : ''}" onclick="pesoRange=${r}; render();">${r}g</button>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="adherence-card">
+      <div class="adherence-title">${L2().adherence}</div>
+      <div class="adherence-grid">
+        <div class="adherence-item">
+          <div class="adherence-ring-wrap"><canvas id="ring-inj"></canvas><span class="adherence-pct">${a.inj}%</span></div>
+          <span class="adherence-label">${LANG === 'it' ? 'Iniezioni' : 'Injections'}</span>
+          <span class="adherence-sub">${a.injDone} / ${a.injTot}</span>
+        </div>
+        <div class="adherence-item">
+          <div class="adherence-ring-wrap"><canvas id="ring-supp"></canvas><span class="adherence-pct">${a.supp}%</span></div>
+          <span class="adherence-label">${L2().supplements}</span>
+          <span class="adherence-sub">${a.suppDone} / ${a.suppTot}</span>
+        </div>
+        <div class="adherence-item">
+          <div class="adherence-ring-wrap"><canvas id="ring-wo"></canvas><span class="adherence-pct">${a.wo}%</span></div>
+          <span class="adherence-label">${L2().training}</span>
+          <span class="adherence-sub">${a.woDone} / ${a.woTot}</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:10px">${renderOggi()}</div>
+  `;
+}
+function L2() { return t(); } // alias breve, usato solo dentro renderOggiFull per leggibilità
+
 function renderOggi() {
   const L = t();
-  const day = getDay(today);
-  const dayIdx = dayIdxFromISO(today);
+  const day = getDay(selDate);
+  const dayIdx = dayIdxFromISO(selDate);
   const wo = getWorkout2(dayIdx);
   const slots = getInjectionSlots2(dayIdx);
   const weekN = Math.floor(dayIdx / 7) + 1;
   const isOverridden = !!day.wo_override;
 
-  const dowLbl = new Date(today + 'T00:00:00').getDay();
+  const dowLbl = new Date(selDate + 'T00:00:00').getDay();
   const mapLbl = { 0: 'Upper Dom', 1: 'Riposo', 2: 'Push', 3: 'Pull', 4: 'Riposo', 5: 'Legs', 6: 'Upper Sab' };
   const defaultType = mapLbl[dowLbl] || 'Riposo';
   const overrideOpts = ['Riposo', 'Push', 'Pull', 'Legs', 'Upper Sab', 'Upper Dom'];
@@ -577,7 +888,7 @@ function renderOggi() {
   const sonnoTot = parseSonnoHours(day.ore_sonno);
   const sonnoTxt = isNaN(sonnoTot) ? '—' : Math.floor(sonnoTot) + 'h' + Math.round((sonnoTot % 1) * 60);
 
-  const dateLabel = new Date(today + 'T00:00:00').toLocaleDateString(LANG === 'it' ? 'it-IT' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const dateLabel = new Date(selDate + 'T00:00:00').toLocaleDateString(LANG === 'it' ? 'it-IT' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return `
   <div class="day-card">
@@ -588,7 +899,7 @@ function renderOggi() {
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="day-badge ${isOverridden ? 'overridden' : ''}">${wo.type.toUpperCase()}</span>
-        <select class="day-override-sel" onchange="patch(today,'wo_override',this.value)">
+        <select class="day-override-sel" onchange="patch(selDate,'wo_override',this.value)">
           <option value="" ${!isOverridden ? 'selected' : ''}>${L.choose} (${defaultType})</option>
           ${overrideOpts.map(o => `<option value="${o}" ${day.wo_override === o ? 'selected' : ''}>${o}</option>`).join('')}
         </select>
@@ -599,28 +910,28 @@ function renderOggi() {
       <div class="section-label">${L.weight}</div>
       <div class="field-row">
         <div class="field-label">${L.weight}</div>
-        <input class="field-value" type="number" step="0.1" value="${day.peso || ''}" placeholder="—" oninput="patch(today,'peso',this.value)"><span class="field-value-unit">kg</span>
+        <input class="field-value" type="number" step="0.1" value="${day.peso || ''}" placeholder="—" oninput="patch(selDate,'peso',this.value)"><span class="field-value-unit">kg</span>
       </div>
       <div class="field-row">
         <div class="field-label">${LANG === 'it' ? 'Pressione' : 'Blood pressure'}</div>
         <div style="display:flex;align-items:center;gap:4px">
-          <input class="field-value" style="width:44px" type="number" value="${day.bp_sys || ''}" placeholder="—" oninput="patch(today,'bp_sys',this.value)">
+          <input class="field-value" style="width:44px" type="number" value="${day.bp_sys || ''}" placeholder="—" oninput="patch(selDate,'bp_sys',this.value)">
           <span class="field-value-unit">/</span>
-          <input class="field-value" style="width:44px" type="number" value="${day.bp_dia || ''}" placeholder="—" oninput="patch(today,'bp_dia',this.value)">
+          <input class="field-value" style="width:44px" type="number" value="${day.bp_dia || ''}" placeholder="—" oninput="patch(selDate,'bp_dia',this.value)">
         </div>
       </div>
       <div class="field-row">
         <div class="field-label">HRV</div>
-        <input class="field-value" type="number" value="${day.hrv || ''}" placeholder="—" oninput="patch(today,'hrv',this.value)"><span class="field-value-unit">ms</span>
+        <input class="field-value" type="number" value="${day.hrv || ''}" placeholder="—" oninput="patch(selDate,'hrv',this.value)"><span class="field-value-unit">ms</span>
       </div>
       <div class="field-row">
         <div class="field-label">RHR</div>
-        <input class="field-value" type="number" value="${day.rhr || ''}" placeholder="—" oninput="patch(today,'rhr',this.value)"><span class="field-value-unit">bpm</span>
+        <input class="field-value" type="number" value="${day.rhr || ''}" placeholder="—" oninput="patch(selDate,'rhr',this.value)"><span class="field-value-unit">bpm</span>
       </div>
       <div class="field-row">
         <div class="field-label">${LANG === 'it' ? 'Sonno' : 'Sleep'}</div>
         <div style="text-align:right">
-          <input class="field-value" style="width:70px" type="text" value="${day.ore_sonno || ''}" placeholder="5.18" oninput="patch(today,'ore_sonno',this.value)">
+          <input class="field-value" style="width:70px" type="text" value="${day.ore_sonno || ''}" placeholder="5.18" oninput="patch(selDate,'ore_sonno',this.value)">
           <div class="field-sub">${sonnoTxt} · REM ${day.sonno_rem_min || '—'}m · Prof. ${day.sonno_profondo_min || '—'}m · ${day.sonno_risvegli || '—'} risvegli</div>
         </div>
       </div>
@@ -629,7 +940,7 @@ function renderOggi() {
     <div class="section">
       <div class="section-label">${L.injections}</div>
       ${wo.type === 'Riposo' ? `<div class="rest-msg">${L.restDay}</div>` : slots.map(s => `
-        <div class="slot-hdr">${s.label}${s.igfMuscle !== undefined ? ` · ${L.district}: <select class="subj-select" style="font-size:11px;padding:2px 5px" onchange="patch(today,'inj_${s.n}_distretto',this.value)"><option value="">${L.choose}</option>${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m => `<option value="${m}" ${(day['inj_' + s.n + '_distretto'] || s.igfMuscle) === m ? 'selected' : ''}>${m}</option>`).join('')}</select>` : ''}</div>
+        <div class="slot-hdr">${s.label}${s.igfMuscle !== undefined ? ` · ${L.district}: <select class="subj-select" style="font-size:11px;padding:2px 5px" onchange="patch(selDate,'inj_${s.n}_distretto',this.value)"><option value="">${L.choose}</option>${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m => `<option value="${m}" ${(day['inj_' + s.n + '_distretto'] || s.igfMuscle) === m ? 'selected' : ''}>${m}</option>`).join('')}</select>` : ''}</div>
         ${s.fields.map(f => {
           const fkeyRaw = fieldKey(f);
           const stKey = 'inj_' + s.n + '_' + fkeyRaw;
@@ -638,7 +949,7 @@ function renderOggi() {
           return `
           <div class="state-row">
             <span class="state-name">${f}</span>
-            ${!isIgf ? `<select class="state-site" onchange="patch(today,'${stKey}_sito',this.value)">
+            ${!isIgf ? `<select class="state-site" onchange="patch(selDate,'${stKey}_sito',this.value)">
               <option value="">${L.site}</option>
               ${SITES_SC.map(site => `<option value="${site}" ${day[stKey + '_sito'] === site ? 'selected' : ''}>${site}</option>`).join('')}
             </select>` : ''}
@@ -669,15 +980,15 @@ function renderOggi() {
       ${wo.type === 'Riposo' ? `<div class="rest-msg">${L.restDay}</div>` : `
       <div class="field-row">
         <div class="field-label">Volume</div>
-        <input class="field-value" style="width:auto" type="number" value="${day.wo_volume || ''}" placeholder="—" oninput="patch(today,'wo_volume',this.value)"><span class="field-value-unit">kg</span>
+        <input class="field-value" style="width:auto" type="number" value="${day.wo_volume || ''}" placeholder="—" oninput="patch(selDate,'wo_volume',this.value)"><span class="field-value-unit">kg</span>
       </div>
       <div class="field-row">
         <div class="field-label">${LANG === 'it' ? 'Durata' : 'Duration'}</div>
-        <input class="field-value" style="width:auto" type="number" value="${day.wo_durata || ''}" placeholder="—" oninput="patch(today,'wo_durata',this.value)"><span class="field-value-unit">min</span>
+        <input class="field-value" style="width:auto" type="number" value="${day.wo_durata || ''}" placeholder="—" oninput="patch(selDate,'wo_durata',this.value)"><span class="field-value-unit">min</span>
       </div>
       <div class="field-row">
         <div class="field-label">${LANG === 'it' ? 'Calorie' : 'Calories'}</div>
-        <input class="field-value" style="width:auto" type="number" value="${day.wo_kcal || ''}" placeholder="—" oninput="patch(today,'wo_kcal',this.value)"><span class="field-value-unit">kcal</span>
+        <input class="field-value" style="width:auto" type="number" value="${day.wo_kcal || ''}" placeholder="—" oninput="patch(selDate,'wo_kcal',this.value)"><span class="field-value-unit">kcal</span>
       </div>`}
     </div>
 
@@ -686,7 +997,7 @@ function renderOggi() {
       ${['energia', 'recupero', 'umore', 'libido', 'chiarezza', 'rpe', 'appetito'].map(sf => `
         <div class="field-row">
           <div class="field-label">${L.subj[sf]}</div>
-          <select class="subj-select" onchange="patch(today,'${sf}',this.value)">
+          <select class="subj-select" onchange="patch(selDate,'${sf}',this.value)">
             <option value="">—</option>
             ${Array.from({length:10},(_,i)=>i+1).map(n => `<option value="${n}" ${day[sf] == n ? 'selected' : ''}>${n}/10</option>`).join('')}
           </select>
@@ -694,14 +1005,14 @@ function renderOggi() {
       ${['ritenzione', 'formicolio', 'pienezza_add'].map(sf => `
         <div class="field-row">
           <div class="field-label">${L.subj[sf]}</div>
-          <select class="subj-select" onchange="patch(today,'${sf}',this.value)">
+          <select class="subj-select" onchange="patch(selDate,'${sf}',this.value)">
             <option value="">—</option>
             ${ENUM_LABELS[sf].map((lbl, i) => `<option value="${i}" ${day[sf] == i ? 'selected' : ''}>${lbl}</option>`).join('')}
           </select>
         </div>`).join('')}
       <div class="field-row">
         <div class="field-label">${L.subj.sonno_sogg}</div>
-        <select class="subj-select" onchange="patch(today,'sonno_sogg',this.value)">
+        <select class="subj-select" onchange="patch(selDate,'sonno_sogg',this.value)">
           <option value="">—</option>
           ${Array.from({length:10},(_,i)=>i+1).map(n => `<option value="${n}" ${day.sonno_sogg == n ? 'selected' : ''}>${n}/10</option>`).join('')}
         </select>
@@ -710,12 +1021,23 @@ function renderOggi() {
 
     <div class="section">
       <div class="section-label">${L.notes}</div>
-      <textarea style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit;font-size:14px;min-height:60px;background:var(--surf2);color:var(--ink)" placeholder="—" oninput="patch(today,'note',this.value)">${day.note || ''}</textarea>
+      <textarea style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit;font-size:14px;min-height:60px;background:var(--surf2);color:var(--ink)" placeholder="—" oninput="patch(selDate,'note',this.value)">${day.note || ''}</textarea>
     </div>
   </div>
   `;
 }
-function bindOggi() { /* tutti gli handler sono inline (onclick/onchange) — nessun binding aggiuntivo necessario */ }
+function bindOggi() {
+  // Canvas non si ridisegnano da soli quando l'HTML viene sostituito via
+  // innerHTML — vanno ridisegnati esplicitamente ad ogni render(), stessa
+  // necessità già nota in index.html per i grafici.
+  if (!MIGRATED[tab] || tab !== 'oggi' || !store.loaded) return;
+  const wHist = weightHistory(pesoRange, selDate);
+  drawWeightChart('peso-chart-canvas', wHist, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#1f5fbf');
+  const a = adherence(store.blob);
+  drawComplianceRing('ring-inj', a.inj, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#1f5fbf');
+  drawComplianceRing('ring-supp', a.supp, getComputedStyle(document.documentElement).getPropertyValue('--warn').trim() || '#f5c400');
+  drawComplianceRing('ring-wo', a.wo, getComputedStyle(document.documentElement).getPropertyValue('--bad').trim() || '#d81e05');
+}
 
 window.addEventListener('hashchange', () => {
   tab = location.hash.replace('#', '') || 'oggi';
