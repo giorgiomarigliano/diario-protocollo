@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Diario Protocollo v2</title>
+<link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
+<style>
+  :root{
+    --bg:#f4f4f6; --surf:#ffffff; --surf2:#f7f7f9; --line:#e4e4e8; --line2:#eeeef1;
+    --ink:#0a0a0c; --ink2:#57575f; --ink3:#8a8a93;
+    --accent:#1f5fbf; --accent-soft:#e7effc; --accent-ink:#1a4f9e;
+    --hero:#0a0a0c;
+    --ok:#2e9e4f; --warn:#f5c400; --warn-ink:#8a6d00; --bad:#d81e05; --idle:#b6b6be;
+    --shadow:0 1px 2px rgba(10,10,14,.05), 0 8px 24px -8px rgba(10,10,14,.10);
+    --shadow-lg:0 2px 4px rgba(10,10,14,.06), 0 24px 60px -20px rgba(10,10,14,.22);
+    --r-card:16px;
+  }
+  [data-theme="dark"]{
+    --bg:#000000; --surf:#131317; --surf2:#1b1b20; --line:#292930; --line2:#212127;
+    --ink:#f5f5f7; --ink2:#9d9da6; --ink3:#6d6d76;
+    --accent:#5b95e8; --accent-soft:#0f2340; --accent-ink:#9cc2f5;
+    --hero:#131317;
+    --ok:#3ecf65; --warn:#ffd426; --warn-ink:#ffd426; --bad:#ff4433; --idle:#4a4a54;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:400 15px/1.45 -apple-system,BlinkMacSystemFont,'SF Pro Text','Helvetica Neue',Helvetica,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  a{color:var(--accent);text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  input,textarea,select,button{font:inherit;color:inherit;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:rgba(128,128,140,.35);border-radius:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+
+  /* ══ Card giorno — porting di day_card_mockup_v2.html (approvato dopo
+     due iterazioni: pattern a righe uniforme, pallini di stato al posto
+     delle tendine). Nessun colore nuovo: riusa le variabili sopra. ══ */
+  .day-card{background:var(--surf);border-radius:var(--r-card);box-shadow:var(--shadow);overflow:hidden;max-width:600px;}
+  .day-hdr{padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+  .day-hdr-left{display:flex;align-items:baseline;gap:10px;}
+  .day-date{font-size:18px;font-weight:600;letter-spacing:-.01em;}
+  .day-meta{font-size:13px;color:var(--ink2);}
+  .day-badge{font-size:12px;font-weight:600;padding:5px 12px;border-radius:980px;background:var(--accent-soft);color:var(--accent-ink);white-space:nowrap;}
+  .day-badge.overridden{background:var(--warn);color:var(--warn-ink);}
+  .day-override-sel{font-size:12px;color:var(--ink2);background:var(--surf2);border:1px solid var(--line);border-radius:8px;padding:4px 8px;}
+
+  .section{padding:16px 22px;}
+  .section + .section{border-top:1px solid var(--line);}
+  .section-label{font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:2px;letter-spacing:.01em;text-transform:uppercase;}
+
+  .field-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;min-height:24px;gap:12px;}
+  .field-row + .field-row{border-top:1px solid var(--line);}
+  .field-label{font-size:15px;color:var(--ink);font-weight:400;}
+  .field-value{font-size:17px;font-weight:600;letter-spacing:-.005em;color:var(--ink);border:none;background:transparent;text-align:right;font-family:inherit;width:90px;padding:0;}
+  .field-value:focus{outline:none;background:var(--accent-soft);border-radius:6px;}
+  .field-value-unit{font-size:13px;color:var(--ink3);font-weight:400;margin-left:2px;}
+  .field-sub{font-size:13px;color:var(--ink2);}
+
+  .state-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;gap:10px;}
+  .state-row + .state-row{border-top:1px solid var(--line);}
+  .state-name{font-size:15px;color:var(--ink);flex:1;min-width:0;}
+  .state-site{font-size:11px;color:var(--ink3);background:var(--surf2);border:1px solid var(--line);border-radius:6px;padding:3px 6px;flex-shrink:0;max-width:120px;}
+  .state-dot{
+    width:26px;height:26px;border-radius:50%;flex-shrink:0;border:none;padding:0;
+    display:flex;align-items:center;justify-content:center;
+    border:1.5px solid var(--line);background:var(--surf);
+    font-size:13px;font-weight:700;cursor:pointer;
+  }
+  .state-dot.fatto{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .state-dot.saltato,.state-dot.saltata{background:var(--surf);border-color:var(--warn);color:var(--warn-ink);}
+  .state-dot.na{background:var(--surf2);border-color:var(--surf2);color:var(--ink3);}
+
+  .slot-hdr{font-size:13px;font-weight:600;color:var(--ink3);padding-top:12px;padding-bottom:2px;}
+  .slot-hdr:first-child{padding-top:0;}
+
+  .legend{display:flex;gap:16px;padding:12px 22px;background:var(--surf2);font-size:11px;color:var(--ink2);align-items:center;flex-wrap:wrap;}
+  .legend-item{display:flex;align-items:center;gap:6px;}
+  .legend-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;}
+
+  .subj-select{font-size:14px;color:var(--ink);background:var(--surf2);border:1px solid var(--line);border-radius:8px;padding:5px 8px;}
+  .rest-msg{padding:24px 0;text-align:center;color:var(--ink2);font-size:14px;}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     Diario Protocollo · v2
+     ============================================================
+     Convive con index.html, NON lo sostituisce e non lo modifica.
+     La vecchia app resta pienamente funzionante fino alla
+     migrazione completa di tutte le sezioni.
+
+     Regola di indipendenza:
+       - nessun file condiviso fra le due app
+       - stesso database, stessa riga (una sola per utente), stesso proxy
+       - stessi NOMI DI CAMPO dentro quella riga: è l'unico contratto
+
+     Consolidamento 08/09/2026: la prima stesura di questo file
+     assumeva uno schema campi e un modello dati (una riga per
+     giorno) che NON corrispondono alla produzione reale. Riscritto
+     dopo aver verificato ogni singolo nome contro index.html e
+     contro la tabella Supabase vera. Vedi MIRROR_INDEX per le
+     funzioni copiate verbatim invece di re-implementate a mano —
+     è la lezione appresa dall'errore precedente: dove la logica è
+     delicata (slot iniezione, split settimanale), si copia, non si
+     ricostruisce da un'assunzione.
+     ============================================================ -->
+
+<div id="app"></div>
+
+<script>
+/* ============================================================
+   1 · CONFIG — copiare i valori da index.html (SB_URL/SB_KEY),
+   non reinventarli. USER_ID è quello del Ciclo v2 (giorni p2_day_N).
+   ============================================================ */
+const CFG = {
+  PROXY_URL: 'https://viarmvaukgwdoursfnwu.supabase.co/functions/v1/diario-proxy/rest/v1/diary',
+  PROXY_KEY: 'sb_publishable_ppqlo1IbPDjWqnkw_h5wuA_WH8dCtPx',
+  USER_ID: 'giorgio_proto2_2026',   // riga v2 (Ciclo attivo) — NON 'giorgio_protocollo_2026' (v1/warm-up)
+  CYCLE_START: '2026-07-20',
+  CYCLE_DAYS: 112,
+  OLD_APP: 'index.html'
+};
+
+/* ============================================================
+   2 · SCHEMA DEI CAMPI — il contratto con la vecchia app.
+   Ogni chiave qui esiste già identica in index.html. Consolidamento
+   08/09/2026: 'pienezza_add' e 'sonno_sogg' erano stati segnalati
+   come "nuovi da confermare" per un doppio errore di ricerca — i
+   nomi cercati ('pienezza', 'sonno_perc') non esistevano, ma i
+   campi SÌ, sotto nomi diversi. Verificato con Giorgio: esistono
+   entrambi in produzione, nessuna nuova funzionalità da introdurre.
+   ============================================================ */
+const FIELDS = {
+  // biometria
+  peso:'num', bp_sys:'num', bp_dia:'num', hrv:'num', rhr:'num',
+  ore_sonno:'sonno_hmm',              // notazione H.MM (es. "5.18"=5h18m), MAI decimale puro — vedi parseSonnoHours
+  sonno_veglia_min:'num', sonno_rem_min:'num', sonno_principale_min:'num',
+  sonno_profondo_min:'num', sonno_risvegli:'num',
+  // allenamento
+  wo_durata:'num', wo_kcal:'num', wo_volume:'num', motra_log:'json',
+  // soggettivo · scala 1-10 (stringa numerica '1'..'10')
+  energia:'scale10', recupero:'scale10', umore:'scale10', libido:'scale10',
+  chiarezza:'scale10', rpe:'scale10', appetito:'scale10',
+  // soggettivo · categorici (stringa numerica, le etichette sono SOLO per display)
+  ritenzione:'enum_num',   // '0'..'3' → Assente/Lieve/Moderata/Marcata
+  formicolio:'enum_num',   // '0'..'1' → Assente/Presente
+  pienezza_add:'enum_num', // '0'..'3' → Normale/Lieve/Moderata/Intensa — Consolidamento 08/09/2026: esiste già in produzione con questo nome esatto, la stesura precedente l'aveva cercato come 'pienezza' (sbagliato) e lo aveva segnalato come nuovo per errore
+  sonno_sogg:'scale10',    // Consolidamento 08/09/2026: esiste già come 'sonno_sogg', non 'sonno_perc' come ipotizzato prima — stessa scala 1-10 di energia/recupero/ecc.
+  note:'text'
+};
+
+const SUPP_FIELDS = ['ck_d3','ck_omega','ck_creat','ck_zinc','ck_b12','ck_norm','ck_mag','ck_gly','ck_melatonina'];
+const SUPP_LABELS = {
+  ck_d3:'D3 + K2', ck_omega:'Omega-3', ck_creat:'Creatina', ck_zinc:'Zinco', ck_b12:'B12',
+  ck_norm:'Normalizzatore intestinale', ck_mag:'Magnesio', ck_gly:'Glicina', ck_melatonina:'Melatonina'
+};
+
+const ENUM_LABELS = {
+  ritenzione:   ['Assente','Lieve','Moderata','Marcata'],   // indice = valore stringa '0'..'3'
+  formicolio:   ['Assente','Presente'],                      // indice = valore stringa '0'..'1'
+  pienezza_add: ['Normale','Lieve','Moderata','Intensa']     // indice = valore stringa '0'..'3'
+};
+
+/* Sedi iniezione SC — stessa lista fissa usata in index.html per
+   tutti gli slot/composti sottocute. IGF-1 DES (IM) usa invece
+   inj_{slot}_distretto con 5 gruppi muscolari (in getInjectionSlots2). */
+const SITES_SC = ['Addome dx','Addome sx','Spalla dx','Spalla sx','Gluteo dx','Gluteo sx','Quadricipite dx','Quadricipite sx'];
+
+/* Costruzione chiave campo per una molecola all'interno di uno slot:
+   MIRROR esatto di index.html (f.replace(/[\s\-]/g,'_')) — es.
+   "Fragment 176-191 250mcg" → "Fragment_176_191_250mcg". */
+function fieldKey(f) { return f.replace(/[\s\-]/g, '_'); }
+
+/* ============================================================
+   3 · I18N — IT / EN commutabile, preferenza in localStorage
+   ============================================================ */
+const I18N = {
+  it: {
+    tabs: ['Oggi', 'Andamento', 'Clinica', 'Gestione'],
+    day: 'Giorno', week: 'Settimana',
+    injections: 'Iniezioni e sede', site: 'Sede', district: 'Distretto',
+    adherence: 'Aderenza del ciclo', supplements: 'Integratori',
+    weight: 'Peso corporeo', subjective: 'Soggettivo', notes: 'Note',
+    training: 'Allenamento', exercises: 'Esercizi svolti · da Motra',
+    choose: 'Scegli', restDay: 'Giorno di riposo, nessuna seduta.',
+    doseDone: 'fatta', doseSkip: 'saltata', doseNa: 'non applicabile',
+    inOldApp: 'Apri nella versione attuale',
+    notMigrated: 'Questa sezione vive ancora nella versione attuale.',
+    subj: {
+      energia:'Energia', recupero:'Recupero', umore:'Umore', rpe:'RPE',
+      appetito:'Appetito', libido:'Libido', chiarezza:'Chiarezza mentale',
+      ritenzione:'Ritenzione idrica', formicolio:'Formicolio mani',
+      pienezza_add:'Pienezza addominale', sonno_sogg:'Sonno percepito'
+    }
+  },
+  en: {
+    tabs: ['Today', 'Trends', 'Clinical', 'Logistics'],
+    day: 'Day', week: 'Week',
+    injections: 'Injections and site', site: 'Site', district: 'District',
+    adherence: 'Cycle adherence', supplements: 'Supplements',
+    weight: 'Body weight', subjective: 'Subjective', notes: 'Notes',
+    training: 'Training', exercises: 'Exercises · from Motra',
+    choose: 'Choose', restDay: 'Rest day, no session.',
+    doseDone: 'done', doseSkip: 'skipped', doseNa: 'not applicable',
+    inOldApp: 'Open in the current version',
+    notMigrated: 'This section still lives in the current version.',
+    subj: {
+      energia:'Energy', recupero:'Recovery', umore:'Mood', rpe:'RPE',
+      appetito:'Appetite', libido:'Libido', chiarezza:'Mental clarity',
+      ritenzione:'Water retention', formicolio:'Hand tingling',
+      pienezza_add:'Abdominal fullness', sonno_sogg:'Perceived sleep quality'
+    }
+  }
+};
+
+let LANG = localStorage.getItem('dp2.lang') || 'it';
+const t = () => I18N[LANG];
+function setLang(l) {
+  LANG = l;
+  localStorage.setItem('dp2.lang', l);
+  document.documentElement.lang = l;
+  render();
+}
+
+/* ============================================================
+   4 · DATA — Consolidamento 08/09/2026: riscritto da zero. La
+   produzione NON ha una riga per giorno: la tabella `diary` ha
+   UNA riga per utente, colonna `data` (jsonb) con dentro TUTTI i
+   giorni come chiavi p2_day_N. Ogni scrittura deve quindi:
+     1. fetch fresco dell'INTERO blob (mai lavorare su una copia
+        in cache — è la stessa disciplina già in uso su index.html,
+        vedi KB "near-miss" sul fetch-modify-write)
+     2. merge del solo giorno cambiato dentro il blob
+     3. PATCH dell'intero blob aggiornato
+   ============================================================ */
+const store = { blob: null, loaded: false, dirty: {}, saving: false };
+
+function dayIdxFromISO(dateISO) {
+  const start = new Date(CFG.CYCLE_START + 'T00:00:00');
+  const d = new Date(dateISO + 'T00:00:00');
+  return Math.round((d - start) / 86400000);
+}
+function dayKeyFromISO(dateISO) { return 'p2_day_' + dayIdxFromISO(dateISO); }
+
+async function loadBlob() {
+  const res = await fetch(`${CFG.PROXY_URL}?user_id=eq.${CFG.USER_ID}&select=data`, {
+    headers: { apikey: CFG.PROXY_KEY, Authorization: `Bearer ${CFG.PROXY_KEY}` }
+  });
+  if (!res.ok) throw new Error(`load ${res.status}`);
+  const rows = await res.json();
+  store.blob = (rows[0] && rows[0].data) || {};
+  store.loaded = true;
+  return store.blob;
+}
+
+function getDay(dateISO) {
+  const key = dayKeyFromISO(dateISO);
+  return (store.blob && store.blob[key]) || {};
+}
+
+/* Consolidamento 09/09/2026: patch() e patchPending() erano due funzioni
+   scollegate — flush() legge solo da store.pending, ma patch() non lo
+   popolava mai. Ogni modifica sarebbe stata persa in silenzio al primo
+   salvataggio. Unite in un'unica funzione: patch() ora aggiorna sia il
+   blob locale (per il render immediato) sia store.pending (l'unica
+   fonte che flush() usa davvero per il merge fetch-modify-write). */
+store.pending = {}; // { 'p2_day_44': { peso: '73.2', ... } }
+
+function patch(dateISO, field, value) {
+  const key = dayKeyFromISO(dateISO);
+  if (!store.blob) return; // non scrivere mai prima del fetch iniziale
+  if (!store.blob[key]) store.blob[key] = {};
+  store.blob[key][field] = value;
+  if (!store.pending[key]) store.pending[key] = {};
+  store.pending[key][field] = value;
+  store.dirty[key] = true;
+  render();
+  queueSave();
+}
+
+let saveTimer = null;
+function queueSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 700);
+}
+
+/* Fetch-modify-write reale: rilegge il blob dal server subito prima
+   di scrivere, riapplica sopra la versione fresca solo i campi
+   effettivamente pendenti (store.pending), poi fa un unico PATCH.
+   Evita di sovrascrivere un cambiamento fatto nel frattempo dalla
+   vecchia app o da un'altra scheda. */
+
+async function flush() {
+  const dirtyKeys = Object.keys(store.dirty);
+  if (!dirtyKeys.length || store.saving) return;
+  store.saving = true;
+  try {
+    const fresh = await loadBlob();
+    dirtyKeys.forEach(key => {
+      fresh[key] = Object.assign({}, fresh[key] || {}, store.pending[key] || {});
+    });
+    store.blob = fresh;
+    const res = await fetch(`${CFG.PROXY_URL}?user_id=eq.${CFG.USER_ID}`, {
+      method: 'PATCH',
+      headers: {
+        apikey: CFG.PROXY_KEY,
+        Authorization: `Bearer ${CFG.PROXY_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({ data: store.blob })
+    });
+    if (!res.ok) throw new Error(`save ${res.status}`);
+    dirtyKeys.forEach(key => { delete store.dirty[key]; delete store.pending[key]; });
+  } catch (e) {
+    console.warn('salvataggio rimandato, verrà ritentato', e);
+  }
+  store.saving = false;
+  render();
+  if (Object.keys(store.dirty).length) queueSave();
+}
+
+/* ============================================================
+   5 · MIRROR — copie VERBATIM delle funzioni di index.html, non
+   re-implementazioni. MIRROR_INDEX è la lista da ricontrollare
+   quando cambi la vecchia app: se una di queste diverge anche di
+   poco, le due app smettono di concordare su cosa mostrare.
+   Consolidamento 08/09/2026: getWorkout2/getInjectionSlots2/
+   parseSonnoHours aggiunte alla lista — la prima stesura le aveva
+   re-implementate a mano invece di copiarle, introducendo lo split
+   settimanale sbagliato (riposo mar/ven invece di lun/gio) e uno
+   schema slot iniezione statico che non esiste in produzione.
+   ============================================================ */
+const MIRROR_INDEX = [
+  'adherence',        // % iniezioni, integratori, allenamenti
+  'verdict',          // frase di sintesi + tono
+  'weekStats',        // medie settimanali
+  'sentinelLift',     // progressione carichi
+  'stockDays',        // giorni di copertura scorte
+  'getWorkout2',      // split settimanale — COPIATA VERBATIM, non re-implementata
+  'getInjectionSlots2', // slot/composti/sedi iniezione — COPIATA VERBATIM
+  'parseSonnoHours'   // conversione notazione H.MM → ore decimali vere
+];
+
+// MIRROR · getWorkout2 — verbatim da index.html (Bangkok non gestito qui:
+// v2 migra solo Oggi, il Ciclo v2 non è più in trasferta al 08/09/2026).
+// Aggiornata il 09/09/2026 insieme alla produzione: override manuale del
+// tipo giornata (wo_override), priorità massima — vedi commento in
+// index.html per il razionale completo. Letto dal blob (store.blob), non
+// da _lastData2 come in produzione, dato il diverso livello dati di v2.
+function getWorkout2(dayIdx) {
+  const key = 'p2_day_' + dayIdx;
+  const rec = (store.blob && store.blob[key]) || {};
+  if (rec.wo_override) return { type: rec.wo_override };
+  const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + dayIdx);
+  const dow = d.getDay(); // 0=dom
+  const map = {0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
+  const type = map[dow] || 'Riposo';
+  return { type };
+}
+
+// MIRROR · getInjectionSlots2 — verbatim da index.html. Attenzione:
+// nei giorni di allenamento si INSERISCE uno slot Post-WO (IGF-1 DES)
+// e lo slot Sera CAMBIA numero (da n:3 a n:4) — non è una lista fissa.
+function getInjectionSlots2(dayIdx) {
+  const wo = getWorkout2(dayIdx);
+  const isTraining = wo.type !== 'Riposo';
+  const slots = [
+    { n:1, label:'Mattino', momento:'Mattino · digiuno', fields:['Fragment 176-191 250mcg','BPC-157 250mcg'] },
+    { n:2, label:'Pomeriggio', momento:'Pomeriggio', fields:['Fragment 176-191 250mcg'] },
+    { n:3, label:'Sera', momento:'Sera · 90–120min post-cena', fields:['Tesamorelin 2mg','Ipamorelin 100mcg','BPC-157 250mcg','TB-500 500mcg'] },
+  ];
+  if (isTraining) {
+    const wkDay = dayIdx % 7; // 0=lun,1=mar,2=mer,3=gio,4=ven,5=sab,6=dom
+    const muscleMap = { 1:'Petto', 2:'Bicipiti', 4:'Quadricipiti', 5:'Tricipiti', 6:'Deltoidi' };
+    const defaultMuscle = muscleMap[wkDay] || '';
+    slots.splice(2, 0, { n:3, label:'Post-WO', momento:'Post-workout · IM bilaterale', fields:['IGF-1 DES 25mcg dx','IGF-1 DES 25mcg sx'], igfMuscle: defaultMuscle });
+    slots[3].n = 4;
+  }
+  return slots;
+}
+
+// MIRROR · parseSonnoHours — verbatim da index.html. "5.18" = 5h18m,
+// NON 5,18 ore decimali — usare SEMPRE questa funzione per il sonno,
+// mai parseFloat diretto (vedi KB 26.14, bug reale già trovato e corretto).
+function parseSonnoHours(raw) {
+  if (raw === null || raw === undefined || raw === '') return NaN;
+  const s = String(raw).trim();
+  const m = s.match(/^(\d+)\.(\d{1,2})$/);
+  if (!m) return parseFloat(s);
+  const h = parseInt(m[1], 10);
+  let mm = m[2];
+  if (mm.length === 1) mm += '0';
+  const mins = parseInt(mm, 10);
+  if (mins >= 0 && mins <= 59) return h + mins / 60;
+  return parseFloat(s);
+}
+
+function isRestDay(dateISO) { return getWorkout2(dayIdxFromISO(dateISO)).type === 'Riposo'; }
+function dosesFor(dateISO) { return getInjectionSlots2(dayIdxFromISO(dateISO)); }
+
+// MIRROR · adherence — da index.html (getInjComplianceV2/getSuppComplianceV2/
+// getWorkoutComplianceV2 unificate), adattata ai campi reali. Consolidamento
+// verifica 08/09/2026: la prima stesura iterava su TUTTI i 112 giorni del
+// ciclo invece di fermarsi a oggi — i giorni futuri (senza alcun dato)
+// venivano contati come "non fatto", abbassando artificialmente le
+// percentuali di integratori/allenamento (confermato con un test sui dati
+// reali: 45%/38% invece del valore corretto). La produzione si ferma
+// sempre a oggi. Aggiunta anche l'esclusione del valore legacy 'skip'
+// (pre-31/07/2026), non solo 'na' — presente nella produzione, mancava qui.
+function adherence(blob) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const start = new Date(CFG.CYCLE_START + 'T00:00:00');
+  const maxDayIdx = Math.floor((today - start) / 86400000); // non oltre oggi
+  let injDone = 0, injTot = 0, suppDone = 0, suppTot = 0, woDone = 0, woTot = 0;
+  Object.keys(blob || {}).forEach(key => {
+    const m = key.match(/^p2_day_(\d+)$/);
+    if (!m) return;
+    const dayIdx = parseInt(m[1], 10);
+    if (dayIdx < 0 || dayIdx > maxDayIdx) return; // esclude giorni futuri
+    const d = blob[key];
+    getInjectionSlots2(dayIdx).forEach(s => {
+      s.fields.forEach(f => {
+        const v = d['inj_' + s.n + '_' + fieldKey(f)] || '';
+        if (v === 'skip' || v === 'na') return; // 'skip' = valore legacy pre-31/07, trattato come 'na'
+        injTot++; if (v === 'fatto') injDone++;
+      });
+    });
+    SUPP_FIELDS.forEach(sf => {
+      if (d[sf + '_skip']) return;
+      suppTot++; if (d[sf] === '1') suppDone++;
+    });
+    if (getWorkout2(dayIdx).type !== 'Riposo') { woTot++; if (d.wo_durata || d.motra_log) woDone++; }
+  });
+  return {
+    inj: injTot ? Math.round(injDone / injTot * 100) : 0,
+    supp: suppTot ? Math.round(suppDone / suppTot * 100) : 0,
+    wo: woTot ? Math.round(woDone / woTot * 100) : 0,
+    injDone, injTot, suppDone, suppTot, woDone, woTot
+  };
+}
+
+// MIRROR · verdict — da index.html
+function verdict(a) {
+  if (!a.injTot) return { tone: 'neutral', key: 'noData' };
+  if (a.inj >= 90 && a.wo >= 90 && a.supp >= 85) return { tone: 'good', key: 'onTrack' };
+  if (a.wo < 75) return { tone: 'bad', key: 'trainingGaps' };
+  return { tone: 'warn', key: 'someGaps' };
+}
+
+/* ============================================================
+   6 · SHELL — quattro tab. Solo Oggi è ricostruito: gli altri
+   tre rimandano alla versione attuale, che resta intatta.
+   ============================================================ */
+const MIGRATED = { oggi: true, andamento: false, clinica: false, gestione: false };
+const TAB_KEYS = ['oggi', 'andamento', 'clinica', 'gestione'];
+const OLD_ANCHORS = { andamento: 'dashboard', clinica: 'referti', gestione: 'stock' };
+
+let tab = location.hash.replace('#', '') || 'oggi';
+let mode = 'day';
+let today = new Date().toISOString().slice(0, 10);
+
+function render() {
+  const L = t();
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <header style="position:sticky;top:0;z-index:40;background:var(--surf);border-bottom:1px solid var(--line);">
+      <div style="display:flex;align-items:center;gap:16px;padding:0 16px;">
+        <nav style="flex:1 1 auto;display:flex;gap:18px;overflow-x:auto;">
+          ${TAB_KEYS.map((k, n) => `
+            <button data-tab="${k}" style="
+              flex:0 0 auto;background:none;border:none;cursor:pointer;
+              padding:13px 2px;font-size:13.5px;
+              font-weight:${k === tab ? 600 : 500};
+              color:${k === tab ? 'var(--ink)' : 'var(--ink2)'};
+              border-bottom:2px solid ${k === tab ? 'var(--accent)' : 'transparent'};
+            ">${L.tabs[n]}</button>`).join('')}
+        </nav>
+        <div style="flex:0 0 auto;display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;">
+          ${['it', 'en'].map(l => `
+            <button data-lang="${l}" style="
+              border:none;cursor:pointer;padding:4px 9px;border-radius:6px;
+              font-size:10.5px;font-weight:600;text-transform:uppercase;
+              background:${l === LANG ? 'var(--accent)' : 'transparent'};
+              color:${l === LANG ? '#fff' : 'var(--ink2)'};
+            ">${l}</button>`).join('')}
+        </div>
+      </div>
+    </header>
+
+    <main style="padding:12px;">
+      ${!store.loaded ? '<p style="padding:24px;color:var(--ink2)">Caricamento…</p>' : (MIGRATED[tab] ? renderOggi() : renderNotMigrated(tab))}
+    </main>
+  `;
+
+  app.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => {
+    tab = b.dataset.tab; location.hash = tab; render();
+  });
+  app.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => setLang(b.dataset.lang));
+  bindOggi(app);
+}
+
+function renderNotMigrated(k) {
+  const L = t();
+  const href = `${CFG.OLD_APP}#${OLD_ANCHORS[k] || ''}`;
+  return `
+    <section style="border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:24px;display:flex;flex-direction:column;gap:12px;max-width:520px;">
+      <span style="font-size:15px;font-weight:600;">${L.tabs[TAB_KEYS.indexOf(k)]}</span>
+      <p style="margin:0;font-size:13.5px;line-height:1.5;color:var(--ink2);">${L.notMigrated}</p>
+      <a href="${href}" style="
+        align-self:flex-start;padding:10px 16px;border-radius:9px;
+        background:var(--accent);color:#fff;font-size:13px;font-weight:600;text-decoration:none;
+      ">${L.inOldApp}</a>
+    </section>
+  `;
+}
+
+/* ------------------------------------------------------------
+   Helper di stato — un solo meccanismo, usato sia per le iniezioni
+   (4 stati reali: vuoto/fatto/saltata/na, un campo stringa) sia per
+   gli integratori (3 stati: vuoto/fatto/saltato, derivati da DUE
+   campi reali — ck_X booleano + ck_X_skip — non uno stato unico).
+   ------------------------------------------------------------ */
+function cycleInjState(dayIdx, slotN, fkey) {
+  const key = 'inj_' + slotN + '_' + fieldKey(fkey);
+  const cur = getDay(today)[key] || '';
+  const next = { '': 'fatto', fatto: 'saltata', saltata: 'na', na: '' }[cur] || '';
+  patch(today, key, next);
+}
+
+function suppState(day, sf) {
+  if (day[sf + '_skip']) return 'saltato';
+  if (day[sf] === '1') return 'fatto';
+  return '';
+}
+function cycleSuppState(sf) {
+  const day = getDay(today);
+  const cur = suppState(day, sf);
+  if (cur === '') { patch(today, sf, '1'); patch(today, sf + '_skip', ''); }
+  else if (cur === 'fatto') { patch(today, sf, ''); patch(today, sf + '_skip', '1'); }
+  else { patch(today, sf, ''); patch(today, sf + '_skip', ''); }
+}
+
+function stateDot(state, onclick, label) {
+  const cls = state === 'fatto' ? 'fatto' : (state === 'saltata' || state === 'saltato') ? 'saltato' : state === 'na' ? 'na' : '';
+  const glyph = state === 'fatto' ? '✓' : (state === 'saltata' || state === 'saltato') ? '–' : state === 'na' ? 'N' : '';
+  return `<button type="button" class="state-dot ${cls}" onclick='${onclick}' aria-label="${label}">${glyph}</button>`;
+}
+
+/* ------------------------------------------------------------
+   Vista Oggi — porting di day_card_mockup_v2.html (approvato dopo
+   due iterazioni). Stesso pattern a righe per ogni sezione, stesso
+   pallino di stato tappabile per iniezioni/integratori.
+   ------------------------------------------------------------ */
+function renderOggi() {
+  const L = t();
+  const day = getDay(today);
+  const dayIdx = dayIdxFromISO(today);
+  const wo = getWorkout2(dayIdx);
+  const slots = getInjectionSlots2(dayIdx);
+  const weekN = Math.floor(dayIdx / 7) + 1;
+  const isOverridden = !!day.wo_override;
+
+  const dowLbl = new Date(today + 'T00:00:00').getDay();
+  const mapLbl = { 0: 'Upper Dom', 1: 'Riposo', 2: 'Push', 3: 'Pull', 4: 'Riposo', 5: 'Legs', 6: 'Upper Sab' };
+  const defaultType = mapLbl[dowLbl] || 'Riposo';
+  const overrideOpts = ['Riposo', 'Push', 'Pull', 'Legs', 'Upper Sab', 'Upper Dom'];
+
+  const sonnoTot = parseSonnoHours(day.ore_sonno);
+  const sonnoTxt = isNaN(sonnoTot) ? '—' : Math.floor(sonnoTot) + 'h' + Math.round((sonnoTot % 1) * 60);
+
+  const dateLabel = new Date(today + 'T00:00:00').toLocaleDateString(LANG === 'it' ? 'it-IT' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  return `
+  <div class="day-card">
+    <div class="day-hdr">
+      <div class="day-hdr-left">
+        <div class="day-date">${dateLabel[0].toUpperCase() + dateLabel.slice(1)}</div>
+        <div class="day-meta">${L.day} ${dayIdx}/${CFG.CYCLE_DAYS} · ${L.week} ${weekN}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="day-badge ${isOverridden ? 'overridden' : ''}">${wo.type.toUpperCase()}</span>
+        <select class="day-override-sel" onchange="patch(today,'wo_override',this.value)">
+          <option value="" ${!isOverridden ? 'selected' : ''}>${L.choose} (${defaultType})</option>
+          ${overrideOpts.map(o => `<option value="${o}" ${day.wo_override === o ? 'selected' : ''}>${o}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">${L.weight}</div>
+      <div class="field-row">
+        <div class="field-label">${L.weight}</div>
+        <input class="field-value" type="number" step="0.1" value="${day.peso || ''}" placeholder="—" oninput="patch(today,'peso',this.value)"><span class="field-value-unit">kg</span>
+      </div>
+      <div class="field-row">
+        <div class="field-label">${LANG === 'it' ? 'Pressione' : 'Blood pressure'}</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input class="field-value" style="width:44px" type="number" value="${day.bp_sys || ''}" placeholder="—" oninput="patch(today,'bp_sys',this.value)">
+          <span class="field-value-unit">/</span>
+          <input class="field-value" style="width:44px" type="number" value="${day.bp_dia || ''}" placeholder="—" oninput="patch(today,'bp_dia',this.value)">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-label">HRV</div>
+        <input class="field-value" type="number" value="${day.hrv || ''}" placeholder="—" oninput="patch(today,'hrv',this.value)"><span class="field-value-unit">ms</span>
+      </div>
+      <div class="field-row">
+        <div class="field-label">RHR</div>
+        <input class="field-value" type="number" value="${day.rhr || ''}" placeholder="—" oninput="patch(today,'rhr',this.value)"><span class="field-value-unit">bpm</span>
+      </div>
+      <div class="field-row">
+        <div class="field-label">${LANG === 'it' ? 'Sonno' : 'Sleep'}</div>
+        <div style="text-align:right">
+          <input class="field-value" style="width:70px" type="text" value="${day.ore_sonno || ''}" placeholder="5.18" oninput="patch(today,'ore_sonno',this.value)">
+          <div class="field-sub">${sonnoTxt} · REM ${day.sonno_rem_min || '—'}m · Prof. ${day.sonno_profondo_min || '—'}m · ${day.sonno_risvegli || '—'} risvegli</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">${L.injections}</div>
+      ${wo.type === 'Riposo' ? `<div class="rest-msg">${L.restDay}</div>` : slots.map(s => `
+        <div class="slot-hdr">${s.label}${s.igfMuscle !== undefined ? ` · ${L.district}: <select class="subj-select" style="font-size:11px;padding:2px 5px" onchange="patch(today,'inj_${s.n}_distretto',this.value)"><option value="">${L.choose}</option>${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m => `<option value="${m}" ${(day['inj_' + s.n + '_distretto'] || s.igfMuscle) === m ? 'selected' : ''}>${m}</option>`).join('')}</select>` : ''}</div>
+        ${s.fields.map(f => {
+          const fkeyRaw = fieldKey(f);
+          const stKey = 'inj_' + s.n + '_' + fkeyRaw;
+          const state = day[stKey] || '';
+          const isIgf = f.indexOf('IGF-1 DES') === 0;
+          return `
+          <div class="state-row">
+            <span class="state-name">${f}</span>
+            ${!isIgf ? `<select class="state-site" onchange="patch(today,'${stKey}_sito',this.value)">
+              <option value="">${L.site}</option>
+              ${SITES_SC.map(site => `<option value="${site}" ${day[stKey + '_sito'] === site ? 'selected' : ''}>${site}</option>`).join('')}
+            </select>` : ''}
+            ${stateDot(state, `cycleInjState(${dayIdx},${s.n},${JSON.stringify(f)})`, f)}
+          </div>`;
+        }).join('')}
+      `).join('')}
+    </div>
+
+    <div class="section">
+      <div class="section-label">${L.supplements}</div>
+      ${SUPP_FIELDS.map(sf => `
+        <div class="state-row">
+          <span class="state-name">${SUPP_LABELS[sf]}</span>
+          ${stateDot(suppState(day, sf), `cycleSuppState('${sf}')`, SUPP_LABELS[sf])}
+        </div>`).join('')}
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--surf);border:1.5px solid var(--line)"></div>—</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--ok)"></div>${L.doseDone}</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--surf);border:1.5px solid var(--warn)"></div>${L.doseSkip}</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--surf2)"></div>${L.doseNa}</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">${L.training}</div>
+      ${wo.type === 'Riposo' ? `<div class="rest-msg">${L.restDay}</div>` : `
+      <div class="field-row">
+        <div class="field-label">Volume</div>
+        <input class="field-value" style="width:auto" type="number" value="${day.wo_volume || ''}" placeholder="—" oninput="patch(today,'wo_volume',this.value)"><span class="field-value-unit">kg</span>
+      </div>
+      <div class="field-row">
+        <div class="field-label">${LANG === 'it' ? 'Durata' : 'Duration'}</div>
+        <input class="field-value" style="width:auto" type="number" value="${day.wo_durata || ''}" placeholder="—" oninput="patch(today,'wo_durata',this.value)"><span class="field-value-unit">min</span>
+      </div>
+      <div class="field-row">
+        <div class="field-label">${LANG === 'it' ? 'Calorie' : 'Calories'}</div>
+        <input class="field-value" style="width:auto" type="number" value="${day.wo_kcal || ''}" placeholder="—" oninput="patch(today,'wo_kcal',this.value)"><span class="field-value-unit">kcal</span>
+      </div>`}
+    </div>
+
+    <div class="section">
+      <div class="section-label">${L.subjective}</div>
+      ${['energia', 'recupero', 'umore', 'libido', 'chiarezza', 'rpe', 'appetito'].map(sf => `
+        <div class="field-row">
+          <div class="field-label">${L.subj[sf]}</div>
+          <select class="subj-select" onchange="patch(today,'${sf}',this.value)">
+            <option value="">—</option>
+            ${Array.from({length:10},(_,i)=>i+1).map(n => `<option value="${n}" ${day[sf] == n ? 'selected' : ''}>${n}/10</option>`).join('')}
+          </select>
+        </div>`).join('')}
+      ${['ritenzione', 'formicolio', 'pienezza_add'].map(sf => `
+        <div class="field-row">
+          <div class="field-label">${L.subj[sf]}</div>
+          <select class="subj-select" onchange="patch(today,'${sf}',this.value)">
+            <option value="">—</option>
+            ${ENUM_LABELS[sf].map((lbl, i) => `<option value="${i}" ${day[sf] == i ? 'selected' : ''}>${lbl}</option>`).join('')}
+          </select>
+        </div>`).join('')}
+      <div class="field-row">
+        <div class="field-label">${L.subj.sonno_sogg}</div>
+        <select class="subj-select" onchange="patch(today,'sonno_sogg',this.value)">
+          <option value="">—</option>
+          ${Array.from({length:10},(_,i)=>i+1).map(n => `<option value="${n}" ${day.sonno_sogg == n ? 'selected' : ''}>${n}/10</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">${L.notes}</div>
+      <textarea style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit;font-size:14px;min-height:60px;background:var(--surf2);color:var(--ink)" placeholder="—" oninput="patch(today,'note',this.value)">${day.note || ''}</textarea>
+    </div>
+  </div>
+  `;
+}
+function bindOggi() { /* tutti gli handler sono inline (onclick/onchange) — nessun binding aggiuntivo necessario */ }
+
+window.addEventListener('hashchange', () => {
+  tab = location.hash.replace('#', '') || 'oggi';
+  render();
+});
+
+document.documentElement.lang = LANG;
+render();
+loadBlob().then(render).catch(e => console.error('Errore caricamento dati', e));
+</script>
+
+</body>
+</html>
