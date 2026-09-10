@@ -193,7 +193,15 @@
     .oggi-grid .g-iniezioni .slot-hdr{column-span:all;}
     .oggi-grid .rest-msg{column-span:all;}
     .oggi-grid .g-iniezioni .state-row{break-inside:avoid;}
-    .inj-time{display:block;font-size:10.5px;color:var(--ink3);font-weight:400;margin-top:1px;}
+    .inj-time{font-size:10.5px;color:var(--ink3);font-weight:400;}
+    .oggi-grid .state-dot{width:20px;height:20px;font-size:11px;}
+
+    /* Integratori — stesso trattamento a 2 colonne di Iniezioni: 9 righe in
+       una sola colonna erano la seconda causa principale dei 3 schermi di
+       scroll che Giorgio segnalava. */
+    .oggi-grid .g-integratori .section{column-count:2;column-gap:20px;}
+    .oggi-grid .g-integratori .section-label{column-span:all;}
+    .oggi-grid .g-integratori .state-row{break-inside:avoid;}
 
     /* Soggettivo — 2 colonne, non 3. Calcolo verificato: la card è 4/12
        di una griglia 1280px con gap 16px = 416px di larghezza, meno il
@@ -1201,7 +1209,7 @@ function renderOggiSections() {
           const isIgf = f.indexOf('IGF-1 DES') === 0;
           return `
           <div class="state-row">
-            <span class="state-name">${f}<span class="inj-time">${s.label}</span></span>
+            <span class="state-name">${f} <span class="inj-time">· ${s.label}</span></span>
             ${!isIgf ? `<select class="state-site" onchange="patch(selDate,'${stKey}_sito',this.value)">
               <option value="">${L.site}</option>
               ${SITES_SC.map(site => `<option value="${site}" ${day[stKey + '_sito'] === site ? 'selected' : ''}>${site}</option>`).join('')}
