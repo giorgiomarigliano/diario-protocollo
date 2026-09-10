@@ -100,7 +100,7 @@
   .day-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
   .day-pill{border:1px solid var(--line);background:var(--surf);border-radius:10px;padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;}
   @media (min-width:1024px){
-    .day-strip{grid-template-columns:repeat(7,minmax(0,74px));justify-content:start;}
+    .day-strip{grid-template-columns:repeat(7,1fr);}
     .day-pill{padding:6px 4px;gap:2px;}
     .day-pill-num{font-size:13px;}
     .day-pill-dow{font-size:9.5px;}
@@ -1228,8 +1228,8 @@ function renderOggiFull() {
 
   const cycPct = Math.round((dayIdx + 1) / CFG.CYCLE_DAYS * 100) + '%';
   const PHASES = [
-    ['Fase 1 · adattamento', 0, 27], ['Fase 2 · costruzione', 28, 55],
-    ['Fase 3 · peak', 56, 83], ['Fase 4 · mantenimento', 84, 111]
+    ['Adattamento', 0, 27], ['Costruzione', 28, 55],
+    ['Peak', 56, 83], ['Mantenimento', 84, 111]
   ];
 
   const pesoS = weightHistory(pesoRange, selDate);
@@ -1273,7 +1273,7 @@ function renderOggiFull() {
   const RINGS = [
     { label: 'Iniezioni',            pct: a.inj,  sub: `${a.injDone}/${a.injTot}`,   color: 'var(--accent)' },
     { label: L.supplements,          pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)' },
-    { label: L.training,             pct: a.wo,   sub: `${a.woDone}/${a.woTot}`,     color: 'var(--warn)' }
+    { label: LANG === 'it' ? 'Allenamenti' : 'Workouts', pct: a.wo,   sub: `${a.woDone}/${a.woTot}`,     color: 'var(--warn)' }
   ];
 
   // Iniezioni — appiattite in un'unica lista di righe (come nel mockup: non
