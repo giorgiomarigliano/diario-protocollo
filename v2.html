@@ -195,10 +195,14 @@
     .oggi-grid .g-iniezioni .state-row{break-inside:avoid;}
     .inj-time{display:block;font-size:10.5px;color:var(--ink3);font-weight:400;margin-top:1px;}
 
-    /* Soggettivo — griglia 3 colonne come nel mockup (non più colonne CSS
-       "a caso": ordine esplicito nel markup). */
-    .subj-grid-3{display:grid;grid-template-columns:repeat(3,1fr);column-gap:20px;}
-    .subj-grid-3 .field-row{flex-direction:column;align-items:flex-start;gap:4px;padding:8px 0;}
+    /* Soggettivo — 2 colonne, non 3. Calcolo verificato: la card è 4/12
+       di una griglia 1280px con gap 16px = 416px di larghezza, meno il
+       padding della card (36px) = 380px utilizzabili. Con 3 colonne
+       sarebbero 113px l'una — non ci sta nemmeno la sola barra (10 segmenti
+       ≈128px), da qui il testo tagliato che Giorgio ha visto. Con 2 colonne
+       sono 180px l'una, margine reale verificato, non a occhio. */
+    .subj-grid-2{display:grid;grid-template-columns:repeat(2,1fr);column-gap:20px;}
+    .subj-grid-2 .field-row{flex-direction:column;align-items:flex-start;gap:4px;padding:8px 0;}
     .bar-row{display:flex;align-items:center;gap:8px;}
     .bar-segs{display:flex;gap:2px;}
     .bar-seg{width:11px;height:11px;border-radius:2.5px;background:var(--line);cursor:pointer;}
@@ -1305,24 +1309,24 @@ function renderOggiSections() {
       </div>
     </div>`;
 
-  // Desktop: griglia 3 colonne (stesso ordine del mockup), barre a segmenti
-  // per i punteggi 1-10, pillole cliccabili per le scale testuali — non
-  // più menu a tendina, sono proprio controlli diversi.
+  // Desktop: griglia 2 colonne (verificata a fare i conti, non 3 — vedi nota
+  // CSS sopra), barre a segmenti per i punteggi 1-10, pillole cliccabili per
+  // le scale testuali — non più menu a tendina, sono proprio controlli diversi.
   const soggettivoDesktop = `
     <div class="section">
       <div class="section-label">${L.subjective}</div>
-      <div class="subj-grid-3">
+      <div class="subj-grid-2">
         <div class="field-row"><div class="field-label">${L.subj.energia}</div>${barHtml('energia', day.energia)}</div>
         <div class="field-row"><div class="field-label">${L.subj.recupero}</div>${barHtml('recupero', day.recupero)}</div>
         <div class="field-row"><div class="field-label">${L.subj.umore}</div>${barHtml('umore', day.umore)}</div>
+        <div class="field-row"><div class="field-label">${L.subj.libido}</div>${barHtml('libido', day.libido)}</div>
+        <div class="field-row"><div class="field-label">${L.subj.chiarezza}</div>${barHtml('chiarezza', day.chiarezza)}</div>
         <div class="field-row"><div class="field-label">${L.subj.rpe}</div>${barHtml('rpe', day.rpe)}</div>
         <div class="field-row"><div class="field-label">${L.subj.appetito}</div>${barHtml('appetito', day.appetito)}</div>
         <div class="field-row"><div class="field-label">${L.subj.sonno_sogg}</div>${barHtml('sonno_sogg', day.sonno_sogg)}</div>
-        <div class="field-row"><div class="field-label">${L.subj.libido}</div>${barHtml('libido', day.libido)}</div>
-        <div class="field-row"><div class="field-label">${L.subj.chiarezza}</div>${barHtml('chiarezza', day.chiarezza)}</div>
-        <div class="field-row"><div class="field-label">${L.subj.pienezza_add}</div>${pillHtml('pienezza_add', day.pienezza_add, ENUM_LABELS.pienezza_add)}</div>
         <div class="field-row"><div class="field-label">${L.subj.ritenzione}</div>${pillHtml('ritenzione', day.ritenzione, ENUM_LABELS.ritenzione)}</div>
         <div class="field-row"><div class="field-label">${L.subj.formicolio}</div>${pillHtml('formicolio', day.formicolio, ENUM_LABELS.formicolio)}</div>
+        <div class="field-row"><div class="field-label">${L.subj.pienezza_add}</div>${pillHtml('pienezza_add', day.pienezza_add, ENUM_LABELS.pienezza_add)}</div>
       </div>
     </div>`;
 
