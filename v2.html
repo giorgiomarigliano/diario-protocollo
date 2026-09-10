@@ -99,6 +99,11 @@
   .week-tab.active{background:var(--accent);border-color:var(--accent);color:#fff;}
   .day-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
   .day-pill{border:1px solid var(--line);background:var(--surf);border-radius:10px;padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;}
+  @media (min-width:1024px){
+    .day-pill{padding:6px 4px;gap:2px;}
+    .day-pill-num{font-size:13px;}
+    .day-pill-dow{font-size:9.5px;}
+  }
   .day-pill.active{background:var(--accent);border-color:var(--accent);}
   .day-pill.active .day-pill-dow,.day-pill.active .day-pill-num{color:#fff;}
   .day-pill-dow{font-size:10.5px;font-weight:600;color:var(--ink2);text-transform:uppercase;}
@@ -162,7 +167,7 @@
      Sotto i 1024px resta tutto come prima (colonna singola, verificata). ══ */
   .biometria-chips{display:none;}
   @media (min-width:1024px){
-    .oggi-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;align-items:start;max-width:1280px;}
+    .oggi-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;align-items:stretch;max-width:1280px;}
     .oggi-grid .g-nav{grid-column:1/-1;}
     .oggi-grid .g-hero{grid-column:1/6;}       /* 5/12, come nel mockup */
     .oggi-grid .g-peso{grid-column:6/13;}      /* 7/12 */
@@ -1276,6 +1281,15 @@ function renderOggiFull() {
   // MUSCLE_OPTS per gli slot IM (solo IGF-1 DES) — stessi 5 gruppi già
   // usati altrove in questa conversazione per il distretto post-WO.
   const MUSCLE_OPTS = ['Petto', 'Bicipiti', 'Deltoidi', 'Tricipiti', 'Quadricipiti'];
+  // Separa nome del composto e dosaggio (es. "Fragment 176-191 250mcg" ->
+  // nome "Fragment 176-191", dose "250mcg"; per IGF-1 il dx/sx resta
+  // attaccato alla dose: "25mcg dx") — per mostrarli su due righe, la dose
+  // in font più piccolo, come richiesto per leggibilità.
+  function splitDose(f) {
+    const m = f.match(/^(.*?)\s+(\d+(?:[.,]\d+)?\s?(?:mcg|mg|g|ml)(?:\s+(?:dx|sx))?)$/i);
+    return m ? { name: m[1], dose: m[2] } : { name: f, dose: '' };
+  }
+
   const flatDoses = [];
   slots.forEach(s => {
     const isIgf = s.igfMuscle !== undefined;
@@ -1292,7 +1306,7 @@ function renderOggiFull() {
   const injDoneCount = flatDoses.filter(fd => day[fd.stateKey] === 'fatto').length;
 
   const heroCard = `
-    <section style="grid-column:1 / 6;grid-row:1 / 2;border-radius:var(--r-card);background:var(--hero);padding:20px 22px;display:flex;flex-direction:column;gap:14px;overflow:hidden;">
+    <section style="grid-column:1 / 7;grid-row:1 / 2;border-radius:var(--r-card);background:var(--hero);padding:20px 22px;display:flex;flex-direction:column;gap:14px;overflow:hidden;">
       <div style="display:flex;flex-direction:column;gap:9px;">
         <span style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:rgba(255,255,255,.62);">
           <span style="width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:${VD.dot};"></span>
@@ -1323,7 +1337,7 @@ function renderOggiFull() {
     </section>`;
 
   const pesoCard = `
-    <section style="grid-column:6 / 13;grid-row:1 / 2;${card}padding:16px 20px;display:flex;flex-direction:column;gap:6px;overflow:hidden;">
+    <section style="grid-column:7 / 13;grid-row:1 / 2;${card}padding:16px 20px;display:flex;flex-direction:column;gap:6px;overflow:hidden;">
       <div style="flex:0 0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;">
         <div style="display:flex;flex-direction:column;gap:3px;">
           <span style="${lbl}">${L.weight}</span>
@@ -1373,17 +1387,18 @@ function renderOggiFull() {
           const siteVal = day[fd.siteKey] || (fd.isIgf ? '' : '');
           const hasSite = !!siteVal;
           const open = openMenu === 'site-' + k;
+          const { name: compName, dose } = splitDose(fd.name);
           return `
-          <div style="min-height:34px;display:flex;align-items:center;gap:9px;padding:3px 15px;border-bottom:1px solid var(--line2);">
+          <div style="min-height:34px;display:flex;align-items:center;gap:8px;padding:3px 12px;border-bottom:1px solid var(--line2);">
             <span data-injdose="${k}" style="width:18px;height:18px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:${st.ink};background:${st.bg};border:1.5px solid ${st.border};cursor:pointer;">${st.mark}</span>
             <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;">
-              <span style="font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(fd.name)}</span>
-              <span style="font-size:8.5px;font-weight:500;color:var(--ink2);white-space:nowrap;">${fd.label}</span>
+              <span style="font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(compName)}</span>
+              <span style="font-size:8.5px;font-weight:500;color:var(--ink2);white-space:nowrap;">${dose ? esc(dose) + ' · ' : ''}${fd.label}</span>
             </div>
-            <span style="flex:0 0 18px;font-size:8.5px;font-weight:700;color:${fd.via === 'IM' ? 'var(--bad)' : 'var(--accent-ink)'};">${fd.via}</span>
-            <div style="flex:0 0 116px;position:relative;">
-              <span data-injmenu="site-${k}" style="display:flex;align-items:center;justify-content:space-between;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:${hasSite ? 'var(--accent-soft)' : 'transparent'};border:1px solid ${hasSite ? 'transparent' : 'var(--line)'};cursor:pointer;">
-                <span style="font-size:9.5px;font-weight:600;color:${hasSite ? 'var(--accent-ink)' : 'var(--ink2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${hasSite ? siteVal : L.choose}</span>
+            <span style="flex:0 0 16px;font-size:8.5px;font-weight:700;color:${fd.via === 'IM' ? 'var(--bad)' : 'var(--accent-ink)'};">${fd.via}</span>
+            <div style="flex:0 0 92px;position:relative;">
+              <span data-injmenu="site-${k}" style="display:flex;align-items:center;justify-content:space-between;gap:4px;height:22px;padding:0 6px;border-radius:6px;background:${hasSite ? 'var(--accent-soft)' : 'transparent'};border:1px solid ${hasSite ? 'transparent' : 'var(--line)'};cursor:pointer;">
+                <span style="font-size:9px;font-weight:600;color:${hasSite ? 'var(--accent-ink)' : 'var(--ink2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${hasSite ? siteVal : L.choose}</span>
                 <span style="font-size:8px;color:var(--ink2);">${open ? '▴' : '▾'}</span>
               </span>
               ${open ? `<div style="position:absolute;top:25px;right:0;z-index:20;min-width:132px;background:var(--surf);border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow-lg);padding:4px;display:flex;flex-direction:column;">
@@ -1455,10 +1470,17 @@ function renderOggiFull() {
     } catch (e) { return null; }
   })();
   const allenamentoCard = `
-    <section style="grid-column:5 / 8;grid-row:3 / 4;${card}padding:12px 15px;display:flex;flex-direction:column;gap:9px;overflow:hidden;">
+    <section style="grid-column:5 / 8;grid-row:3 / 4;${card}padding:12px 15px;display:flex;flex-direction:column;gap:8px;overflow:hidden;">
       <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
         <span style="${lbl}">${L.training}</span>
-        <span style="padding:4px 9px;border-radius:6px;background:${exList ? 'var(--accent-soft)' : 'var(--surf2)'};color:${exList ? 'var(--accent)' : 'var(--ink3)'};font-size:10px;font-weight:600;">${exList ? 'Log Motra importato' : 'Nessun log Motra'}</span>
+        <a href="${CFG.OLD_APP}" style="text-decoration:none;padding:4px 9px;border-radius:6px;background:${exList ? 'var(--accent-soft)' : 'var(--surf2)'};color:${exList ? 'var(--accent)' : 'var(--ink3)'};font-size:10px;font-weight:600;">${exList ? (LANG === 'it' ? 'Log Motra importato' : 'Motra log imported') : (LANG === 'it' ? 'Importa da Motra…' : 'Import from Motra…')}</a>
+      </div>
+      <div style="flex:0 0 auto;display:flex;align-items:center;gap:7px;">
+        <span style="padding:3px 9px;border-radius:6px;background:${isOverridden ? 'var(--warn)' : 'var(--surf2)'};color:${isOverridden ? '#3d3100' : 'var(--ink2)'};font-size:10px;font-weight:700;text-transform:uppercase;">${esc(wo.type)}</span>
+        <select onchange="patch(selDate,'wo_override',this.value)" style="border:1px solid var(--line);background:var(--surf);color:var(--ink2);font-size:10.5px;border-radius:6px;padding:3px 6px;flex:1 1 auto;min-width:0;">
+          <option value="" ${!isOverridden ? 'selected' : ''}>${LANG === 'it' ? 'Scegli' : 'Choose'} (${defaultType})</option>
+          ${overrideOpts.map(o => `<option value="${o}" ${day.wo_override === o ? 'selected' : ''}>${o}</option>`).join('')}
+        </select>
       </div>
       ${rest ? `<div style="font-size:12px;color:var(--ink2);">${L.restDay}</div>` : `
       <div style="flex:0 0 auto;display:flex;gap:7px;">
