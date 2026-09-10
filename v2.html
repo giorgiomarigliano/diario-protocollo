@@ -136,6 +136,37 @@
   .adherence-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--ink);}
   .adherence-label{font-size:12.5px;font-weight:600;color:var(--ink);text-align:center;}
   .adherence-sub{font-size:11px;color:var(--ink3);}
+
+  /* ══ Layout desktop a griglia — aggiunto 10/09/2026, porta il mockup
+     "Diario - Palette navy" / artboard "Mac 1340x852" approvato da Giorgio.
+     Sotto i 1024px resta tutto come prima (colonna singola, verificata). ══ */
+  .biometria-chips{display:none;}
+  @media (min-width:1024px){
+    .oggi-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;align-items:start;max-width:1280px;}
+    .oggi-grid .g-nav{grid-column:1/-1;}
+    .oggi-grid .g-hero{grid-column:1/6;}       /* 5/12, come nel mockup */
+    .oggi-grid .g-peso{grid-column:6/13;}      /* 7/12 */
+    .oggi-grid .g-hdr{grid-column:1/-1;}
+    .oggi-grid .g-biometria{grid-column:1/-1;}
+    .oggi-grid .g-iniezioni{grid-column:1/7;}  /* 6/12 */
+    .oggi-grid .g-adherence{grid-column:7/13;} /* 6/12 */
+    .oggi-grid .g-integratori{grid-column:1/5;}     /* 4/12 */
+    .oggi-grid .g-allenamento{grid-column:5/9;}     /* 4/12 */
+    .oggi-grid .g-soggettivo{grid-column:9/13;}     /* 4/12 */
+    .oggi-grid .g-legend{grid-column:1/-1;}
+    .oggi-grid .g-note{grid-column:1/-1;}
+    /* Le card che su mobile hanno un max-width fisso per restare leggibili
+       a colonna singola devono invece riempire la loro cella di griglia. */
+    .oggi-grid .hero-card,.oggi-grid .weight-card,.oggi-grid .adherence-card,
+    .oggi-grid .day-card,.oggi-grid .oggi-top{max-width:none;margin-top:0;height:100%;}
+    .oggi-grid .oggi-top{max-width:none;}
+    /* Riepilogo biometrico compatto dentro la card Peso — solo desktop,
+       come nel mockup. Su mobile i dati restano editabili sopra, invariati. */
+    .biometria-chips{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);}
+    .biometria-chip{display:flex;flex-direction:column;gap:2px;min-width:64px;}
+    .biometria-chip-label{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;}
+    .biometria-chip-value{font-size:14px;font-weight:600;color:var(--ink);}
+  }
 </style>
 </head>
 <body>
@@ -523,6 +554,9 @@ let today = new Date().toISOString().slice(0, 10);
 let selDate = today;
 let oggiViewMode = 'day'; // 'day' | 'week' — toggle Giorno/Settimana (settimana: vista minima, da rifinire)
 let pesoRange = 30; // finestra corrente del grafico peso: 7 | 14 | 30 | 60 giorni
+// Soglia desktop: sopra i 1024px la card giorno diventa una griglia a bande
+// (mockup "Mac 1340x852"), sotto resta la card singola verificata su mobile.
+let isDesktop = window.innerWidth >= 1024;
 // Peso di riferimento T0 — DEXA T0 9 mag 2026 (stesso valore di dexa_t0.peso
 // in index.html). Se in futuro T0 cambia riferimento, aggiornare qui e lì insieme.
 const T0_PESO = 71.1;
@@ -816,15 +850,16 @@ function renderOggiFull() {
   const pesoDelta = (lastPeso !== undefined) ? (lastPeso - T0_PESO) : null;
   const trendTxt = wTrend === null ? '—' : `${wTrend >= 0 ? '+' : ''}${wTrend.toFixed(2)} kg / sett. su ${pesoRange}gg`;
 
-  return `
-    ${renderDayNav()}
+  const s = renderOggiSections();
 
+  const heroHtml = `
     <div class="hero-card">
       <div class="hero-status"><span class="hero-status-dot"></span>${LANG === 'it' ? 'In linea' : 'On track'}</div>
       <div class="hero-title">${hero.title}</div>
       <div class="hero-text">${hero.text}</div>
-    </div>
+    </div>`;
 
+  const pesoHtml = `
     <div class="weight-card">
       <div class="weight-card-hdr">
         <div class="section-label" style="margin:0">${L2().weight}</div>
@@ -843,8 +878,10 @@ function renderOggiFull() {
           ${[7, 14, 30, 60].map(r => `<button class="${pesoRange === r ? 'active' : ''}" onclick="pesoRange=${r}; render();">${r}g</button>`).join('')}
         </div>
       </div>
-    </div>
+      ${s.biometriaChips}
+    </div>`;
 
+  const adherenceHtml = `
     <div class="adherence-card">
       <div class="adherence-title">${L2().adherence}</div>
       <div class="adherence-grid">
@@ -864,14 +901,44 @@ function renderOggiFull() {
           <span class="adherence-sub">${a.woDone} / ${a.woTot}</span>
         </div>
       </div>
-    </div>
+    </div>`;
 
-    <div style="margin-top:10px">${renderOggi()}</div>
+  if (!isDesktop) {
+    // Mobile — invariato: nav, poi le tre card, poi l'unica day-card con
+    // tutte le sezioni impilate (renderOggi() la assembla da renderOggiSections()).
+    return `
+      ${renderDayNav()}
+      ${heroHtml}
+      ${pesoHtml}
+      ${adherenceHtml}
+      <div style="margin-top:10px">${renderOggi()}</div>
+    `;
+  }
+
+  // Desktop — griglia a bande, mockup "Mac 1340x852" approvato:
+  // banda 1: hero + peso, banda 2: iniezioni + aderenza,
+  // banda 3: integratori + allenamento + soggettivo, poi legenda e note
+  // a piena larghezza. Ogni sezione diventa una card a sé (stile day-card).
+  return `
+    <div class="oggi-grid">
+      <div class="g-nav">${renderDayNav()}</div>
+      <div class="g-hero">${heroHtml}</div>
+      <div class="g-peso">${pesoHtml}</div>
+      <div class="g-hdr day-card">${s.hdr}</div>
+      <div class="g-biometria day-card">${s.biometria}</div>
+      <div class="g-iniezioni day-card">${s.iniezioni}</div>
+      <div class="g-adherence">${adherenceHtml}</div>
+      <div class="g-integratori day-card">${s.integratori}</div>
+      <div class="g-allenamento day-card">${s.allenamento}</div>
+      <div class="g-soggettivo day-card">${s.soggettivo}</div>
+      <div class="g-legend day-card">${s.legend}</div>
+      <div class="g-note day-card">${s.note}</div>
+    </div>
   `;
 }
 function L2() { return t(); } // alias breve, usato solo dentro renderOggiFull per leggibilità
 
-function renderOggi() {
+function renderOggiSections() {
   const L = t();
   const day = getDay(selDate);
   const dayIdx = dayIdxFromISO(selDate);
@@ -890,8 +957,7 @@ function renderOggi() {
 
   const dateLabel = new Date(selDate + 'T00:00:00').toLocaleDateString(LANG === 'it' ? 'it-IT' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  return `
-  <div class="day-card">
+  const hdr = `
     <div class="day-hdr">
       <div class="day-hdr-left">
         <div class="day-date">${dateLabel[0].toUpperCase() + dateLabel.slice(1)}</div>
@@ -904,8 +970,9 @@ function renderOggi() {
           ${overrideOpts.map(o => `<option value="${o}" ${day.wo_override === o ? 'selected' : ''}>${o}</option>`).join('')}
         </select>
       </div>
-    </div>
+    </div>`;
 
+  const biometria = `
     <div class="section">
       <div class="section-label">${L.weight}</div>
       <div class="field-row">
@@ -935,8 +1002,24 @@ function renderOggi() {
           <div class="field-sub">${sonnoTxt} · REM ${day.sonno_rem_min || '—'}m · Prof. ${day.sonno_profondo_min || '—'}m · ${day.sonno_risvegli || '—'} risvegli</div>
         </div>
       </div>
-    </div>
+    </div>`;
 
+  // Riepilogo compatto degli stessi dati biometrici — SOLO desktop (dentro la
+  // card Peso, come nel mockup approvato). Su mobile resta nascosto via CSS:
+  // i dati restano editabili nella sezione Biometria sopra, questo è solo un
+  // riepilogo a colpo d'occhio in più, non un secondo posto dove scrivere.
+  const biometriaChips = `
+    <div class="biometria-chips">
+      <div class="biometria-chip"><span class="biometria-chip-label">Pressione</span><span class="biometria-chip-value">${day.bp_sys || '—'}/${day.bp_dia || '—'}</span></div>
+      <div class="biometria-chip"><span class="biometria-chip-label">Profondo</span><span class="biometria-chip-value">${day.sonno_profondo_min || '—'}m</span></div>
+      <div class="biometria-chip"><span class="biometria-chip-label">Risvegli</span><span class="biometria-chip-value">${day.sonno_risvegli || '—'}</span></div>
+      <div class="biometria-chip"><span class="biometria-chip-label">HRV</span><span class="biometria-chip-value">${day.hrv || '—'} ms</span></div>
+      <div class="biometria-chip"><span class="biometria-chip-label">Freq. a riposo</span><span class="biometria-chip-value">${day.rhr || '—'} bpm</span></div>
+      <div class="biometria-chip"><span class="biometria-chip-label">Sonno</span><span class="biometria-chip-value">${sonnoTxt}</span></div>
+      <div class="biometria-chip"><span class="biometria-chip-label">REM</span><span class="biometria-chip-value">${day.sonno_rem_min || '—'}m</span></div>
+    </div>`;
+
+  const iniezioni = `
     <div class="section">
       <div class="section-label">${L.injections}</div>
       ${wo.type === 'Riposo' ? `<div class="rest-msg">${L.restDay}</div>` : slots.map(s => `
@@ -957,8 +1040,9 @@ function renderOggi() {
           </div>`;
         }).join('')}
       `).join('')}
-    </div>
+    </div>`;
 
+  const integratori = `
     <div class="section">
       <div class="section-label">${L.supplements}</div>
       ${SUPP_FIELDS.map(sf => `
@@ -966,15 +1050,17 @@ function renderOggi() {
           <span class="state-name">${SUPP_LABELS[sf]}</span>
           ${stateDot(suppState(day, sf), `cycleSuppState('${sf}')`, SUPP_LABELS[sf])}
         </div>`).join('')}
-    </div>
+    </div>`;
 
+  const legend = `
     <div class="legend">
       <div class="legend-item"><div class="legend-dot" style="background:var(--surf);border:1.5px solid var(--line)"></div>—</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--ok)"></div>${L.doseDone}</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--surf);border:1.5px solid var(--warn)"></div>${L.doseSkip}</div>
       <div class="legend-item"><div class="legend-dot" style="background:var(--surf2)"></div>${L.doseNa}</div>
-    </div>
+    </div>`;
 
+  const allenamento = `
     <div class="section">
       <div class="section-label">${L.training}</div>
       ${wo.type === 'Riposo' ? `<div class="rest-msg">${L.restDay}</div>` : `
@@ -990,8 +1076,9 @@ function renderOggi() {
         <div class="field-label">${LANG === 'it' ? 'Calorie' : 'Calories'}</div>
         <input class="field-value" style="width:auto" type="number" value="${day.wo_kcal || ''}" placeholder="—" oninput="patch(selDate,'wo_kcal',this.value)"><span class="field-value-unit">kcal</span>
       </div>`}
-    </div>
+    </div>`;
 
+  const soggettivo = `
     <div class="section">
       <div class="section-label">${L.subjective}</div>
       ${['energia', 'recupero', 'umore', 'libido', 'chiarezza', 'rpe', 'appetito'].map(sf => `
@@ -1017,12 +1104,32 @@ function renderOggi() {
           ${Array.from({length:10},(_,i)=>i+1).map(n => `<option value="${n}" ${day.sonno_sogg == n ? 'selected' : ''}>${n}/10</option>`).join('')}
         </select>
       </div>
-    </div>
+    </div>`;
 
+  const note = `
     <div class="section">
       <div class="section-label">${L.notes}</div>
       <textarea style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit;font-size:14px;min-height:60px;background:var(--surf2);color:var(--ink)" placeholder="—" oninput="patch(selDate,'note',this.value)">${day.note || ''}</textarea>
-    </div>
+    </div>`;
+
+  return { hdr, biometria, biometriaChips, iniezioni, integratori, legend, allenamento, soggettivo, note };
+}
+
+// Vista mobile della card giorno — invariata rispetto a prima: un'unica
+// day-card con tutte le sezioni impilate. Ora è solo un assemblaggio dei
+// frammenti di renderOggiSections(), la logica dei campi non è duplicata.
+function renderOggi() {
+  const s = renderOggiSections();
+  return `
+  <div class="day-card">
+    ${s.hdr}
+    ${s.biometria}
+    ${s.iniezioni}
+    ${s.integratori}
+    ${s.legend}
+    ${s.allenamento}
+    ${s.soggettivo}
+    ${s.note}
   </div>
   `;
 }
@@ -1042,6 +1149,17 @@ function bindOggi() {
 window.addEventListener('hashchange', () => {
   tab = location.hash.replace('#', '') || 'oggi';
   render();
+});
+
+// Ridisegna quando si attraversa la soglia desktop (non ad ogni pixel di
+// resize, solo quando cambia effettivamente il layout da mostrare).
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const nowDesktop = window.innerWidth >= 1024;
+    if (nowDesktop !== isDesktop) { isDesktop = nowDesktop; render(); }
+  }, 150);
 });
 
 document.documentElement.lang = LANG;
