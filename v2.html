@@ -408,6 +408,20 @@ function dayIdxFromISO(dateISO) {
 }
 function dayKeyFromISO(dateISO) { return 'p2_day_' + dayIdxFromISO(dateISO); }
 
+// Bug reale trovato il 10/09/2026: ".toISOString().slice(0,10)" converte
+// SEMPRE in UTC — a mezzanotte locale in Italia (UTC+1/+2) questo fa
+// scivolare la data indietro di un giorno. In Node (dove giravano i miei
+// test) il fuso è UTC, quindi il bug non si vedeva mai; nel browser vero
+// di Giorgio sì — è la causa dei giorni sbagliati che ha segnalato
+// (pallino attivo sbagliato in renderDayNav, click su un giorno che ne
+// selezionava un altro, adherence() che leggeva il record del giorno
+// sbagliato ad ogni iterazione). Usare SEMPRE questa funzione per
+// convertire un Date in stringa AAAA-MM-GG, mai .toISOString().
+function isoLocal(d) {
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+
 async function loadBlob() {
   const res = await fetch(`${CFG.PROXY_URL}?user_id=eq.${CFG.USER_ID}&select=data`, {
     headers: { apikey: CFG.PROXY_KEY, Authorization: `Bearer ${CFG.PROXY_KEY}` }
@@ -623,7 +637,7 @@ function adherence(blob) {
   let injDone = 0, injTot = 0, suppDone = 0, suppTot = 0, woDone = 0, woTot = 0;
 
   for (let d = new Date(testStart); d <= today; d.setDate(d.getDate() + 1)) {
-    const dateISO = d.toISOString().slice(0, 10);
+    const dateISO = isoLocal(d);
     let rec, woIdx;
     const testEnd = new Date(testStart); testEnd.setDate(testEnd.getDate() + TEST_PROTO_DAYS - 1);
     if (d >= testStart && d <= testEnd) {
@@ -683,7 +697,7 @@ const OLD_ANCHORS = { andamento: 'dashboard', clinica: 'referti', gestione: 'sto
 
 let tab = location.hash.replace('#', '') || 'oggi';
 let mode = 'day';
-let today = new Date().toISOString().slice(0, 10);
+let today = isoLocal(new Date());
 // Giorno visualizzato/editato nella card sotto — di default oggi, ma
 // selezionabile dalla nuova barra settimane/giorni. 'today' resta la data
 // reale odierna (serve altrove); 'selDate' è quella che l'utente sta guardando.
@@ -990,7 +1004,7 @@ function renderDayNav() {
   const dayPills = Array.from({ length: 7 }, (_, i) => weekStartIdx + i).map((dIdx, i) => {
     if (dIdx < 0 || dIdx >= CFG.CYCLE_DAYS) return `<div></div>`;
     const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + dIdx);
-    const iso = d.toISOString().slice(0, 10);
+    const iso = isoLocal(d);
     const isFuture = dIdx > todayIdx;
     const dotCls = isFuture ? 'is-future' : (dayHasAnyData(dIdx) ? 'has-data' : '');
     return `
@@ -1017,7 +1031,7 @@ function jumpToWeek(w) {
   // della settimana se possibile (semplice: vai al primo giorno valido).
   const targetIdx = Math.min(Math.max(w * 7, 0), CFG.CYCLE_DAYS - 1);
   const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + targetIdx);
-  selDate = d.toISOString().slice(0, 10);
+  selDate = isoLocal(d);
   render();
 }
 
