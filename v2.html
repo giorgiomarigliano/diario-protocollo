@@ -185,17 +185,36 @@
     .oggi-grid .field-sub,.oggi-grid .state-name,.oggi-grid .field-label{font-size:12.5px;}
     .oggi-grid .slot-hdr{font-size:11.5px;margin-top:6px;}
 
-    /* Iniezioni e Soggettivo — due colonne dense come nel mockup, invece
-       di un'unica colonna lunga. Stesso markup, il flusso CSS a colonne
-       lo spezza da solo: nessuna logica JS in più. */
-    .oggi-grid .g-iniezioni .section,
-    .oggi-grid .g-soggettivo .section{column-count:2;column-gap:20px;}
-    .oggi-grid .g-iniezioni .section-label,
-    .oggi-grid .g-soggettivo .section-label{column-span:all;}
+    /* Iniezioni — due colonne dense come nel mockup (stesso markup, il
+       flusso CSS a colonne lo spezza da solo). L'orario è inline nel nome
+       della riga (.inj-time), non più un'intestazione a riga intera. */
+    .oggi-grid .g-iniezioni .section{column-count:2;column-gap:20px;}
+    .oggi-grid .g-iniezioni .section-label{column-span:all;}
     .oggi-grid .g-iniezioni .slot-hdr{column-span:all;}
     .oggi-grid .rest-msg{column-span:all;}
-    .oggi-grid .g-iniezioni .state-row,
-    .oggi-grid .g-soggettivo .field-row{break-inside:avoid;}
+    .oggi-grid .g-iniezioni .state-row{break-inside:avoid;}
+    .inj-time{display:block;font-size:10.5px;color:var(--ink3);font-weight:400;margin-top:1px;}
+
+    /* Soggettivo — griglia 3 colonne come nel mockup (non più colonne CSS
+       "a caso": ordine esplicito nel markup). */
+    .subj-grid-3{display:grid;grid-template-columns:repeat(3,1fr);column-gap:20px;}
+    .subj-grid-3 .field-row{flex-direction:column;align-items:flex-start;gap:4px;padding:8px 0;}
+    .bar-row{display:flex;align-items:center;gap:8px;}
+    .bar-segs{display:flex;gap:2px;}
+    .bar-seg{width:11px;height:11px;border-radius:2.5px;background:var(--line);cursor:pointer;}
+    .bar-seg.filled{background:var(--accent);}
+    .bar-val{font-size:11.5px;color:var(--ink2);font-weight:600;min-width:26px;}
+    .pill-cycle{border:none;background:var(--accent-soft);color:var(--accent-ink);font:inherit;font-size:12px;font-weight:600;padding:4px 12px;border-radius:999px;cursor:pointer;}
+
+    /* Allenamento desktop — Durata/Volume/Calorie su una riga sola invece
+       di tre field-row impilate. */
+    .wo-fields-row{display:flex;gap:28px;padding:8px 0 2px;}
+    .wo-field{display:flex;flex-direction:column;gap:4px;}
+    .wo-field-label{font-size:11px;color:var(--ink3);text-transform:uppercase;}
+    .wo-field-val{display:flex;align-items:baseline;gap:4px;}
+    .wo-field-val input{border:none;border-bottom:1px solid var(--line);background:transparent;font:inherit;font-size:15px;font-weight:600;color:var(--ink);width:44px;padding:0;}
+    .wo-field-val input:focus{outline:none;border-bottom-color:var(--accent);}
+    .wo-field-unit{font-size:11px;color:var(--ink3);}
   }
 </style>
 </head>
@@ -679,6 +698,28 @@ function stateDot(state, onclick, label) {
 }
 
 /* ------------------------------------------------------------
+   Controlli compatti per Soggettivo desktop — nuovi (10/09/2026), nessun
+   equivalente da copiare: nel mockup i punteggi 1-10 sono barre a segmenti
+   colorate (non un menu a tendina) e i campi a scala testuale sono pillole
+   cliccabili. Restano pienamente editabili: click su un segmento o sulla
+   pillola scrive con patch(), stesso meccanismo delle select che sostituiscono.
+   ------------------------------------------------------------ */
+function barHtml(field, value, max) {
+  max = max || 10;
+  const v = parseInt(value) || 0;
+  const segs = Array.from({ length: max }, (_, i) => i + 1)
+    .map(n => `<span class="bar-seg ${n <= v ? 'filled' : ''}" onclick="patch(selDate,'${field}','${n}')"></span>`)
+    .join('');
+  return `<div class="bar-row"><div class="bar-segs">${segs}</div><span class="bar-val">${v ? v + '/' + max : '—'}</span></div>`;
+}
+function pillHtml(field, value, labels) {
+  const idx = (value === '' || value === undefined || value === null) ? -1 : parseInt(value);
+  const txt = idx >= 0 && labels[idx] !== undefined ? labels[idx] : '—';
+  const next = (idx + 1) % labels.length; // click = passa all'opzione successiva, torna in cima dopo l'ultima
+  return `<button type="button" class="pill-cycle" onclick="patch(selDate,'${field}','${next}')">${txt}</button>`;
+}
+
+/* ------------------------------------------------------------
    Storico peso + trend — nuovo (09/09/2026), nessun equivalente in
    index.html da copiare verbatim (funzione non-MIRROR, prima stesura).
    ------------------------------------------------------------ */
@@ -1011,7 +1052,7 @@ function renderOggiFull() {
         ${overrideOpts.map(o => `<option value="${o}" ${day.wo_override === o ? 'selected' : ''}>${o}</option>`).join('')}
       </select>
     </div>
-    ${s.allenamento}`;
+    ${s.allenamentoDesktop}`;
 
   // Desktop — griglia a bande, mockup "Mac 1340x852" approvato:
   // banda 1: hero + peso, banda 2: iniezioni + aderenza,
@@ -1023,11 +1064,11 @@ function renderOggiFull() {
       <div class="g-nav">${renderDayNav()}</div>
       <div class="g-hero">${heroHtml}</div>
       <div class="g-peso">${pesoHtmlDesktop}</div>
-      <div class="g-iniezioni day-card">${s.iniezioni}</div>
+      <div class="g-iniezioni day-card">${s.iniezioniDesktop}</div>
       <div class="g-adherence">${adherenceHtml}</div>
       <div class="g-integratori day-card">${s.integratori}</div>
       <div class="g-allenamento day-card">${allenamentoDesktopHtml}</div>
-      <div class="g-soggettivo day-card">${s.soggettivo}</div>
+      <div class="g-soggettivo day-card">${s.soggettivoDesktop}</div>
       <div class="g-legend day-card">${s.legend}</div>
       <div class="g-note day-card">${s.note}</div>
     </div>
@@ -1139,6 +1180,34 @@ function renderOggiSections() {
       `).join('')}
     </div>`;
 
+  // Versione desktop: niente intestazione "Mattino/Pomeriggio/Sera" a riga
+  // propria (occupava una riga intera nel mockup non c'è) — l'orario è
+  // inline nel nome della riga stessa. L'unica eccezione è il selettore
+  // distretto post-WO, che resta un'intestazione perché è un controllo, non
+  // solo un'etichetta.
+  const iniezioniDesktop = `
+    <div class="section">
+      <div class="section-label">${L.injections}</div>
+      ${wo.type === 'Riposo' ? `<div class="rest-msg">${L.restDay}</div>` : slots.map(s => `
+        ${s.igfMuscle !== undefined ? `<div class="slot-hdr">${L.district}: <select class="subj-select" style="font-size:11px;padding:2px 5px" onchange="patch(selDate,'inj_${s.n}_distretto',this.value)"><option value="">${L.choose}</option>${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m => `<option value="${m}" ${(day['inj_' + s.n + '_distretto'] || s.igfMuscle) === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>` : ''}
+        ${s.fields.map(f => {
+          const fkeyRaw = fieldKey(f);
+          const stKey = 'inj_' + s.n + '_' + fkeyRaw;
+          const state = day[stKey] || '';
+          const isIgf = f.indexOf('IGF-1 DES') === 0;
+          return `
+          <div class="state-row">
+            <span class="state-name">${f}<span class="inj-time">${s.label}</span></span>
+            ${!isIgf ? `<select class="state-site" onchange="patch(selDate,'${stKey}_sito',this.value)">
+              <option value="">${L.site}</option>
+              ${SITES_SC.map(site => `<option value="${site}" ${day[stKey + '_sito'] === site ? 'selected' : ''}>${site}</option>`).join('')}
+            </select>` : ''}
+            ${stateDot(state, `cycleInjState(${dayIdx},${s.n},${JSON.stringify(f)})`, f)}
+          </div>`;
+        }).join('')}
+      `).join('')}
+    </div>`;
+
   const integratori = `
     <div class="section">
       <div class="section-label">${L.supplements}</div>
@@ -1194,6 +1263,20 @@ function renderOggiSections() {
       ${exercises}`}
     </div>`;
 
+  // Desktop: Durata/Volume/Calorie su un'unica riga compatta a 3 colonne,
+  // come nel mockup, invece di tre field-row impilate.
+  const allenamentoDesktop = `
+    <div class="section">
+      <div class="section-label">${L.training}</div>
+      ${wo.type === 'Riposo' ? `<div class="rest-msg">${L.restDay}</div>` : `
+      <div class="wo-fields-row">
+        <div class="wo-field"><span class="wo-field-label">${LANG === 'it' ? 'Durata' : 'Duration'}</span><div class="wo-field-val"><input type="number" value="${day.wo_durata || ''}" placeholder="—" oninput="patch(selDate,'wo_durata',this.value)"><span class="wo-field-unit">min</span></div></div>
+        <div class="wo-field"><span class="wo-field-label">Volume</span><div class="wo-field-val"><input type="number" value="${day.wo_volume || ''}" placeholder="—" oninput="patch(selDate,'wo_volume',this.value)"><span class="wo-field-unit">kg</span></div></div>
+        <div class="wo-field"><span class="wo-field-label">${LANG === 'it' ? 'Calorie' : 'Calories'}</span><div class="wo-field-val"><input type="number" value="${day.wo_kcal || ''}" placeholder="—" oninput="patch(selDate,'wo_kcal',this.value)"><span class="wo-field-unit">kcal</span></div></div>
+      </div>
+      ${exercises}`}
+    </div>`;
+
   const soggettivo = `
     <div class="section">
       <div class="section-label">${L.subjective}</div>
@@ -1222,13 +1305,34 @@ function renderOggiSections() {
       </div>
     </div>`;
 
+  // Desktop: griglia 3 colonne (stesso ordine del mockup), barre a segmenti
+  // per i punteggi 1-10, pillole cliccabili per le scale testuali — non
+  // più menu a tendina, sono proprio controlli diversi.
+  const soggettivoDesktop = `
+    <div class="section">
+      <div class="section-label">${L.subjective}</div>
+      <div class="subj-grid-3">
+        <div class="field-row"><div class="field-label">${L.subj.energia}</div>${barHtml('energia', day.energia)}</div>
+        <div class="field-row"><div class="field-label">${L.subj.recupero}</div>${barHtml('recupero', day.recupero)}</div>
+        <div class="field-row"><div class="field-label">${L.subj.umore}</div>${barHtml('umore', day.umore)}</div>
+        <div class="field-row"><div class="field-label">${L.subj.rpe}</div>${barHtml('rpe', day.rpe)}</div>
+        <div class="field-row"><div class="field-label">${L.subj.appetito}</div>${barHtml('appetito', day.appetito)}</div>
+        <div class="field-row"><div class="field-label">${L.subj.sonno_sogg}</div>${barHtml('sonno_sogg', day.sonno_sogg)}</div>
+        <div class="field-row"><div class="field-label">${L.subj.libido}</div>${barHtml('libido', day.libido)}</div>
+        <div class="field-row"><div class="field-label">${L.subj.chiarezza}</div>${barHtml('chiarezza', day.chiarezza)}</div>
+        <div class="field-row"><div class="field-label">${L.subj.pienezza_add}</div>${pillHtml('pienezza_add', day.pienezza_add, ENUM_LABELS.pienezza_add)}</div>
+        <div class="field-row"><div class="field-label">${L.subj.ritenzione}</div>${pillHtml('ritenzione', day.ritenzione, ENUM_LABELS.ritenzione)}</div>
+        <div class="field-row"><div class="field-label">${L.subj.formicolio}</div>${pillHtml('formicolio', day.formicolio, ENUM_LABELS.formicolio)}</div>
+      </div>
+    </div>`;
+
   const note = `
     <div class="section">
       <div class="section-label">${L.notes}</div>
       <textarea style="width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;font-family:inherit;font-size:14px;min-height:60px;background:var(--surf2);color:var(--ink)" placeholder="—" oninput="patch(selDate,'note',this.value)">${day.note || ''}</textarea>
     </div>`;
 
-  return { hdr, biometria, biometriaChips, iniezioni, integratori, legend, allenamento, soggettivo, note };
+  return { hdr, biometria, biometriaChips, iniezioni, iniezioniDesktop, integratori, legend, allenamento, allenamentoDesktop, soggettivo, soggettivoDesktop, note };
 }
 
 // Vista mobile della card giorno — invariata rispetto a prima: un'unica
