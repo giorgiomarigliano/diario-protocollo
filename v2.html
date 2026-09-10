@@ -168,6 +168,34 @@
     .weight-value-input:focus{outline:none;border-bottom:1.5px solid var(--accent);}
     .chip-input{border:none;border-bottom:1px solid var(--line);background:transparent;font:inherit;font-size:14px;font-weight:600;color:var(--ink);padding:0 1px;text-align:center;}
     .chip-input:focus{outline:none;border-bottom-color:var(--accent);}
+
+    /* Esercizi svolti (da motra_log) dentro Allenamento */
+    .exercises-block{margin-top:6px;padding-top:10px;border-top:1px solid var(--line);}
+    .exercise-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:var(--ink);}
+    .exercise-sets{color:var(--ink2);font-weight:600;}
+    .exercise-empty{margin-top:6px;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink3);}
+
+    /* Densità da cruscotto — sul mockup approvato le righe sono molto più
+       compatte che su mobile (dove servono target di tocco più larghi).
+       Restringo solo qui, sotto i 1024px resta tutto come prima. */
+    .oggi-grid .field-row{padding:6px 0;min-height:0;}
+    .oggi-grid .state-row{padding:5px 0;}
+    .oggi-grid .section{padding:14px 18px;}
+    .oggi-grid .day-hdr{padding:14px 18px;}
+    .oggi-grid .field-sub,.oggi-grid .state-name,.oggi-grid .field-label{font-size:12.5px;}
+    .oggi-grid .slot-hdr{font-size:11.5px;margin-top:6px;}
+
+    /* Iniezioni e Soggettivo — due colonne dense come nel mockup, invece
+       di un'unica colonna lunga. Stesso markup, il flusso CSS a colonne
+       lo spezza da solo: nessuna logica JS in più. */
+    .oggi-grid .g-iniezioni .section,
+    .oggi-grid .g-soggettivo .section{column-count:2;column-gap:20px;}
+    .oggi-grid .g-iniezioni .section-label,
+    .oggi-grid .g-soggettivo .section-label{column-span:all;}
+    .oggi-grid .g-iniezioni .slot-hdr{column-span:all;}
+    .oggi-grid .rest-msg{column-span:all;}
+    .oggi-grid .g-iniezioni .state-row,
+    .oggi-grid .g-soggettivo .field-row{break-inside:avoid;}
   }
 </style>
 </head>
@@ -1129,6 +1157,24 @@ function renderOggiSections() {
       <div class="legend-item"><div class="legend-dot" style="background:var(--surf2)"></div>${L.doseNa}</div>
     </div>`;
 
+  // motra_log è salvato come stringa JSON (come index.html), non oggetto —
+  // va parsato esplicitamente, con guardia in caso manchi o sia malformato.
+  const motraLog = (() => {
+    if (!day.motra_log) return null;
+    if (typeof day.motra_log === 'object') return day.motra_log;
+    try { return JSON.parse(day.motra_log); } catch (e) { return null; }
+  })();
+  const exList = (motraLog && Array.isArray(motraLog.exercises)) ? motraLog.exercises : null;
+  const exercises = exList ? `
+    <div class="exercises-block">
+      <div class="field-label" style="margin-bottom:6px">${L.exercises}</div>
+      ${exList.map(ex => {
+        const working = (ex.sets || []).filter(s => s.label !== 'W');
+        const reps = working[0] ? working[0].reps : (ex.sets && ex.sets[0] ? ex.sets[0].reps : '—');
+        return `<div class="exercise-row"><span>${ex.name}</span><span class="exercise-sets">${working.length || (ex.sets || []).length}×${reps}</span></div>`;
+      }).join('')}
+    </div>` : `<div class="exercise-empty">${LANG === 'it' ? 'Nessun log Motra importato per questo giorno.' : 'No Motra log imported for this day.'}</div>`;
+
   const allenamento = `
     <div class="section">
       <div class="section-label">${L.training}</div>
@@ -1144,7 +1190,8 @@ function renderOggiSections() {
       <div class="field-row">
         <div class="field-label">${LANG === 'it' ? 'Calorie' : 'Calories'}</div>
         <input class="field-value" style="width:auto" type="number" value="${day.wo_kcal || ''}" placeholder="—" oninput="patch(selDate,'wo_kcal',this.value)"><span class="field-value-unit">kcal</span>
-      </div>`}
+      </div>
+      ${exercises}`}
     </div>`;
 
   const soggettivo = `
