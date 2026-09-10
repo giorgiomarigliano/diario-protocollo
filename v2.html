@@ -271,6 +271,22 @@ const CFG = {
   OLD_APP: 'index.html'
 };
 
+// MIRROR · Trasferta Bangkok (7-21 agosto 2026) — split irregolare che
+// sovrascrive la mappa settimanale fissa per queste date, in getWorkout2()
+// e getInjectionSlots2(). Trovata mancante il 10/09/2026 verificando contro
+// index.html: senza questa, i giorni BKK venivano letti come Riposo/training
+// standard da calendario, sballando sia il conteggio iniezioni (slot Post-WO
+// IGF-1 presente/assente sbagliato) sia l'aderenza allenamenti per quel
+// periodo — causa principale dello scarto segnalato da Giorgio (91% vs 98%).
+const BKK_START = new Date('2026-08-07');
+const BKK_END = new Date('2026-08-21');
+function isBkkDate(d) {
+  const s = new Date(BKK_START); s.setHours(0, 0, 0, 0);
+  const e = new Date(BKK_END); e.setHours(0, 0, 0, 0);
+  const dd = new Date(d); dd.setHours(0, 0, 0, 0);
+  return dd >= s && dd <= e;
+}
+
 /* ============================================================
    2 · SCHEMA DEI CAMPI — il contratto con la vecchia app.
    Ogni chiave qui esiste già identica in index.html. Consolidamento
@@ -503,6 +519,12 @@ function getWorkout2(dayIdx) {
   const rec = (store.blob && store.blob[key]) || {};
   if (rec.wo_override) return { type: rec.wo_override };
   const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + dayIdx);
+  if (isBkkDate(d)) {
+    // Trasferta BKK: allenamento di default ogni giorno, salvo override
+    // manuale "Riposo" impostato dalla card stessa (split irregolare).
+    if (rec.bkk_riposo === '1') return { type: 'Riposo' };
+    return { type: 'Allenamento BKK' };
+  }
   const dow = d.getDay(); // 0=dom
   const map = {0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
   const type = map[dow] || 'Riposo';
@@ -521,9 +543,13 @@ function getInjectionSlots2(dayIdx) {
     { n:3, label:'Sera', momento:'Sera · 90–120min post-cena', fields:['Tesamorelin 2mg','Ipamorelin 100mcg','BPC-157 250mcg','TB-500 500mcg'] },
   ];
   if (isTraining) {
-    const wkDay = dayIdx % 7; // 0=lun,1=mar,2=mer,3=gio,4=ven,5=sab,6=dom
-    const muscleMap = { 1:'Petto', 2:'Bicipiti', 4:'Quadricipiti', 5:'Tricipiti', 6:'Deltoidi' };
-    const defaultMuscle = muscleMap[wkDay] || '';
+    const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + dayIdx);
+    let defaultMuscle = '';
+    if (!isBkkDate(d)) {
+      const wkDay = dayIdx % 7; // 0=lun,1=mar,2=mer,3=gio,4=ven,5=sab,6=dom
+      const muscleMap = { 1:'Petto', 2:'Bicipiti', 4:'Quadricipiti', 5:'Tricipiti', 6:'Deltoidi' };
+      defaultMuscle = muscleMap[wkDay] || '';
+    }
     slots.splice(2, 0, { n:3, label:'Post-WO', momento:'Post-workout · IM bilaterale', fields:['IGF-1 DES 25mcg dx','IGF-1 DES 25mcg sx'], igfMuscle: defaultMuscle });
     slots[3].n = 4;
   }
@@ -550,38 +576,87 @@ function isRestDay(dateISO) { return getWorkout2(dayIdxFromISO(dateISO)).type ==
 function dosesFor(dateISO) { return getInjectionSlots2(dayIdxFromISO(dateISO)); }
 
 // MIRROR · adherence — da index.html (getInjComplianceV2/getSuppComplianceV2/
-// getWorkoutComplianceV2 unificate), adattata ai campi reali. Consolidamento
-// verifica 08/09/2026: la prima stesura iterava su TUTTI i 112 giorni del
-// ciclo invece di fermarsi a oggi — i giorni futuri (senza alcun dato)
-// venivano contati come "non fatto", abbassando artificialmente le
-// percentuali di integratori/allenamento (confermato con un test sui dati
-// reali: 45%/38% invece del valore corretto). La produzione si ferma
-// sempre a oggi. Aggiunta anche l'esclusione del valore legacy 'skip'
-// (pre-31/07/2026), non solo 'na' — presente nella produzione, mancava qui.
+// getWorkoutComplianceV2 unificate). Corretta il 10/09/2026 dopo una verifica
+// diretta contro index.html (Giorgio ha segnalato lo scarto: v2 mostrava
+// 91%/84%, index.html 98%/93% per lo stesso giorno). Due bug reali trovati:
+//   1) mancavano i 2 giorni "test_proto" (18-19 luglio, dati reali già
+//      presenti sotto le chiavi test_proto_0/test_proto_1, non p2_day_N) —
+//      index.html li include nel calcolo cumulativo, qui erano ignorati.
+//   2) il criterio "allenamento fatto" era sbagliato: controllavo solo
+//      wo_durata, la produzione (getWorkoutComplianceV2) considera fatto se
+//      calorie>0 OPPURE volume>0 (anche da motra_log) OPPURE RPE è un numero.
+// Iterare per DATA (come fa resolveDay() in produzione), non per chiavi del
+// blob, è l'unico modo per includere correttamente i giorni test_proto.
+const TEST_PROTO_START = '2026-07-18'; // MIRROR — invariato rispetto a index.html
+const TEST_PROTO_DAYS = 2;             // MIRROR
+
+// MIRROR · getWorkoutVolume2 — da index.html: legge wo_volume, altrimenti
+// prova a estrarre il volume dalla stringa di motra_log (es. "11,8K kg").
+function getWorkoutVolume2(rec) {
+  if (!rec) return null;
+  if (rec.wo_volume) {
+    const v = parseFloat(rec.wo_volume);
+    if (!isNaN(v) && v > 0) return v;
+  }
+  if (rec.motra_log) {
+    try {
+      const m = typeof rec.motra_log === 'object' ? rec.motra_log : JSON.parse(rec.motra_log);
+      if (m.volume) {
+        const mm = String(m.volume).match(/([\d,\.]+)([Kk])?/);
+        if (mm) {
+          let val = parseFloat(mm[1].replace(',', '.'));
+          if (mm[2]) val *= 1000;
+          if (!isNaN(val) && val > 0) return Math.round(val);
+        }
+      }
+    } catch (e) { /* motra_log malformato: ignora, non è un dato di volume valido */ }
+  }
+  return null;
+}
+
 function adherence(blob) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const start = new Date(CFG.CYCLE_START + 'T00:00:00');
-  const maxDayIdx = Math.floor((today - start) / 86400000); // non oltre oggi
+  blob = blob || {};
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const testStart = new Date(TEST_PROTO_START + 'T00:00:00');
+  if (today < testStart) return { inj: 0, supp: 0, wo: 0, injDone: 0, injTot: 0, suppDone: 0, suppTot: 0, woDone: 0, woTot: 0 };
+
   let injDone = 0, injTot = 0, suppDone = 0, suppTot = 0, woDone = 0, woTot = 0;
-  Object.keys(blob || {}).forEach(key => {
-    const m = key.match(/^p2_day_(\d+)$/);
-    if (!m) return;
-    const dayIdx = parseInt(m[1], 10);
-    if (dayIdx < 0 || dayIdx > maxDayIdx) return; // esclude giorni futuri
-    const d = blob[key];
-    getInjectionSlots2(dayIdx).forEach(s => {
+
+  for (let d = new Date(testStart); d <= today; d.setDate(d.getDate() + 1)) {
+    const dateISO = d.toISOString().slice(0, 10);
+    let rec, woIdx;
+    const testEnd = new Date(testStart); testEnd.setDate(testEnd.getDate() + TEST_PROTO_DAYS - 1);
+    if (d >= testStart && d <= testEnd) {
+      const t = Math.round((d - testStart) / 86400000);
+      rec = blob['test_proto_' + t] || {};
+      woIdx = t - TEST_PROTO_DAYS; // -2, -1 — stessa convenzione a indici negativi di index.html
+    } else {
+      const dIdx = dayIdxFromISO(dateISO);
+      rec = blob['p2_day_' + dIdx] || {};
+      woIdx = dIdx;
+    }
+
+    getInjectionSlots2(woIdx).forEach(s => {
       s.fields.forEach(f => {
-        const v = d['inj_' + s.n + '_' + fieldKey(f)] || '';
+        const v = rec['inj_' + s.n + '_' + fieldKey(f)] || '';
         if (v === 'skip' || v === 'na') return; // 'skip' = valore legacy pre-31/07, trattato come 'na'
         injTot++; if (v === 'fatto') injDone++;
       });
     });
+
     SUPP_FIELDS.forEach(sf => {
-      if (d[sf + '_skip']) return;
-      suppTot++; if (d[sf] === '1') suppDone++;
+      if (rec[sf + '_skip']) return;
+      suppTot++; if (rec[sf] === '1') suppDone++;
     });
-    if (getWorkout2(dayIdx).type !== 'Riposo') { woTot++; if (d.wo_durata || d.motra_log) woDone++; }
-  });
+
+    if (getWorkout2(woIdx).type !== 'Riposo') {
+      woTot++;
+      const kcal = parseFloat(rec.wo_kcal), rpe = parseFloat(rec.rpe);
+      const vol = getWorkoutVolume2(rec);
+      if ((!isNaN(kcal) && kcal > 0) || (vol !== null && vol > 0) || !isNaN(rpe)) woDone++;
+    }
+  }
+
   return {
     inj: injTot ? Math.round(injDone / injTot * 100) : 0,
     supp: suppTot ? Math.round(suppDone / suppTot * 100) : 0,
@@ -1101,9 +1176,9 @@ function renderOggiFull() {
     <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
       <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Pressione</span>
       <div style="display:flex;align-items:center;justify-content:center;gap:2px;background:var(--surf2);border-radius:6px;padding:5px 4px;">
-        <input data-f="bp_sys" value="${esc(day.bp_sys || '')}" placeholder="—" style="${micro}width:22px;background:transparent;text-align:right;">
+        <input data-f="bp_sys" value="${esc(day.bp_sys || '')}" placeholder="—" style="${micro}width:26px;background:transparent;text-align:right;">
         <span style="${micro}">/</span>
-        <input data-f="bp_dia" value="${esc(day.bp_dia || '')}" placeholder="—" style="${micro}width:22px;background:transparent;text-align:left;">
+        <input data-f="bp_dia" value="${esc(day.bp_dia || '')}" placeholder="—" style="${micro}width:26px;background:transparent;text-align:left;">
       </div>
     </div>`;
   const sonnoTot = parseSonnoHours(day.ore_sonno);
