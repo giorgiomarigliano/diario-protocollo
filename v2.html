@@ -1052,7 +1052,7 @@ function renderDayNav() {
       <button class="week-tab ${w === selWeek ? 'active' : ''}" onclick="jumpToWeek(${w})">WK${w + 1}</button>
     `).join('');
     return `
-      <div class="oggi-top">
+      <div class="oggi-top" style="max-width:none;margin-bottom:14px;">
         <div class="week-row-desktop">
           <span class="cycle-label">${LANG === 'it' ? 'Ciclo 1' : 'Cycle 1'}</span>
           <div class="week-tabs-desktop">${weekTabsDesktop}</div>
