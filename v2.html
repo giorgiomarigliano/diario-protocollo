@@ -615,6 +615,10 @@ let today = new Date().toISOString().slice(0, 10);
 let selDate = today;
 let oggiViewMode = 'day'; // 'day' | 'week' — toggle Giorno/Settimana (settimana: vista minima, da rifinire)
 let pesoRange = 30; // finestra corrente del grafico peso: 7 | 14 | 30 | 60 giorni
+// Menù a comparsa (sede iniezione / valore categorico) nella vista desktop
+// portata dal mockup — un solo menù aperto alla volta, si chiude cliccando
+// altrove (vedi listener in fondo al file).
+let openMenu = null;
 // Soglia desktop: sopra i 1024px la card giorno diventa una griglia a bande
 // (mockup "Mac 1340x852"), sotto resta la card singola verificata su mobile.
 let isDesktop = window.innerWidth >= 1024;
@@ -685,9 +689,9 @@ function renderNotMigrated(k) {
    ------------------------------------------------------------ */
 function cycleInjState(dayIdx, slotN, fkey) {
   const key = 'inj_' + slotN + '_' + fieldKey(fkey);
-  const cur = getDay(today)[key] || '';
+  const cur = getDay(selDate)[key] || '';
   const next = { '': 'fatto', fatto: 'saltata', saltata: 'na', na: '' }[cur] || '';
-  patch(today, key, next);
+  patch(selDate, key, next);
 }
 
 function suppState(day, sf) {
@@ -696,11 +700,49 @@ function suppState(day, sf) {
   return '';
 }
 function cycleSuppState(sf) {
-  const day = getDay(today);
+  const day = getDay(selDate);
   const cur = suppState(day, sf);
-  if (cur === '') { patch(today, sf, '1'); patch(today, sf + '_skip', ''); }
-  else if (cur === 'fatto') { patch(today, sf, ''); patch(today, sf + '_skip', '1'); }
-  else { patch(today, sf, ''); patch(today, sf + '_skip', ''); }
+  if (cur === '') { patch(selDate, sf, '1'); patch(selDate, sf + '_skip', ''); }
+  else if (cur === 'fatto') { patch(selDate, sf, ''); patch(selDate, sf + '_skip', '1'); }
+  else { patch(selDate, sf, ''); patch(selDate, sf + '_skip', ''); }
+}
+
+// esc/nf/svgPath/svgTrend/doseLook — porting diretto dal codice reale
+// generato da Claude Design (produzione/v2.html), adattati solo dove i nomi
+// di campo o gli stati differiscono dallo schema reale già verificato.
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const nf = (v, d = 1) => v == null || isNaN(v) ? '—' : Number(v).toFixed(d).replace('.', ',');
+function svgPath(vals, w, h, pad) {
+  const v = vals.filter(x => x != null && !isNaN(x));
+  if (v.length < 2) return { d: '', area: '', lastX: 0, lastY: h / 2 };
+  const mn = Math.min(...v), mx = Math.max(...v), sp = (mx - mn) || 1;
+  const pts = v.map((x, i) => [(i / (v.length - 1)) * w, pad + (1 - (x - mn) / sp) * (h - pad * 2)]);
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const last = pts[pts.length - 1];
+  return { d, area: d + ` L${last[0].toFixed(1)} ${h} L0 ${h} Z`, lastX: last[0], lastY: last[1] };
+}
+function svgTrend(vals, w, h, pad) {
+  const v = vals.filter(x => x != null && !isNaN(x));
+  const n = v.length;
+  if (n < 3) return '';
+  const mn = Math.min(...v), mx = Math.max(...v), sp = (mx - mn) || 1;
+  let sx = 0, sy = 0, sxy = 0, sxx = 0;
+  v.forEach((y, i) => { sx += i; sy += y; sxy += i * y; sxx += i * i; });
+  const m = (n * sxy - sx * sy) / (n * sxx - sx * sx), b = (sy - m * sx) / n;
+  const yAt = i => pad + (1 - ((m * i + b) - mn) / sp) * (h - pad * 2);
+  return `M0 ${yAt(0).toFixed(1)} L${w} ${yAt(n - 1).toFixed(1)}`;
+}
+// doseLook — stessa idea del riferimento, ma sui 4 stati REALI
+// (''/fatto/saltata/na), non su quelli d'esempio ('','done','skip','na').
+function doseLook(v) {
+  const L = t();
+  return {
+    '':        { bg: 'transparent',  border: 'var(--idle)', mark: '',  ink: 'var(--ink2)', label: '' },
+    'fatto':   { bg: 'var(--ok)',    border: 'var(--ok)',   mark: '✓', ink: '#fff',        label: L.doseDone },
+    'saltata': { bg: 'var(--warn)',  border: 'var(--warn)', mark: '–', ink: '#3d3100',     label: L.doseSkip },
+    'saltato': { bg: 'var(--warn)',  border: 'var(--warn)', mark: '–', ink: '#3d3100',     label: L.doseSkip },
+    'na':      { bg: 'var(--surf2)', border: 'var(--surf2)',mark: 'N', ink: 'var(--ink3)', label: L.doseNa }
+  }[v || ''];
 }
 
 function stateDot(state, onclick, label) {
@@ -914,6 +956,7 @@ function jumpToWeek(w) {
    (nuove, 09/09/2026) sopra la day-card esistente (invariata).
    ------------------------------------------------------------ */
 function renderOggiFull() {
+  const L = t();
   const a = adherence(store.blob);
   const wHist = weightHistory(pesoRange, selDate);
   const wTrend = weeklyTrend(wHist);
@@ -941,6 +984,8 @@ function renderOggiFull() {
   const day = getDay(selDate);
   const dayIdx = dayIdxFromISO(selDate);
   const wo = getWorkout2(dayIdx);
+  const rest = wo.type === 'Riposo';
+  const slots = getInjectionSlots2(dayIdx);
   const weekN = Math.floor(dayIdx / 7) + 1;
   const isOverridden = !!day.wo_override;
   const dowLbl = new Date(selDate + 'T00:00:00').getDay();
@@ -978,46 +1023,6 @@ function renderOggiFull() {
       ${s.biometriaChips}
     </div>`;
 
-  // Versione desktop della card Peso: stesso aspetto, ma il numero e i sette
-  // indicatori diventano input veri (patch diretto) invece di solo lettura,
-  // così non serve più una banda "Biometria" separata che rompeva il
-  // ritmo hero+peso → iniezioni+aderenza del mockup approvato.
-  const sonnoTot = parseSonnoHours(day.ore_sonno);
-  const sonnoTxt = isNaN(sonnoTot) ? '' : Math.floor(sonnoTot) + 'h' + Math.round((sonnoTot % 1) * 60);
-  const pesoHtmlDesktop = `
-    <div class="weight-card">
-      <div class="weight-card-hdr">
-        <div class="section-label" style="margin:0">${L2().weight}</div>
-      </div>
-      <div class="weight-value-row">
-        <input class="weight-value weight-value-input" type="number" step="0.1" value="${day.peso || (lastPeso !== undefined ? lastPeso.toFixed(1) : '')}" placeholder="—" oninput="patch(selDate,'peso',this.value)">
-        <span class="weight-unit">kg</span>
-        ${pesoDelta !== null ? `<span class="weight-delta ${pesoDelta < 0 ? 'neg' : ''}" style="margin-left:auto">${pesoDelta >= 0 ? '+' : ''}${pesoDelta.toFixed(1).replace('.', ',')} da T0</span>` : ''}
-      </div>
-      <div class="weight-chart-wrap">
-        <canvas id="peso-chart-canvas" style="width:100%;height:70px;display:block"></canvas>
-      </div>
-      <div class="weight-foot">
-        <span class="weight-trend-note">${trendTxt}</span>
-        <div class="range-btns">
-          ${[7, 14, 30, 60].map(r => `<button class="${pesoRange === r ? 'active' : ''}" onclick="pesoRange=${r}; render();">${r}g</button>`).join('')}
-        </div>
-      </div>
-      <div class="biometria-chips" style="display:flex">
-        <div class="biometria-chip"><span class="biometria-chip-label">Pressione</span>
-          <div style="display:flex;align-items:center;gap:2px">
-            <input class="chip-input" style="width:32px" type="number" value="${day.bp_sys || ''}" placeholder="—" oninput="patch(selDate,'bp_sys',this.value)">/<input class="chip-input" style="width:32px" type="number" value="${day.bp_dia || ''}" placeholder="—" oninput="patch(selDate,'bp_dia',this.value)">
-          </div>
-        </div>
-        <div class="biometria-chip"><span class="biometria-chip-label">Profondo</span><span class="biometria-chip-value">${day.sonno_profondo_min || '—'}m</span></div>
-        <div class="biometria-chip"><span class="biometria-chip-label">Risvegli</span><span class="biometria-chip-value">${day.sonno_risvegli || '—'}</span></div>
-        <div class="biometria-chip"><span class="biometria-chip-label">HRV</span><input class="chip-input" style="width:40px" type="number" value="${day.hrv || ''}" placeholder="—" oninput="patch(selDate,'hrv',this.value)"> ms</div>
-        <div class="biometria-chip"><span class="biometria-chip-label">Freq. a riposo</span><input class="chip-input" style="width:40px" type="number" value="${day.rhr || ''}" placeholder="—" oninput="patch(selDate,'rhr',this.value)"> bpm</div>
-        <div class="biometria-chip"><span class="biometria-chip-label">Sonno</span><input class="chip-input" style="width:50px" type="text" value="${day.ore_sonno || ''}" placeholder="5.18" oninput="patch(selDate,'ore_sonno',this.value)">${sonnoTxt ? ' ('+sonnoTxt+')' : ''}</div>
-        <div class="biometria-chip"><span class="biometria-chip-label">REM</span><span class="biometria-chip-value">${day.sonno_rem_min || '—'}m</span></div>
-      </div>
-    </div>`;
-
   const adherenceHtml = `
     <div class="adherence-card">
       <div class="adherence-title">${L2().adherence}</div>
@@ -1052,37 +1057,336 @@ function renderOggiFull() {
     `;
   }
 
-  // Allenamento su desktop: stessa sezione di sempre, ma con il badge del
-  // tipo allenamento + override in testa alla card (prima stava in una
-  // banda "day-hdr" a sé, che rompeva il ritmo hero+peso → iniezioni+aderenza
-  // del mockup approvato — qui è dove il tipo allenamento è più pertinente).
-  const allenamentoDesktopHtml = `
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-      <span class="day-badge ${isOverridden ? 'overridden' : ''}">${wo.type.toUpperCase()}</span>
-      <select class="day-override-sel" onchange="patch(selDate,'wo_override',this.value)">
-        <option value="" ${!isOverridden ? 'selected' : ''}>${t().choose} (${defaultType})</option>
-        ${overrideOpts.map(o => `<option value="${o}" ${day.wo_override === o ? 'selected' : ''}>${o}</option>`).join('')}
-      </select>
-    </div>
-    ${s.allenamentoDesktop}`;
+  // ============================================================
+  // Desktop — PORTATO da produzione/v2.html generato da Claude Design
+  // (markup, griglia, padding, colori, SVG presi verbatim). Sostituiti
+  // solo i nomi di campo: quel file usava uno schema teorico mai
+  // riconciliato con la produzione (pa/sonno/rem/prof/risv/durata/
+  // volume/kcal/inj[] array) — qui sotto ogni valore legge/scrive i
+  // campi VERI già verificati in questa conversazione con dati reali.
+  // ============================================================
+  const v = verdict(a);
+  const VD = {
+    good:    { dot: 'var(--ok)',   label: 'in linea' },
+    warn:    { dot: 'var(--warn)', label: "da tenere d'occhio" },
+    bad:     { dot: 'var(--bad)',  label: 'sotto target' },
+    neutral: { dot: 'var(--idle)', label: 'senza dati' }
+  }[v.tone];
+  const VD_TEXT = {
+    onTrack:      ['Il ciclo procede in linea.', `Iniezioni al ${a.inj}%, allenamenti al ${a.wo}%, integratori all'${a.supp}%. Nessuno dei tre scende sotto la soglia.`],
+    someGaps:     ['Qualche buco, niente di strutturale.', `Iniezioni al ${a.inj}%, integratori all'${a.supp}%. Gli allenamenti restano al ${a.wo}%.`],
+    trainingGaps: ['Gli allenamenti sono il punto debole.', `Sedute al ${a.wo}%: ${a.woTot - a.woDone} salti su ${a.woTot} previste. Iniezioni al ${a.inj}%.`],
+    noData:       ['Nessun dato ancora registrato.', 'Compila il primo giorno per vedere la sintesi.']
+  }[v.key];
 
-  // Desktop — griglia a bande, mockup "Mac 1340x852" approvato:
-  // banda 1: hero + peso, banda 2: iniezioni + aderenza,
-  // banda 3: integratori + allenamento + soggettivo, poi legenda e note
-  // a piena larghezza. Niente bande extra fuori mockup: giorno/settimana/tipo
-  // allenamento vive nell'hero, peso e biometria sono la stessa card unica.
+  const cycPct = Math.round((dayIdx + 1) / CFG.CYCLE_DAYS * 100) + '%';
+  const PHASES = [
+    ['Fase 1 · adattamento', 0, 27], ['Fase 2 · costruzione', 28, 55],
+    ['Fase 3 · peak', 56, 83], ['Fase 4 · mantenimento', 84, 111]
+  ];
+
+  const pesoS = weightHistory(pesoRange, selDate);
+  const pl = svgPath(pesoS, 560, 120, 12);
+  const slopeD = weeklyTrend(pesoS);
+  const firstP = pesoS.find(x => x != null);
+  const lastP = [...pesoS].reverse().find(x => x != null);
+
+  const card = 'border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);';
+  const lbl = 'font-size:11px;font-weight:600;color:var(--ink2);';
+  const micro = 'border:none;outline:none;font-size:12px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;';
+
+  // 7 indicatori sulla card peso — Pressione e Sonno hanno due sotto-campi
+  // reali, gli altri sono 1:1. Ogni cella resta un editor diretto (patch).
+  const bpTile = `
+    <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+      <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Pressione</span>
+      <div style="display:flex;align-items:center;justify-content:center;gap:2px;background:var(--surf2);border-radius:6px;padding:5px 4px;">
+        <input data-f="bp_sys" value="${esc(day.bp_sys || '')}" placeholder="—" style="${micro}width:22px;background:transparent;text-align:right;">
+        <span style="${micro}">/</span>
+        <input data-f="bp_dia" value="${esc(day.bp_dia || '')}" placeholder="—" style="${micro}width:22px;background:transparent;text-align:left;">
+      </div>
+    </div>`;
+  const sonnoTot = parseSonnoHours(day.ore_sonno);
+  const sonnoShort = isNaN(sonnoTot) ? '' : Math.floor(sonnoTot) + 'h' + Math.round((sonnoTot % 1) * 60);
+  const sonnoTile = `
+    <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+      <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Sonno</span>
+      <input data-f="ore_sonno" value="${esc(day.ore_sonno || '')}" placeholder="5.18" style="${micro}width:100%;min-width:0;background:var(--surf2);border-radius:6px;padding:5px 6px;text-align:center;" title="${sonnoShort}">
+    </div>`;
+  const simpleTile = (label, field) => `
+    <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+      <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${label}</span>
+      <input data-f="${field}" value="${esc(day[field] || '')}" placeholder="—" style="${micro}width:100%;min-width:0;background:var(--surf2);border-radius:6px;padding:5px 6px;text-align:center;">
+    </div>`;
+  const TILES_HTML = [
+    simpleTile('HRV', 'hrv'), simpleTile('Riposo', 'rhr'), bpTile, sonnoTile,
+    simpleTile('REM', 'sonno_rem_min'), simpleTile('Profondo', 'sonno_profondo_min'), simpleTile('Risvegli', 'sonno_risvegli')
+  ];
+
+  const RINGS = [
+    { label: 'Iniezioni',            pct: a.inj,  sub: `${a.injDone}/${a.injTot}`,   color: 'var(--accent)' },
+    { label: L.supplements,          pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)' },
+    { label: L.training,             pct: a.wo,   sub: `${a.woDone}/${a.woTot}`,     color: 'var(--warn)' }
+  ];
+
+  // Iniezioni — appiattite in un'unica lista di righe (come nel mockup: non
+  // raggruppate per fascia oraria, l'orario è solo sottotitolo), ma le
+  // chiavi di stato/sede sono quelle VERE (inj_{slotN}_{campo}[_sito]).
+  // MUSCLE_OPTS per gli slot IM (solo IGF-1 DES) — stessi 5 gruppi già
+  // usati altrove in questa conversazione per il distretto post-WO.
+  const MUSCLE_OPTS = ['Petto', 'Bicipiti', 'Deltoidi', 'Tricipiti', 'Quadricipiti'];
+  const flatDoses = [];
+  slots.forEach(s => {
+    const isIgf = s.igfMuscle !== undefined;
+    s.fields.forEach(f => {
+      flatDoses.push({
+        label: s.label, name: f, via: isIgf ? 'IM' : 'SC', isIgf,
+        stateKey: 'inj_' + s.n + '_' + fieldKey(f),
+        siteKey: isIgf ? ('inj_' + s.n + '_distretto') : ('inj_' + s.n + '_' + fieldKey(f) + '_sito'),
+        siteOpts: isIgf ? MUSCLE_OPTS : SITES_SC,
+        siteLabelFn: opt => opt // entrambe le liste sono già in italiano leggibile
+      });
+    });
+  });
+  const injDoneCount = flatDoses.filter(fd => day[fd.stateKey] === 'fatto').length;
+
+  const heroCard = `
+    <section style="grid-column:1 / 6;grid-row:1 / 2;border-radius:var(--r-card);background:var(--hero);padding:20px 22px;display:flex;flex-direction:column;gap:14px;overflow:hidden;">
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <span style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:rgba(255,255,255,.62);">
+          <span style="width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:${VD.dot};"></span>
+          ${VD.label} · ${L.day} ${dayIdx + 1} / ${CFG.CYCLE_DAYS}
+        </span>
+        <span style="font-size:24px;line-height:1.13;letter-spacing:-.024em;font-weight:600;color:#fff;text-wrap:pretty;">${esc(VD_TEXT[0])}</span>
+      </div>
+      <span style="font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.86);text-wrap:pretty;">${esc(VD_TEXT[1])}</span>
+      <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:7px;justify-content:flex-end;">
+        <div style="display:flex;gap:4px;">
+          ${PHASES.map(([label, from, to]) => {
+            const on = dayIdx >= from && dayIdx <= to;
+            return `<div style="flex:1 1 0;display:flex;flex-direction:column;gap:5px;min-width:0;">
+              <div style="height:4px;border-radius:999px;background:${on ? '#fff' : 'rgba(255,255,255,.18)'};"></div>
+              <span style="font-size:9px;font-weight:600;color:${on ? '#fff' : 'rgba(255,255,255,.45)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${label}</span>
+            </div>`;
+          }).join('')}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="height:5px;border-radius:999px;background:rgba(255,255,255,.16);overflow:hidden;display:flex;">
+            <div style="width:${cycPct};background:#fff;border-radius:999px;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9.5px;font-weight:600;color:rgba(255,255,255,.7);font-variant-numeric:tabular-nums;">
+            <span>20 LUG</span><span>${cycPct}</span><span>8 NOV</span>
+          </div>
+        </div>
+      </div>
+    </section>`;
+
+  const pesoCard = `
+    <section style="grid-column:6 / 13;grid-row:1 / 2;${card}padding:16px 20px;display:flex;flex-direction:column;gap:6px;overflow:hidden;">
+      <div style="flex:0 0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;">
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <span style="${lbl}">${L.weight}</span>
+          <div style="display:flex;align-items:baseline;gap:7px;">
+            <input data-f="peso" value="${esc(day.peso || '')}" placeholder="—" inputmode="decimal" style="border:none;outline:none;font-size:34px;line-height:1.05;letter-spacing:-.03em;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;width:112px;background:var(--surf2);border-radius:9px;padding:3px 10px;">
+            <span style="font-size:13.5px;font-weight:500;color:var(--ink2);">kg</span>
+            <span style="font-size:12px;font-weight:600;color:var(--ok);font-variant-numeric:tabular-nums;margin-left:3px;">${firstP != null && lastP != null ? (lastP - firstP > 0 ? '+' : '') + nf(lastP - firstP) + ' nel periodo' : ''}</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div style="display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;">
+            ${[7, 14, 30, 60].map(n => `<button data-range="${n}" style="border:none;cursor:pointer;padding:4px 9px;border-radius:6px;font-size:10.5px;font-weight:600;background:${n === pesoRange ? 'var(--accent)' : 'transparent'};color:${n === pesoRange ? '#fff' : 'var(--ink2)'};">${n}g</button>`).join('')}
+          </div>
+          <span style="font-size:11.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${slopeD === null ? '—' : (slopeD > 0 ? '+' : '') + nf(slopeD, 2) + ' kg / sett. su ' + pesoRange + ' gg'}</span>
+        </div>
+      </div>
+      <svg viewBox="0 0 560 120" preserveAspectRatio="none" style="flex:0 0 auto;width:100%;height:112px;display:block;overflow:visible;">
+        <defs><linearGradient id="wfill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.18"></stop>
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"></stop>
+        </linearGradient></defs>
+        <line x1="0" y1="30" x2="560" y2="30" stroke="var(--line2)" stroke-width="1"></line>
+        <line x1="0" y1="76" x2="560" y2="76" stroke="var(--line2)" stroke-width="1"></line>
+        <path d="${pl.area}" fill="url(#wfill)"></path>
+        <path d="${pl.d}" fill="none" stroke="var(--accent)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path d="${svgTrend(pesoS, 560, 120, 12)}" fill="none" stroke="var(--ink2)" stroke-width="1.3" stroke-dasharray="4 5" opacity="0.6"></path>
+        <circle cx="${pl.lastX}" cy="${pl.lastY}" r="4" fill="var(--accent)"></circle>
+      </svg>
+      <div style="flex:0 0 auto;display:grid;grid-template-columns:repeat(7,1fr);gap:10px;padding-top:9px;border-top:1px solid var(--line2);">
+        ${TILES_HTML.join('')}
+      </div>
+    </section>`;
+
+  const iniezioniCard = `
+    <section style="grid-column:1 / 7;grid-row:2 / 3;${card}display:flex;flex-direction:column;">
+      <div style="flex:0 0 auto;padding:11px 15px 7px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+        <span style="${lbl}">${L.injections}</span>
+        <div style="display:flex;gap:14px;align-items:baseline;">
+          <span style="display:flex;align-items:baseline;gap:5px;font-size:9px;font-weight:500;color:var(--ink2);"><span style="font-size:8.5px;font-weight:700;color:var(--accent-ink);">SC</span>addome, spalla, gluteo</span>
+          <span style="display:flex;align-items:baseline;gap:5px;font-size:9px;font-weight:500;color:var(--ink2);"><span style="font-size:8.5px;font-weight:700;color:var(--bad);">IM</span>gruppo muscolare · solo IGF-1</span>
+          <span style="font-size:11px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;">${injDoneCount}/${flatDoses.length}</span>
+        </div>
+      </div>
+      ${rest ? `<div style="padding:14px 15px;font-size:12px;color:var(--ink2);">${L.restDay}</div>` : `
+      <div style="flex:1 1 auto;display:grid;grid-template-columns:repeat(2,1fr);border-top:1px solid var(--line2);">
+        ${flatDoses.map((fd, k) => {
+          const st = doseLook(day[fd.stateKey]);
+          const siteVal = day[fd.siteKey] || (fd.isIgf ? '' : '');
+          const hasSite = !!siteVal;
+          const open = openMenu === 'site-' + k;
+          return `
+          <div style="min-height:34px;display:flex;align-items:center;gap:9px;padding:3px 15px;border-bottom:1px solid var(--line2);">
+            <span data-injdose="${k}" style="width:18px;height:18px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:${st.ink};background:${st.bg};border:1.5px solid ${st.border};cursor:pointer;">${st.mark}</span>
+            <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;">
+              <span style="font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(fd.name)}</span>
+              <span style="font-size:8.5px;font-weight:500;color:var(--ink2);white-space:nowrap;">${fd.label}</span>
+            </div>
+            <span style="flex:0 0 18px;font-size:8.5px;font-weight:700;color:${fd.via === 'IM' ? 'var(--bad)' : 'var(--accent-ink)'};">${fd.via}</span>
+            <div style="flex:0 0 116px;position:relative;">
+              <span data-injmenu="site-${k}" style="display:flex;align-items:center;justify-content:space-between;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:${hasSite ? 'var(--accent-soft)' : 'transparent'};border:1px solid ${hasSite ? 'transparent' : 'var(--line)'};cursor:pointer;">
+                <span style="font-size:9.5px;font-weight:600;color:${hasSite ? 'var(--accent-ink)' : 'var(--ink2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${hasSite ? siteVal : L.choose}</span>
+                <span style="font-size:8px;color:var(--ink2);">${open ? '▴' : '▾'}</span>
+              </span>
+              ${open ? `<div style="position:absolute;top:25px;right:0;z-index:20;min-width:132px;background:var(--surf);border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow-lg);padding:4px;display:flex;flex-direction:column;">
+                ${fd.siteOpts.map(o => `<span data-injsite="${k}|${esc(o)}" style="padding:6px 9px;border-radius:6px;background:${o === siteVal ? 'var(--surf2)' : 'transparent'};color:var(--ink);font-size:10.5px;font-weight:${o === siteVal ? 700 : 500};cursor:pointer;white-space:nowrap;">${o}</span>`).join('')}
+              </div>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`}
+      <div style="flex:0 0 auto;display:flex;gap:10px;flex-wrap:wrap;padding:6px 15px;border-top:1px solid var(--line2);">
+        ${['fatto', 'saltata', 'na'].map(k => {
+          const s = doseLook(k);
+          return `<span style="display:flex;align-items:center;gap:4px;font-size:9px;font-weight:500;color:var(--ink2);">
+            <span style="width:12px;height:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:${s.ink};background:${s.bg};">${s.mark}</span>${s.label}</span>`;
+        }).join('')}
+      </div>
+    </section>`;
+
+  const adherenceCard = `
+    <section style="grid-column:7 / 13;grid-row:2 / 3;${card}padding:14px 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+      <span style="flex:0 0 auto;${lbl}">${L.adherence}</span>
+      <div style="flex:1 1 auto;display:flex;align-items:center;justify-content:space-around;">
+        ${RINGS.map(r => `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+            <div style="position:relative;width:104px;height:104px;">
+              <svg viewBox="0 0 84 84" style="width:104px;height:104px;transform:rotate(-90deg);display:block;">
+                <circle cx="42" cy="42" r="34" fill="none" stroke="var(--line2)" stroke-width="8"></circle>
+                <circle cx="42" cy="42" r="34" fill="none" stroke="${r.color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(213.63 * r.pct / 100).toFixed(1)} 213.63"></circle>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:600;color:var(--ink);letter-spacing:-.024em;font-variant-numeric:tabular-nums;">${r.pct}%</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;">
+              <span style="font-size:12.5px;font-weight:600;color:var(--ink);">${r.label}</span>
+              <span style="font-size:10.5px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${r.sub}</span>
+            </div>
+          </div>`).join('')}
+      </div>
+    </section>`;
+
+  const integratoriCard = `
+    <section style="grid-column:1 / 5;grid-row:3 / 4;${card}padding:12px 15px;display:flex;flex-direction:column;gap:8px;overflow:hidden;">
+      <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
+        <span style="${lbl}">${L.supplements}</span>
+        <span style="font-size:11px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;">${SUPP_FIELDS.filter(sf => suppState(day, sf) === 'fatto').length}/${SUPP_FIELDS.length}</span>
+      </div>
+      <div style="flex:0 0 auto;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:32px;gap:6px;">
+        ${SUPP_FIELDS.map(sf => {
+          const st = doseLook(suppState(day, sf));
+          return `<div data-suppdose="${sf}" style="display:flex;align-items:center;gap:8px;padding:0 9px;border-radius:9px;background:var(--surf2);cursor:pointer;overflow:hidden;">
+            <span style="width:19px;height:19px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:${st.ink};background:${st.bg};border:1.5px solid ${st.border};">${st.mark}</span>
+            <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;">
+              <span style="font-size:11.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${SUPP_LABELS[sf]}</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </section>`;
+
+  // Allenamento — Durata/Volume/Calorie/RPE su una riga. RPE qui è lo
+  // STESSO campo reale 'rpe' mostrato anche in Soggettivo (non un duplicato
+  // separato: il mockup teorico aveva 'rpe_wo' distinto, ma in produzione
+  // esiste un solo campo RPE, modificabile da entrambi i punti.
+  const WO_FIELDS = [['Durata', 'wo_durata'], ['Volume', 'wo_volume'], ['Calorie', 'wo_kcal'], ['RPE', 'rpe']];
+  const exList = (() => {
+    if (!day.motra_log) return null;
+    try {
+      const parsed = typeof day.motra_log === 'object' ? day.motra_log : JSON.parse(day.motra_log);
+      return Array.isArray(parsed.exercises) ? parsed.exercises : null;
+    } catch (e) { return null; }
+  })();
+  const allenamentoCard = `
+    <section style="grid-column:5 / 8;grid-row:3 / 4;${card}padding:12px 15px;display:flex;flex-direction:column;gap:9px;overflow:hidden;">
+      <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
+        <span style="${lbl}">${L.training}</span>
+        <span style="padding:4px 9px;border-radius:6px;background:${exList ? 'var(--accent-soft)' : 'var(--surf2)'};color:${exList ? 'var(--accent)' : 'var(--ink3)'};font-size:10px;font-weight:600;">${exList ? 'Log Motra importato' : 'Nessun log Motra'}</span>
+      </div>
+      ${rest ? `<div style="font-size:12px;color:var(--ink2);">${L.restDay}</div>` : `
+      <div style="flex:0 0 auto;display:flex;gap:7px;">
+        ${WO_FIELDS.map(([label, key]) => `
+          <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:3px;">
+            <input data-f="${key}" value="${esc(day[key] || '')}" placeholder="—" style="${micro}width:100%;background:var(--surf2);border-radius:6px;padding:6px;text-align:center;">
+            <span style="text-align:center;font-size:9px;font-weight:500;color:var(--ink2);">${label}</span>
+          </div>`).join('')}
+      </div>
+      <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:3px;">
+        <span style="font-size:9.5px;font-weight:600;color:var(--ink2);">${L.exercises}</span>
+        ${exList ? exList.map(e => {
+          const working = (e.sets || []).filter(st => st.label !== 'W');
+          const reps = working[0] ? working[0].reps : ((e.sets || [])[0] || {}).reps;
+          const kg = working[0] ? working[0].kg : ((e.sets || [])[0] || {}).kg;
+          return `
+            <div style="display:flex;align-items:center;gap:8px;padding:2px 0;">
+              <span style="flex:1 1 auto;min-width:0;font-size:11px;font-weight:500;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(e.name)}</span>
+              <span style="flex:0 0 38px;text-align:right;font-size:10px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${(working.length || (e.sets || []).length) + '×' + (reps != null ? reps : '—')}</span>
+              <span style="flex:0 0 auto;font-size:11px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${kg != null ? kg + 'kg' : ''}</span>
+            </div>`;
+        }).join('') : `<span style="font-size:11px;font-weight:500;color:var(--ink2);">—</span>`}
+      </div>`}
+    </section>`;
+
+  const SUBJ_SCALE_KEYS = ['energia', 'recupero', 'umore', 'rpe', 'appetito', 'sonno_sogg', 'libido', 'chiarezza'];
+  const SUBJ_COLOR = {
+    energia: 'var(--accent)', recupero: '#5b93cc', umore: 'var(--warn)', rpe: '#57575f',
+    appetito: '#a86a00', sonno_sogg: '#3d6f9e', libido: 'var(--bad)', chiarezza: '#6d6d76'
+  };
+  const soggettivoCard = `
+    <section style="grid-column:8 / 13;grid-row:3 / 4;${card}padding:12px 15px;display:flex;flex-direction:column;gap:7px;">
+      <span style="flex:0 0 auto;${lbl}">${L.subjective} · scala 1-10</span>
+      <div style="flex:1 1 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:7px 11px;align-content:start;">
+        ${SUBJ_SCALE_KEYS.map(key => {
+          const cur = parseInt(day[key], 10) || 0;
+          return `<div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:5px;">
+              <span style="font-size:9px;font-weight:500;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${L.subj[key]}</span>
+              <span style="font-size:9.5px;font-weight:600;color:${cur ? SUBJ_COLOR[key] : 'var(--ink2)'};font-variant-numeric:tabular-nums;">${cur || '—'}</span>
+            </div>
+            <div style="display:flex;gap:1px;">
+              ${Array.from({ length: 10 }, (_, n) => `<span data-subjpip="${key}|${n + 1}" style="flex:1 1 0;height:10px;border-radius:2px;background:${n < cur ? SUBJ_COLOR[key] : 'var(--line2)'};cursor:pointer;"></span>`).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+        ${['ritenzione', 'formicolio', 'pienezza_add'].map(key => {
+          const idx = day[key] === '' || day[key] == null ? -1 : parseInt(day[key], 10);
+          const cur = idx >= 0 ? ENUM_LABELS[key][idx] : '';
+          const open = openMenu === 'cat-' + key;
+          const hot = cur === 'Marcata' || cur === 'Intensa' || cur === 'Presente';
+          const ink = !cur ? 'var(--ink2)' : (hot ? 'var(--bad)' : 'var(--accent-ink)');
+          const bg = cur ? (hot ? 'rgba(216,30,5,.10)' : 'var(--accent-soft)') : 'transparent';
+          return `<div style="display:flex;flex-direction:column;gap:3px;min-width:0;position:relative;">
+            <span style="font-size:9px;font-weight:500;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${L.subj[key]}</span>
+            <span data-subjmenu="cat-${key}" style="display:flex;align-items:center;justify-content:center;height:10px;padding:5px 4px;box-sizing:content-box;border-radius:5px;background:${bg};border:1px solid ${cur ? 'transparent' : 'var(--line)'};font-size:9px;font-weight:600;color:${ink};cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cur || '—'}</span>
+            ${open ? `<div style="position:absolute;bottom:100%;margin-bottom:5px;right:0;z-index:25;min-width:104px;background:var(--surf);border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow-lg);padding:4px;display:flex;flex-direction:column;">
+              ${ENUM_LABELS[key].map((o, i) => `<span data-subjenum="${key}|${i}" style="padding:6px 9px;border-radius:6px;background:${i === idx ? 'var(--surf2)' : 'transparent'};color:var(--ink);font-size:10.5px;font-weight:${i === idx ? 700 : 500};cursor:pointer;white-space:nowrap;">${o}</span>`).join('')}
+            </div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </section>`;
+
   return `
-    <div class="oggi-grid">
-      <div class="g-nav">${renderDayNav()}</div>
-      <div class="g-hero">${heroHtml}</div>
-      <div class="g-peso">${pesoHtmlDesktop}</div>
-      <div class="g-iniezioni day-card">${s.iniezioniDesktop}</div>
-      <div class="g-adherence">${adherenceHtml}</div>
-      <div class="g-integratori day-card">${s.integratori}</div>
-      <div class="g-allenamento day-card">${allenamentoDesktopHtml}</div>
-      <div class="g-soggettivo day-card">${s.soggettivoDesktop}</div>
-      <div class="g-legend day-card">${s.legend}</div>
-      <div class="g-note day-card">${s.note}</div>
+    <div class="g-nav">${renderDayNav()}</div>
+    <div style="display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(3,min-content);gap:9px;max-width:1280px;">
+      ${heroCard}${pesoCard}${iniezioniCard}${adherenceCard}${integratoriCard}${allenamentoCard}${soggettivoCard}
     </div>
   `;
 }
@@ -1366,17 +1670,89 @@ function renderOggi() {
   `;
 }
 function bindOggi() {
-  // Canvas non si ridisegnano da soli quando l'HTML viene sostituito via
-  // innerHTML — vanno ridisegnati esplicitamente ad ogni render(), stessa
-  // necessità già nota in index.html per i grafici.
   if (!MIGRATED[tab] || tab !== 'oggi' || !store.loaded) return;
-  const wHist = weightHistory(pesoRange, selDate);
-  drawWeightChart('peso-chart-canvas', wHist, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#1f5fbf');
-  const a = adherence(store.blob);
-  drawComplianceRing('ring-inj', a.inj, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#1f5fbf');
-  drawComplianceRing('ring-supp', a.supp, getComputedStyle(document.documentElement).getPropertyValue('--warn').trim() || '#f5c400');
-  drawComplianceRing('ring-wo', a.wo, getComputedStyle(document.documentElement).getPropertyValue('--bad').trim() || '#d81e05');
+  const app = document.getElementById('app');
+
+  if (!isDesktop) {
+    // Mobile — canvas per grafico peso e gauge aderenza, come sempre.
+    const wHist = weightHistory(pesoRange, selDate);
+    drawWeightChart('peso-chart-canvas', wHist, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#1f5fbf');
+    const a = adherence(store.blob);
+    drawComplianceRing('ring-inj', a.inj, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#1f5fbf');
+    drawComplianceRing('ring-supp', a.supp, getComputedStyle(document.documentElement).getPropertyValue('--warn').trim() || '#f5c400');
+    drawComplianceRing('ring-wo', a.wo, getComputedStyle(document.documentElement).getPropertyValue('--bad').trim() || '#d81e05');
+    return;
+  }
+
+  // Desktop — porting da produzione/v2.html: niente canvas (il grafico e i
+  // gauge sono SVG inline, si aggiornano da soli col resto del markup),
+  // solo handler sui data-attributi delle celle interattive.
+  app.querySelectorAll('[data-f]').forEach(el => {
+    el.onchange = () => patch(selDate, el.dataset.f, el.value);
+  });
+  app.querySelectorAll('[data-range]').forEach(el => {
+    el.onclick = () => { pesoRange = +el.dataset.range; render(); };
+  });
+  app.querySelectorAll('[data-injdose]').forEach(el => {
+    const k = +el.dataset.injdose;
+    el.onclick = () => {
+      // ricostruita qui invece di richiamare renderOggiFull: ci serve solo
+      // la stessa lista appiattita di dosi per risalire alla stateKey di k.
+      const dayIdx2 = dayIdxFromISO(selDate);
+      const slots2 = getInjectionSlots2(dayIdx2);
+      const flat = [];
+      slots2.forEach(s => { const isIgf = s.igfMuscle !== undefined; s.fields.forEach(f => flat.push({ n: s.n, f, isIgf })); });
+      const fd = flat[k];
+      if (fd) cycleInjState(dayIdx2, fd.n, fd.f);
+    };
+  });
+  app.querySelectorAll('[data-injmenu]').forEach(el => {
+    el.onclick = e => { e.stopPropagation(); const id = el.dataset.injmenu; openMenu = openMenu === id ? null : id; render(); };
+  });
+  app.querySelectorAll('[data-injsite]').forEach(el => {
+    el.onclick = e => {
+      e.stopPropagation();
+      const [k, site] = el.dataset.injsite.split('|');
+      const dayIdx2 = dayIdxFromISO(selDate);
+      const slots2 = getInjectionSlots2(dayIdx2);
+      const flat = [];
+      slots2.forEach(s => { const isIgf = s.igfMuscle !== undefined; s.fields.forEach(f => flat.push({ n: s.n, f, isIgf })); });
+      const fd = flat[+k];
+      if (!fd) return;
+      const siteKey = fd.isIgf ? ('inj_' + fd.n + '_distretto') : ('inj_' + fd.n + '_' + fieldKey(fd.f) + '_sito');
+      const cur = getDay(selDate)[siteKey] || '';
+      openMenu = null;
+      patch(selDate, siteKey, cur === site ? '' : site);
+    };
+  });
+  app.querySelectorAll('[data-suppdose]').forEach(el => {
+    el.onclick = () => cycleSuppState(el.dataset.suppdose);
+  });
+  app.querySelectorAll('[data-subjpip]').forEach(el => {
+    el.onclick = () => {
+      const [key, n] = el.dataset.subjpip.split('|');
+      const cur = parseInt(getDay(selDate)[key], 10) || 0;
+      patch(selDate, key, cur === +n ? 0 : +n); // ritocco sullo stesso pip azzera
+    };
+  });
+  app.querySelectorAll('[data-subjmenu]').forEach(el => {
+    el.onclick = e => { e.stopPropagation(); const id = el.dataset.subjmenu; openMenu = openMenu === id ? null : id; render(); };
+  });
+  app.querySelectorAll('[data-subjenum]').forEach(el => {
+    el.onclick = e => {
+      e.stopPropagation();
+      const [key, idx] = el.dataset.subjenum.split('|');
+      openMenu = null;
+      patch(selDate, key, idx);
+    };
+  });
 }
+
+/* Un click fuori dalle celle interattive chiude qualunque menù aperto
+   (sede iniezione / valore categorico) — porting diretto dal riferimento. */
+document.addEventListener('click', () => {
+  if (openMenu) { openMenu = null; render(); }
+});
 
 window.addEventListener('hashchange', () => {
   tab = location.hash.replace('#', '') || 'oggi';
