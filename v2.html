@@ -103,6 +103,26 @@
   .day-pill.active .day-pill-dow,.day-pill.active .day-pill-num{color:#fff;}
   .day-pill-dow{font-size:10.5px;font-weight:600;color:var(--ink2);text-transform:uppercase;}
   .day-pill-num{font-size:14px;font-weight:600;color:var(--ink);}
+
+  /* ══ Testata desktop — rifatta il 10/09/2026 sul mockup "Mac 1340x852":
+     le 16 settimane stanno su una riga sola (nessuno scroll), "Ciclo 1" e
+     il pulsante warm-up sono nella stessa riga, tutta la pagina è centrata
+     invece di allargarsi bordo a bordo. Sotto i 1024px resta tutto come
+     prima (verificato, non toccato). ══ */
+  .page-wrap{max-width:1320px;margin:0 auto;}
+  @media (min-width:1024px){
+    .week-row-desktop{display:flex;align-items:center;gap:14px;}
+    .cycle-label{flex:0 0 auto;font-size:12.5px;font-weight:600;color:var(--ink2);white-space:nowrap;}
+    .week-tabs-desktop{flex:1 1 auto;display:flex;gap:5px;min-width:0;}
+    .week-tabs-desktop .week-tab{flex:1 1 0;min-width:0;padding:7px 4px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .warmup-btn{flex:0 0 auto;border:1px solid var(--line);background:var(--surf2);color:var(--ink2);font-size:11.5px;font-weight:600;padding:7px 12px;border-radius:9px;cursor:pointer;white-space:nowrap;text-decoration:none;}
+    .warmup-btn:hover{background:var(--line2);}
+    .header-actions{display:flex;align-items:center;gap:10px;}
+    .sync-status{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:var(--ink2);white-space:nowrap;}
+    .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:0 0 auto;}
+    .sync-dot.saving{background:var(--warn);}
+    .save-btn{border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;padding:7px 16px;border-radius:8px;cursor:pointer;white-space:nowrap;}
+  }
   .day-pill-dot{width:5px;height:5px;border-radius:50%;background:var(--idle);}
   .day-pill-dot.has-data{background:var(--ok);}
   .day-pill-dot.is-future{background:transparent;}
@@ -718,9 +738,10 @@ const T0_PESO = 71.1;
 function render() {
   const L = t();
   const app = document.getElementById('app');
+  const isDirty = Object.keys(store.dirty).length > 0;
   app.innerHTML = `
     <header style="position:sticky;top:0;z-index:40;background:var(--surf);border-bottom:1px solid var(--line);">
-      <div style="display:flex;align-items:center;gap:16px;padding:0 16px;">
+      <div class="page-wrap" style="display:flex;align-items:center;gap:16px;padding:0 16px;">
         <nav style="flex:1 1 auto;display:flex;gap:18px;overflow-x:auto;">
           ${TAB_KEYS.map((k, n) => `
             <button data-tab="${k}" style="
@@ -731,6 +752,15 @@ function render() {
               border-bottom:2px solid ${k === tab ? 'var(--accent)' : 'transparent'};
             ">${L.tabs[n]}</button>`).join('')}
         </nav>
+        ${isDesktop && tab === 'oggi' ? `
+        <div class="header-actions">
+          <div class="view-toggle">
+            <button data-view="day" class="${oggiViewMode === 'day' ? 'active' : ''}">${LANG === 'it' ? 'Giorno' : 'Day'}</button>
+            <button data-view="week" class="${oggiViewMode === 'week' ? 'active' : ''}">${LANG === 'it' ? 'Settimana' : 'Week'}</button>
+          </div>
+          <span class="sync-status"><span class="sync-dot ${store.saving ? 'saving' : ''}"></span>${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : (isDirty ? (LANG === 'it' ? 'Modifiche in sospeso' : 'Unsaved changes') : (LANG === 'it' ? 'Sincronizzato' : 'Synced'))}</span>
+          <button id="save-now-btn" class="save-btn">${LANG === 'it' ? 'Salva' : 'Save'}</button>
+        </div>` : ''}
         <div style="flex:0 0 auto;display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;">
           ${['it', 'en'].map(l => `
             <button data-lang="${l}" style="
@@ -743,7 +773,7 @@ function render() {
       </div>
     </header>
 
-    <main style="padding:12px;">
+    <main class="page-wrap" style="padding:12px;">
       ${!store.loaded ? '<p style="padding:24px;color:var(--ink2)">Caricamento…</p>' : (MIGRATED[tab] ? renderOggiFull() : renderNotMigrated(tab))}
     </main>
   `;
@@ -752,6 +782,9 @@ function render() {
     tab = b.dataset.tab; location.hash = tab; render();
   });
   app.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => setLang(b.dataset.lang));
+  app.querySelectorAll('[data-view]').forEach(b => b.onclick = () => { oggiViewMode = b.dataset.view; render(); });
+  const saveBtn = document.getElementById('save-now-btn');
+  if (saveBtn) saveBtn.onclick = () => { clearTimeout(saveTimer); flush(); };
   bindOggi(app);
 }
 
@@ -995,10 +1028,6 @@ function renderDayNav() {
   const selWeek = Math.floor(selIdx / 7); // 0-based
   const todayIdx = dayIdxFromISO(today);
 
-  const weekTabs = Array.from({ length: totalWeeks }, (_, w) => w).map(w => `
-    <button class="week-tab ${w === selWeek ? 'active' : ''}" onclick="jumpToWeek(${w})">WK${w + 1}</button>
-  `).join('');
-
   const weekStartIdx = selWeek * 7;
   const dowNames = LANG === 'it' ? ['LUN','MAR','MER','GIO','VEN','SAB','DOM'] : ['MON','TUE','WED','THU','FRI','SAT','SUN'];
   const dayPills = Array.from({ length: 7 }, (_, i) => weekStartIdx + i).map((dIdx, i) => {
@@ -1015,6 +1044,29 @@ function renderDayNav() {
       </button>`;
   }).join('');
 
+  if (isDesktop) {
+    // Testata desktop portata dal mockup "Mac 1340x852": "Ciclo 1" + le 16
+    // settimane su una riga sola (nessuno scroll) + pulsante warm-up sulla
+    // stessa riga. Giorno/Settimana è nell'header ora, non più qui.
+    const weekTabsDesktop = Array.from({ length: totalWeeks }, (_, w) => w).map(w => `
+      <button class="week-tab ${w === selWeek ? 'active' : ''}" onclick="jumpToWeek(${w})">WK${w + 1}</button>
+    `).join('');
+    return `
+      <div class="oggi-top">
+        <div class="week-row-desktop">
+          <span class="cycle-label">${LANG === 'it' ? 'Ciclo 1' : 'Cycle 1'}</span>
+          <div class="week-tabs-desktop">${weekTabsDesktop}</div>
+          <a class="warmup-btn" href="${CFG.OLD_APP}">${LANG === 'it' ? 'Pre-protocollo · warm-up' : 'Pre-protocol · warm-up'}</a>
+        </div>
+        <div class="day-strip">${dayPills}</div>
+      </div>
+    `;
+  }
+
+  // Mobile — invariato, stessa struttura verificata finora.
+  const weekTabs = Array.from({ length: totalWeeks }, (_, w) => w).map(w => `
+    <button class="week-tab ${w === selWeek ? 'active' : ''}" onclick="jumpToWeek(${w})">WK${w + 1}</button>
+  `).join('');
   return `
     <div class="oggi-top">
       <div class="view-toggle">
@@ -1208,7 +1260,7 @@ function renderOggiFull() {
       <input data-f="${field}" value="${esc(day[field] || '')}" placeholder="—" style="${micro}width:100%;min-width:0;background:var(--surf2);border-radius:6px;padding:5px 6px;text-align:center;">
     </div>`;
   const TILES_HTML = [
-    simpleTile('HRV', 'hrv'), simpleTile('Riposo', 'rhr'), bpTile, sonnoTile,
+    simpleTile('HRV', 'hrv'), simpleTile(LANG === 'it' ? 'Freq. riposo' : 'Resting HR', 'rhr'), bpTile, sonnoTile,
     simpleTile('REM', 'sonno_rem_min'), simpleTile('Profondo', 'sonno_profondo_min'), simpleTile('Risvegli', 'sonno_risvegli')
   ];
 
