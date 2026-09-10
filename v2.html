@@ -146,8 +146,6 @@
     .oggi-grid .g-nav{grid-column:1/-1;}
     .oggi-grid .g-hero{grid-column:1/6;}       /* 5/12, come nel mockup */
     .oggi-grid .g-peso{grid-column:6/13;}      /* 7/12 */
-    .oggi-grid .g-hdr{grid-column:1/-1;}
-    .oggi-grid .g-biometria{grid-column:1/-1;}
     .oggi-grid .g-iniezioni{grid-column:1/7;}  /* 6/12 */
     .oggi-grid .g-adherence{grid-column:7/13;} /* 6/12 */
     .oggi-grid .g-integratori{grid-column:1/5;}     /* 4/12 */
@@ -166,6 +164,10 @@
     .biometria-chip{display:flex;flex-direction:column;gap:2px;min-width:64px;}
     .biometria-chip-label{font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;}
     .biometria-chip-value{font-size:14px;font-weight:600;color:var(--ink);}
+    .weight-value-input{border:none;background:transparent;font:inherit;font-size:32px;font-weight:700;letter-spacing:-.02em;color:var(--ink);width:110px;padding:0;}
+    .weight-value-input:focus{outline:none;border-bottom:1.5px solid var(--accent);}
+    .chip-input{border:none;border-bottom:1px solid var(--line);background:transparent;font:inherit;font-size:14px;font-weight:600;color:var(--ink);padding:0 1px;text-align:center;}
+    .chip-input:focus{outline:none;border-bottom-color:var(--accent);}
   }
 </style>
 </head>
@@ -852,9 +854,23 @@ function renderOggiFull() {
 
   const s = renderOggiSections();
 
+  // Dati di giorno/settimana/allenamento, serve sia per la riga di stato
+  // dell'hero sia per il controllo override spostato dentro Allenamento
+  // su desktop (vedi sotto — non più una banda a sé stante).
+  const day = getDay(selDate);
+  const dayIdx = dayIdxFromISO(selDate);
+  const wo = getWorkout2(dayIdx);
+  const weekN = Math.floor(dayIdx / 7) + 1;
+  const isOverridden = !!day.wo_override;
+  const dowLbl = new Date(selDate + 'T00:00:00').getDay();
+  const mapLbl = { 0: 'Upper Dom', 1: 'Riposo', 2: 'Push', 3: 'Pull', 4: 'Riposo', 5: 'Legs', 6: 'Upper Sab' };
+  const defaultType = mapLbl[dowLbl] || 'Riposo';
+  const overrideOpts = ['Riposo', 'Push', 'Pull', 'Legs', 'Upper Sab', 'Upper Dom'];
+  const dayMetaTxt = `${LANG === 'it' ? 'giorno' : 'day'} ${dayIdx} ${LANG === 'it' ? 'di' : 'of'} ${CFG.CYCLE_DAYS} · WK${weekN} · ${wo.type}`;
+
   const heroHtml = `
     <div class="hero-card">
-      <div class="hero-status"><span class="hero-status-dot"></span>${LANG === 'it' ? 'In linea' : 'On track'}</div>
+      <div class="hero-status"><span class="hero-status-dot"></span>${LANG === 'it' ? 'In linea' : 'On track'} · ${dayMetaTxt}</div>
       <div class="hero-title">${hero.title}</div>
       <div class="hero-text">${hero.text}</div>
     </div>`;
@@ -879,6 +895,46 @@ function renderOggiFull() {
         </div>
       </div>
       ${s.biometriaChips}
+    </div>`;
+
+  // Versione desktop della card Peso: stesso aspetto, ma il numero e i sette
+  // indicatori diventano input veri (patch diretto) invece di solo lettura,
+  // così non serve più una banda "Biometria" separata che rompeva il
+  // ritmo hero+peso → iniezioni+aderenza del mockup approvato.
+  const sonnoTot = parseSonnoHours(day.ore_sonno);
+  const sonnoTxt = isNaN(sonnoTot) ? '' : Math.floor(sonnoTot) + 'h' + Math.round((sonnoTot % 1) * 60);
+  const pesoHtmlDesktop = `
+    <div class="weight-card">
+      <div class="weight-card-hdr">
+        <div class="section-label" style="margin:0">${L2().weight}</div>
+      </div>
+      <div class="weight-value-row">
+        <input class="weight-value weight-value-input" type="number" step="0.1" value="${day.peso || (lastPeso !== undefined ? lastPeso.toFixed(1) : '')}" placeholder="—" oninput="patch(selDate,'peso',this.value)">
+        <span class="weight-unit">kg</span>
+        ${pesoDelta !== null ? `<span class="weight-delta ${pesoDelta < 0 ? 'neg' : ''}" style="margin-left:auto">${pesoDelta >= 0 ? '+' : ''}${pesoDelta.toFixed(1).replace('.', ',')} da T0</span>` : ''}
+      </div>
+      <div class="weight-chart-wrap">
+        <canvas id="peso-chart-canvas" style="width:100%;height:70px;display:block"></canvas>
+      </div>
+      <div class="weight-foot">
+        <span class="weight-trend-note">${trendTxt}</span>
+        <div class="range-btns">
+          ${[7, 14, 30, 60].map(r => `<button class="${pesoRange === r ? 'active' : ''}" onclick="pesoRange=${r}; render();">${r}g</button>`).join('')}
+        </div>
+      </div>
+      <div class="biometria-chips" style="display:flex">
+        <div class="biometria-chip"><span class="biometria-chip-label">Pressione</span>
+          <div style="display:flex;align-items:center;gap:2px">
+            <input class="chip-input" style="width:32px" type="number" value="${day.bp_sys || ''}" placeholder="—" oninput="patch(selDate,'bp_sys',this.value)">/<input class="chip-input" style="width:32px" type="number" value="${day.bp_dia || ''}" placeholder="—" oninput="patch(selDate,'bp_dia',this.value)">
+          </div>
+        </div>
+        <div class="biometria-chip"><span class="biometria-chip-label">Profondo</span><span class="biometria-chip-value">${day.sonno_profondo_min || '—'}m</span></div>
+        <div class="biometria-chip"><span class="biometria-chip-label">Risvegli</span><span class="biometria-chip-value">${day.sonno_risvegli || '—'}</span></div>
+        <div class="biometria-chip"><span class="biometria-chip-label">HRV</span><input class="chip-input" style="width:40px" type="number" value="${day.hrv || ''}" placeholder="—" oninput="patch(selDate,'hrv',this.value)"> ms</div>
+        <div class="biometria-chip"><span class="biometria-chip-label">Freq. a riposo</span><input class="chip-input" style="width:40px" type="number" value="${day.rhr || ''}" placeholder="—" oninput="patch(selDate,'rhr',this.value)"> bpm</div>
+        <div class="biometria-chip"><span class="biometria-chip-label">Sonno</span><input class="chip-input" style="width:50px" type="text" value="${day.ore_sonno || ''}" placeholder="5.18" oninput="patch(selDate,'ore_sonno',this.value)">${sonnoTxt ? ' ('+sonnoTxt+')' : ''}</div>
+        <div class="biometria-chip"><span class="biometria-chip-label">REM</span><span class="biometria-chip-value">${day.sonno_rem_min || '—'}m</span></div>
+      </div>
     </div>`;
 
   const adherenceHtml = `
@@ -915,21 +971,34 @@ function renderOggiFull() {
     `;
   }
 
+  // Allenamento su desktop: stessa sezione di sempre, ma con il badge del
+  // tipo allenamento + override in testa alla card (prima stava in una
+  // banda "day-hdr" a sé, che rompeva il ritmo hero+peso → iniezioni+aderenza
+  // del mockup approvato — qui è dove il tipo allenamento è più pertinente).
+  const allenamentoDesktopHtml = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <span class="day-badge ${isOverridden ? 'overridden' : ''}">${wo.type.toUpperCase()}</span>
+      <select class="day-override-sel" onchange="patch(selDate,'wo_override',this.value)">
+        <option value="" ${!isOverridden ? 'selected' : ''}>${t().choose} (${defaultType})</option>
+        ${overrideOpts.map(o => `<option value="${o}" ${day.wo_override === o ? 'selected' : ''}>${o}</option>`).join('')}
+      </select>
+    </div>
+    ${s.allenamento}`;
+
   // Desktop — griglia a bande, mockup "Mac 1340x852" approvato:
   // banda 1: hero + peso, banda 2: iniezioni + aderenza,
   // banda 3: integratori + allenamento + soggettivo, poi legenda e note
-  // a piena larghezza. Ogni sezione diventa una card a sé (stile day-card).
+  // a piena larghezza. Niente bande extra fuori mockup: giorno/settimana/tipo
+  // allenamento vive nell'hero, peso e biometria sono la stessa card unica.
   return `
     <div class="oggi-grid">
       <div class="g-nav">${renderDayNav()}</div>
       <div class="g-hero">${heroHtml}</div>
-      <div class="g-peso">${pesoHtml}</div>
-      <div class="g-hdr day-card">${s.hdr}</div>
-      <div class="g-biometria day-card">${s.biometria}</div>
+      <div class="g-peso">${pesoHtmlDesktop}</div>
       <div class="g-iniezioni day-card">${s.iniezioni}</div>
       <div class="g-adherence">${adherenceHtml}</div>
       <div class="g-integratori day-card">${s.integratori}</div>
-      <div class="g-allenamento day-card">${s.allenamento}</div>
+      <div class="g-allenamento day-card">${allenamentoDesktopHtml}</div>
       <div class="g-soggettivo day-card">${s.soggettivo}</div>
       <div class="g-legend day-card">${s.legend}</div>
       <div class="g-note day-card">${s.note}</div>
