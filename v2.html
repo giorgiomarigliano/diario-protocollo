@@ -1092,20 +1092,54 @@ function renderDayNav() {
   }).join('');
 
   if (isDesktop) {
-    // Testata desktop portata dal mockup "Mac 1340x852": "Ciclo 1" + le 16
-    // settimane su una riga sola (nessuno scroll) + pulsante warm-up sulla
-    // stessa riga. Giorno/Settimana è nell'header ora, non più qui.
-    const weekTabsDesktop = Array.from({ length: totalWeeks }, (_, w) => w).map(w => `
-      <button class="week-tab ${w === selWeek ? 'active' : ''}" onclick="jumpToWeek(${w})">WK${w + 1}</button>
+    // Testata desktop — PORTATA VERBATIM da produzione/v2-desktop.html
+    // (export reale di Claude Design, 11/09/2026). Sostituisce la mia
+    // versione precedente, che impilava nome/numero/pallino in colonna
+    // dentro ogni pallino giorno — il vero mockup li mette IN LINEA
+    // orizzontale, molto più bassi. Anche i pulsanti settimana sono
+    // "W1".."W16" (non "WK1"), non "flex:1 1 0 stretched": nel vero
+    // mockup sono a larghezza naturale (flex:0 0 auto) con overflow-x:auto
+    // di sicurezza — alle dimensioni reali (padding 5px 10px, 11.5px) le
+    // 16 stanno comunque su una riga sola senza mai attivare lo scroll.
+    const weekTabsReal = Array.from({ length: totalWeeks }, (_, w) => w).map(w => `
+      <span onclick="jumpToWeek(${w})" style="flex:0 0 auto;padding:5px 10px;border-radius:7px;font-size:11.5px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;
+        background:${w === selWeek ? 'var(--accent)' : 'var(--surf2)'};color:${w === selWeek ? '#fff' : 'var(--ink2)'};border:1px solid ${w === selWeek ? 'var(--accent)' : 'var(--line)'};">W${w + 1}</span>
     `).join('');
+
+    const weekStart = new Date(CFG.CYCLE_START + 'T00:00:00'); weekStart.setDate(weekStart.getDate() + weekStartIdx);
+    const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
+    const monthsIt = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+    const monthsEn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const months = LANG === 'it' ? monthsIt : monthsEn;
+    const rangeLabel = `${weekStart.getDate()} ${months[weekStart.getMonth()]} – ${weekEnd.getDate()} ${months[weekEnd.getMonth()]}`;
+
+    const dayPillsReal = Array.from({ length: 7 }, (_, i) => weekStartIdx + i).map((dIdx, i) => {
+      if (dIdx < 0 || dIdx >= CFG.CYCLE_DAYS) return `<span style="flex:1 1 0;"></span>`;
+      const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + dIdx);
+      const iso = isoLocal(d);
+      const isSel = iso === selDate;
+      const isFuture = dIdx > todayIdx;
+      const dotColor = isFuture ? 'var(--idle)' : (dayHasAnyData(dIdx) ? (isSel ? 'var(--accent)' : 'var(--ok)') : 'var(--idle)');
+      return `
+        <span onclick="selDate='${iso}'; render();" style="flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:7px;padding:7px 4px;border-radius:8px;cursor:pointer;
+          background:${isSel ? 'var(--accent-soft)' : 'var(--surf)'};border:1px solid ${isSel ? 'var(--accent)' : 'var(--line)'};">
+          <span style="font-size:11.5px;font-weight:600;color:${isSel ? 'var(--accent-ink)' : 'var(--ink)'};">${dowNames[i]}</span>
+          <span style="font-size:11px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${d.getDate()}</span>
+          <span style="width:6px;height:6px;border-radius:50%;background:${dotColor};"></span>
+        </span>`;
+    }).join('');
+
     return `
       <div class="oggi-top" style="max-width:none;margin-bottom:14px;">
-        <div class="week-row-desktop">
-          <span class="cycle-label">${LANG === 'it' ? 'Ciclo 1' : 'Cycle 1'}</span>
-          <div class="week-tabs-desktop">${weekTabsDesktop}</div>
-          <a class="warmup-btn" href="${CFG.OLD_APP}">${LANG === 'it' ? 'Pre-protocollo · warm-up' : 'Pre-protocol · warm-up'}</a>
+        <div style="flex:0 0 auto;background:var(--surf);border-bottom:1px solid var(--line);padding:8px 20px;display:flex;align-items:center;gap:12px;">
+          <span style="flex:0 0 auto;font-size:11px;font-weight:600;color:var(--ink2);">${LANG === 'it' ? 'Ciclo 1' : 'Cycle 1'}</span>
+          <div style="flex:1 1 auto;min-width:0;display:flex;gap:4px;overflow-x:auto;">${weekTabsReal}</div>
+          <a href="${CFG.OLD_APP}" style="text-decoration:none;flex:0 0 auto;padding:5px 11px;border-radius:7px;font-size:11px;font-weight:600;color:var(--ink2);border:1px solid var(--line);cursor:pointer;">${LANG === 'it' ? 'Mostra pre-ciclo' : 'Show pre-cycle'}</a>
         </div>
-        <div class="day-strip">${dayPills}</div>
+        <div style="flex:0 0 auto;background:var(--surf2);border-bottom:1px solid var(--line);padding:7px 20px;display:flex;align-items:center;gap:7px;">
+          <span style="flex:0 0 auto;font-size:11px;font-weight:600;color:var(--ink2);min-width:96px;">${rangeLabel}</span>
+          <div style="flex:1 1 auto;display:flex;gap:6px;">${dayPillsReal}</div>
+        </div>
       </div>
     `;
   }
