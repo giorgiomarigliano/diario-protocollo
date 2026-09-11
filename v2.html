@@ -358,6 +358,17 @@ const ENUM_LABELS = {
    inj_{slot}_distretto con 5 gruppi muscolari (in getInjectionSlots2). */
 const SITES_SC = ['Addome dx','Addome sx','Spalla dx','Spalla sx','Gluteo dx','Gluteo sx','Quadricipite dx','Quadricipite sx'];
 
+/* Traduzione SOLO per la visualizzazione dei nomi di sede/distretto — il
+   valore salvato resta sempre la stringa italiana canonica (usata come
+   'value' e come chiave dati), qui si traduce solo il testo mostrato,
+   stesso principio già usato per slotLabels (Mattino/Sera/ecc.). */
+const SITE_LABELS_EN = {
+  'Addome dx':'Right abdomen','Addome sx':'Left abdomen','Spalla dx':'Right shoulder','Spalla sx':'Left shoulder',
+  'Gluteo dx':'Right glute','Gluteo sx':'Left glute','Quadricipite dx':'Right quad','Quadricipite sx':'Left quad',
+  'Petto':'Chest','Bicipiti':'Biceps','Deltoidi':'Deltoids','Tricipiti':'Triceps','Quadricipiti':'Quads'
+};
+function siteLabel(s) { return LANG === 'it' ? s : (SITE_LABELS_EN[s] || s); }
+
 /* Costruzione chiave campo per una molecola all'interno di uno slot:
    MIRROR esatto di index.html (f.replace(/[\s\-]/g,'_')) — es.
    "Fragment 176-191 250mcg" → "Fragment_176_191_250mcg". */
@@ -378,6 +389,21 @@ const I18N = {
     doseDone: 'fatta', doseSkip: 'saltata', doseNa: 'non applicabile',
     inOldApp: 'Apri nella versione attuale',
     notMigrated: 'Questa sezione vive ancora nella versione attuale.',
+    phases: { adattamento: 'Adattamento', costruzione: 'Costruzione', peak: 'Peak', mantenimento: 'Mantenimento' },
+    phaseDates: ['20 LUG', '8 NOV'],
+    tile: { pressione: 'Pressione', sonno: 'Sonno', rem: 'REM', profondo: 'Profondo', risvegli: 'Risvegli' },
+    injLegendSC: 'SC addome, spalla, gluteo · tutti i composti tranne IGF-1',
+    injLegendIM: 'IM gruppo muscolare · solo IGF-1',
+    injectionsRing: 'Iniezioni', workoutsRing: 'Allenamenti',
+    subjScale: 'scala 1-10',
+    inPeriod: 'nel periodo', perWeekOver: (n) => `kg / sett. su ${n}gg`,
+    slotLabels: { 'Mattino': 'Mattino', 'Pomeriggio': 'Pomeriggio', 'Sera': 'Sera', 'Post-WO': 'Post-WO' },
+    vdText: {
+      onTrack:      ['Il ciclo procede in linea.', (a) => `Iniezioni al ${a.inj}%, allenamenti al ${a.wo}%, integratori all'${a.supp}%. Nessuno dei tre scende sotto la soglia.`],
+      someGaps:     ['Qualche buco, niente di strutturale.', (a) => `Iniezioni al ${a.inj}%, integratori all'${a.supp}%. Gli allenamenti restano al ${a.wo}%.`],
+      trainingGaps: ['Gli allenamenti sono il punto debole.', (a) => `Sedute al ${a.wo}%: ${a.woTot - a.woDone} salti su ${a.woTot} previste. Iniezioni al ${a.inj}%.`],
+      noData:       ['Nessun dato ancora registrato.', () => 'Compila il primo giorno per vedere la sintesi.']
+    },
     subj: {
       energia:'Energia', recupero:'Recupero', umore:'Umore', rpe:'RPE',
       appetito:'Appetito', libido:'Libido', chiarezza:'Chiarezza mentale',
@@ -396,6 +422,21 @@ const I18N = {
     doseDone: 'done', doseSkip: 'skipped', doseNa: 'not applicable',
     inOldApp: 'Open in the current version',
     notMigrated: 'This section still lives in the current version.',
+    phases: { adattamento: 'Adaptation', costruzione: 'Build', peak: 'Peak', mantenimento: 'Maintenance' },
+    phaseDates: ['20 JUL', '8 NOV'],
+    tile: { pressione: 'Blood pressure', sonno: 'Sleep', rem: 'REM', profondo: 'Deep', risvegli: 'Awakenings' },
+    injLegendSC: 'SC abdomen, shoulder, glute · all compounds except IGF-1',
+    injLegendIM: 'IM muscle group · IGF-1 only',
+    injectionsRing: 'Injections', workoutsRing: 'Workouts',
+    subjScale: 'scale 1-10',
+    inPeriod: 'in the period', perWeekOver: (n) => `kg / wk over ${n}d`,
+    slotLabels: { 'Mattino': 'Morning', 'Pomeriggio': 'Afternoon', 'Sera': 'Evening', 'Post-WO': 'Post-WO' },
+    vdText: {
+      onTrack:      ['The cycle is on track.', (a) => `Injections at ${a.inj}%, workouts at ${a.wo}%, supplements at ${a.supp}%. None of the three drops below threshold.`],
+      someGaps:     ['A few gaps, nothing structural.', (a) => `Injections at ${a.inj}%, supplements at ${a.supp}%. Workouts remain at ${a.wo}%.`],
+      trainingGaps: ['Workouts are the weak point.', (a) => `Sessions at ${a.wo}%: ${a.woTot - a.woDone} missed out of ${a.woTot} planned. Injections at ${a.inj}%.`],
+      noData:       ['No data recorded yet.', () => 'Fill in the first day to see the summary.']
+    },
     subj: {
       energia:'Energy', recupero:'Recovery', umore:'Mood', rpe:'RPE',
       appetito:'Appetite', libido:'Libido', chiarezza:'Mental clarity',
@@ -1214,22 +1255,22 @@ function renderOggiFull() {
   // ============================================================
   const v = verdict(a);
   const VD = {
-    good:    { dot: 'var(--ok)',   label: 'in linea' },
-    warn:    { dot: 'var(--warn)', label: "da tenere d'occhio" },
-    bad:     { dot: 'var(--bad)',  label: 'sotto target' },
-    neutral: { dot: 'var(--idle)', label: 'senza dati' }
+    good:    { dot: 'var(--ok)',   label: LANG === 'it' ? 'in linea' : 'on track' },
+    warn:    { dot: 'var(--warn)', label: LANG === 'it' ? "da tenere d'occhio" : 'worth watching' },
+    bad:     { dot: 'var(--bad)',  label: LANG === 'it' ? 'sotto target' : 'below target' },
+    neutral: { dot: 'var(--idle)', label: LANG === 'it' ? 'senza dati' : 'no data' }
   }[v.tone];
   const VD_TEXT = {
-    onTrack:      ['Il ciclo procede in linea.', `Iniezioni al ${a.inj}%, allenamenti al ${a.wo}%, integratori all'${a.supp}%. Nessuno dei tre scende sotto la soglia.`],
-    someGaps:     ['Qualche buco, niente di strutturale.', `Iniezioni al ${a.inj}%, integratori all'${a.supp}%. Gli allenamenti restano al ${a.wo}%.`],
-    trainingGaps: ['Gli allenamenti sono il punto debole.', `Sedute al ${a.wo}%: ${a.woTot - a.woDone} salti su ${a.woTot} previste. Iniezioni al ${a.inj}%.`],
-    noData:       ['Nessun dato ancora registrato.', 'Compila il primo giorno per vedere la sintesi.']
+    onTrack:      [L.vdText.onTrack[0], L.vdText.onTrack[1](a)],
+    someGaps:     [L.vdText.someGaps[0], L.vdText.someGaps[1](a)],
+    trainingGaps: [L.vdText.trainingGaps[0], L.vdText.trainingGaps[1](a)],
+    noData:       [L.vdText.noData[0], L.vdText.noData[1]()]
   }[v.key];
 
   const cycPct = Math.round((dayIdx + 1) / CFG.CYCLE_DAYS * 100) + '%';
   const PHASES = [
-    ['Adattamento', 0, 27], ['Costruzione', 28, 55],
-    ['Peak', 56, 83], ['Mantenimento', 84, 111]
+    [L.phases.adattamento, 0, 27], [L.phases.costruzione, 28, 55],
+    [L.phases.peak, 56, 83], [L.phases.mantenimento, 84, 111]
   ];
 
   const pesoS = weightHistory(pesoRange, selDate);
@@ -1246,7 +1287,7 @@ function renderOggiFull() {
   // reali, gli altri sono 1:1. Ogni cella resta un editor diretto (patch).
   const bpTile = `
     <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
-      <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Pressione</span>
+      <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${L.tile.pressione}</span>
       <div style="display:flex;align-items:center;justify-content:center;gap:2px;background:var(--surf2);border-radius:6px;padding:5px 4px;">
         <input data-f="bp_sys" value="${esc(day.bp_sys || '')}" placeholder="—" style="${micro}width:26px;background:transparent;text-align:right;">
         <span style="${micro}">/</span>
@@ -1257,7 +1298,7 @@ function renderOggiFull() {
   const sonnoShort = isNaN(sonnoTot) ? '' : Math.floor(sonnoTot) + 'h' + Math.round((sonnoTot % 1) * 60);
   const sonnoTile = `
     <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
-      <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Sonno</span>
+      <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${L.tile.sonno}</span>
       <input data-f="ore_sonno" value="${esc(day.ore_sonno || '')}" placeholder="5.18" style="${micro}width:100%;min-width:0;background:var(--surf2);border-radius:6px;padding:5px 6px;text-align:center;" title="${sonnoShort}">
     </div>`;
   const simpleTile = (label, field) => `
@@ -1267,13 +1308,13 @@ function renderOggiFull() {
     </div>`;
   const TILES_HTML = [
     simpleTile('HRV', 'hrv'), simpleTile(LANG === 'it' ? 'Freq. riposo' : 'Resting HR', 'rhr'), bpTile, sonnoTile,
-    simpleTile('REM', 'sonno_rem_min'), simpleTile('Profondo', 'sonno_profondo_min'), simpleTile('Risvegli', 'sonno_risvegli')
+    simpleTile(L.tile.rem, 'sonno_rem_min'), simpleTile(L.tile.profondo, 'sonno_profondo_min'), simpleTile(L.tile.risvegli, 'sonno_risvegli')
   ];
 
   const RINGS = [
-    { label: 'Iniezioni',            pct: a.inj,  sub: `${a.injDone}/${a.injTot}`,   color: 'var(--accent)' },
+    { label: L.injectionsRing,       pct: a.inj,  sub: `${a.injDone}/${a.injTot}`,   color: 'var(--accent)' },
     { label: L.supplements,          pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)' },
-    { label: LANG === 'it' ? 'Allenamenti' : 'Workouts', pct: a.wo,   sub: `${a.woDone}/${a.woTot}`,     color: 'var(--warn)' }
+    { label: L.workoutsRing, pct: a.wo,   sub: `${a.woDone}/${a.woTot}`,     color: 'var(--warn)' }
   ];
 
   // Iniezioni — appiattite in un'unica lista di righe (come nel mockup: non
@@ -1331,7 +1372,7 @@ function renderOggiFull() {
             <div style="width:${cycPct};background:#fff;border-radius:999px;"></div>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:9.5px;font-weight:600;color:rgba(255,255,255,.7);font-variant-numeric:tabular-nums;">
-            <span>20 LUG</span><span>${cycPct}</span><span>8 NOV</span>
+            <span>${L.phaseDates[0]}</span><span>${cycPct}</span><span>${L.phaseDates[1]}</span>
           </div>
         </div>
       </div>
@@ -1345,14 +1386,14 @@ function renderOggiFull() {
           <div style="display:flex;align-items:baseline;gap:7px;">
             <input data-f="peso" value="${esc(day.peso || '')}" placeholder="—" inputmode="decimal" style="border:none;outline:none;font-size:34px;line-height:1.05;letter-spacing:-.03em;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;width:112px;background:var(--surf2);border-radius:9px;padding:3px 10px;">
             <span style="font-size:13.5px;font-weight:500;color:var(--ink2);">kg</span>
-            <span style="font-size:12px;font-weight:600;color:var(--ok);font-variant-numeric:tabular-nums;margin-left:3px;">${firstP != null && lastP != null ? (lastP - firstP > 0 ? '+' : '') + nf(lastP - firstP) + ' nel periodo' : ''}</span>
+            <span style="font-size:12px;font-weight:600;color:var(--ok);font-variant-numeric:tabular-nums;margin-left:3px;">${firstP != null && lastP != null ? (lastP - firstP > 0 ? '+' : '') + nf(lastP - firstP) + ' ' + L.inPeriod : ''}</span>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
           <div style="display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;">
             ${[7, 14, 30, 60].map(n => `<button data-range="${n}" style="border:none;cursor:pointer;padding:4px 9px;border-radius:6px;font-size:10.5px;font-weight:600;background:${n === pesoRange ? 'var(--accent)' : 'transparent'};color:${n === pesoRange ? '#fff' : 'var(--ink2)'};">${n}g</button>`).join('')}
           </div>
-          <span style="font-size:11.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${slopeD === null ? '—' : (slopeD > 0 ? '+' : '') + nf(slopeD, 2) + ' kg / sett. su ' + pesoRange + ' gg'}</span>
+          <span style="font-size:11.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${slopeD === null ? '—' : (slopeD > 0 ? '+' : '') + nf(slopeD, 2) + ' ' + L.perWeekOver(pesoRange)}</span>
         </div>
       </div>
       <svg viewBox="0 0 560 120" preserveAspectRatio="none" style="flex:0 0 auto;width:100%;height:112px;display:block;overflow:visible;">
@@ -1377,8 +1418,8 @@ function renderOggiFull() {
       <div style="flex:0 0 auto;padding:11px 15px 7px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
         <span style="${lbl}">${L.injections}</span>
         <div style="display:flex;gap:14px;align-items:baseline;">
-          <span style="display:flex;align-items:baseline;gap:5px;font-size:9px;font-weight:500;color:var(--ink2);"><span style="font-size:8.5px;font-weight:700;color:var(--accent-ink);">SC</span>addome, spalla, gluteo</span>
-          <span style="display:flex;align-items:baseline;gap:5px;font-size:9px;font-weight:500;color:var(--ink2);"><span style="font-size:8.5px;font-weight:700;color:var(--bad);">IM</span>gruppo muscolare · solo IGF-1</span>
+          <span style="display:flex;align-items:baseline;gap:5px;font-size:9px;font-weight:500;color:var(--ink2);"><span style="font-size:8.5px;font-weight:700;color:var(--accent-ink);">SC</span>${L.injLegendSC.replace(/^SC /, '')}</span>
+          <span style="display:flex;align-items:baseline;gap:5px;font-size:9px;font-weight:500;color:var(--ink2);"><span style="font-size:8.5px;font-weight:700;color:var(--bad);">IM</span>${L.injLegendIM.replace(/^IM /, '')}</span>
           <span style="font-size:11px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;">${injDoneCount}/${flatDoses.length}</span>
         </div>
       </div>
@@ -1394,16 +1435,16 @@ function renderOggiFull() {
             <span data-injdose="${k}" style="width:18px;height:18px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:${st.ink};background:${st.bg};border:1.5px solid ${st.border};cursor:pointer;">${st.mark}</span>
             <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;">
               <span style="font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(compName)}</span>
-              <span style="font-size:8.5px;font-weight:500;color:var(--ink2);white-space:nowrap;">${dose ? esc(dose) + ' · ' : ''}${fd.label}</span>
+              <span style="font-size:8.5px;font-weight:500;color:var(--ink2);white-space:nowrap;">${dose ? esc(dose) + ' · ' : ''}${L.slotLabels[fd.label] || fd.label}</span>
             </div>
             <span style="flex:0 0 16px;font-size:8.5px;font-weight:700;color:${fd.via === 'IM' ? 'var(--bad)' : 'var(--accent-ink)'};">${fd.via}</span>
             <div style="flex:0 0 92px;position:relative;">
               <span data-injmenu="site-${k}" style="display:flex;align-items:center;justify-content:space-between;gap:4px;height:22px;padding:0 6px;border-radius:6px;background:${hasSite ? 'var(--accent-soft)' : 'transparent'};border:1px solid ${hasSite ? 'transparent' : 'var(--line)'};cursor:pointer;">
-                <span style="font-size:9px;font-weight:600;color:${hasSite ? 'var(--accent-ink)' : 'var(--ink2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${hasSite ? siteVal : L.choose}</span>
+                <span style="font-size:9px;font-weight:600;color:${hasSite ? 'var(--accent-ink)' : 'var(--ink2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${hasSite ? siteLabel(siteVal) : L.choose}</span>
                 <span style="font-size:8px;color:var(--ink2);">${open ? '▴' : '▾'}</span>
               </span>
               ${open ? `<div style="position:absolute;top:25px;right:0;z-index:20;min-width:132px;background:var(--surf);border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow-lg);padding:4px;display:flex;flex-direction:column;">
-                ${fd.siteOpts.map(o => `<span data-injsite="${k}|${esc(o)}" style="padding:6px 9px;border-radius:6px;background:${o === siteVal ? 'var(--surf2)' : 'transparent'};color:var(--ink);font-size:10.5px;font-weight:${o === siteVal ? 700 : 500};cursor:pointer;white-space:nowrap;">${o}</span>`).join('')}
+                ${fd.siteOpts.map(o => `<span data-injsite="${k}|${esc(o)}" style="padding:6px 9px;border-radius:6px;background:${o === siteVal ? 'var(--surf2)' : 'transparent'};color:var(--ink);font-size:10.5px;font-weight:${o === siteVal ? 700 : 500};cursor:pointer;white-space:nowrap;">${siteLabel(o)}</span>`).join('')}
               </div>` : ''}
             </div>
           </div>`;
@@ -1514,7 +1555,7 @@ function renderOggiFull() {
   };
   const soggettivoCard = `
     <section style="grid-column:8 / 13;grid-row:3 / 4;${card}padding:12px 15px;display:flex;flex-direction:column;gap:7px;">
-      <span style="flex:0 0 auto;${lbl}">${L.subjective} · scala 1-10</span>
+      <span style="flex:0 0 auto;${lbl}">${L.subjective} · ${L.subjScale}</span>
       <div style="flex:1 1 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:7px 11px;align-content:start;">
         ${SUBJ_SCALE_KEYS.map(key => {
           const cur = parseInt(day[key], 10) || 0;
@@ -1627,12 +1668,12 @@ function renderOggiSections() {
   // riepilogo a colpo d'occhio in più, non un secondo posto dove scrivere.
   const biometriaChips = `
     <div class="biometria-chips">
-      <div class="biometria-chip"><span class="biometria-chip-label">Pressione</span><span class="biometria-chip-value">${day.bp_sys || '—'}/${day.bp_dia || '—'}</span></div>
+      <div class="biometria-chip"><span class="biometria-chip-label">${L.tile.pressione}</span><span class="biometria-chip-value">${day.bp_sys || '—'}/${day.bp_dia || '—'}</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">Profondo</span><span class="biometria-chip-value">${day.sonno_profondo_min || '—'}m</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">Risvegli</span><span class="biometria-chip-value">${day.sonno_risvegli || '—'}</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">HRV</span><span class="biometria-chip-value">${day.hrv || '—'} ms</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">Freq. a riposo</span><span class="biometria-chip-value">${day.rhr || '—'} bpm</span></div>
-      <div class="biometria-chip"><span class="biometria-chip-label">Sonno</span><span class="biometria-chip-value">${sonnoTxt}</span></div>
+      <div class="biometria-chip"><span class="biometria-chip-label">${L.tile.sonno}</span><span class="biometria-chip-value">${sonnoTxt}</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">REM</span><span class="biometria-chip-value">${day.sonno_rem_min || '—'}m</span></div>
     </div>`;
 
@@ -1640,7 +1681,7 @@ function renderOggiSections() {
     <div class="section">
       <div class="section-label">${L.injections}</div>
       ${slots.map(s => `
-        <div class="slot-hdr">${s.label}${s.igfMuscle !== undefined ? ` · ${L.district}: <select class="subj-select" style="font-size:11px;padding:2px 5px" onchange="patch(selDate,'inj_${s.n}_distretto',this.value)"><option value="">${L.choose}</option>${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m => `<option value="${m}" ${(day['inj_' + s.n + '_distretto'] || s.igfMuscle) === m ? 'selected' : ''}>${m}</option>`).join('')}</select>` : ''}</div>
+        <div class="slot-hdr">${L.slotLabels[s.label] || s.label}${s.igfMuscle !== undefined ? ` · ${L.district}: <select class="subj-select" style="font-size:11px;padding:2px 5px" onchange="patch(selDate,'inj_${s.n}_distretto',this.value)"><option value="">${L.choose}</option>${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m => `<option value="${m}" ${(day['inj_' + s.n + '_distretto'] || s.igfMuscle) === m ? 'selected' : ''}>${siteLabel(m)}</option>`).join('')}</select>` : ''}</div>
         ${s.fields.map(f => {
           const fkeyRaw = fieldKey(f);
           const stKey = 'inj_' + s.n + '_' + fkeyRaw;
@@ -1651,7 +1692,7 @@ function renderOggiSections() {
             <span class="state-name">${f}</span>
             ${!isIgf ? `<select class="state-site" onchange="patch(selDate,'${stKey}_sito',this.value)">
               <option value="">${L.site}</option>
-              ${SITES_SC.map(site => `<option value="${site}" ${day[stKey + '_sito'] === site ? 'selected' : ''}>${site}</option>`).join('')}
+              ${SITES_SC.map(site => `<option value="${site}" ${day[stKey + '_sito'] === site ? 'selected' : ''}>${siteLabel(site)}</option>`).join('')}
             </select>` : ''}
             ${stateDot(state, `cycleInjState(${dayIdx},${s.n},${JSON.stringify(f)})`, f)}
           </div>`;
@@ -1668,7 +1709,7 @@ function renderOggiSections() {
     <div class="section">
       <div class="section-label">${L.injections}</div>
       ${wo.type === 'Riposo' ? `<div class="rest-msg">${L.restDay}</div>` : slots.map(s => `
-        ${s.igfMuscle !== undefined ? `<div class="slot-hdr">${L.district}: <select class="subj-select" style="font-size:11px;padding:2px 5px" onchange="patch(selDate,'inj_${s.n}_distretto',this.value)"><option value="">${L.choose}</option>${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m => `<option value="${m}" ${(day['inj_' + s.n + '_distretto'] || s.igfMuscle) === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>` : ''}
+        ${s.igfMuscle !== undefined ? `<div class="slot-hdr">${L.district}: <select class="subj-select" style="font-size:11px;padding:2px 5px" onchange="patch(selDate,'inj_${s.n}_distretto',this.value)"><option value="">${L.choose}</option>${['Petto','Bicipiti','Deltoidi','Tricipiti','Quadricipiti'].map(m => `<option value="${m}" ${(day['inj_' + s.n + '_distretto'] || s.igfMuscle) === m ? 'selected' : ''}>${siteLabel(m)}</option>`).join('')}</select></div>` : ''}
         ${s.fields.map(f => {
           const fkeyRaw = fieldKey(f);
           const stKey = 'inj_' + s.n + '_' + fkeyRaw;
@@ -1679,7 +1720,7 @@ function renderOggiSections() {
             <span class="state-name">${f} <span class="inj-time">· ${s.label}</span></span>
             ${!isIgf ? `<select class="state-site" onchange="patch(selDate,'${stKey}_sito',this.value)">
               <option value="">${L.site}</option>
-              ${SITES_SC.map(site => `<option value="${site}" ${day[stKey + '_sito'] === site ? 'selected' : ''}>${site}</option>`).join('')}
+              ${SITES_SC.map(site => `<option value="${site}" ${day[stKey + '_sito'] === site ? 'selected' : ''}>${siteLabel(site)}</option>`).join('')}
             </select>` : ''}
             ${stateDot(state, `cycleInjState(${dayIdx},${s.n},${JSON.stringify(f)})`, f)}
           </div>`;
