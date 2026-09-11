@@ -832,6 +832,8 @@ function render() {
   app.querySelectorAll('[data-view]').forEach(b => b.onclick = () => { oggiViewMode = b.dataset.view; render(); });
   const saveBtn = document.getElementById('save-now-btn');
   if (saveBtn) saveBtn.onclick = () => { clearTimeout(saveTimer); flush(); };
+  const saveBtnM = document.getElementById('save-now-btn-mobile');
+  if (saveBtnM) saveBtnM.onclick = () => { clearTimeout(saveTimer); flush(); };
   bindOggi(app);
 }
 
@@ -1144,19 +1146,53 @@ function renderDayNav() {
     `;
   }
 
-  // Mobile — invariato, stessa struttura verificata finora.
-  const weekTabs = Array.from({ length: totalWeeks }, (_, w) => w).map(w => `
-    <button class="week-tab ${w === selWeek ? 'active' : ''}" onclick="jumpToWeek(${w})">WK${w + 1}</button>
+  // Mobile — PORTATO VERBATIM da produzione/v2-mobile.html: intestazione
+  // completamente diversa da prima (data corrente + giorno/settimana del
+  // ciclo in una riga con accanto il toggle Giorno/Settimana, non più tre
+  // righe separate), settimane a capsula, giorni impilati con pallino 5px.
+  const dowFullIt = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+  const dowFullEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthsIt = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+  const monthsEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const selD = new Date(selDate + 'T00:00:00');
+  const dateHeaderTxt = LANG === 'it'
+    ? `${dowFullIt[selD.getDay()]} ${selD.getDate()} ${monthsIt[selD.getMonth()]}`
+    : `${dowFullEn[selD.getDay()]} ${monthsEn[selD.getMonth()]} ${selD.getDate()}`;
+
+  const weekTabsM = Array.from({ length: totalWeeks }, (_, w) => w).map(w => `
+    <span onclick="jumpToWeek(${w})" style="flex:0 0 auto;padding:6px 11px;border-radius:999px;font-size:11.5px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;
+      background:${w === selWeek ? 'var(--accent)' : 'var(--surf2)'};color:${w === selWeek ? '#fff' : 'var(--ink2)'};border:1px solid ${w === selWeek ? 'var(--accent)' : 'var(--line)'};">W${w + 1}</span>
   `).join('');
+
+  const dayPillsM = Array.from({ length: 7 }, (_, i) => weekStartIdx + i).map((dIdx, i) => {
+    if (dIdx < 0 || dIdx >= CFG.CYCLE_DAYS) return `<span style="flex:1 1 0;"></span>`;
+    const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + dIdx);
+    const iso = isoLocal(d);
+    const isSel = iso === selDate;
+    const isFuture = dIdx > todayIdx;
+    const dotColor = isFuture ? 'var(--idle)' : (dayHasAnyData(dIdx) ? (isSel ? 'var(--accent)' : 'var(--ok)') : 'var(--idle)');
+    return `
+      <span onclick="selDate='${iso}'; render();" style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;border-radius:9px;cursor:pointer;
+        background:${isSel ? 'var(--accent-soft)' : 'var(--surf)'};border:1px solid ${isSel ? 'var(--accent)' : 'var(--line)'};">
+        <span style="font-size:10px;font-weight:600;color:${isSel ? 'var(--accent-ink)' : 'var(--ink)'};">${dowNames[i]}</span>
+        <span style="font-size:11.5px;font-weight:600;color:${isSel ? 'var(--accent-ink)' : 'var(--ink)'};font-variant-numeric:tabular-nums;">${d.getDate()}</span>
+        <span style="width:5px;height:5px;border-radius:50%;background:${dotColor};"></span>
+      </span>`;
+  }).join('');
+
   return `
-    <div class="oggi-top">
-      <div class="view-toggle">
-        <button class="${oggiViewMode === 'day' ? 'active' : ''}" onclick="oggiViewMode='day'; render();">${L.day === 'Giorno' || L.day === 'Day' ? (LANG==='it'?'Giorno':'Day') : 'Giorno'}</button>
-        <button class="${oggiViewMode === 'week' ? 'active' : ''}" onclick="oggiViewMode='week'; render();">${LANG === 'it' ? 'Settimana' : 'Week'}</button>
+    <div style="flex:0 0 auto;padding:10px 18px 8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div style="display:flex;flex-direction:column;gap:1px;min-width:0;">
+        <span style="font-size:19px;line-height:1.1;letter-spacing:-.02em;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dateHeaderTxt}</span>
+        <span style="font-size:10.5px;font-weight:600;color:var(--ink2);">${L.day} ${selIdx + 1} ${LANG === 'it' ? 'di' : 'of'} ${CFG.CYCLE_DAYS} · WK${selWeek + 1}</span>
       </div>
-      <div class="week-tabs">${weekTabs}</div>
-      <div class="day-strip">${dayPills}</div>
+      <div style="flex:0 0 auto;display:flex;gap:3px;background:var(--surf2);border-radius:8px;padding:3px;">
+        <span onclick="oggiViewMode='day'; render();" style="padding:6px 11px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;background:${oggiViewMode === 'day' ? 'var(--accent)' : 'transparent'};color:${oggiViewMode === 'day' ? '#fff' : 'var(--ink2)'};">${L.day}</span>
+        <span onclick="oggiViewMode='week'; render();" style="padding:6px 11px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;background:${oggiViewMode === 'week' ? 'var(--accent)' : 'transparent'};color:${oggiViewMode === 'week' ? '#fff' : 'var(--ink2)'};">${LANG === 'it' ? 'Settimana' : 'Week'}</span>
+      </div>
     </div>
+    <div style="flex:0 0 auto;padding:0 18px 7px;display:flex;gap:5px;overflow-x:auto;">${weekTabsM}</div>
+    <div style="flex:0 0 auto;padding:0 18px 9px;display:flex;gap:4px;">${dayPillsM}</div>
   `;
 }
 function jumpToWeek(w) {
@@ -1267,26 +1303,6 @@ function renderOggiFull() {
       </div>
     </div>`;
 
-  if (!isDesktop) {
-    // Mobile — invariato: nav, poi le tre card, poi l'unica day-card con
-    // tutte le sezioni impilate (renderOggi() la assembla da renderOggiSections()).
-    return `
-      ${renderDayNav()}
-      ${heroHtml}
-      ${pesoHtml}
-      ${adherenceHtml}
-      <div style="margin-top:10px">${renderOggi()}</div>
-    `;
-  }
-
-  // ============================================================
-  // Desktop — PORTATO da produzione/v2.html generato da Claude Design
-  // (markup, griglia, padding, colori, SVG presi verbatim). Sostituiti
-  // solo i nomi di campo: quel file usava uno schema teorico mai
-  // riconciliato con la produzione (pa/sonno/rem/prof/risv/durata/
-  // volume/kcal/inj[] array) — qui sotto ogni valore legge/scrive i
-  // campi VERI già verificati in questa conversazione con dati reali.
-  // ============================================================
   const v = verdict(a);
   const VD = {
     good:    { dot: 'var(--ok)',   label: LANG === 'it' ? 'in linea' : 'on track' },
@@ -1300,6 +1316,294 @@ function renderOggiFull() {
     trainingGaps: [L.vdText.trainingGaps[0], L.vdText.trainingGaps[1](a)],
     noData:       [L.vdText.noData[0], L.vdText.noData[1]()]
   }[v.key];
+
+  const exList = (() => {
+    if (!day.motra_log) return null;
+    try {
+      const parsed = typeof day.motra_log === 'object' ? day.motra_log : JSON.parse(day.motra_log);
+      return Array.isArray(parsed.exercises) ? parsed.exercises : null;
+    } catch (e) { return null; }
+  })();
+
+  if (!isDesktop) {
+    // ============================================================
+    // Mobile — PORTATO VERBATIM da produzione/v2-mobile.html (export
+    // reale di Claude Design, 11/09/2026). Sostituisce interamente il
+    // vecchio renderOggi()/renderOggiSections() mobile: struttura di
+    // testata diversa dal desktop (data+Giorno/Settimana in una riga,
+    // niente barre di fase nell'hero), iniezioni a colonna singola con
+    // tocco più grande, biometria e sonno come due card separate a
+    // righe etichetta+valore+unità, soggettivo a righe piene invece
+    // che a griglia 3 colonne. Stessi campi reali, stesse funzioni
+    // helper del desktop (splitDose, siteLabel, ENUM_LABELS, ecc.).
+    // ============================================================
+    const micro = 'border:none;outline:none;font-size:12px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;';
+    const pesoSm = weightHistory(pesoRange, selDate);
+    const plSm = svgPath(pesoSm, 320, 54, 4);
+    const slopeSm = weeklyTrend(pesoSm);
+
+    const heroM = `
+      <div style="flex:0 0 auto;border-radius:18px;background:var(--hero);padding:16px 18px;display:flex;flex-direction:column;gap:8px;">
+        <span style="display:flex;align-items:center;gap:7px;font-size:10px;font-weight:600;color:rgba(255,255,255,.62);"><span style="width:6px;height:6px;border-radius:50%;flex:0 0 auto;background:${VD.dot};"></span>${VD.label}</span>
+        <span style="font-size:18px;line-height:1.16;letter-spacing:-.02em;font-weight:600;color:#fff;text-wrap:pretty;">${esc(VD_TEXT[0])}</span>
+        <span style="font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.86);text-wrap:pretty;">${esc(VD_TEXT[1])}</span>
+      </div>`;
+
+    const pesoM = `
+      <div style="flex:0 0 auto;border-radius:18px;background:var(--surf);box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+          <div style="display:flex;flex-direction:column;gap:3px;">
+            <span style="font-size:10.5px;font-weight:600;color:var(--ink2);">${L.weight}</span>
+            <div style="display:flex;align-items:baseline;gap:6px;">
+              <input data-f="peso" value="${esc(day.peso || '')}" placeholder="—" inputmode="decimal" style="border:none;outline:none;font-size:31px;line-height:1.05;letter-spacing:-.03em;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;width:104px;background:var(--surf2);border-radius:9px;padding:3px 10px;">
+              <span style="font-size:13px;font-weight:500;color:var(--ink2);">kg</span>
+            </div>
+          </div>
+        </div>
+        <svg viewBox="0 0 320 54" preserveAspectRatio="none" style="width:100%;height:48px;display:block;overflow:visible;">
+          <path d="${plSm.d}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          <circle cx="${plSm.lastX}" cy="${plSm.lastY}" r="3.4" fill="var(--accent)"></circle>
+        </svg>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <span style="font-size:10.5px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${slopeSm === null ? '—' : (slopeSm > 0 ? '+' : '') + nf(slopeSm, 2) + ' ' + L.perWeekOver(pesoRange)}</span>
+          <div style="display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;">
+            ${[7, 14, 30, 60].map(n => `<span data-range="${n}" style="padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;background:${n === pesoRange ? 'var(--accent)' : 'transparent'};color:${n === pesoRange ? '#fff' : 'var(--ink2)'};border:1px solid ${n === pesoRange ? 'var(--accent)' : 'transparent'};">${n}g</span>`).join('')}
+          </div>
+        </div>
+      </div>`;
+
+    const ringsM = (() => {
+      const RINGS = [
+        { label: L.injectionsRing, pct: a.inj, sub: `${a.injDone}/${a.injTot}`, color: 'var(--accent)' },
+        { label: L.supplements,    pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)' },
+        { label: L.workoutsRing,   pct: a.wo,  sub: `${a.woDone}/${a.woTot}`,  color: 'var(--warn)' }
+      ];
+      return `
+      <div style="flex:0 0 auto;border-radius:18px;background:var(--surf);box-shadow:var(--shadow);padding:16px 12px;display:flex;justify-content:space-around;">
+        ${RINGS.map(r => `
+          <div style="display:flex;flex-direction:column;align-items:center;gap:7px;">
+            <div style="position:relative;width:76px;height:76px;">
+              <svg viewBox="0 0 84 84" style="width:76px;height:76px;transform:rotate(-90deg);display:block;">
+                <circle cx="42" cy="42" r="34" fill="none" stroke="var(--line2)" stroke-width="8"></circle>
+                <circle cx="42" cy="42" r="34" fill="none" stroke="${r.color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(213.63 * r.pct / 100).toFixed(1)} 213.63"></circle>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${r.pct}%</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;">
+              <span style="font-size:11.5px;font-weight:600;color:var(--ink);">${r.label}</span>
+              <span style="font-size:10px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${r.sub}</span>
+            </div>
+          </div>`).join('')}
+      </div>`;
+    })();
+
+    const bioRow = (label, field, unit) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
+        <span style="flex:1 1 auto;font-size:13.5px;font-weight:500;color:var(--ink2);">${label}</span>
+        <input data-f="${field}" value="${esc(day[field] || '')}" placeholder="—" style="${micro}width:78px;background:var(--surf2);border-radius:7px;padding:7px 9px;text-align:right;">
+        <span style="flex:0 0 34px;font-size:11px;font-weight:500;color:var(--ink2);">${unit}</span>
+      </div>`;
+    const bpCombined = `${day.bp_sys || ''}${day.bp_sys || day.bp_dia ? '/' : ''}${day.bp_dia || ''}`;
+    const biometriaM = `
+      <div style="flex:0 0 auto;border-radius:18px;background:var(--surf);box-shadow:var(--shadow);overflow:hidden;">
+        <div style="padding:12px 16px 8px;display:flex;align-items:baseline;justify-content:space-between;">
+          <span style="font-size:10.5px;font-weight:600;color:var(--ink2);">${LANG === 'it' ? 'Biometria' : 'Biometrics'}</span>
+          <span style="font-size:10px;font-weight:600;color:var(--ink2);">${LANG === 'it' ? 'mattino, a digiuno' : 'morning, fasted'}</span>
+        </div>
+        ${bioRow('HRV', 'hrv', 'ms')}
+        ${bioRow(LANG === 'it' ? 'Freq. a riposo' : 'Resting HR', 'rhr', 'bpm')}
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
+          <span style="flex:1 1 auto;font-size:13.5px;font-weight:500;color:var(--ink2);">${L.tile.pressione}</span>
+          <span style="flex:0 0 78px;display:flex;align-items:center;justify-content:center;gap:2px;background:var(--surf2);border-radius:7px;padding:7px 4px;">
+            <input data-f="bp_sys" value="${esc(day.bp_sys || '')}" placeholder="—" style="${micro}width:26px;background:transparent;text-align:right;">
+            <span style="${micro}">/</span>
+            <input data-f="bp_dia" value="${esc(day.bp_dia || '')}" placeholder="—" style="${micro}width:26px;background:transparent;text-align:left;">
+          </span>
+          <span style="flex:0 0 34px;font-size:11px;font-weight:500;color:var(--ink2);">mmHg</span>
+        </div>
+      </div>`;
+    const sonnoM = `
+      <div style="flex:0 0 auto;border-radius:18px;background:var(--surf);box-shadow:var(--shadow);overflow:hidden;">
+        <div style="padding:12px 16px 8px;display:flex;align-items:baseline;justify-content:space-between;">
+          <span style="font-size:10.5px;font-weight:600;color:var(--ink2);">${L.tile.sonno}</span>
+          <span style="font-size:10px;font-weight:600;color:var(--ink2);">${LANG === 'it' ? 'notte precedente' : 'previous night'}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
+          <span style="flex:1 1 auto;font-size:13.5px;font-weight:500;color:var(--ink2);">${LANG === 'it' ? 'Ore totali' : 'Total hours'}</span>
+          <input data-f="ore_sonno" value="${esc(day.ore_sonno || '')}" placeholder="—" style="${micro}width:78px;background:var(--surf2);border-radius:7px;padding:7px 9px;text-align:right;">
+          <span style="flex:0 0 34px;font-size:11px;font-weight:500;color:var(--ink2);">h.mm</span>
+        </div>
+        ${bioRow('REM', 'sonno_rem_min', 'min')}
+        ${bioRow(L.tile.profondo, 'sonno_profondo_min', 'min')}
+        ${bioRow(L.tile.risvegli, 'sonno_risvegli', 'n')}
+      </div>`;
+
+    const flatDosesM = [];
+    slots.forEach(s => {
+      const isIgf = s.igfMuscle !== undefined;
+      s.fields.forEach(f => flatDosesM.push({
+        label: s.label, name: f, via: isIgf ? 'IM' : 'SC', isIgf,
+        stateKey: 'inj_' + s.n + '_' + fieldKey(f),
+        siteKey: isIgf ? ('inj_' + s.n + '_distretto') : ('inj_' + s.n + '_' + fieldKey(f) + '_sito'),
+        siteOpts: isIgf ? ['Petto', 'Bicipiti', 'Deltoidi', 'Tricipiti', 'Quadricipiti'] : SITES_SC
+      }));
+    });
+    const injDoneM = flatDosesM.filter(fd => day[fd.stateKey] === 'fatto').length;
+    const iniezioniM = `
+      <div style="flex:0 0 auto;border-radius:18px;background:var(--surf);box-shadow:var(--shadow);overflow:hidden;">
+        <div style="padding:12px 16px 8px;display:flex;align-items:baseline;justify-content:space-between;">
+          <span style="font-size:10.5px;font-weight:600;color:var(--ink2);">${L.injections}</span>
+          <span style="font-size:10.5px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;">${injDoneM}/${flatDosesM.length}</span>
+        </div>
+        ${flatDosesM.map((fd, k) => {
+          const st = doseLook(day[fd.stateKey]);
+          const siteVal = day[fd.siteKey] || '';
+          const hasSite = !!siteVal;
+          const open = openMenu === 'site-' + k;
+          const { name: compName, dose } = splitDose(fd.name);
+          return `
+          <div style="display:flex;align-items:center;gap:9px;padding:8px 16px;border-top:1px solid var(--line2);min-height:48px;">
+            <span data-injdose="${k}" style="width:26px;height:26px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;color:${st.ink};background:${st.bg};border:1.5px solid ${st.border};cursor:pointer;">${st.mark}</span>
+            <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px;">
+              <span style="font-size:12.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(compName)}</span>
+              <span style="font-size:9.5px;color:var(--ink2);white-space:nowrap;">${(L.slotLabels[fd.label] || fd.label).toLowerCase()}${dose ? ' · ' + esc(dose.replace(/(\d)([a-zA-Z])/, '$1 $2')) : ''} · ${fd.via}</span>
+            </div>
+            <div style="flex:0 0 108px;position:relative;">
+              <span data-injmenu="site-${k}" style="display:flex;align-items:center;justify-content:space-between;gap:5px;min-height:32px;padding:0 9px;border-radius:7px;background:${hasSite ? 'var(--accent-soft)' : 'transparent'};border:1px solid ${hasSite ? 'transparent' : 'var(--line)'};cursor:pointer;">
+                <span style="font-size:10px;font-weight:600;color:${hasSite ? 'var(--accent-ink)' : 'var(--ink2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${hasSite ? siteLabel(siteVal) : L.choose}</span>
+                <span style="font-size:8px;color:var(--ink2);">${open ? '▴' : '▾'}</span>
+              </span>
+              ${open ? `<div style="position:absolute;top:35px;right:0;z-index:20;min-width:132px;background:var(--surf);border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow-lg);padding:4px;display:flex;flex-direction:column;">
+                ${fd.siteOpts.map(o => `<span data-injsite="${k}|${esc(o)}" style="padding:8px 9px;border-radius:6px;background:${o === siteVal ? 'var(--surf2)' : 'transparent'};color:var(--ink);font-size:11px;font-weight:${o === siteVal ? 700 : 500};cursor:pointer;white-space:nowrap;">${siteLabel(o)}</span>`).join('')}
+              </div>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+        <div style="display:flex;gap:10px;flex-wrap:wrap;padding:9px 16px;border-top:1px solid var(--line2);">
+          ${['fatto', 'saltata', 'na'].map(k => {
+            const s = doseLook(k);
+            return `<span style="display:flex;align-items:center;gap:5px;font-size:9.5px;font-weight:500;color:var(--ink2);">
+              <span style="width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:${s.ink};background:${s.bg};">${s.mark}</span>${s.label}</span>`;
+          }).join('')}
+        </div>
+      </div>`;
+
+    const integratoriM = `
+      <div style="flex:0 0 auto;border-radius:18px;background:var(--surf);box-shadow:var(--shadow);padding:13px 14px;display:flex;flex-direction:column;gap:9px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;">
+          <span style="font-size:10.5px;font-weight:600;color:var(--ink2);">${L.supplements}</span>
+          <span style="font-size:10.5px;font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;">${SUPP_FIELDS.filter(sf => suppState(day, sf) === 'fatto').length}/${SUPP_FIELDS.length}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:7px;">
+          ${SUPP_FIELDS.map(sf => {
+            const st = doseLook(suppState(day, sf));
+            return `<div data-suppdose="${sf}" style="display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:10px;background:var(--surf2);cursor:pointer;min-height:44px;">
+              <span style="width:21px;height:21px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:${st.ink};background:${st.bg};border:1.5px solid ${st.border};">${st.mark}</span>
+              <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;">
+                <span style="font-size:11.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${SUPP_LABELS[sf]}</span>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+
+    const WO_FIELDS_M = [['Durata', 'wo_durata'], ['Volume', 'wo_volume'], ['Calorie', 'wo_kcal'], ['RPE', 'rpe']];
+    const allenamentoM = `
+      <div style="flex:0 0 auto;border-radius:18px;background:var(--surf);box-shadow:var(--shadow);padding:13px 16px;display:flex;flex-direction:column;gap:11px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;">
+          <span style="font-size:10.5px;font-weight:600;color:var(--ink2);">${L.training} · ${esc(wo.type)}</span>
+          <a href="${CFG.OLD_APP}" style="text-decoration:none;padding:5px 10px;border-radius:7px;background:${exList ? 'var(--accent-soft)' : 'var(--surf2)'};color:${exList ? 'var(--accent)' : 'var(--ink3)'};font-size:10.5px;font-weight:600;">${exList ? (LANG === 'it' ? 'Log Motra importato' : 'Motra log imported') : (LANG === 'it' ? 'Importa da Motra…' : 'Import from Motra…')}</a>
+        </div>
+        ${rest ? `<div style="font-size:12px;color:var(--ink2);">${L.restDay}</div>` : `
+        <div style="display:flex;gap:7px;">
+          ${WO_FIELDS_M.map(([label, key]) => `
+            <div style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <input data-f="${key}" value="${esc(day[key] || '')}" placeholder="—" style="${micro}width:100%;background:var(--surf2);border-radius:7px;padding:8px 6px;text-align:center;">
+              <span style="text-align:center;font-size:9.5px;font-weight:500;color:var(--ink2);">${label}</span>
+            </div>`).join('')}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line2);padding-top:9px;">
+          <span style="font-size:10px;font-weight:600;color:var(--ink2);">${L.exercises}</span>
+          ${exList ? exList.map(e => {
+            const working = (e.sets || []).filter(st => st.label !== 'W');
+            const reps = working[0] ? working[0].reps : ((e.sets || [])[0] || {}).reps;
+            const kg = working[0] ? working[0].kg : ((e.sets || [])[0] || {}).kg;
+            return `
+              <div style="display:flex;align-items:center;gap:9px;">
+                <span style="flex:1 1 auto;min-width:0;font-size:12px;font-weight:500;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(e.name)}</span>
+                <span style="flex:0 0 40px;text-align:right;font-size:10.5px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${(working.length || (e.sets || []).length) + '×' + (reps != null ? reps : '—')}</span>
+                <span style="flex:0 0 auto;font-size:12px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${kg != null ? kg + 'kg' : ''}</span>
+              </div>`;
+          }).join('') : `<span style="font-size:12px;font-weight:500;color:var(--ink2);">—</span>`}
+        </div>`}
+      </div>`;
+
+    const SUBJ_KEYS_M = ['energia', 'recupero', 'umore', 'rpe', 'appetito', 'sonno_sogg', 'libido', 'chiarezza'];
+    const SUBJ_COLOR_M = {
+      energia: 'var(--accent)', recupero: '#5b93cc', umore: 'var(--warn)', rpe: '#57575f',
+      appetito: '#a86a00', sonno_sogg: '#3d6f9e', libido: 'var(--bad)', chiarezza: '#6d6d76'
+    };
+    const soggettivoM = `
+      <div style="flex:0 0 auto;border-radius:18px;background:var(--surf);box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:13px;">
+        <span style="font-size:10.5px;font-weight:600;color:var(--ink2);">${L.subjective} · ${L.subjScale}</span>
+        ${SUBJ_KEYS_M.map(key => {
+          const cur = parseInt(day[key], 10) || 0;
+          return `<div style="display:flex;flex-direction:column;gap:7px;">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;">
+              <span style="font-size:13.5px;font-weight:500;color:var(--ink2);">${L.subj[key]}</span>
+              <span style="font-size:12.5px;font-weight:600;color:${cur ? SUBJ_COLOR_M[key] : 'var(--ink2)'};font-variant-numeric:tabular-nums;">${cur || '—'}</span>
+            </div>
+            <div style="display:flex;gap:3px;">
+              ${Array.from({ length: 10 }, (_, n) => `<span data-subjpip="${key}|${n + 1}" style="flex:1 1 0;height:24px;border-radius:5px;background:${n < cur ? SUBJ_COLOR_M[key] : 'var(--line2)'};cursor:pointer;"></span>`).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+        <div style="display:flex;flex-direction:column;gap:9px;padding-top:10px;border-top:1px solid var(--line2);">
+          ${['ritenzione', 'formicolio', 'pienezza_add'].map(key => {
+            const idx = day[key] === '' || day[key] == null ? -1 : parseInt(day[key], 10);
+            const cur = idx >= 0 ? ENUM_LABELS[key][idx] : '';
+            const open = openMenu === 'cat-' + key;
+            const hot = cur === 'Marcata' || cur === 'Intensa' || cur === 'Presente';
+            const ink = !cur ? 'var(--ink2)' : (hot ? 'var(--bad)' : 'var(--accent-ink)');
+            const bg = cur ? (hot ? 'rgba(216,30,5,.10)' : 'var(--accent-soft)') : 'transparent';
+            return `<div style="display:flex;align-items:center;gap:9px;position:relative;min-height:38px;">
+              <span style="flex:1 1 auto;min-width:0;font-size:13px;font-weight:500;color:var(--ink2);">${L.subj[key]}</span>
+              <span data-subjmenu="cat-${key}" style="flex:0 0 116px;display:flex;align-items:center;justify-content:center;min-height:32px;border-radius:8px;background:${bg};border:1px solid ${cur ? 'transparent' : 'var(--line)'};font-size:11.5px;font-weight:600;color:${ink};cursor:pointer;white-space:nowrap;">${cur || '—'}</span>
+              ${open ? `<div style="position:absolute;top:36px;right:0;z-index:25;min-width:116px;background:var(--surf);border:1px solid var(--line);border-radius:9px;box-shadow:var(--shadow-lg);padding:4px;display:flex;flex-direction:column;">
+                ${ENUM_LABELS[key].map((o, i) => `<span data-subjenum="${key}|${i}" style="padding:8px 9px;border-radius:6px;background:${i === idx ? 'var(--surf2)' : 'transparent'};color:var(--ink);font-size:11.5px;font-weight:${i === idx ? 700 : 500};cursor:pointer;white-space:nowrap;">${o}</span>`).join('')}
+              </div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+
+    const noteM = `
+      <div style="flex:0 0 auto;display:flex;flex-direction:column;gap:8px;">
+        <span style="font-size:10.5px;font-weight:600;color:var(--ink2);padding-left:2px;">${L.notes}</span>
+        <textarea data-f="note" placeholder="${LANG === 'it' ? 'Come è andata…' : 'How did it go…'}" style="width:100%;height:80px;resize:none;border:none;outline:none;background:var(--surf);border-radius:16px;box-shadow:var(--shadow);padding:13px 15px;font:400 13.5px/1.45 -apple-system,sans-serif;color:var(--ink);">${esc(day.note || '')}</textarea>
+      </div>`;
+
+    const saveBtnM = `
+      <div style="flex:0 0 auto;display:flex;justify-content:center;padding-top:2px;">
+        <span id="save-now-btn-mobile" style="width:100%;text-align:center;padding:13px 20px;border-radius:14px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">${LANG === 'it' ? 'Salva il giorno' : 'Save the day'}</span>
+      </div>`;
+
+    return `
+      ${renderDayNav()}
+      <div style="padding:0 18px 20px;display:flex;flex-direction:column;gap:10px;">
+        ${heroM}${pesoM}${ringsM}${biometriaM}${sonnoM}${iniezioniM}${integratoriM}${allenamentoM}${soggettivoM}${noteM}${saveBtnM}
+      </div>
+    `;
+  }
+
+  // ============================================================
+  // Desktop — PORTATO da produzione/v2.html generato da Claude Design
+  // (markup, griglia, padding, colori, SVG presi verbatim). Sostituiti
+  // solo i nomi di campo: quel file usava uno schema teorico mai
+  // riconciliato con la produzione (pa/sonno/rem/prof/risv/durata/
+  // volume/kcal/inj[] array) — qui sotto ogni valore legge/scrive i
+  // campi VERI già verificati in questa conversazione con dati reali.
+  // ============================================================
 
   const cycPct = Math.round((dayIdx + 1) / CFG.CYCLE_DAYS * 100) + '%';
   const PHASES = [
@@ -1540,13 +1844,6 @@ function renderOggiFull() {
   // separato: il mockup teorico aveva 'rpe_wo' distinto, ma in produzione
   // esiste un solo campo RPE, modificabile da entrambi i punti.
   const WO_FIELDS = [['Durata', 'wo_durata'], ['Volume', 'wo_volume'], ['Calorie', 'wo_kcal'], ['RPE', 'rpe']];
-  const exList = (() => {
-    if (!day.motra_log) return null;
-    try {
-      const parsed = typeof day.motra_log === 'object' ? day.motra_log : JSON.parse(day.motra_log);
-      return Array.isArray(parsed.exercises) ? parsed.exercises : null;
-    } catch (e) { return null; }
-  })();
   const allenamentoCard = `
     <section style="grid-column:5 / 8;grid-row:3 / 4;${card}padding:12px 15px;display:flex;flex-direction:column;gap:8px;overflow:hidden;">
       <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
@@ -1913,20 +2210,10 @@ function bindOggi() {
   if (!MIGRATED[tab] || tab !== 'oggi' || !store.loaded) return;
   const app = document.getElementById('app');
 
-  if (!isDesktop) {
-    // Mobile — canvas per grafico peso e gauge aderenza, come sempre.
-    const wHist = weightHistory(pesoRange, selDate);
-    drawWeightChart('peso-chart-canvas', wHist, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#1f5fbf');
-    const a = adherence(store.blob);
-    drawComplianceRing('ring-inj', a.inj, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#1f5fbf');
-    drawComplianceRing('ring-supp', a.supp, getComputedStyle(document.documentElement).getPropertyValue('--warn').trim() || '#f5c400');
-    drawComplianceRing('ring-wo', a.wo, getComputedStyle(document.documentElement).getPropertyValue('--bad').trim() || '#d81e05');
-    return;
-  }
-
-  // Desktop — porting da produzione/v2.html: niente canvas (il grafico e i
-  // gauge sono SVG inline, si aggiornano da soli col resto del markup),
-  // solo handler sui data-attributi delle celle interattive.
+  // Grafico peso e gauge aderenza sono SVG inline sia su mobile che su
+  // desktop (portati verbatim dai due export reali) — niente più canvas
+  // da ridisegnare qui, solo handler sui data-attributi delle celle
+  // interattive, condivisi tra le due viste.
   app.querySelectorAll('[data-f]').forEach(el => {
     el.onchange = () => patch(selDate, el.dataset.f, el.value);
   });
