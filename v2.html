@@ -880,7 +880,7 @@ function cycleSuppState(sf) {
 // generato da Claude Design (produzione/v2.html), adattati solo dove i nomi
 // di campo o gli stati differiscono dallo schema reale già verificato.
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const nf = (v, d = 1) => v == null || isNaN(v) ? '—' : Number(v).toFixed(d).replace('.', ',');
+const nf = (v, d = 1) => v == null || isNaN(v) ? '—' : (LANG === 'it' ? Number(v).toFixed(d).replace('.', ',') : Number(v).toFixed(d));
 function svgPath(vals, w, h, pad) {
   const v = vals.filter(x => x != null && !isNaN(x));
   if (v.length < 2) return { d: '', area: '', lastX: 0, lastY: h / 2 };
