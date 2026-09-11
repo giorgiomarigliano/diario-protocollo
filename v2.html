@@ -381,7 +381,7 @@ const I18N = {
   it: {
     tabs: ['Oggi', 'Andamento', 'Clinica', 'Gestione'],
     day: 'Giorno', week: 'Settimana',
-    injections: 'Iniezioni e sede', site: 'Sede', district: 'Distretto',
+    injections: 'Iniezioni e distretto', site: 'Sede', district: 'Distretto',
     adherence: 'Aderenza del ciclo', supplements: 'Integratori',
     weight: 'Peso corporeo', subjective: 'Soggettivo', notes: 'Note',
     training: 'Allenamento', exercises: 'Esercizi svolti · da Motra',
@@ -392,8 +392,8 @@ const I18N = {
     phases: { adattamento: 'Adattamento', costruzione: 'Costruzione', peak: 'Peak', mantenimento: 'Mantenimento' },
     phaseDates: ['20 LUG', '8 NOV'],
     tile: { pressione: 'Pressione', sonno: 'Sonno', rem: 'REM', profondo: 'Profondo', risvegli: 'Risvegli' },
-    injLegendSC: 'SC addome, spalla, gluteo · tutti i composti tranne IGF-1',
-    injLegendIM: 'IM gruppo muscolare · solo IGF-1',
+    injLegendSC: 'SC addome, spalla, gluteo',
+    injLegendIM: 'IM gruppo target · solo IGF-1',
     injectionsRing: 'Iniezioni', workoutsRing: 'Allenamenti',
     subjScale: 'scala 1-10',
     inPeriod: 'nel periodo', perWeekOver: (n) => `kg / sett. su ${n}gg`,
@@ -414,7 +414,7 @@ const I18N = {
   en: {
     tabs: ['Today', 'Trends', 'Clinical', 'Logistics'],
     day: 'Day', week: 'Week',
-    injections: 'Injections and site', site: 'Site', district: 'District',
+    injections: 'Injections and district', site: 'Site', district: 'District',
     adherence: 'Cycle adherence', supplements: 'Supplements',
     weight: 'Body weight', subjective: 'Subjective', notes: 'Notes',
     training: 'Training', exercises: 'Exercises · from Motra',
@@ -425,8 +425,8 @@ const I18N = {
     phases: { adattamento: 'Adaptation', costruzione: 'Build', peak: 'Peak', mantenimento: 'Maintenance' },
     phaseDates: ['20 JUL', '8 NOV'],
     tile: { pressione: 'Blood pressure', sonno: 'Sleep', rem: 'REM', profondo: 'Deep', risvegli: 'Awakenings' },
-    injLegendSC: 'SC abdomen, shoulder, glute · all compounds except IGF-1',
-    injLegendIM: 'IM muscle group · IGF-1 only',
+    injLegendSC: 'SC abdomen, shoulder, glute',
+    injLegendIM: 'IM target group · IGF-1 only',
     injectionsRing: 'Injections', workoutsRing: 'Workouts',
     subjScale: 'scale 1-10',
     inPeriod: 'in the period', perWeekOver: (n) => `kg / wk over ${n}d`,
@@ -1303,8 +1303,10 @@ function renderOggiFull() {
 
   const cycPct = Math.round((dayIdx + 1) / CFG.CYCLE_DAYS * 100) + '%';
   const PHASES = [
-    [L.phases.adattamento, 0, 27], [L.phases.costruzione, 28, 55],
-    [L.phases.peak, 56, 83], [L.phases.mantenimento, 84, 111]
+    [`${LANG === 'it' ? 'Fase 1' : 'Phase 1'} · ${L.phases.adattamento}`, 0, 27],
+    [`${LANG === 'it' ? 'Fase 2' : 'Phase 2'} · ${L.phases.costruzione}`, 28, 55],
+    [`${LANG === 'it' ? 'Fase 3' : 'Phase 3'} · ${L.phases.peak}`, 56, 83],
+    [`${LANG === 'it' ? 'Fase 4' : 'Phase 4'} · ${L.phases.mantenimento}`, 84, 111]
   ];
 
   const pesoS = weightHistory(pesoRange, selDate);
@@ -1382,11 +1384,11 @@ function renderOggiFull() {
   const injDoneCount = flatDoses.filter(fd => day[fd.stateKey] === 'fatto').length;
 
   const heroCard = `
-    <section style="grid-column:1 / 7;grid-row:1 / 2;border-radius:var(--r-card);background:var(--hero);padding:20px 22px;display:flex;flex-direction:column;gap:14px;overflow:hidden;">
+    <section style="grid-column:1 / 6;grid-row:1 / 2;border-radius:var(--r-card);background:var(--hero);padding:20px 22px;display:flex;flex-direction:column;gap:14px;overflow:hidden;">
       <div style="display:flex;flex-direction:column;gap:9px;">
         <span style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;color:rgba(255,255,255,.62);">
           <span style="width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:${VD.dot};"></span>
-          ${VD.label} · ${L.day} ${dayIdx + 1} / ${CFG.CYCLE_DAYS}
+          ${VD.label} · ${L.day} ${dayIdx + 1} / ${CFG.CYCLE_DAYS} · WK${weekN}
         </span>
         <span style="font-size:24px;line-height:1.13;letter-spacing:-.024em;font-weight:600;color:#fff;text-wrap:pretty;">${esc(VD_TEXT[0])}</span>
       </div>
@@ -1413,7 +1415,7 @@ function renderOggiFull() {
     </section>`;
 
   const pesoCard = `
-    <section style="grid-column:7 / 13;grid-row:1 / 2;${card}padding:16px 20px;display:flex;flex-direction:column;gap:6px;overflow:hidden;">
+    <section style="grid-column:6 / 13;grid-row:1 / 2;${card}padding:16px 20px;display:flex;flex-direction:column;gap:6px;overflow:hidden;">
       <div style="flex:0 0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;">
         <div style="display:flex;flex-direction:column;gap:3px;">
           <span style="${lbl}">${L.weight}</span>
@@ -1465,14 +1467,14 @@ function renderOggiFull() {
           const open = openMenu === 'site-' + k;
           const { name: compName, dose } = splitDose(fd.name);
           return `
-          <div style="min-height:34px;display:flex;align-items:center;gap:8px;padding:3px 12px;border-bottom:1px solid var(--line2);">
+          <div style="min-height:34px;display:flex;align-items:center;gap:9px;padding:3px 15px;border-bottom:1px solid var(--line2);">
             <span data-injdose="${k}" style="width:18px;height:18px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:${st.ink};background:${st.bg};border:1.5px solid ${st.border};cursor:pointer;">${st.mark}</span>
             <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;">
               <span style="font-size:11px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(compName)}</span>
-              <span style="font-size:8.5px;font-weight:500;color:var(--ink2);white-space:nowrap;">${dose ? esc(dose) + ' · ' : ''}${L.slotLabels[fd.label] || fd.label}</span>
+              <span style="font-size:8.5px;font-weight:500;color:var(--ink2);white-space:nowrap;">${(L.slotLabels[fd.label] || fd.label).toLowerCase()}${dose ? ' · ' + esc(dose.replace(/(\d)([a-zA-Z])/, '$1 $2')) : ''}</span>
             </div>
             <span style="flex:0 0 16px;font-size:8.5px;font-weight:700;color:${fd.via === 'IM' ? 'var(--bad)' : 'var(--accent-ink)'};">${fd.via}</span>
-            <div style="flex:0 0 92px;position:relative;">
+            <div style="flex:0 0 116px;position:relative;">
               <span data-injmenu="site-${k}" style="display:flex;align-items:center;justify-content:space-between;gap:4px;height:22px;padding:0 6px;border-radius:6px;background:${hasSite ? 'var(--accent-soft)' : 'transparent'};border:1px solid ${hasSite ? 'transparent' : 'var(--line)'};cursor:pointer;">
                 <span style="font-size:9px;font-weight:600;color:${hasSite ? 'var(--accent-ink)' : 'var(--ink2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${hasSite ? siteLabel(siteVal) : L.choose}</span>
                 <span style="font-size:8px;color:var(--ink2);">${open ? '▴' : '▾'}</span>
