@@ -513,7 +513,7 @@ function getDay(dateISO) {
    fonte che flush() usa davvero per il merge fetch-modify-write). */
 store.pending = {}; // { 'p2_day_44': { peso: '73.2', ... } }
 
-function patch(dateISO, field, value) {
+function patchSilent(dateISO, field, value) {
   const key = dayKeyFromISO(dateISO);
   if (!store.blob) return; // non scrivere mai prima del fetch iniziale
   if (!store.blob[key]) store.blob[key] = {};
@@ -521,8 +521,12 @@ function patch(dateISO, field, value) {
   if (!store.pending[key]) store.pending[key] = {};
   store.pending[key][field] = value;
   store.dirty[key] = true;
-  render();
   queueSave();
+}
+
+function patch(dateISO, field, value) {
+  patchSilent(dateISO, field, value);
+  render();
 }
 
 let saveTimer = null;
@@ -2214,7 +2218,23 @@ function bindOggi() {
   // desktop (portati verbatim dai due export reali) — niente più canvas
   // da ridisegnare qui, solo handler sui data-attributi delle celle
   // interattive, condivisi tra le due viste.
+  //
+  // Bug corretto 15/09/2026 (segnalato da iPhone, Safari e Chrome — quindi
+  // WebKit, non uno specifico browser): i campi testo/numero salvavano
+  // SOLO su 'onchange', che su un <input> scatta solo quando il campo
+  // perde il focus. Su mobile questo non è affidabile: se l'utente scrive
+  // un valore e poi cambia scheda, blocca lo schermo, o comunque non
+  // "sfoca" il campo in modo pulito, onchange può non scattare mai —
+  // patch() non viene mai chiamato, non c'è nulla in coda, e il pulsante
+  // Salva sembra inerte perché non ha davvero nulla da salvare. Ora
+  // 'oninput' (che scatta a ogni tasto premuto, sempre affidabile)
+  // aggiorna silenziosamente lo stato e mette in coda il salvataggio
+  // SENZA il render() completo di patch() — che ricostruirebbe il campo
+  // a ogni carattere, interrompendo la digitazione. 'onchange' resta per
+  // il render completo (percentuali di aderenza, ecc.) quando il campo
+  // si sistema.
   app.querySelectorAll('[data-f]').forEach(el => {
+    el.oninput = () => patchSilent(selDate, el.dataset.f, el.value);
     el.onchange = () => patch(selDate, el.dataset.f, el.value);
   });
   app.querySelectorAll('[data-range]').forEach(el => {
