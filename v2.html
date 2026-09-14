@@ -373,6 +373,13 @@ function siteLabel(s) { return LANG === 'it' ? s : (SITE_LABELS_EN[s] || s); }
    MIRROR esatto di index.html (f.replace(/[\s\-]/g,'_')) — es.
    "Fragment 176-191 250mcg" → "Fragment_176_191_250mcg". */
 function fieldKey(f) { return f.replace(/[\s\-]/g, '_'); }
+// Separa nome del composto e dosaggio (es. "Fragment 176-191 250mcg" ->
+// nome "Fragment 176-191", dose "250mcg"). Versione top-level, usata da
+// renderWeekFull() — quella dentro renderOggiFull() resta invariata.
+function splitDose(f) {
+  const m = f.match(/^(.*?)\s+(\d+(?:[.,]\d+)?\s?(?:mcg|mg|g|ml)(?:\s+(?:dx|sx))?)$/i);
+  return m ? { name: m[1], dose: m[2] } : { name: f, dose: '' };
+}
 
 /* ============================================================
    3 · I18N — IT / EN commutabile, preferenza in localStorage
@@ -825,7 +832,7 @@ function render() {
     </header>
 
     <main class="page-wrap" style="padding:12px;">
-      ${!store.loaded ? '<p style="padding:24px;color:var(--ink2)">Caricamento…</p>' : (MIGRATED[tab] ? renderOggiFull() : renderNotMigrated(tab))}
+      ${!store.loaded ? '<p style="padding:24px;color:var(--ink2)">Caricamento…</p>' : (MIGRATED[tab] ? (tab === 'oggi' && oggiViewMode === 'week' ? renderWeekFull() : renderOggiFull()) : renderNotMigrated(tab))}
     </main>
   `;
 
@@ -1142,10 +1149,11 @@ function renderDayNav() {
           <div style="flex:1 1 auto;min-width:0;display:flex;gap:4px;overflow-x:auto;">${weekTabsReal}</div>
           <a href="${CFG.OLD_APP}" style="text-decoration:none;flex:0 0 auto;padding:5px 11px;border-radius:7px;font-size:11px;font-weight:600;color:var(--ink2);border:1px solid var(--line);cursor:pointer;">${LANG === 'it' ? 'Mostra pre-ciclo' : 'Show pre-cycle'}</a>
         </div>
+        ${oggiViewMode === 'week' ? '' : `
         <div style="flex:0 0 auto;background:var(--surf2);border-bottom:1px solid var(--line);padding:7px 20px;display:flex;align-items:center;gap:7px;">
           <span style="flex:0 0 auto;font-size:11px;font-weight:600;color:var(--ink2);min-width:96px;">${rangeLabel}</span>
           <div style="flex:1 1 auto;display:flex;gap:6px;">${dayPillsReal}</div>
-        </div>
+        </div>`}
       </div>
     `;
   }
@@ -1184,19 +1192,39 @@ function renderDayNav() {
       </span>`;
   }).join('');
 
-  return `
-    <div style="flex:0 0 auto;padding:10px 18px 8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+  // In modalità settimana la testata mostra "Settimana N" + intervallo e
+  // fase, non la data del giorno (spec README v2-settimana-mobile.html) —
+  // e la strip dei 7 giorni non c'è, solo quella delle 16 settimane.
+  const weekStartM = new Date(CFG.CYCLE_START + 'T00:00:00'); weekStartM.setDate(weekStartM.getDate() + weekStartIdx);
+  const weekEndM = new Date(weekStartM); weekEndM.setDate(weekEndM.getDate() + 6);
+  const monthsShortIt = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  const monthsShortEn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthsShort = LANG === 'it' ? monthsShortIt : monthsShortEn;
+  const weekRangeM = `${weekStartM.getDate()} ${monthsShort[weekStartM.getMonth()]} – ${weekEndM.getDate()} ${monthsShort[weekEndM.getMonth()]}`;
+  const PHASE_NAMES_SHORT = LANG === 'it'
+    ? ['Adattamento', 'Costruzione', 'Peak', 'Mantenimento']
+    : ['Adaptation', 'Build', 'Peak', 'Maintenance'];
+  const phaseIdxM = weekStartIdx <= 27 ? 0 : weekStartIdx <= 55 ? 1 : weekStartIdx <= 83 ? 2 : 3;
+  const titleBlockM = oggiViewMode === 'week' ? `
+      <div style="display:flex;flex-direction:column;gap:1px;min-width:0;">
+        <span style="font-size:19px;line-height:1.1;letter-spacing:-.02em;font-weight:600;color:var(--ink);white-space:nowrap;">${LANG === 'it' ? 'Settimana' : 'Week'} ${selWeek + 1}</span>
+        <span style="font-size:10.5px;font-weight:600;color:var(--ink2);">${weekRangeM} · ${PHASE_NAMES_SHORT[phaseIdxM]}</span>
+      </div>` : `
       <div style="display:flex;flex-direction:column;gap:1px;min-width:0;">
         <span style="font-size:19px;line-height:1.1;letter-spacing:-.02em;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dateHeaderTxt}</span>
         <span style="font-size:10.5px;font-weight:600;color:var(--ink2);">${L.day} ${selIdx + 1} ${LANG === 'it' ? 'di' : 'of'} ${CFG.CYCLE_DAYS} · WK${selWeek + 1}</span>
-      </div>
+      </div>`;
+
+  return `
+    <div style="flex:0 0 auto;padding:10px 18px 8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      ${titleBlockM}
       <div style="flex:0 0 auto;display:flex;gap:3px;background:var(--surf2);border-radius:8px;padding:3px;">
         <span onclick="oggiViewMode='day'; render();" style="padding:6px 11px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;background:${oggiViewMode === 'day' ? 'var(--accent)' : 'transparent'};color:${oggiViewMode === 'day' ? '#fff' : 'var(--ink2)'};">${L.day}</span>
         <span onclick="oggiViewMode='week'; render();" style="padding:6px 11px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;background:${oggiViewMode === 'week' ? 'var(--accent)' : 'transparent'};color:${oggiViewMode === 'week' ? '#fff' : 'var(--ink2)'};">${LANG === 'it' ? 'Settimana' : 'Week'}</span>
       </div>
     </div>
     <div style="flex:0 0 auto;padding:0 18px 7px;display:flex;gap:5px;overflow-x:auto;">${weekTabsM}</div>
-    <div style="flex:0 0 auto;padding:0 18px 9px;display:flex;gap:4px;">${dayPillsM}</div>
+    ${oggiViewMode === 'week' ? '' : `<div style="flex:0 0 auto;padding:0 18px 9px;display:flex;gap:4px;">${dayPillsM}</div>`}
   `;
 }
 function jumpToWeek(w) {
@@ -1208,11 +1236,630 @@ function jumpToWeek(w) {
   render();
 }
 
+/* ============================================================
+   VISTA SETTIMANA — nuova (14/09/2026), portata da
+   produzione/v2-settimana-{desktop,mobile}.html (export reale di
+   Claude Design). Sola lettura: nessun input, nessun pulsante Salva —
+   ogni cella/intestazione porta al giorno in vista Giorno, che resta
+   l'unico punto di scrittura (vedi README del pacchetto).
+   ============================================================ */
+
+// Righe canoniche delle iniezioni — stesse 9 dosi sempre nello stesso
+// ordine, indipendentemente da come getInjectionSlots2() rinumera gli
+// slot giorno per giorno (lo slot IGF inserito sposta n del gruppo Sera
+// da 3 a 4). L'abbinamento avviene per (timing, nome campo), non per n.
+const CANON_INJ_ROWS = [
+  { timing: 'Mattino',   field: 'Fragment 176-191 250mcg' },
+  { timing: 'Mattino',   field: 'BPC-157 250mcg' },
+  { timing: 'Pomeriggio',field: 'Fragment 176-191 250mcg' },
+  { timing: 'Post-WO',   field: 'IGF-1 DES 25mcg dx', igf: true },
+  { timing: 'Post-WO',   field: 'IGF-1 DES 25mcg sx', igf: true },
+  { timing: 'Sera',      field: 'Tesamorelin 2mg' },
+  { timing: 'Sera',      field: 'Ipamorelin 100mcg' },
+  { timing: 'Sera',      field: 'BPC-157 250mcg' },
+  { timing: 'Sera',      field: 'TB-500 500mcg' },
+];
+
+// Stato di una singola dose per un giorno dato, cercando lo slot del
+// timing giusto in quel giorno specifico (gli slot REALI di quel
+// giorno, non un elenco fisso) e leggendo inj_{n}_{fieldKey}.
+function injCellState(dayIdx, rec, row) {
+  const slots = getInjectionSlots2(dayIdx);
+  const slot = slots.find(s => s.label === row.timing && s.fields.includes(row.field));
+  if (!slot) return { state: 'non-prevista' }; // IGF in un giorno di riposo
+  const v = rec['inj_' + slot.n + '_' + fieldKey(row.field)] || '';
+  return { state: v || 'vuoto' };
+}
+
+function weekAggregate(weekIdx) {
+  const startIdx = weekIdx * 7;
+  const todayIdx = dayIdxFromISO(today);
+  const dowShort = LANG === 'it' ? ['LUN','MAR','MER','GIO','VEN','SAB','DOM'] : ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  const dowInitial = LANG === 'it' ? ['L','M','M','G','V','S','D'] : ['M','T','W','T','F','S','S'];
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const dayIdx = startIdx + i;
+    const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + dayIdx);
+    const dateISO = isoLocal(d);
+    const rec = getDay(dateISO);
+    const wo = getWorkout2(dayIdx);
+    return {
+      dayIdx, dateISO, date: d, rec, wo,
+      isFuture: dayIdx > todayIdx,
+      isRest: wo.type === 'Riposo',
+      dow: dowShort[i], dowIni: dowInitial[i], num: d.getDate()
+    };
+  });
+
+  const elapsed = days.filter(d => !d.isFuture).length; // 0..7
+  const isClosed = elapsed === 7;
+  const isFutureWeek = elapsed === 0;
+
+  // ---- Iniezioni: 9 righe canoniche × 7 giorni ----
+  const injRows = CANON_INJ_ROWS.map(row => {
+    const cells = days.map(d => d.isFuture ? { state: 'futuro' } : injCellState(d.dayIdx, d.rec, row));
+    const doneCount = cells.filter(c => c.state === 'fatto').length;
+    const applicable = cells.filter(c => c.state !== 'non-prevista' && c.state !== 'futuro').length;
+    return { row, cells, doneCount, applicable };
+  });
+  const injDoneTot = injRows.reduce((s, r) => s + r.doneCount, 0);
+  const injApplTot = injRows.reduce((s, r) => s + r.applicable, 0);
+
+  // ---- Integratori: 9 campi × 7 giorni ----
+  const suppRows = SUPP_FIELDS.map(sf => {
+    const cells = days.map(d => {
+      if (d.isFuture) return { state: 'futuro' };
+      if (d.rec[sf + '_skip']) return { state: 'na' };
+      return { state: d.rec[sf] === '1' ? 'fatto' : 'vuoto' };
+    });
+    const doneCount = cells.filter(c => c.state === 'fatto').length;
+    const applicable = cells.filter(c => c.state !== 'na' && c.state !== 'futuro').length;
+    return { field: sf, label: SUPP_LABELS[sf], cells, doneCount, applicable };
+  });
+  const suppDoneTot = suppRows.reduce((s, r) => s + r.doneCount, 0);
+  const suppApplTot = suppRows.reduce((s, r) => s + r.applicable, 0);
+
+  // ---- Allenamenti della settimana ----
+  const trainingDays = days.filter(d => !d.isRest);
+  const woTot = trainingDays.length;
+  const woDone = trainingDays.filter(d => {
+    if (d.isFuture) return false;
+    const kcal = parseFloat(d.rec.wo_kcal), rpe = parseFloat(d.rec.rpe);
+    const vol = getWorkoutVolume2(d.rec);
+    return (!isNaN(kcal) && kcal > 0) || (vol !== null && vol > 0) || !isNaN(rpe);
+  }).length;
+  const sessions = trainingDays.filter(d => !d.isFuture).map(d => {
+    const vol = getWorkoutVolume2(d.rec) || 0;
+    const dur = parseFloat(d.rec.wo_durata) || 0;
+    const rpe = d.rec.rpe !== undefined && d.rec.rpe !== '' ? parseFloat(d.rec.rpe) : null;
+    return { dow: d.dow, dateISO: d.dateISO, type: d.wo.type, vol, dur, rpe, done: vol > 0 || dur > 0 || rpe !== null };
+  });
+  const weekVolume = sessions.reduce((s, x) => s + x.vol, 0);
+  const weekDurationMin = sessions.reduce((s, x) => s + x.dur, 0);
+  const weekKcal = trainingDays.filter(d => !d.isFuture).reduce((s, d) => s + (parseFloat(d.rec.wo_kcal) || 0), 0);
+
+  // ---- Percentuali della settimana ----
+  const pct = (done, tot) => tot ? Math.round(done / tot * 100) : 0;
+  const injPct = pct(injDoneTot, injApplTot), suppPct = pct(suppDoneTot, suppApplTot), woPct = pct(woDone, woTot);
+  const overall = Math.round((injPct + suppPct + woPct) / 3);
+
+  // ---- Confronto con la settimana precedente (solo se non è la prima) ----
+  let prevOverall = null, prevInjPct = null;
+  if (weekIdx > 0) {
+    const prev = weekAggregateShallow(weekIdx - 1);
+    if (prev) { prevOverall = prev.overall; prevInjPct = prev.injPct; }
+  }
+
+  // ---- Categorici: 3 campi × 7 giorni ----
+  const CATN = ['pienezza_add', 'ritenzione', 'formicolio'];
+  const catRows = CATN.map(key => {
+    const cells = days.map(d => {
+      if (d.isFuture) return { val: null };
+      const raw = d.rec[key];
+      if (raw === '' || raw === undefined || raw === null) return { val: null };
+      return { val: parseInt(raw, 10) };
+    });
+    return { key, cells };
+  });
+
+  // ---- Biometria + peso: serie di 7 valori ----
+  const pesoArr = days.map(d => parseFloat(d.rec.peso));
+  const hrvArr = days.map(d => parseFloat(d.rec.hrv));
+  const sonnoArr = days.map(d => parseSonnoHours(d.rec.ore_sonno));
+  const rhrArr = days.map(d => parseFloat(d.rec.rhr));
+  const remArr = days.map(d => parseFloat(d.rec.sonno_rem_min));
+  const profArr = days.map(d => parseFloat(d.rec.sonno_profondo_min));
+  const risvArr = days.map(d => parseFloat(d.rec.sonno_risvegli));
+  const avg = arr => { const v = arr.filter(x => !isNaN(x)); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+
+  // ---- Soggettivo: 8 medie ----
+  const SUBJ_KEYS = ['energia', 'recupero', 'umore', 'rpe', 'appetito', 'sonno_sogg', 'libido', 'chiarezza'];
+  const subjSeries = {};
+  SUBJ_KEYS.forEach(k => { subjSeries[k] = days.map(d => d.isFuture ? NaN : parseFloat(d.rec[k])); });
+
+  return {
+    weekIdx, days, elapsed, isClosed, isFutureWeek,
+    injRows, injDoneTot, injApplTot, injPct,
+    suppRows, suppDoneTot, suppApplTot, suppPct,
+    woTot, woDone, woPct, sessions, weekVolume, weekDurationMin, weekKcal,
+    overall, prevOverall, prevInjPct,
+    catRows,
+    pesoArr, hrvArr, sonnoArr, rhrArr, remArr, profArr, risvArr, avg,
+    subjSeries, dowInitial
+  };
+}
+
+// Versione leggera usata solo per il confronto con la settimana precedente
+// (evita di ricalcolare le 9+9+3 griglie quando servono solo le percentuali).
+function weekAggregateShallow(weekIdx) {
+  if (weekIdx < 0) return null;
+  const startIdx = weekIdx * 7;
+  const todayIdx = dayIdxFromISO(today);
+  if (startIdx > todayIdx) return null; // settimana futura, nessun dato
+  let injDone = 0, injTot = 0, suppDone = 0, suppTot = 0, woDone = 0, woTot = 0;
+  for (let i = 0; i < 7; i++) {
+    const dayIdx = startIdx + i;
+    if (dayIdx > todayIdx) break;
+    const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + dayIdx);
+    const rec = getDay(isoLocal(d));
+    getInjectionSlots2(dayIdx).forEach(s => s.fields.forEach(f => {
+      const v = rec['inj_' + s.n + '_' + fieldKey(f)] || '';
+      if (v === 'na') return;
+      injTot++; if (v === 'fatto') injDone++;
+    }));
+    SUPP_FIELDS.forEach(sf => { if (rec[sf + '_skip']) return; suppTot++; if (rec[sf] === '1') suppDone++; });
+    if (getWorkout2(dayIdx).type !== 'Riposo') {
+      woTot++;
+      const kcal = parseFloat(rec.wo_kcal), rpe = parseFloat(rec.rpe), vol = getWorkoutVolume2(rec);
+      if ((!isNaN(kcal) && kcal > 0) || (vol !== null && vol > 0) || !isNaN(rpe)) woDone++;
+    }
+  }
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+  const injPct = pct(injDone, injTot), suppPct = pct(suppDone, suppTot), woPct = pct(woDone, woTot);
+  return { overall: Math.round((injPct + suppPct + woPct) / 3), injPct, suppPct, woPct };
+}
+
 /* ------------------------------------------------------------
    Vista Oggi — porting di day_card_mockup_v2.html (approvato dopo
    due iterazioni). Stesso pattern a righe per ogni sezione, stesso
    pallino di stato tappabile per iniezioni/integratori.
    ------------------------------------------------------------ */
+
+/* ------------------------------------------------------------
+   Vista Settimana completa — desktop. Sola lettura, portata da
+   produzione/v2-settimana-desktop.html. Il mobile resta da fare.
+   ------------------------------------------------------------ */
+const INJ_CELL_STYLE = {
+  fatto:        { bg: 'var(--ok)',    border: 'var(--ok)',   mark: '✓', ink: '#fff' },
+  saltata:      { bg: 'var(--surf)',  border: 'var(--warn)', mark: '–', ink: 'var(--warn-ink)' },
+  saltato:      { bg: 'var(--surf)',  border: 'var(--warn)', mark: '–', ink: 'var(--warn-ink)' },
+  na:           { bg: 'var(--surf2)', border: 'var(--surf2)',mark: 'N', ink: 'var(--ink3)' },
+  vuoto:        { bg: 'transparent',  border: 'var(--line)', mark: '',  ink: 'var(--ink3)' },
+  'non-prevista': { bg: 'var(--surf2)', border: 'var(--surf2)', mark: '·', ink: 'var(--ink3)' },
+  futuro:       { bg: 'transparent',  border: 'var(--line2)',mark: '',  ink: 'var(--ink3)' }
+};
+const CAT_CELL_COLORS = {
+  formicolio: { 0: { bg: 'var(--line2)', ink: 'var(--ink3)' }, 1: { bg: 'var(--bad)', ink: '#fff' } },
+  default: {
+    0: { bg: 'var(--line2)', ink: 'var(--ink3)' },
+    1: { bg: 'var(--accent-soft)', ink: 'var(--accent-ink)' },
+    2: { bg: '#fdf3e4', ink: 'var(--warn-ink)' },
+    3: { bg: '#fbe9e6', ink: 'var(--bad)' }
+  }
+};
+
+function renderWeekFull() {
+  const L = t();
+  const selIdx = dayIdxFromISO(selDate);
+  const weekIdx = Math.floor(selIdx / 7);
+  const totalWeeks = Math.ceil(CFG.CYCLE_DAYS / 7);
+  const wk = weekAggregate(weekIdx);
+  const nf = (v, d = 1) => v == null || isNaN(v) ? '—' : (LANG === 'it' ? Number(v).toFixed(d).replace('.', ',') : Number(v).toFixed(d));
+  const deltaTxt = (cur, prev, unit, invert) => {
+    if (cur == null || isNaN(cur) || prev == null || isNaN(prev)) return null;
+    const d = cur - prev;
+    if (Math.abs(d) < 0.05) return { txt: '=', color: 'var(--ink3)' };
+    const good = invert ? d < 0 : d > 0;
+    return { txt: (d > 0 ? '+' : '') + nf(d, unit === 'int' ? 0 : 1), color: good ? 'var(--ok)' : 'var(--warn-ink)' };
+  };
+
+  const phaseIdx = wk.days[0].dayIdx <= 27 ? 0 : wk.days[0].dayIdx <= 55 ? 1 : wk.days[0].dayIdx <= 83 ? 2 : 3;
+  const PHASE_NAMES = LANG === 'it' ? ['Adattamento','Costruzione','Peak','Mantenimento'] : ['Adaptation','Build','Peak','Maintenance'];
+  const monthsIt = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  const monthsEn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months = LANG === 'it' ? monthsIt : monthsEn;
+  const rangeTxt = `${wk.days[0].num} ${months[wk.days[0].date.getMonth()]} – ${wk.days[6].num} ${months[wk.days[6].date.getMonth()]}`;
+
+  // ---- Recap: tre varianti temporali (chiusa/in corso/futura) ----
+  const cyc = adherence(store.blob);
+  const cycAvg = Math.round((cyc.inj + cyc.supp + cyc.wo) / 3);
+  let recapTone = 'good', recapTitle, recapText;
+  if (wk.isFutureWeek) {
+    recapTone = 'neutral';
+    recapTitle = LANG === 'it' ? 'Settimana non ancora iniziata.' : 'Week not started yet.';
+    recapText = LANG === 'it' ? `Comincia il ${rangeTxt}.` : `Starts ${rangeTxt}.`;
+  } else if (!wk.isClosed) {
+    recapTone = wk.overall >= 85 ? 'good' : wk.overall >= 65 ? 'warn' : 'bad';
+    recapTitle = LANG === 'it' ? 'Per ora nessuno scivolone.' : 'No slip-ups so far.';
+    recapText = LANG === 'it'
+      ? `Nei primi ${wk.elapsed} giorni: iniezioni ${wk.injPct}%, integratori ${wk.suppPct}%, allenamenti ${wk.woPct}%. Il confronto con le settimane chiuse non regge ancora.`
+      : `In the first ${wk.elapsed} days: injections ${wk.injPct}%, supplements ${wk.suppPct}%, workouts ${wk.woPct}%. Comparison with closed weeks doesn't hold yet.`;
+  } else {
+    recapTone = wk.overall >= 85 ? 'good' : wk.overall >= 65 ? 'warn' : 'bad';
+    recapTitle = recapTone === 'good'
+      ? (LANG === 'it' ? 'Settimana piena, senza scivoloni.' : 'Full week, no slip-ups.')
+      : recapTone === 'warn'
+      ? (LANG === 'it' ? 'Settimana con qualche buco.' : 'A few gaps this week.')
+      : (LANG === 'it' ? 'Settimana sotto soglia.' : 'Week below threshold.');
+    const deltaOv = wk.prevOverall != null ? wk.overall - wk.prevOverall : null;
+    const deltaOvTxt = deltaOv == null ? '' : (LANG === 'it'
+      ? `, ${deltaOv >= 0 ? 'sopra' : 'sotto'} la precedente di ${Math.abs(deltaOv)} punti`
+      : `, ${deltaOv >= 0 ? 'above' : 'below'} the previous by ${Math.abs(deltaOv)} points`);
+    recapText = LANG === 'it'
+      ? `Aderenza complessiva ${wk.overall}%${deltaOvTxt}. Media del ciclo ${cycAvg}%.`
+      : `Overall adherence ${wk.overall}%${deltaOvTxt}. Cycle average ${cycAvg}%.`;
+  }
+  const recapDot = recapTone === 'good' ? 'var(--ok)' : recapTone === 'warn' ? 'var(--warn)' : recapTone === 'bad' ? 'var(--bad)' : 'var(--idle)';
+  const recapLabel = recapTone === 'good' ? (LANG === 'it' ? 'In linea' : 'On track') : recapTone === 'warn' ? (LANG === 'it' ? "Da tenere d'occhio" : 'Worth watching') : recapTone === 'bad' ? (LANG === 'it' ? 'Sotto soglia' : 'Below threshold') : (LANG === 'it' ? 'In attesa' : 'Upcoming');
+
+  // ---- Recap: 3 mini-metriche (peso/HRV/sonno) vs settimana precedente ----
+  const pesoAvgCur = wk.avg(wk.pesoArr), hrvAvgCur = wk.avg(wk.hrvArr), sonnoAvgCur = wk.avg(wk.sonnoArr);
+  let pesoAvgPrev = null, hrvAvgPrev = null, sonnoAvgPrev = null;
+  if (weekIdx > 0) {
+    const prevWk = weekAggregate(weekIdx - 1);
+    pesoAvgPrev = prevWk.avg(prevWk.pesoArr); hrvAvgPrev = prevWk.avg(prevWk.hrvArr); sonnoAvgPrev = prevWk.avg(prevWk.sonnoArr);
+  }
+  const sonnoFmt = v => v == null ? '—' : `${Math.floor(v)}h${String(Math.round((v % 1) * 60)).padStart(2, '0')}`;
+  const miniStat = (label, val, fmtFn, prevVal, unit) => {
+    const dt = deltaTxt(val, prevVal, unit);
+    return `
+      <div style="flex:1 1 0;display:flex;flex-direction:column;gap:2px;min-width:0;">
+        <span style="font-size:10px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${label}</span>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <span style="font-size:16px;font-weight:700;color:#ffffff;font-variant-numeric:tabular-nums;letter-spacing:-.01em;">${fmtFn(val)}</span>
+          ${dt ? `<span style="font-size:10.5px;font-weight:600;color:${dt.color};font-variant-numeric:tabular-nums;">${dt.txt}</span>` : ''}
+        </div>
+        ${weekIdx > 0 ? `<span style="font-size:9.5px;font-weight:500;color:rgba(255,255,255,.42);">vs W${weekIdx}</span>` : ''}
+      </div>`;
+  };
+
+  const recapCard = `
+    <div style="grid-column:1 / 6;grid-row:1 / 2;border-radius:var(--r-card);background:var(--hero);padding:20px 22px;display:flex;flex-direction:column;gap:12px;overflow:hidden;">
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <span style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:#9d9da6;">
+          <span style="width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:${recapDot};"></span>${recapLabel} · ${rangeTxt}
+        </span>
+        <span style="font-size:20px;line-height:1.25;letter-spacing:-.014em;font-weight:700;color:#ffffff;text-wrap:pretty;">${esc(recapTitle)}</span>
+      </div>
+      <span style="font-size:13.5px;line-height:1.55;color:#c8c8ce;text-wrap:pretty;">${esc(recapText)}</span>
+      ${wk.isFutureWeek ? '' : `
+      <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:8px;justify-content:flex-end;">
+        <div style="display:flex;gap:14px;">
+          ${miniStat('Peso', pesoAvgCur, v => nf(v, 1), pesoAvgPrev)}
+          ${miniStat('HRV', hrvAvgCur, v => v == null ? '—' : Math.round(v), hrvAvgPrev, 'int')}
+          ${miniStat('Sonno', sonnoAvgCur, sonnoFmt, sonnoAvgPrev)}
+        </div>
+      </div>`}
+    </div>`;
+
+  // ---- Peso della settimana + curva precedente + biometria ----
+  const prevWkForChart = weekIdx > 0 ? weekAggregate(weekIdx - 1) : null;
+  const plW = svgPath(wk.pesoArr, 620, 104, 12);
+  const plPrev = prevWkForChart ? svgPath(prevWkForChart.pesoArr, 620, 104, 12) : null;
+  const pesoValid = wk.pesoArr.filter(v => !isNaN(v));
+  const pesoMin = pesoValid.length ? Math.min(...pesoValid) : null, pesoMax = pesoValid.length ? Math.max(...pesoValid) : null;
+  const pesoDeltaWeek = pesoValid.length >= 2 ? pesoValid[pesoValid.length - 1] - pesoValid[0] : null;
+  const pesoSlope = weeklyTrend(wk.pesoArr);
+
+  const bioTile = (label, arr, unit, fmtFn, invert) => {
+    const cur = arr[arr.length - 1] != null && !isNaN(arr[arr.length - 1]) ? arr[arr.length - 1] : wk.avg(arr);
+    const prevArr = prevWkForChart ? (label === 'HRV' ? prevWkForChart.hrvArr : label === (LANG === 'it' ? 'Riposo' : 'Resting') ? prevWkForChart.rhrArr : label === 'Sonno' ? prevWkForChart.sonnoArr : label === 'REM' ? prevWkForChart.remArr : label === 'Profondo' ? prevWkForChart.profArr : prevWkForChart.risvArr) : null;
+    const prevVal = prevArr ? wk.avg(prevArr) : null;
+    const dt = deltaTxt(cur, prevVal, unit, invert);
+    const sp = svgPath(arr, 100, 18, 3);
+    return `
+        <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+          <span style="font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${label}</span>
+          <div style="display:flex;align-items:baseline;gap:4px;">
+            <span style="font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${fmtFn(cur)}</span>
+            ${dt ? `<span style="font-size:10px;font-weight:600;color:${dt.color};font-variant-numeric:tabular-nums;">${dt.txt}</span>` : ''}
+          </div>
+          <svg viewBox="0 0 100 18" preserveAspectRatio="none" style="width:100%;height:16px;display:block;overflow:visible;">
+            <path d="${sp.d}" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </div>`;
+  };
+
+  const pesoCard = `
+    <div style="grid-column:6 / 13;grid-row:1 / 2;border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:16px 20px;display:flex;flex-direction:column;gap:7px;overflow:hidden;">
+      <div style="flex:0 0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;">
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <span style="font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Peso · la settimana' : 'Weight · this week'}</span>
+          <div style="display:flex;align-items:baseline;gap:7px;">
+            <span style="font-size:32px;line-height:1.05;letter-spacing:-.02em;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;">${nf(pesoValid[pesoValid.length - 1])}</span>
+            <span style="font-size:14px;font-weight:400;color:var(--ink3);">kg</span>
+            ${pesoDeltaWeek != null ? `<span style="font-size:13px;font-weight:600;color:${pesoDeltaWeek <= 0 ? 'var(--ok)' : 'var(--warn-ink)'};font-variant-numeric:tabular-nums;margin-left:3px;">${pesoDeltaWeek >= 0 ? '+' : ''}${nf(pesoDeltaWeek)} kg ${LANG === 'it' ? 'nella settimana' : 'this week'}</span>` : ''}
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+          <span style="font-size:12px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${pesoSlope == null ? '—' : (pesoSlope >= 0 ? '+' : '') + nf(pesoSlope, 2) + (LANG === 'it' ? ' kg / sett.' : ' kg/wk')}</span>
+          ${pesoMin != null ? `<span style="font-size:10.5px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">min ${nf(pesoMin)} · max ${nf(pesoMax)} kg</span>` : ''}
+        </div>
+      </div>
+      <svg viewBox="0 0 620 104" preserveAspectRatio="none" style="flex:0 0 auto;width:100%;height:96px;display:block;overflow:visible;">
+        <defs><linearGradient id="wkFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.16"></stop>
+          <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"></stop>
+        </linearGradient></defs>
+        <line x1="0" y1="26" x2="620" y2="26" stroke="var(--line2)" stroke-width="1"></line>
+        <line x1="0" y1="65" x2="620" y2="65" stroke="var(--line2)" stroke-width="1"></line>
+        ${plW.d ? `<path d="${plW.area}" fill="url(#wkFill)"></path>` : ''}
+        ${plPrev && plPrev.d ? `<path d="${plPrev.d}" fill="none" stroke="var(--ink3)" stroke-width="1.4" stroke-dasharray="3 4" opacity="0.55"></path>` : ''}
+        ${plW.d ? `<path d="${plW.d}" fill="none" stroke="var(--accent)" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"></path>` : ''}
+      </svg>
+      <div style="flex:0 0 auto;display:flex;align-items:center;gap:14px;">
+        <span style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:500;color:var(--ink2);"><span style="width:12px;height:2.5px;border-radius:2px;background:var(--accent);"></span>${LANG === 'it' ? 'questa settimana' : 'this week'}</span>
+        ${plPrev && plPrev.d ? `<span style="display:flex;align-items:center;gap:5px;font-size:10px;font-weight:500;color:var(--ink2);"><span style="width:12px;height:2px;border-radius:2px;background:var(--ink3);opacity:.6;"></span>${LANG === 'it' ? 'settimana precedente' : 'previous week'}</span>` : ''}
+      </div>
+      <div style="flex:0 0 auto;display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:3px;padding-top:12px;border-top:1px solid var(--line);">
+        ${bioTile('HRV', wk.hrvArr, 'int', v => v == null ? '—' : Math.round(v))}
+        ${bioTile(LANG === 'it' ? 'Riposo' : 'Resting', wk.rhrArr, 'int', v => v == null ? '—' : Math.round(v), true)}
+        ${bioTile(LANG === 'it' ? 'Sonno' : 'Sleep', wk.sonnoArr, '', sonnoFmt)}
+        ${bioTile('REM', wk.remArr, 'int', v => v == null ? '—' : Math.round(v) + '′')}
+        ${bioTile(LANG === 'it' ? 'Profondo' : 'Deep', wk.profArr, 'int', v => v == null ? '—' : Math.round(v) + '′')}
+        ${bioTile(LANG === 'it' ? 'Risvegli' : 'Wake-ups', wk.risvArr, '1', v => v == null ? '—' : nf(v), true)}
+      </div>
+    </div>`;
+
+  // ---- Griglia iniezioni ----
+  const dayHeadCells = wk.days.map(d => `
+              <span onclick="selDate='${d.dateISO}';oggiViewMode='day';render();" style="display:flex;flex-direction:column;align-items:center;gap:0;cursor:pointer;padding:2px 0;border-radius:5px;background:transparent;">
+                <span style="font-size:9px;font-weight:600;color:#57575f;text-transform:uppercase;">${d.dow}</span>
+                <span style="font-size:10px;font-weight:600;color:#57575f;font-variant-numeric:tabular-nums;">${d.num}</span>
+              </span>`).join('');
+
+  const injRowsHtml = wk.injRows.map(r => {
+    const { name: compName } = splitDose(r.row.field);
+    const cells = r.cells.map(c => {
+      const st = INJ_CELL_STYLE[c.state];
+      return `<span style="height:22px;border-radius:5px;background:${st.bg};border:1px solid ${st.border};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:${st.ink};cursor:pointer;">${st.mark}</span>`;
+    }).join('');
+    const doneColor = r.applicable && r.doneCount === r.applicable ? 'var(--ok)' : r.applicable && r.doneCount / r.applicable < 0.6 ? 'var(--warn-ink)' : 'var(--ink)';
+    return `
+                <div style="display:grid;grid-template-columns:158px repeat(7,1fr) 62px;gap:2px;align-items:center;">
+                  <div style="min-width:0;display:flex;flex-direction:column;">
+                    <span style="font-size:10.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(compName)}${r.row.igf ? ' ' + (r.row.field.includes('dx') ? 'dx' : 'sx') : ''}</span>
+                    <span style="font-size:8.5px;font-weight:500;color:var(--ink3);white-space:nowrap;">${L.slotLabels[r.row.timing] || r.row.timing} · ${r.row.igf ? 'IM' : 'SC'}</span>
+                  </div>
+                  ${cells}
+                  <span style="text-align:right;font-size:10px;font-weight:600;color:${doneColor};font-variant-numeric:tabular-nums;">${r.doneCount}/${r.applicable}</span>
+                </div>`;
+  }).join('');
+
+  const injCard = `
+    <div style="grid-column:1 / 8;grid-row:2 / 3;border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:9px;overflow:hidden;">
+      <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+        <span style="font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Iniezioni · dose per dose' : 'Injections · dose by dose'}</span>
+        <div style="display:flex;align-items:baseline;gap:12px;">
+          <span style="display:flex;align-items:center;gap:4px;font-size:9.5px;font-weight:500;color:var(--ink2);"><span style="width:12px;height:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:#ffffff;background:var(--ok);border:1.5px solid var(--ok);">✓</span>${L.doseDone}</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:9.5px;font-weight:500;color:var(--ink2);"><span style="width:12px;height:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:var(--warn-ink);background:#ffffff;border:1.5px solid var(--warn);">–</span>${L.doseSkip}</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:9.5px;font-weight:500;color:var(--ink2);"><span style="width:12px;height:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:var(--ink3);background:var(--surf2);border:1.5px solid var(--surf2);">N</span>${L.doseNa}</span>
+          <span style="font-size:11.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${wk.injDoneTot}/${wk.injApplTot}</span>
+        </div>
+      </div>
+      <div style="flex:0 0 auto;display:grid;grid-template-columns:158px repeat(7,1fr) 62px;gap:2px;">
+        <span></span>${dayHeadCells}
+        <span style="text-align:right;font-size:8.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;align-self:end;">${LANG === 'it' ? 'fatte' : 'done'}</span>
+      </div>
+      <div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:2px;">${injRowsHtml}</div>
+      <span style="flex:0 0 auto;font-size:9.5px;font-weight:500;color:var(--ink3);text-wrap:pretty;">${LANG === 'it' ? 'IGF-1 DES solo nei giorni di allenamento' : 'IGF-1 DES only on training days'}</span>
+    </div>`;
+
+  // ---- Aderenza: 3 anelli + 16 barre ----
+  const ring = (pct, color, label, sub, deltaInfo) => `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="position:relative;width:92px;height:92px;">
+            <svg viewBox="0 0 84 84" style="width:92px;height:92px;transform:rotate(-90deg);display:block;">
+              <circle cx="42" cy="42" r="34" fill="none" stroke="var(--line2)" stroke-width="8"></circle>
+              <circle cx="42" cy="42" r="34" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(213.63 * pct / 100).toFixed(1)} 213.63"></circle>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;">${pct}%</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
+            <span style="font-size:12px;font-weight:600;color:var(--ink);">${label}</span>
+            <span style="font-size:10.5px;font-weight:500;color:var(--ink3);font-variant-numeric:tabular-nums;">${sub}</span>
+            ${deltaInfo}
+          </div>
+        </div>`;
+  const ringDelta = (pct, prevPct) => {
+    if (!wk.isClosed) return `<span style="font-size:10px;font-weight:600;color:var(--ink3);font-variant-numeric:tabular-nums;">${wk.elapsed} ${LANG === 'it' ? 'di 7 giorni' : 'of 7 days'}</span>`;
+    if (prevPct == null) return '';
+    const d = pct - prevPct;
+    const color = Math.abs(d) < 1 ? 'var(--ink3)' : d > 0 ? 'var(--ok)' : 'var(--warn-ink)';
+    const txt = Math.abs(d) < 1 ? '=' : (d > 0 ? '+' : '') + d;
+    return `<span style="font-size:10px;font-weight:600;color:${color};font-variant-numeric:tabular-nums;">${txt} vs W${weekIdx}</span>`;
+  };
+  const prevShallow = weekIdx > 0 ? weekAggregateShallow(weekIdx - 1) : null;
+
+  // 16 barre — fondo scala 50%, la barra della settimana corrente tratteggiata se in corso
+  const barsHtml = Array.from({ length: totalWeeks }, (_, w) => {
+    if (w === weekIdx) {
+      const h = Math.max(8, (wk.overall - 50) / 50 * 100);
+      return `
+          <div data-week="${w}" style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;height:100%;justify-content:flex-end;">
+            <span style="width:100%;height:${h}%;border-radius:3px 3px 0 0;background:${wk.isClosed ? 'var(--accent)' : 'transparent'};border:1.5px dashed ${wk.isClosed ? 'transparent' : 'var(--accent)'};"></span>
+            <span style="font-size:7.5px;font-weight:600;color:var(--accent-ink);font-variant-numeric:tabular-nums;">${w + 1}</span>
+          </div>`;
+    }
+    const shal = w < weekIdx ? weekAggregateShallow(w) : null;
+    if (!shal) {
+      return `
+          <div data-week="${w}" style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;height:100%;justify-content:flex-end;">
+            <span style="width:100%;height:3px;border-radius:3px 3px 0 0;background:var(--line2);border:1.5px dashed transparent;"></span>
+            <span style="font-size:7.5px;font-weight:600;color:var(--ink3);font-variant-numeric:tabular-nums;">${w + 1}</span>
+          </div>`;
+    }
+    const h = Math.max(8, (shal.overall - 50) / 50 * 100);
+    const barColor = shal.overall >= 90 ? 'var(--ok)' : shal.overall >= 70 ? 'var(--warn)' : 'var(--bad)';
+    return `
+          <div data-week="${w}" style="flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;height:100%;justify-content:flex-end;">
+            <span style="width:100%;height:${h}%;border-radius:3px 3px 0 0;background:${barColor};border:1.5px dashed transparent;"></span>
+            <span style="font-size:7.5px;font-weight:600;color:var(--ink3);font-variant-numeric:tabular-nums;">${w + 1}</span>
+          </div>`;
+  }).join('');
+
+  const adherenceCard = `
+    <div style="grid-column:8 / 13;grid-row:2 / 3;border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+      <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
+        <span style="font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Aderenza · settimana' : 'Adherence · week'} ${weekIdx + 1}</span>
+        <span style="font-size:10.5px;font-weight:500;color:var(--ink3);">${wk.isClosed ? (LANG === 'it' ? 'settimana chiusa' : 'closed week') : wk.isFutureWeek ? (LANG === 'it' ? 'non iniziata' : 'not started') : `${wk.elapsed} ${LANG === 'it' ? 'giorni su 7 · in corso' : 'of 7 days · in progress'}`}</span>
+      </div>
+      <div style="flex:0 0 auto;display:flex;justify-content:space-around;">
+        ${ring(wk.injPct, 'var(--accent)', L.injectionsRing, `${wk.injDoneTot}/${wk.injApplTot}`, ringDelta(wk.injPct, prevShallow && prevShallow.injPct))}
+        ${ring(wk.suppPct, 'var(--ok)', L.supplements, `${wk.suppDoneTot}/${wk.suppApplTot}`, ringDelta(wk.suppPct, prevShallow && prevShallow.suppPct))}
+        ${ring(wk.woPct, 'var(--warn)', L.workoutsRing, `${wk.woDone}/${wk.woTot}`, ringDelta(wk.woPct, prevShallow && prevShallow.woPct))}
+      </div>
+      <div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:7px;padding-top:10px;border-top:1px solid var(--line);">
+        <span style="flex:0 0 auto;font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Le 16 settimane, la stessa misura' : 'All 16 weeks, same measure'}</span>
+        <div style="flex:1 1 auto;min-height:0;display:flex;align-items:flex-end;gap:3px;">${barsHtml}</div>
+        <span style="flex:0 0 auto;font-size:9.5px;font-weight:500;color:var(--ink3);text-wrap:pretty;">${LANG === 'it' ? 'Aderenza complessiva per settimana · fondo scala 50%' : 'Overall adherence per week · 50% baseline'}</span>
+      </div>
+    </div>`;
+
+  // ---- Integratori ----
+  const dayHeadInitials = wk.dowInitial.map(l => `<span style="text-align:center;font-size:8.5px;font-weight:600;color:#57575f;text-transform:uppercase;">${l}</span>`).join('');
+  const suppRowsHtml = wk.suppRows.map(r => {
+    const cells = r.cells.map(c => {
+      const st = INJ_CELL_STYLE[c.state];
+      return `<span style="height:19px;border-radius:4px;background:${st.bg};border:1px solid ${st.border};display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;color:${st.ink};cursor:pointer;">${st.mark}</span>`;
+    }).join('');
+    return `
+                <div style="display:grid;grid-template-columns:130px repeat(7,1fr);gap:2px;align-items:center;">
+                  <span style="font-size:10.5px;font-weight:500;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(r.label)}</span>
+                  ${cells}
+                </div>`;
+  }).join('');
+  const suppCard = `
+    <div style="grid-column:1 / 5;grid-row:3 / 4;border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:9px;overflow:hidden;">
+      <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
+        <span style="font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${L.supplements}</span>
+        <span style="font-size:11.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${wk.suppDoneTot}/${wk.suppApplTot}</span>
+      </div>
+      <div style="flex:0 0 auto;display:grid;grid-template-columns:130px repeat(7,1fr);gap:2px;"><span></span>${dayHeadInitials}</div>
+      <div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:2px;">${suppRowsHtml}</div>
+    </div>`;
+
+  // ---- Sedute della settimana ----
+  const maxVol = Math.max(1, ...wk.sessions.map(s => s.vol));
+  const sessRows = wk.sessions.map(s => `
+        <div onclick="selDate='${s.dateISO}';oggiViewMode='day';render();" style="display:flex;align-items:center;gap:9px;padding:5px 0;border-top:1px solid var(--line2);cursor:pointer;">
+          <span style="flex:0 0 30px;font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${s.dow}</span>
+          <span style="flex:0 0 58px;font-size:10.5px;font-weight:600;color:#57575f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.type)}</span>
+          <div style="flex:1 1 auto;min-width:0;height:5px;border-radius:999px;background:var(--line2);overflow:hidden;">
+            <div style="height:100%;width:${s.vol ? Math.round(s.vol / maxVol * 100) : 0}%;border-radius:999px;background:${s.done ? 'var(--accent)' : 'var(--line)'};"></div>
+          </div>
+          <span style="flex:0 0 auto;font-size:10.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${s.vol ? nf(s.vol / 1000, 1) + 'k' : '—'}</span>
+          <span style="flex:0 0 38px;text-align:right;font-size:10px;font-weight:500;color:var(--ink3);font-variant-numeric:tabular-nums;">${s.dur ? Math.round(s.dur) + '′' : '—'}</span>
+          <span style="flex:0 0 26px;text-align:right;font-size:10px;font-weight:600;color:${s.rpe != null && s.rpe >= 8 ? 'var(--warn-ink)' : 'var(--ink2)'};font-variant-numeric:tabular-nums;">${s.rpe != null ? s.rpe : '—'}</span>
+        </div>`).join('');
+  const sedCard = `
+    <div style="grid-column:5 / 9;grid-row:3 / 4;border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+      <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
+        <span style="font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${L.training}</span>
+        <span style="font-size:11.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${wk.woDone}/${wk.woTot} ${LANG === 'it' ? 'sedute' : 'sessions'}</span>
+      </div>
+      <div style="flex:0 0 auto;display:flex;gap:16px;">
+        <div style="flex:1 1 0;display:flex;flex-direction:column;gap:2px;min-width:0;">
+          <span style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">Volume</span>
+          <div style="display:flex;align-items:baseline;gap:3px;"><span style="font-size:17px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.01em;">${nf(wk.weekVolume / 1000, 1)}k</span><span style="font-size:10px;color:var(--ink3);">kg</span></div>
+        </div>
+        <div style="flex:1 1 0;display:flex;flex-direction:column;gap:2px;min-width:0;">
+          <span style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Tempo' : 'Time'}</span>
+          <div style="display:flex;align-items:baseline;gap:3px;"><span style="font-size:17px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.01em;">${nf(wk.weekDurationMin / 60, 1)}</span><span style="font-size:10px;color:var(--ink3);">h</span></div>
+        </div>
+        <div style="flex:1 1 0;display:flex;flex-direction:column;gap:2px;min-width:0;">
+          <span style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Calorie' : 'Calories'}</span>
+          <div style="display:flex;align-items:baseline;gap:3px;"><span style="font-size:17px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.01em;">${nf(wk.weekKcal / 1000, 1)}k</span><span style="font-size:10px;color:var(--ink3);">kcal</span></div>
+        </div>
+      </div>
+      <div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:1px;">${sessRows || `<span style="font-size:11px;color:var(--ink3);padding-top:8px;">${LANG === 'it' ? 'Nessuna sessione ancora' : 'No sessions yet'}</span>`}</div>
+    </div>`;
+
+  // ---- Soggettivo: 8 medie + 3 categorici ----
+  const SUBJ_LABELS = { energia: L.subj.energia, recupero: L.subj.recupero, umore: L.subj.umore, rpe: L.subj.rpe, appetito: L.subj.appetito, sonno_sogg: L.subj.sonno_sogg, libido: L.subj.libido, chiarezza: L.subj.chiarezza };
+  const SUBJ_COLORS = { energia: 'var(--accent)', recupero: '#5b93cc', umore: 'var(--warn)', rpe: '#8a8a93', appetito: '#a86a00', sonno_sogg: '#3d6f9e', libido: 'var(--bad)', chiarezza: '#6d6d76' };
+  const prevSubj = weekIdx > 0 ? weekAggregate(weekIdx - 1).subjSeries : null;
+  const subjTiles = Object.keys(SUBJ_LABELS).map(k => {
+    const arr = wk.subjSeries[k];
+    const cur = wk.avg(arr), prev = prevSubj ? wk.avg(prevSubj[k]) : null;
+    const dt = deltaTxt(cur, prev, '1');
+    const sp = svgPath(arr, 100, 16, 3);
+    return `
+        <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+          <span style="font-size:9.5px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${SUBJ_LABELS[k]}</span>
+          <div style="display:flex;align-items:baseline;gap:4px;">
+            <span style="font-size:15px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.01em;">${cur == null ? '—' : nf(cur)}</span>
+            ${dt ? `<span style="font-size:9.5px;font-weight:600;color:${dt.color};font-variant-numeric:tabular-nums;">${dt.txt}</span>` : ''}
+          </div>
+          <svg viewBox="0 0 100 16" preserveAspectRatio="none" style="width:100%;height:15px;display:block;overflow:visible;">
+            <path d="${sp.d}" fill="none" stroke="${SUBJ_COLORS[k]}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </div>`;
+  }).join('');
+
+  const CAT_LABELS3 = { pienezza_add: L.subj.pienezza_add, ritenzione: L.subj.ritenzione, formicolio: L.subj.formicolio };
+  const catRowsHtml = wk.catRows.map(r => {
+    const cells = r.cells.map(c => {
+      if (c.val == null) return `<span style="height:17px;border-radius:4px;background:transparent;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:var(--ink3);cursor:pointer;"></span>`;
+      const table = r.key === 'formicolio' ? CAT_CELL_COLORS.formicolio : CAT_CELL_COLORS.default;
+      const col = table[c.val] || table[0];
+      const mark = c.val === 0 ? '·' : c.val;
+      return `<span style="height:17px;border-radius:4px;background:${col.bg};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:${col.ink};cursor:pointer;">${mark}</span>`;
+    }).join('');
+    return `
+        <div style="display:grid;grid-template-columns:96px repeat(7,1fr);gap:2px;align-items:center;">
+          <span style="font-size:9.5px;font-weight:500;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(CAT_LABELS3[r.key])}</span>
+          ${cells}
+        </div>`;
+  }).join('');
+
+  const subjCard = `
+    <div style="grid-column:9 / 13;grid-row:3 / 4;border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:9px;overflow:hidden;">
+      <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
+        <span style="font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${L.subjective}</span>
+        <span style="font-size:10.5px;font-weight:500;color:var(--ink3);">${LANG === 'it' ? 'media' : 'average'} · ${L.subjScale}</span>
+      </div>
+      <div style="flex:0 0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:8px 12px;">${subjTiles}</div>
+      <div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:5px;padding-top:9px;border-top:1px solid var(--line);">
+        <span style="flex:0 0 auto;font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Categorici · giorno per giorno' : 'Categorical · day by day'}</span>
+        ${catRowsHtml}
+        <div style="flex:0 0 auto;display:flex;gap:9px;flex-wrap:wrap;padding-top:4px;">
+          <span style="display:flex;align-items:center;gap:4px;font-size:8.5px;font-weight:500;color:var(--ink3);"><span style="width:11px;height:11px;border-radius:3px;background:var(--line2);"></span>0</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:8.5px;font-weight:500;color:var(--ink3);"><span style="width:11px;height:11px;border-radius:3px;background:var(--accent-soft);"></span>1</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:8.5px;font-weight:500;color:var(--ink3);"><span style="width:11px;height:11px;border-radius:3px;background:#fdf3e4;"></span>2</span>
+          <span style="display:flex;align-items:center;gap:4px;font-size:8.5px;font-weight:500;color:var(--ink3);"><span style="width:11px;height:11px;border-radius:3px;background:#fbe9e6;"></span>3</span>
+        </div>
+      </div>
+    </div>`;
+
+  if (isDesktop) {
+    return `
+      ${renderDayNav()}
+      <div style="flex:1 1 auto;min-height:0;overflow-y:auto;padding:12px;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(3,min-content);gap:9px;align-content:start;">
+        ${recapCard}${pesoCard}${injCard}${adherenceCard}${suppCard}${sedCard}${subjCard}
+      </div>`;
+  }
+
+  // Mobile: da fare — per ora il commutatore Settimana su mobile mostra
+  // temporaneamente la stessa vista desktop (leggibile ma non ottimizzata
+  // per schermo stretto), meglio di un errore o di una schermata vuota.
+  return `
+    ${renderDayNav()}
+    <div style="padding:0 18px 20px;display:flex;flex-direction:column;gap:10px;">
+      <div style="border-radius:14px;background:var(--surf2);padding:14px;font-size:12px;color:var(--ink2);">${LANG === 'it' ? 'Vista Settimana per mobile in arrivo — nel frattempo usa la vista Giorno.' : 'Week view for mobile coming soon — use Day view for now.'}</div>
+    </div>`;
+}
+
 /* ------------------------------------------------------------
    Vista Oggi completa — nav settimana/giorno + card riepilogo
    (nuove, 09/09/2026) sopra la day-card esistente (invariata).
@@ -2239,6 +2886,9 @@ function bindOggi() {
   });
   app.querySelectorAll('[data-range]').forEach(el => {
     el.onclick = () => { pesoRange = +el.dataset.range; render(); };
+  });
+  app.querySelectorAll('[data-week]').forEach(el => {
+    el.onclick = () => jumpToWeek(+el.dataset.week);
   });
   app.querySelectorAll('[data-injdose]').forEach(el => {
     const k = +el.dataset.injdose;
