@@ -3954,14 +3954,22 @@ function buildLabSection(container) {
     card.className = 'milestone-card' + ((m.openDefault !== undefined ? m.openDefault : m.locked) ? ' open' : '');
     card.id = 'card-' + m.id;
 
+    // Stesso bug/fix della card DEXA (14/09/2026): per le milestone non
+    // bloccate (lab_wk8, lab_final) il valore non veniva MAI letto da
+    // _lastData, solo la baseline lo era -- ogni ridisegno della card
+    // azzerava visivamente il dato reale e, in caso di salvataggio con la
+    // card in quello stato, lo cancellava anche su Supabase.
+    const savedLab = (_lastData && _lastData[m.id]) || {};
+
     const fields = Object.entries(fieldsObj);
     const rows = fields.map(([k, f]) => {
       const isBaseline = m.locked;
+      const savedVal = savedLab['lab_' + k];
       // Delta pill vs precedente: placeholder statico, popolato da refreshLabDeltas()
       // dopo il caricamento dei dati reali (mai calcolato qui su valori segnaposto)
       const prevHtml = `<div id="labdelta-${m.id}-${k}"></div>`;
       // Range indicator
-      const displayVal = isBaseline ? f.val : '';
+      const displayVal = isBaseline ? f.val : (savedVal || '');
       const status = (displayVal && displayVal !== '—') ? getRangeStatus(displayVal, f.ref) : 'neutral';
       const st = rangeStatusStyle(status);
       const statusLabel = status === 'ok' ? '✓' : status === 'low' ? '↓' : status === 'high' ? '↑' : '';
@@ -3975,7 +3983,7 @@ function buildLabSection(container) {
           </div>
           <input type="text" placeholder="${isBaseline ? f.val : '—'}"
             data-id="${m.id}" data-f="lab_${k}"
-            ${isBaseline ? `value="${f.val}"` : ''}>
+            ${isBaseline ? `value="${f.val}"` : (savedVal ? `value="${savedVal}"` : '')}>
           <div class="lab-ref">Ref: ${f.ref}</div>
           ${prevHtml}
         </div>`;
@@ -3996,7 +4004,7 @@ function buildLabSection(container) {
         ${!m.locked ? `
         <div class="field-row solo" style="margin-top:8px">
           <div class="fg"><label>Note cliniche</label>
-            <input type="text" placeholder="Osservazioni, variazioni rispetto baseline..." data-id="${m.id}" data-f="lab_note">
+            <input type="text" placeholder="Osservazioni, variazioni rispetto baseline..." data-id="${m.id}" data-f="lab_note" ${savedLab.lab_note ? `value="${savedLab.lab_note}"` : ''}>
           </div>
         </div>` : ''}
       </div>`;
