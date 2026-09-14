@@ -3483,6 +3483,31 @@ async function saveData(){
   // (comportamento precedente) — rischio residuo noto ma preferibile a
   // perdere dati offline.
 
+  // Rete di sicurezza (14/09/2026): "k in dataV1" protegge solo le chiavi
+  // ASSENTI dal DOM raccolto — ma una card mai popolata correttamente (bug
+  // di rendering, o semplicemente mai aperta in questa sessione dopo una
+  // scrittura esterna) produce comunque una entry PRESENTE con tutti i
+  // campi vuoti, che la riga sotto lascerebbe intatta sovrascrivendo dati
+  // veri con stringhe vuote. Qui: se un oggetto raccolto dal DOM ha OGNI
+  // campo vuoto, e la copia fresca da Supabase per la stessa chiave ha
+  // ALMENO un valore reale, si preferisce la copia fresca — stesso principio
+  // già applicato ai giorni day_N/p2_day_N, esteso agli oggetti "milestone"
+  // di primo livello (dexa_t1/t2, lab_wk8/lab_final, ecc.).
+  function isAllBlank(obj) {
+    return obj && typeof obj === 'object' && !Array.isArray(obj) &&
+      Object.values(obj).every(v => v === '' || v == null);
+  }
+  function hasRealValue(obj) {
+    return obj && typeof obj === 'object' && !Array.isArray(obj) &&
+      Object.values(obj).some(v => v !== '' && v != null);
+  }
+  Object.keys(dataV1).forEach(k => {
+    if (isAllBlank(dataV1[k]) && hasRealValue(freshTop1[k])) dataV1[k] = freshTop1[k];
+  });
+  Object.keys(dataV2).forEach(k => {
+    if (isAllBlank(dataV2[k]) && hasRealValue(freshTop2[k])) dataV2[k] = freshTop2[k];
+  });
+
   Object.entries(fallback1).forEach(([k,v])=>{ if(!(k in dataV1)) dataV1[k]=v; });
   Object.entries(fallback2).forEach(([k,v])=>{ if(!(k in dataV2)) dataV2[k]=v; });
 
@@ -4006,6 +4031,14 @@ function buildLabSection(container) {
     card.id = 'card-' + m.id;
     const isT0 = m.locked;
     const t = DEXA_T0;
+    // Bug corretto 14/09/2026: prima i campi T1/T2 non venivano MAI
+    // precompilati dal dato salvato (solo T0 lo era, dalla costante fissa)
+    // -- ogni volta che questa card si disegnava, i campi risultavano vuoti
+    // nel DOM anche con dati reali su Supabase. Un salvataggio partito da
+    // quello stato (collectAll() legge il DOM) sovrascriveva silenziosamente
+    // il valore vero con stringhe vuote, anche se la card non era stata
+    // toccata dall'utente. saved legge dallo stesso _lastData già caricato.
+    const saved = (_lastData && _lastData[m.id]) || {};
 
     card.innerHTML = `
       <div class="milestone-head" onclick="toggleDay('${m.id}')">
@@ -4019,21 +4052,21 @@ function buildLabSection(container) {
       <div class="milestone-body">
         <div class="dexa-grid">
           <div class="lab-box"><label>Peso kg</label>
-            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_peso" ${isT0?`value="${t.peso}"`:''}></div>
+            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_peso" ${isT0?`value="${t.peso}"`:(saved.dexa_peso?`value="${saved.dexa_peso}"`:'')}></div>
           <div class="lab-box"><label>BF %</label>
-            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_bf_pct" ${isT0?`value="${t.bf_pct}"`:''}></div>
+            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_bf_pct" ${isT0?`value="${t.bf_pct}"`:(saved.dexa_bf_pct?`value="${saved.dexa_bf_pct}"`:'')}></div>
           <div class="lab-box"><label>Fat kg</label>
-            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_fat_kg" ${isT0?`value="${t.fat_kg}"`:''}></div>
+            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_fat_kg" ${isT0?`value="${t.fat_kg}"`:(saved.dexa_fat_kg?`value="${saved.dexa_fat_kg}"`:'')}></div>
           <div class="lab-box"><label>Lean %</label>
-            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_lean_pct" ${isT0?`value="${t.lean_pct}"`:''}></div>
+            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_lean_pct" ${isT0?`value="${t.lean_pct}"`:(saved.dexa_lean_pct?`value="${saved.dexa_lean_pct}"`:'')}></div>
           <div class="lab-box"><label>Lean kg</label>
-            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_lean_kg" ${isT0?`value="${t.lean_kg}"`:''}></div>
+            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_lean_kg" ${isT0?`value="${t.lean_kg}"`:(saved.dexa_lean_kg?`value="${saved.dexa_lean_kg}"`:'')}></div>
           <div class="lab-box"><label>VAT cm²</label>
-            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_vat_cm2" ${isT0?`value="${t.vat_cm2}"`:''}></div>
+            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_vat_cm2" ${isT0?`value="${t.vat_cm2}"`:(saved.dexa_vat_cm2?`value="${saved.dexa_vat_cm2}"`:'')}></div>
           <div class="lab-box"><label>VAT g</label>
-            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_vat_g" ${isT0?`value="${t.vat_g}"`:''}></div>
+            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_vat_g" ${isT0?`value="${t.vat_g}"`:(saved.dexa_vat_g?`value="${saved.dexa_vat_g}"`:'')}></div>
           <div class="lab-box"><label>BMD g/cm²</label>
-            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_bmd" ${isT0?`value="${t.bmd}"`:''}></div>
+            <input type="text" placeholder="—" data-id="${m.id}" data-f="dexa_bmd" ${isT0?`value="${t.bmd}"`:(saved.dexa_bmd?`value="${saved.dexa_bmd}"`:'')}></div>
         </div>
         ${!isT0 ? `
         <div style="margin-top:12px;padding:10px 12px;background:var(--blue-light);border-radius:var(--radius-xs)">
