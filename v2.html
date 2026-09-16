@@ -800,6 +800,22 @@ let isDesktop = window.innerWidth >= 1024;
 const T0_PESO = 71.1;
 
 function render() {
+  // Bug corretto 16/09/2026: flush() ora chiama render() all'inizio del
+  // salvataggio (per mostrare "Salvataggio…"), ma render() ricostruisce
+  // TUTTA la pagina con innerHTML — se l'utente sta ancora scrivendo in
+  // un campo quando il salvataggio automatico parte, quel campo viene
+  // ricreato da zero e perde il focus. I tasti premuti dopo non vanno da
+  // nessuna parte: un valore come "120" restava troncato a "12" perché il
+  // campo sotto le dita cambiava senza che l'utente se ne accorgesse.
+  // Qui si salva quale campo aveva il focus e la posizione del cursore
+  // PRIMA di ricostruire il DOM, e li si ripristina DOPO sullo stesso
+  // campo (identificato per data-f, che resta stabile tra un render e
+  // l'altro dello stesso giorno).
+  const activeEl = document.activeElement;
+  const focusInfo = (activeEl && activeEl.tagName === 'INPUT' && activeEl.dataset && activeEl.dataset.f)
+    ? { f: activeEl.dataset.f, start: activeEl.selectionStart, end: activeEl.selectionEnd }
+    : null;
+
   const L = t();
   const app = document.getElementById('app');
   const isDirty = Object.keys(store.dirty).length > 0;
@@ -869,6 +885,14 @@ function render() {
   const saveBtnM = document.getElementById('save-now-btn-mobile');
   if (saveBtnM) saveBtnM.onclick = saveNowClicked;
   bindOggi(app);
+
+  if (focusInfo) {
+    const restored = app.querySelector(`input[data-f="${focusInfo.f}"]`);
+    if (restored) {
+      restored.focus();
+      try { restored.setSelectionRange(focusInfo.start, focusInfo.end); } catch (e) { /* alcuni input numerici non supportano setSelectionRange, va bene ignorarlo */ }
+    }
+  }
 }
 
 function renderNotMigrated(k) {
