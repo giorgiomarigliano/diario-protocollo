@@ -127,7 +127,9 @@
     .sync-status{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:500;color:var(--ink2);white-space:nowrap;}
     .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:0 0 auto;}
     .sync-dot.saving{background:var(--warn);}
+    .sync-dot.error{background:var(--bad);}
     .save-btn{border:none;background:var(--accent);color:#fff;font-size:12.5px;font-weight:600;padding:7px 16px;border-radius:8px;cursor:pointer;white-space:nowrap;}
+    .save-btn.saving{background:var(--ink3);cursor:default;}
   }
   .day-pill-dot{width:5px;height:5px;border-radius:50%;background:var(--idle);}
   .day-pill-dot.has-data{background:var(--ok);}
@@ -473,7 +475,7 @@ function setLang(l) {
      2. merge del solo giorno cambiato dentro il blob
      3. PATCH dell'intero blob aggiornato
    ============================================================ */
-const store = { blob: null, loaded: false, dirty: {}, saving: false };
+const store = { blob: null, loaded: false, dirty: {}, saving: false, saveError: false };
 
 function dayIdxFromISO(dateISO) {
   const start = new Date(CFG.CYCLE_START + 'T00:00:00');
@@ -552,6 +554,9 @@ async function flush() {
   const dirtyKeys = Object.keys(store.dirty);
   if (!dirtyKeys.length || store.saving) return;
   store.saving = true;
+  store.saveError = false;
+  render(); // senza questo, "Salvataggio…" non si vedeva mai: saving
+            // tornava a false prima del prossimo ridisegno naturale
   try {
     const fresh = await loadBlob();
     dirtyKeys.forEach(key => {
@@ -572,6 +577,7 @@ async function flush() {
     dirtyKeys.forEach(key => { delete store.dirty[key]; delete store.pending[key]; });
   } catch (e) {
     console.warn('salvataggio rimandato, verrà ritentato', e);
+    store.saveError = true; // prima solo in console, invisibile a Giorgio
   }
   store.saving = false;
   render();
@@ -810,14 +816,15 @@ function render() {
               border-bottom:2px solid ${k === tab ? 'var(--accent)' : 'transparent'};
             ">${L.tabs[n]}</button>`).join('')}
         </nav>
-        ${isDesktop && tab === 'oggi' ? `
+        ${tab === 'oggi' ? `
         <div class="header-actions">
+          ${isDesktop ? `
           <div class="view-toggle">
             <button data-view="day" class="${oggiViewMode === 'day' ? 'active' : ''}">${LANG === 'it' ? 'Giorno' : 'Day'}</button>
             <button data-view="week" class="${oggiViewMode === 'week' ? 'active' : ''}">${LANG === 'it' ? 'Settimana' : 'Week'}</button>
-          </div>
-          <span class="sync-status"><span class="sync-dot ${store.saving ? 'saving' : ''}"></span>${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : (isDirty ? (LANG === 'it' ? 'Modifiche in sospeso' : 'Unsaved changes') : (LANG === 'it' ? 'Sincronizzato' : 'Synced'))}</span>
-          <button id="save-now-btn" class="save-btn">${LANG === 'it' ? 'Salva' : 'Save'}</button>
+          </div>` : ''}
+          <span class="sync-status"><span class="sync-dot ${store.saving ? 'saving' : (store.saveError ? 'error' : '')}"></span>${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : (store.saveError ? (LANG === 'it' ? 'Errore, ritento…' : 'Error, retrying…') : (isDirty ? (LANG === 'it' ? 'Modifiche in sospeso' : 'Unsaved changes') : (LANG === 'it' ? 'Sincronizzato' : 'Synced')))}</span>
+          ${isDesktop ? `<button id="save-now-btn" class="save-btn ${store.saving ? 'saving' : ''}" ${store.saving ? 'disabled' : ''}>${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : (LANG === 'it' ? 'Salva' : 'Save')}</button>` : ''}
         </div>` : ''}
         <div style="flex:0 0 auto;display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;">
           ${['it', 'en'].map(l => `
@@ -2038,7 +2045,7 @@ function renderOggiFull() {
                 <circle cx="42" cy="42" r="34" fill="none" stroke="var(--line2)" stroke-width="8"></circle>
                 <circle cx="42" cy="42" r="34" fill="none" stroke="${r.color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(213.63 * r.pct / 100).toFixed(1)} 213.63"></circle>
               </svg>
-              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${r.pct}%</div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;">${r.pct}%</div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:center;">
               <span style="font-size:11.5px;font-weight:600;color:var(--ink);">${r.label}</span>
@@ -2236,7 +2243,7 @@ function renderOggiFull() {
 
     const saveBtnM = `
       <div style="flex:0 0 auto;display:flex;justify-content:center;padding-top:2px;">
-        <span id="save-now-btn-mobile" style="width:100%;text-align:center;padding:13px 20px;border-radius:14px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">${LANG === 'it' ? 'Salva il giorno' : 'Save the day'}</span>
+        <span id="save-now-btn-mobile" style="width:100%;text-align:center;padding:13px 20px;border-radius:14px;background:${store.saving ? 'var(--ink3)' : store.saveError ? 'var(--bad)' : 'var(--accent)'};color:#fff;font-size:14px;font-weight:600;cursor:${store.saving ? 'default' : 'pointer'};">${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : store.saveError ? (LANG === 'it' ? 'Errore, tocca per riprovare' : 'Error, tap to retry') : (LANG === 'it' ? 'Salva il giorno' : 'Save the day')}</span>
       </div>`;
 
     return `
