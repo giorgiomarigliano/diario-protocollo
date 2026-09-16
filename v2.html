@@ -475,7 +475,7 @@ function setLang(l) {
      2. merge del solo giorno cambiato dentro il blob
      3. PATCH dell'intero blob aggiornato
    ============================================================ */
-const store = { blob: null, loaded: false, dirty: {}, saving: false, saveError: false };
+const store = { blob: null, loaded: false, dirty: {}, saving: false, saveError: false, justSaved: false };
 
 function dayIdxFromISO(dateISO) {
   const start = new Date(CFG.CYCLE_START + 'T00:00:00');
@@ -824,7 +824,7 @@ function render() {
             <button data-view="week" class="${oggiViewMode === 'week' ? 'active' : ''}">${LANG === 'it' ? 'Settimana' : 'Week'}</button>
           </div>` : ''}
           <span class="sync-status"><span class="sync-dot ${store.saving ? 'saving' : (store.saveError ? 'error' : '')}"></span>${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : (store.saveError ? (LANG === 'it' ? 'Errore, ritento…' : 'Error, retrying…') : (isDirty ? (LANG === 'it' ? 'Modifiche in sospeso' : 'Unsaved changes') : (LANG === 'it' ? 'Sincronizzato' : 'Synced')))}</span>
-          ${isDesktop ? `<button id="save-now-btn" class="save-btn ${store.saving ? 'saving' : ''}" ${store.saving ? 'disabled' : ''}>${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : (LANG === 'it' ? 'Salva' : 'Save')}</button>` : ''}
+          ${isDesktop ? `<button id="save-now-btn" class="save-btn ${store.saving ? 'saving' : ''}" ${store.saving ? 'disabled' : ''}>${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : store.justSaved ? (LANG === 'it' ? '✓ Sincronizzato' : '✓ Synced') : (LANG === 'it' ? 'Salva' : 'Save')}</button>` : ''}
         </div>` : ''}
         <div style="flex:0 0 auto;display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;">
           ${['it', 'en'].map(l => `
@@ -848,10 +848,26 @@ function render() {
   });
   app.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => setLang(b.dataset.lang));
   app.querySelectorAll('[data-view]').forEach(b => b.onclick = () => { oggiViewMode = b.dataset.view; render(); });
+  // Bug corretto 16/09/2026: premere "Salva" quando non c'è nulla in coda
+  // (perché il salvataggio automatico a ogni tasto, aggiunto ieri, aveva
+  // già sincronizzato tutto) faceva letteralmente ritornare flush()
+  // all'istante, senza nessun render() né segnale — "non succede
+  // apparentemente nulla" era la lettura corretta della situazione, solo
+  // che il dato era già salvo. Ora anche questo caso da un riscontro.
+  const saveNowClicked = () => {
+    clearTimeout(saveTimer);
+    if (!Object.keys(store.dirty).length && !store.saving) {
+      store.justSaved = true;
+      render();
+      setTimeout(() => { store.justSaved = false; render(); }, 1600);
+    } else {
+      flush();
+    }
+  };
   const saveBtn = document.getElementById('save-now-btn');
-  if (saveBtn) saveBtn.onclick = () => { clearTimeout(saveTimer); flush(); };
+  if (saveBtn) saveBtn.onclick = saveNowClicked;
   const saveBtnM = document.getElementById('save-now-btn-mobile');
-  if (saveBtnM) saveBtnM.onclick = () => { clearTimeout(saveTimer); flush(); };
+  if (saveBtnM) saveBtnM.onclick = saveNowClicked;
   bindOggi(app);
 }
 
@@ -1995,7 +2011,7 @@ function renderOggiFull() {
     // che a griglia 3 colonne. Stessi campi reali, stesse funzioni
     // helper del desktop (splitDose, siteLabel, ENUM_LABELS, ecc.).
     // ============================================================
-    const micro = 'border:none;outline:none;font-size:12px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;';
+    const micro = 'border:none;outline:none;font-size:15px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;';
     const pesoSm = weightHistory(pesoRange, selDate);
     const plSm = svgPath(pesoSm, 320, 54, 4);
     const slopeSm = weeklyTrend(pesoSm);
@@ -2243,7 +2259,7 @@ function renderOggiFull() {
 
     const saveBtnM = `
       <div style="flex:0 0 auto;display:flex;justify-content:center;padding-top:2px;">
-        <span id="save-now-btn-mobile" style="width:100%;text-align:center;padding:13px 20px;border-radius:14px;background:${store.saving ? 'var(--ink3)' : store.saveError ? 'var(--bad)' : 'var(--accent)'};color:#fff;font-size:14px;font-weight:600;cursor:${store.saving ? 'default' : 'pointer'};">${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : store.saveError ? (LANG === 'it' ? 'Errore, tocca per riprovare' : 'Error, tap to retry') : (LANG === 'it' ? 'Salva il giorno' : 'Save the day')}</span>
+        <span id="save-now-btn-mobile" style="width:100%;text-align:center;padding:13px 20px;border-radius:14px;background:${store.saving ? 'var(--ink3)' : store.saveError ? 'var(--bad)' : store.justSaved ? 'var(--ok)' : 'var(--accent)'};color:#fff;font-size:14px;font-weight:600;cursor:${store.saving ? 'default' : 'pointer'};">${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : store.saveError ? (LANG === 'it' ? 'Errore, tocca per riprovare' : 'Error, tap to retry') : store.justSaved ? (LANG === 'it' ? '✓ Già sincronizzato' : '✓ Already synced') : (LANG === 'it' ? 'Salva il giorno' : 'Save the day')}</span>
       </div>`;
 
     return `
