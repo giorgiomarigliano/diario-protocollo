@@ -2078,7 +2078,7 @@ function renderOggiFull() {
     // che a griglia 3 colonne. Stessi campi reali, stesse funzioni
     // helper del desktop (splitDose, siteLabel, ENUM_LABELS, ecc.).
     // ============================================================
-    const micro = 'border:none;outline:none;font-size:15px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;';
+    const micro = 'border:none;outline:none;padding:0;font-size:15px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;';
     const pesoSm = weightHistory(pesoRange, selDate);
     const plSm = svgPath(pesoSm, 320, 54, 4);
     const slopeSm = weeklyTrend(pesoSm);
@@ -2155,10 +2155,10 @@ function renderOggiFull() {
         ${bioRow(LANG === 'it' ? 'Freq. a riposo' : 'Resting HR', 'rhr', 'bpm')}
         <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
           <span style="flex:1 1 auto;font-size:13.5px;font-weight:500;color:var(--ink2);">${L.tile.pressione}</span>
-          <span style="flex:0 0 90px;display:flex;align-items:center;justify-content:center;gap:2px;background:var(--surf2);border-radius:7px;padding:7px 4px;">
-            <input data-f="bp_sys" value="${esc(day.bp_sys || '')}" placeholder="—" style="${micro}width:32px;background:transparent;text-align:right;">
+          <span style="flex:0 0 104px;display:flex;align-items:center;justify-content:center;gap:2px;background:var(--surf2);border-radius:7px;padding:7px 4px;">
+            <input data-f="bp_sys" value="${esc(day.bp_sys || '')}" placeholder="—" style="${micro}width:40px;background:transparent;text-align:right;">
             <span style="${micro}">/</span>
-            <input data-f="bp_dia" value="${esc(day.bp_dia || '')}" placeholder="—" style="${micro}width:32px;background:transparent;text-align:left;">
+            <input data-f="bp_dia" value="${esc(day.bp_dia || '')}" placeholder="—" style="${micro}width:40px;background:transparent;text-align:left;">
           </span>
           <span style="flex:0 0 34px;font-size:11px;font-weight:500;color:var(--ink2);">mmHg</span>
         </div>
