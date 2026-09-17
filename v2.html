@@ -1475,14 +1475,17 @@ function weekAggregate(weekIdx) {
   // sono stimati (hrvIsEst) così il disegno può distinguerli visivamente —
   // il punto medio non va MAI mostrato come fosse una media reale altrove.
   const hrvArr = days.map(d => {
-    const real = parseFloat(d.rec.hrv);
-    if (!isNaN(real)) return real;
     const lo = parseFloat(d.rec.hrv_min), hi = parseFloat(d.rec.hrv_max);
-    return (!isNaN(lo) && !isNaN(hi)) ? (lo + hi) / 2 : NaN;
+    if (!isNaN(lo) && !isNaN(hi)) return (lo + hi) / 2;
+    const real = parseFloat(d.rec.hrv);
+    return isNaN(real) ? NaN : real;
   });
-  const hrvIsEst = days.map(d => isNaN(parseFloat(d.rec.hrv)));
+  const hrvIsEst = days.map(d => {
+    const lo = parseFloat(d.rec.hrv_min), hi = parseFloat(d.rec.hrv_max);
+    return !isNaN(lo) && !isNaN(hi);
+  });
   const lastHrvDay = days[days.length - 1] ? days[days.length - 1].rec : {};
-  const hrvLastRangeText = (!lastHrvDay.hrv && (lastHrvDay.hrv_min || lastHrvDay.hrv_max))
+  const hrvLastRangeText = (lastHrvDay.hrv_min || lastHrvDay.hrv_max)
     ? `${lastHrvDay.hrv_min || '?'}–${lastHrvDay.hrv_max || '?'}` : null;
   const sonnoArr = days.map(d => parseSonnoHours(d.rec.ore_sonno));
   const rhrArr = days.map(d => parseFloat(d.rec.rhr));
@@ -2221,10 +2224,10 @@ function renderOggiFull() {
     const arr = [];
     for (let i = from; i <= dIdx; i++) {
       const rec = (store.blob && store.blob['p2_day_' + i]) || {};
-      const real = parseFloat(rec.hrv);
-      if (!isNaN(real)) { arr.push(real); continue; }
       const lo = parseFloat(rec.hrv_min), hi = parseFloat(rec.hrv_max);
-      arr.push((!isNaN(lo) && !isNaN(hi)) ? (lo + hi) / 2 : null);
+      if (!isNaN(lo) && !isNaN(hi)) { arr.push((lo + hi) / 2); continue; }
+      const real = parseFloat(rec.hrv);
+      arr.push(isNaN(real) ? null : real);
     }
     return arr;
   })();
@@ -2409,7 +2412,7 @@ function renderOggiFull() {
     // la si mostra in sola lettura (non si inventa un min/max che non
     // esiste); per tutti gli altri giorni, due caselle min/max, stesso
     // schema già usato qui sotto per la Pressione.
-    const hrvRow = day.hrv ? `
+    const hrvRow = (!day.hrv_min && !day.hrv_max && day.hrv) ? `
       <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
         <span style="flex:1 1 auto;font-size:13.5px;font-weight:500;color:var(--ink2);">HRV</span>
         <span style="${micro}width:78px;background:var(--surf2);border-radius:7px;padding:7px 9px;text-align:right;color:var(--ink3);" title="${LANG === 'it' ? 'Media storica, di sola lettura' : 'Historical average, read-only'}">${esc(day.hrv)}</span>
@@ -2662,7 +2665,7 @@ function renderOggiFull() {
       <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${L.tile.sonno}</span>
       <input data-f="ore_sonno" value="${esc(day.ore_sonno || '')}" placeholder="5.18" style="${micro}width:100%;min-width:0;background:var(--surf2);border-radius:6px;padding:5px 6px;text-align:center;" title="${sonnoShort}">
     </div>`;
-  const hrvTile = day.hrv ? `
+  const hrvTile = (!day.hrv_min && !day.hrv_max && day.hrv) ? `
     <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
       <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">HRV</span>
       <span style="${micro}width:100%;display:block;background:var(--surf2);border-radius:6px;padding:5px 6px;text-align:center;color:var(--ink3);" title="${LANG === 'it' ? 'Media storica, di sola lettura' : 'Historical average, read-only'}">${esc(day.hrv)}</span>
@@ -3014,7 +3017,7 @@ function renderOggiSections() {
       </div>
       <div class="field-row">
         <div class="field-label">HRV</div>
-        ${day.hrv
+        ${(!day.hrv_min && !day.hrv_max && day.hrv)
           ? `<span class="field-value" style="color:var(--ink3)" title="${LANG === 'it' ? 'Media storica, di sola lettura' : 'Historical average, read-only'}">${esc(day.hrv)}</span><span class="field-value-unit">ms</span>`
           : `<input class="field-value" style="width:44px" type="number" value="${day.hrv_min || ''}" placeholder="min" oninput="patch(selDate,'hrv_min',this.value)"><span class="field-value-unit">–</span><input class="field-value" style="width:44px" type="number" value="${day.hrv_max || ''}" placeholder="max" oninput="patch(selDate,'hrv_max',this.value)"><span class="field-value-unit">ms</span>`}
       </div>
@@ -3040,7 +3043,7 @@ function renderOggiSections() {
       <div class="biometria-chip"><span class="biometria-chip-label">${L.tile.pressione}</span><span class="biometria-chip-value">${day.bp_sys || '—'}/${day.bp_dia || '—'}</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">Profondo</span><span class="biometria-chip-value">${day.sonno_profondo_min || '—'}m</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">Risvegli</span><span class="biometria-chip-value">${day.sonno_risvegli || '—'}</span></div>
-      <div class="biometria-chip"><span class="biometria-chip-label">HRV</span><span class="biometria-chip-value">${day.hrv ? day.hrv + ' ms' : (day.hrv_min || day.hrv_max) ? `${day.hrv_min || '?'}–${day.hrv_max || '?'} ms` : '—'}</span></div>
+      <div class="biometria-chip"><span class="biometria-chip-label">HRV</span><span class="biometria-chip-value">${(day.hrv_min || day.hrv_max) ? `${day.hrv_min || '?'}–${day.hrv_max || '?'} ms` : day.hrv ? day.hrv + ' ms' : '—'}</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">Freq. a riposo</span><span class="biometria-chip-value">${day.rhr || '—'} bpm</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">${L.tile.sonno}</span><span class="biometria-chip-value">${sonnoTxt}</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">REM</span><span class="biometria-chip-value">${day.sonno_rem_min || '—'}m</span></div>
