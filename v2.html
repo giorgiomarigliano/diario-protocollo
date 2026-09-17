@@ -1950,7 +1950,7 @@ function renderWeekFull() {
   if (isDesktop) {
     return `
       ${renderDayNav()}
-      <div style="flex:1 1 auto;min-height:0;overflow-y:auto;padding:12px;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(3,min-content);gap:9px;align-content:start;">
+      <div style="flex:1 1 auto;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(3,min-content);gap:9px;align-content:start;">
         ${recapCard}${pesoCard}${injCard}${adherenceCard}${suppCard}${sedCard}${subjCard}
       </div>`;
   }
