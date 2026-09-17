@@ -326,7 +326,7 @@ function isBkkDate(d) {
    ============================================================ */
 const FIELDS = {
   // biometria
-  peso:'num', bp_sys:'num', bp_dia:'num', hrv:'num', rhr:'num',
+  peso:'num', bp_sys:'num', bp_dia:'num', hrv:'num', hrv_min:'num', hrv_max:'num', rhr:'num',
   ore_sonno:'sonno_hmm',              // notazione H.MM (es. "5.18"=5h18m), MAI decimale puro — vedi parseSonnoHours
   sonno_veglia_min:'num', sonno_rem_min:'num', sonno_principale_min:'num',
   sonno_profondo_min:'num', sonno_risvegli:'num',
@@ -1469,7 +1469,21 @@ function weekAggregate(weekIdx) {
 
   // ---- Biometria + peso: serie di 7 valori ----
   const pesoArr = days.map(d => parseFloat(d.rec.peso));
-  const hrvArr = days.map(d => parseFloat(d.rec.hrv));
+  // HRV: dal 15/09/2026 alcuni giorni hanno solo hrv_min/hrv_max (intervallo),
+  // non più una media vera. Per la LINEA del grafico si usa il punto medio
+  // (unico modo di avere comunque un andamento), ma si traccia quali punti
+  // sono stimati (hrvIsEst) così il disegno può distinguerli visivamente —
+  // il punto medio non va MAI mostrato come fosse una media reale altrove.
+  const hrvArr = days.map(d => {
+    const real = parseFloat(d.rec.hrv);
+    if (!isNaN(real)) return real;
+    const lo = parseFloat(d.rec.hrv_min), hi = parseFloat(d.rec.hrv_max);
+    return (!isNaN(lo) && !isNaN(hi)) ? (lo + hi) / 2 : NaN;
+  });
+  const hrvIsEst = days.map(d => isNaN(parseFloat(d.rec.hrv)));
+  const lastHrvDay = days[days.length - 1] ? days[days.length - 1].rec : {};
+  const hrvLastRangeText = (!lastHrvDay.hrv && (lastHrvDay.hrv_min || lastHrvDay.hrv_max))
+    ? `${lastHrvDay.hrv_min || '?'}–${lastHrvDay.hrv_max || '?'}` : null;
   const sonnoArr = days.map(d => parseSonnoHours(d.rec.ore_sonno));
   const rhrArr = days.map(d => parseFloat(d.rec.rhr));
   const remArr = days.map(d => parseFloat(d.rec.sonno_rem_min));
@@ -1489,7 +1503,7 @@ function weekAggregate(weekIdx) {
     woTot, woDone, woPct, sessions, weekVolume, weekDurationMin, weekKcal,
     overall, prevOverall, prevInjPct,
     catRows,
-    pesoArr, hrvArr, sonnoArr, rhrArr, remArr, profArr, risvArr, avg,
+    pesoArr, hrvArr, hrvIsEst, hrvLastRangeText, sonnoArr, rhrArr, remArr, profArr, risvArr, avg,
     subjSeries, dowInitial
   };
 }
@@ -1662,16 +1676,20 @@ function renderWeekFull() {
     const prevVal = prevArr ? wk.avg(prevArr) : null;
     const dt = deltaTxt(cur, prevVal, unit, invert);
     const sp = svgPath(arr, 100, 18, 3);
+    const isHrv = label === 'HRV';
+    const hrvEstToday = isHrv && wk.hrvLastRangeText;
+    const anyEst = isHrv && wk.hrvIsEst.some(x => x);
     return `
         <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
           <span style="font-size:10.5px;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${label}</span>
           <div style="display:flex;align-items:baseline;gap:4px;">
-            <span style="font-size:14px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${fmtFn(cur)}</span>
-            ${dt ? `<span style="font-size:10px;font-weight:600;color:${dt.color};font-variant-numeric:tabular-nums;">${dt.txt}</span>` : ''}
+            <span style="font-size:${hrvEstToday ? '12.5px' : '14px'};font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${hrvEstToday ? esc(hrvEstToday) : fmtFn(cur)}</span>
+            ${dt && !hrvEstToday ? `<span style="font-size:10px;font-weight:600;color:${dt.color};font-variant-numeric:tabular-nums;">${dt.txt}</span>` : ''}
           </div>
           <svg viewBox="0 0 100 18" preserveAspectRatio="none" style="width:100%;height:16px;display:block;overflow:visible;">
-            <path d="${sp.d}" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="${sp.d}" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ${anyEst ? 'stroke-dasharray="3 2"' : ''}></path>
           </svg>
+          ${anyEst ? `<span style="font-size:8px;color:var(--ink3);">${LANG === 'it' ? 'stimato da intervallo' : 'estimated from range'}</span>` : ''}
         </div>`;
   };
 
@@ -2024,6 +2042,7 @@ function renderWeekFull() {
     const prevVal = prevArr2 ? wk.avg(prevArr2) : null;
     const dt = deltaTxt(cur, prevVal, unit, invert);
     const sp = svgPath(arr, 100, 18, 3);
+    const anyEst = label === 'HRV' && wk.hrvIsEst.some(x => x);
     return `
               <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
                 <span style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${label}</span>
@@ -2032,8 +2051,9 @@ function renderWeekFull() {
                   ${dt ? `<span style="font-size:10px;font-weight:600;color:${dt.color};font-variant-numeric:tabular-nums;">${dt.txt}</span>` : ''}
                 </div>
                 <svg viewBox="0 0 100 18" preserveAspectRatio="none" style="width:100%;height:17px;display:block;overflow:visible;">
-                  <path d="${sp.d}" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                  <path d="${sp.d}" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ${anyEst ? 'stroke-dasharray="3 2"' : ''}></path>
                 </svg>
+                ${anyEst ? `<span style="font-size:7.5px;color:var(--ink3);">${LANG === 'it' ? 'media parz. stimata' : 'partly estimated avg'}</span>` : ''}
               </div>`;
   };
   const bioCardM = `
@@ -2200,8 +2220,11 @@ function renderOggiFull() {
     const dIdx = dayIdxFromISO(selDate), from = Math.max(0, dIdx - 13);
     const arr = [];
     for (let i = from; i <= dIdx; i++) {
-      const v = parseFloat(((store.blob && store.blob['p2_day_' + i]) || {}).hrv);
-      arr.push(isNaN(v) ? null : v);
+      const rec = (store.blob && store.blob['p2_day_' + i]) || {};
+      const real = parseFloat(rec.hrv);
+      if (!isNaN(real)) { arr.push(real); continue; }
+      const lo = parseFloat(rec.hrv_min), hi = parseFloat(rec.hrv_max);
+      arr.push((!isNaN(lo) && !isNaN(hi)) ? (lo + hi) / 2 : null);
     }
     return arr;
   })();
@@ -2381,6 +2404,26 @@ function renderOggiFull() {
         <input data-f="${field}" value="${esc(day[field] || '')}" placeholder="—" style="${micro}width:78px;background:var(--surf2);border-radius:7px;padding:7px 9px;text-align:right;">
         <span style="flex:0 0 34px;font-size:11px;font-weight:500;color:var(--ink2);">${unit}</span>
       </div>`;
+    // HRV: dal 15/09/2026 iOS mostra un intervallo min-max, non più una
+    // media singola. Per i giorni vecchi con una media storica (day.hrv),
+    // la si mostra in sola lettura (non si inventa un min/max che non
+    // esiste); per tutti gli altri giorni, due caselle min/max, stesso
+    // schema già usato qui sotto per la Pressione.
+    const hrvRow = day.hrv ? `
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
+        <span style="flex:1 1 auto;font-size:13.5px;font-weight:500;color:var(--ink2);">HRV</span>
+        <span style="${micro}width:78px;background:var(--surf2);border-radius:7px;padding:7px 9px;text-align:right;color:var(--ink3);" title="${LANG === 'it' ? 'Media storica, di sola lettura' : 'Historical average, read-only'}">${esc(day.hrv)}</span>
+        <span style="flex:0 0 34px;font-size:11px;font-weight:500;color:var(--ink2);">ms</span>
+      </div>` : `
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
+        <span style="flex:1 1 auto;font-size:13.5px;font-weight:500;color:var(--ink2);">HRV</span>
+        <span style="flex:0 0 78px;display:flex;align-items:center;justify-content:center;gap:0;background:var(--surf2);border-radius:7px;padding:7px 4px;">
+          <input data-f="hrv_min" value="${esc(day.hrv_min || '')}" placeholder="min" style="${micro}width:33px;background:transparent;text-align:right;padding-right:1px;">
+          <span style="${micro}padding:0 1px;">–</span>
+          <input data-f="hrv_max" value="${esc(day.hrv_max || '')}" placeholder="max" style="${micro}width:33px;background:transparent;text-align:left;padding-left:1px;">
+        </span>
+        <span style="flex:0 0 34px;font-size:11px;font-weight:500;color:var(--ink2);">ms</span>
+      </div>`;
     const bpCombined = `${day.bp_sys || ''}${day.bp_sys || day.bp_dia ? '/' : ''}${day.bp_dia || ''}`;
     const biometriaM = `
       <div style="flex:0 0 auto;border-radius:18px;background:var(--surf);box-shadow:var(--shadow);overflow:hidden;">
@@ -2388,7 +2431,7 @@ function renderOggiFull() {
           <span style="font-size:10.5px;font-weight:600;color:var(--ink2);">${LANG === 'it' ? 'Biometria' : 'Biometrics'}</span>
           <span style="font-size:10px;font-weight:600;color:var(--ink2);">${LANG === 'it' ? 'mattino, a digiuno' : 'morning, fasted'}</span>
         </div>
-        ${bioRow('HRV', 'hrv', 'ms')}
+        ${hrvRow}
         ${bioRow(LANG === 'it' ? 'Freq. a riposo' : 'Resting HR', 'rhr', 'bpm')}
         <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
           <span style="flex:1 1 auto;font-size:13.5px;font-weight:500;color:var(--ink2);">${L.tile.pressione}</span>
@@ -2619,13 +2662,26 @@ function renderOggiFull() {
       <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${L.tile.sonno}</span>
       <input data-f="ore_sonno" value="${esc(day.ore_sonno || '')}" placeholder="5.18" style="${micro}width:100%;min-width:0;background:var(--surf2);border-radius:6px;padding:5px 6px;text-align:center;" title="${sonnoShort}">
     </div>`;
+  const hrvTile = day.hrv ? `
+    <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+      <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">HRV</span>
+      <span style="${micro}width:100%;display:block;background:var(--surf2);border-radius:6px;padding:5px 6px;text-align:center;color:var(--ink3);" title="${LANG === 'it' ? 'Media storica, di sola lettura' : 'Historical average, read-only'}">${esc(day.hrv)}</span>
+    </div>` : `
+    <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+      <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">HRV</span>
+      <div style="display:flex;align-items:center;justify-content:center;gap:2px;background:var(--surf2);border-radius:6px;padding:5px 4px;">
+        <input data-f="hrv_min" value="${esc(day.hrv_min || '')}" placeholder="min" style="${micro}width:26px;background:transparent;text-align:right;">
+        <span style="${micro}">–</span>
+        <input data-f="hrv_max" value="${esc(day.hrv_max || '')}" placeholder="max" style="${micro}width:26px;background:transparent;text-align:left;">
+      </div>
+    </div>`;
   const simpleTile = (label, field) => `
     <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
       <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${label}</span>
       <input data-f="${field}" value="${esc(day[field] || '')}" placeholder="—" style="${micro}width:100%;min-width:0;background:var(--surf2);border-radius:6px;padding:5px 6px;text-align:center;">
     </div>`;
   const TILES_HTML = [
-    simpleTile('HRV', 'hrv'), simpleTile(LANG === 'it' ? 'Freq. riposo' : 'Resting HR', 'rhr'), bpTile, sonnoTile,
+    hrvTile, simpleTile(LANG === 'it' ? 'Freq. riposo' : 'Resting HR', 'rhr'), bpTile, sonnoTile,
     simpleTile(L.tile.rem, 'sonno_rem_min'), simpleTile(L.tile.profondo, 'sonno_profondo_min'), simpleTile(L.tile.risvegli, 'sonno_risvegli')
   ];
 
@@ -2958,7 +3014,9 @@ function renderOggiSections() {
       </div>
       <div class="field-row">
         <div class="field-label">HRV</div>
-        <input class="field-value" type="number" value="${day.hrv || ''}" placeholder="—" oninput="patch(selDate,'hrv',this.value)"><span class="field-value-unit">ms</span>
+        ${day.hrv
+          ? `<span class="field-value" style="color:var(--ink3)" title="${LANG === 'it' ? 'Media storica, di sola lettura' : 'Historical average, read-only'}">${esc(day.hrv)}</span><span class="field-value-unit">ms</span>`
+          : `<input class="field-value" style="width:44px" type="number" value="${day.hrv_min || ''}" placeholder="min" oninput="patch(selDate,'hrv_min',this.value)"><span class="field-value-unit">–</span><input class="field-value" style="width:44px" type="number" value="${day.hrv_max || ''}" placeholder="max" oninput="patch(selDate,'hrv_max',this.value)"><span class="field-value-unit">ms</span>`}
       </div>
       <div class="field-row">
         <div class="field-label">RHR</div>
@@ -2982,7 +3040,7 @@ function renderOggiSections() {
       <div class="biometria-chip"><span class="biometria-chip-label">${L.tile.pressione}</span><span class="biometria-chip-value">${day.bp_sys || '—'}/${day.bp_dia || '—'}</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">Profondo</span><span class="biometria-chip-value">${day.sonno_profondo_min || '—'}m</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">Risvegli</span><span class="biometria-chip-value">${day.sonno_risvegli || '—'}</span></div>
-      <div class="biometria-chip"><span class="biometria-chip-label">HRV</span><span class="biometria-chip-value">${day.hrv || '—'} ms</span></div>
+      <div class="biometria-chip"><span class="biometria-chip-label">HRV</span><span class="biometria-chip-value">${day.hrv ? day.hrv + ' ms' : (day.hrv_min || day.hrv_max) ? `${day.hrv_min || '?'}–${day.hrv_max || '?'} ms` : '—'}</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">Freq. a riposo</span><span class="biometria-chip-value">${day.rhr || '—'} bpm</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">${L.tile.sonno}</span><span class="biometria-chip-value">${sonnoTxt}</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">REM</span><span class="biometria-chip-value">${day.sonno_rem_min || '—'}m</span></div>
