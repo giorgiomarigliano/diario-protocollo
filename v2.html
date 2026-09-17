@@ -550,13 +550,56 @@ function queueSave() {
    Evita di sovrascrivere un cambiamento fatto nel frattempo dalla
    vecchia app o da un'altra scheda. */
 
+// Aggiorna SOLO l'indicatore di sync e i pulsanti Salva, senza toccare
+// il resto della pagina. Bug corretto 16/09/2026: flush() chiamava
+// render() completo (app.innerHTML) sia all'inizio che alla fine del
+// salvataggio automatico in background. Con DUE campi nello stesso
+// riquadro (Pressione: sistolica/diastolica), il salvataggio poteva
+// scattare proprio nell'istante di passaggio da un campo all'altro —
+// in quel momento NESSUNO dei due ha il focus, quindi anche il
+// ripristino del focus (aggiunto in un tentativo precedente) non aveva
+// nulla da ripristinare, e la ricostruzione interrompeva comunque la
+// digitazione in corso, troncando il valore. La correzione strutturale:
+// il salvataggio in background non deve mai poter toccare un campo di
+// inserimento, quindi ora aggiorna solo questi elementi via DOM diretto.
+function updateSaveUI() {
+  const isDirty = Object.keys(store.dirty).length > 0;
+  const dot = document.getElementById('sync-dot');
+  const text = document.getElementById('sync-text');
+  if (dot) dot.className = 'sync-dot' + (store.saving ? ' saving' : (store.saveError ? ' error' : ''));
+  if (text) text.textContent = store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…')
+    : store.saveError ? (LANG === 'it' ? 'Errore, ritento…' : 'Error, retrying…')
+    : store.justSaved ? (LANG === 'it' ? 'Sincronizzato' : 'Synced')
+    : isDirty ? (LANG === 'it' ? 'Modifiche in sospeso' : 'Unsaved changes')
+    : (LANG === 'it' ? 'Sincronizzato' : 'Synced');
+
+  const btn = document.getElementById('save-now-btn');
+  if (btn) {
+    btn.disabled = !!store.saving;
+    btn.className = 'save-btn' + (store.saving ? ' saving' : '');
+    btn.textContent = store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…')
+      : store.justSaved ? (LANG === 'it' ? '✓ Sincronizzato' : '✓ Synced')
+      : (LANG === 'it' ? 'Salva' : 'Save');
+  }
+  const btnM = document.getElementById('save-now-btn-mobile');
+  if (btnM) {
+    btnM.style.background = store.saving ? 'var(--ink3)' : store.saveError ? 'var(--bad)' : store.justSaved ? 'var(--ok)' : 'var(--accent)';
+    btnM.style.cursor = store.saving ? 'default' : 'pointer';
+    btnM.textContent = store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…')
+      : store.saveError ? (LANG === 'it' ? 'Errore, tocca per riprovare' : 'Error, tap to retry')
+      : store.justSaved ? (LANG === 'it' ? '✓ Già sincronizzato' : '✓ Already synced')
+      : (LANG === 'it' ? 'Salva il giorno' : 'Save the day');
+  }
+}
+
 async function flush() {
   const dirtyKeys = Object.keys(store.dirty);
   if (!dirtyKeys.length || store.saving) return;
   store.saving = true;
   store.saveError = false;
-  render(); // senza questo, "Salvataggio…" non si vedeva mai: saving
-            // tornava a false prima del prossimo ridisegno naturale
+  updateSaveUI(); // MAI render() qui: un salvataggio in background non
+                   // deve poter ricostruire (e quindi interrompere) un
+                   // campo che l'utente sta ancora scrivendo.
   try {
     const fresh = await loadBlob();
     dirtyKeys.forEach(key => {
@@ -580,7 +623,7 @@ async function flush() {
     store.saveError = true; // prima solo in console, invisibile a Giorgio
   }
   store.saving = false;
-  render();
+  updateSaveUI();
   if (Object.keys(store.dirty).length) queueSave();
 }
 
@@ -839,7 +882,7 @@ function render() {
             <button data-view="day" class="${oggiViewMode === 'day' ? 'active' : ''}">${LANG === 'it' ? 'Giorno' : 'Day'}</button>
             <button data-view="week" class="${oggiViewMode === 'week' ? 'active' : ''}">${LANG === 'it' ? 'Settimana' : 'Week'}</button>
           </div>` : ''}
-          <span class="sync-status"><span class="sync-dot ${store.saving ? 'saving' : (store.saveError ? 'error' : '')}"></span>${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : (store.saveError ? (LANG === 'it' ? 'Errore, ritento…' : 'Error, retrying…') : (isDirty ? (LANG === 'it' ? 'Modifiche in sospeso' : 'Unsaved changes') : (LANG === 'it' ? 'Sincronizzato' : 'Synced')))}</span>
+          <span class="sync-status"><span id="sync-dot" class="sync-dot ${store.saving ? 'saving' : (store.saveError ? 'error' : '')}"></span><span id="sync-text">${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : (store.saveError ? (LANG === 'it' ? 'Errore, ritento…' : 'Error, retrying…') : (isDirty ? (LANG === 'it' ? 'Modifiche in sospeso' : 'Unsaved changes') : (LANG === 'it' ? 'Sincronizzato' : 'Synced')))}</span></span>
           ${isDesktop ? `<button id="save-now-btn" class="save-btn ${store.saving ? 'saving' : ''}" ${store.saving ? 'disabled' : ''}>${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : store.justSaved ? (LANG === 'it' ? '✓ Sincronizzato' : '✓ Synced') : (LANG === 'it' ? 'Salva' : 'Save')}</button>` : ''}
         </div>` : ''}
         <div style="flex:0 0 auto;display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;">
@@ -874,8 +917,8 @@ function render() {
     clearTimeout(saveTimer);
     if (!Object.keys(store.dirty).length && !store.saving) {
       store.justSaved = true;
-      render();
-      setTimeout(() => { store.justSaved = false; render(); }, 1600);
+      updateSaveUI();
+      setTimeout(() => { store.justSaved = false; updateSaveUI(); }, 1600);
     } else {
       flush();
     }
