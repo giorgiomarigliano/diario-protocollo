@@ -2100,7 +2100,7 @@ function buildCycleCard(container){
   for(let i=elapsed;i>=0;i--){
     const r=(_lastData||{})['day_'+i]||{};
     if(lastPeso==='—'&&r.peso) lastPeso=r.peso;
-    if(lastHrv==='—' &&r.hrv)  lastHrv=r.hrv;
+    { const _h=hrvHead(r); if(lastHrv==='—' && _h) lastHrv=_h; }
     if(lastRhr==='—' &&r.rhr)  lastRhr=r.rhr;
     if(lastPeso!=='—'&&lastHrv!=='—'&&lastRhr!=='—') break;
   }
@@ -2151,7 +2151,7 @@ function buildCharts(container){
   const elapsed=Math.floor((today-start)/86400000);
   if(elapsed<2) return;
   const from=Math.max(0,elapsed-13);
-  const pesoData=[],hrvData=[];
+  const pesoData=[],hrvData=[],hrvEst=[]; let hrvLastLbl='';
   // La chiave del giorno cambia con la fase: day_N (warm-up) → test_proto_N
   // (18-19 lug, in _lastData2) → p2_day_N (ciclo v2, in _lastData2).
   const _tS=new Date(TEST_PROTO_START); _tS.setHours(0,0,0,0);
@@ -2170,7 +2170,7 @@ function buildCharts(container){
       _dc=_lastData['day_'+i]||{};
     }
     pesoData.push(_dc['peso'] ? parseFloat(_dc['peso']) : null);
-    hrvData.push(_dc['hrv']  ? parseFloat(_dc['hrv'])  : null);
+    hrvData.push(hrvLine(_dc)); hrvEst.push(hrvRange(_dc)!==null); if(hrvLine(_dc)!==null) hrvLastLbl=hrvHead(_dc);
   }
   if(!pesoData.some(v=>v!==null)&&!hrvData.some(v=>v!==null)) return;
   const card=document.createElement('div');
@@ -2196,11 +2196,11 @@ function buildCharts(container){
   }
   setTimeout(()=>{
     drawChart('chart-peso',pesoData,'#0071e3');
-    drawChart('chart-hrv',hrvData,'#34c759');
+    drawChart('chart-hrv',hrvData,'#34c759',hrvEst,hrvLastLbl);
   },100);
 }
 
-function drawChart(id,data,color){
+function drawChart(id,data,color,est,lastLbl){
   const canvas=document.getElementById(id);
   if(!canvas) return;
   const ctx=canvas.getContext('2d');
@@ -2213,7 +2213,7 @@ function drawChart(id,data,color){
   if(pts.length<2){ ctx.font='11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle='#aeaeb2'; ctx.fillText('Dati insufficienti',8,32); return; }
   const TOP_PAD=18, BOTTOM_PAD=10, RIGHT_PAD=28;
   const mn=Math.min(...pts)*0.995, mx=Math.max(...pts)*1.005, rng=mx-mn||1;
-  const valid=data.map((v,i)=>v!==null?{x:i/(data.length-1)*(W-RIGHT_PAD-4)+2, y:H-BOTTOM_PAD-((v-mn)/rng)*(H-TOP_PAD-BOTTOM_PAD), v}:null);
+  const valid=data.map((v,i)=>v!==null?{x:i/(data.length-1)*(W-RIGHT_PAD-4)+2, y:H-BOTTOM_PAD-((v-mn)/rng)*(H-TOP_PAD-BOTTOM_PAD), v, est:!!(est&&est[i])}:null);
   // Fill
   ctx.beginPath();
   let st=false;
@@ -2221,15 +2221,15 @@ function drawChart(id,data,color){
   const lp=valid.filter(Boolean).pop(), fp=valid.filter(Boolean)[0];
   if(lp&&fp){ ctx.lineTo(lp.x,H);ctx.lineTo(fp.x,H);ctx.closePath(); const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,color+'28');g.addColorStop(1,color+'00'); ctx.fillStyle=g; ctx.fill(); }
   // Line
-  ctx.beginPath(); st=false;
-  valid.forEach(p=>{ if(!p)return; if(!st){ctx.moveTo(p.x,p.y);st=true;}else ctx.lineTo(p.x,p.y); });
-  ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.lineJoin='round'; ctx.lineCap='round'; ctx.stroke();
+  /* PORTING HRV: segmenti verso punti stimati tratteggiati, punti stimati vuoti */
+  ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.lineJoin='round'; ctx.lineCap='round';
+  { let prev=null; valid.forEach(p=>{ if(!p){ prev=null; return; } if(prev){ ctx.beginPath(); ctx.setLineDash((p.est||prev.est)?[3,3]:[]); ctx.moveTo(prev.x,prev.y); ctx.lineTo(p.x,p.y); ctx.stroke(); } prev=p; }); ctx.setLineDash([]); }
   // Dots
-  valid.forEach(p=>{ if(!p)return; ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,Math.PI*2); ctx.fillStyle=color; ctx.fill(); });
+  valid.forEach(p=>{ if(!p)return; ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,Math.PI*2); if(p.est){ ctx.fillStyle='#fff'; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=1.3; ctx.stroke(); } else { ctx.fillStyle=color; ctx.fill(); } });
   // Last value — posizionamento adattivo: misura testo, sceglie quadrante libero
   if(lp){
     ctx.font='500 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle=color;
-    const label=lp.v.toFixed(1);
+    const label=lastLbl||lp.v.toFixed(1);
     const tw=ctx.measureText(label).width;
     const th=11; // altezza font approx
     // X: preferisce a sinistra del punto se vicino al bordo destro
@@ -2378,7 +2378,7 @@ function buildDays(){
         <div class="section-label">Biometria mattutina</div>
         <div class="bio-grid">
           <div class="bio-box"><input type="number" step="0.1" placeholder="70.1" data-id="${id}" data-f="peso" oninput="onInput(this,'${id}','peso')"><div class="bio-lbl">Peso kg</div></div>
-          <div class="bio-box"><input type="number" placeholder="48" data-id="${id}" data-f="hrv" oninput="onInput(this,'${id}','hrv')"><div class="bio-lbl">HRV ms</div></div>
+          <div class="bio-box"><div style="display:flex;gap:4px"><input type="number" placeholder="min" data-id="${id}" data-f="hrv_min" oninput="onHrvInput('${id}')" style="min-width:0"><input type="number" placeholder="max" data-id="${id}" data-f="hrv_max" oninput="onHrvInput('${id}')" style="min-width:0"></div><input type="hidden" data-id="${id}" data-f="hrv"><div class="bio-lbl">HRV min\u2013max ms</div><div class="bio-lbl" id="hrvold-${id}" style="display:none"></div></div>
           <div class="bio-box"><input type="number" placeholder="55" data-id="${id}" data-f="rhr"><div class="bio-lbl">RHR bpm</div></div>
           <div class="bio-box"><input type="number" placeholder="120" data-id="${id}" data-f="bp_sys"><div class="bio-lbl">Sistolica</div></div>
           <div class="bio-box"><input type="number" placeholder="75" data-id="${id}" data-f="bp_dia"><div class="bio-lbl">Diastolica</div></div>
@@ -2698,7 +2698,7 @@ function applyAll(data){
         }
         el.value=v;
         if(f==='peso')onInput(el,id,'peso',true);
-        if(f==='hrv')onInput(el,id,'hrv',true);
+        if(f==='hrv'||f==='hrv_min'||f==='hrv_max')onHrvInput(id);
         if(f==='ore_sonno')onInput(el,id,'ore_sonno',true);
         if(f==='qualita_sonno')onInput(el,id,'sonno',true);
       }
@@ -2753,7 +2753,7 @@ function computeWarmupSummary(data) {
       // convertito da notazione H.MM con parseSonnoHours(), non trattato
       // come decimale puro. Qui alterava media/min/max/andamento del sonno
       // nel riepilogo warm-up.
-      const v = f === 'ore_sonno' ? parseSonnoHours(entry[f]) : parseFloat(String(entry[f]).replace(',', '.'));
+      const v = f === 'ore_sonno' ? parseSonnoHours(entry[f]) : (f === 'hrv' ? hrvMeanN(entry) : parseFloat(String(entry[f]).replace(',', '.')));
       if (!isNaN(v)) biom[f].push({ day: i, val: v });
     });
     ['energia','recupero','umore'].forEach(f => {
@@ -2962,6 +2962,7 @@ function computeMissingForDay(entry, dayIdx) {
   const missing = [];
   entry = entry || {};
   Object.entries(MISSING_CORE_FIELDS).forEach(([f, label]) => {
+    if (f === 'hrv' && hrvRange(entry)) return;   /* PORTING HRV: intervallo completo = dato presente */
     const v = entry[f];
     if (v === undefined || v === null || v === '' || v === '0' || v === 0) missing.push(label);
   });
@@ -2987,6 +2988,7 @@ function computeMissingForV2Day(entry, dayIdxForSlots) {
   const missing = [];
   entry = entry || {};
   Object.entries(MISSING_CORE_FIELDS).forEach(([f, label]) => {
+    if (f === 'hrv' && hrvRange(entry)) return;   /* PORTING HRV: intervallo completo = dato presente */
     const v = entry[f];
     if (v === undefined || v === null || v === '' || v === '0' || v === 0) missing.push(label);
   });
@@ -3346,6 +3348,8 @@ window._dirtyFieldsDebug = function() {
 const VALIDATION_RANGES = {
   peso:      [35, 150],   // kg
   hrv:       [5, 250],    // ms
+  hrv_min:   [5, 250],    // ms (intervallo, dal 21/09/2026)
+  hrv_max:   [5, 250],    // ms (intervallo, dal 21/09/2026)
   rhr:       [25, 150],   // bpm
   bp_sys:    [70, 220],   // mmHg
   bp_dia:    [40, 140],   // mmHg
@@ -4535,7 +4539,7 @@ function buildWeekSummary(container, wkIdx) {
   const get = (id, f) => (_lastData[id] && _lastData[id][f]) || '';
 
   let totalInj = 0, doneInj = 0, totalWo = 0, doneWo = 0;
-  let pesoSum = 0, pesoCount = 0, hrvSum = 0, hrvCount = 0;
+  let pesoSum = 0, pesoCount = 0, hrvSum = 0, hrvCount = 0, hrvLo = null, hrvHi = null;
   let rpeSum = 0, rpeCount = 0, sysSum = 0, sysCount = 0;
   let energiaSum = 0, energiaCount = 0, kcalTotal = 0;
 
@@ -4565,8 +4569,9 @@ function buildWeekSummary(container, wkIdx) {
     // Biometrics
     const peso = parseFloat(get(id, 'peso'));
     if (!isNaN(peso)) { pesoSum += peso; pesoCount++; }
-    const hrv = parseFloat(get(id, 'hrv'));
+    const hrv = hrvMeanN({hrv:get(id,'hrv'),hrv_min:get(id,'hrv_min'),hrv_max:get(id,'hrv_max')});
     if (!isNaN(hrv)) { hrvSum += hrv; hrvCount++; }
+    { const _r = hrvRange({hrv_min:get(id,'hrv_min'),hrv_max:get(id,'hrv_max')}); if (_r) { hrvLo = hrvLo===null ? _r.lo : Math.min(hrvLo,_r.lo); hrvHi = hrvHi===null ? _r.hi : Math.max(hrvHi,_r.hi); } }
     const sys = parseFloat(get(id, 'bp_sys'));
     if (!isNaN(sys)) { sysSum += sys; sysCount++; }
     const en = parseFloat(get(id, 'energia'));
@@ -4576,7 +4581,7 @@ function buildWeekSummary(container, wkIdx) {
   }
 
   const avgPeso     = pesoCount    ? (pesoSum/pesoCount).toFixed(1) : '—';
-  const avgHrv      = hrvCount     ? Math.round(hrvSum/hrvCount)    : '—';
+  const avgHrv      = hrvCount     ? Math.round(hrvSum/hrvCount)    : (hrvLo!==null ? Math.round(hrvLo)+'\u2013'+Math.round(hrvHi) : '—');
   const avgRpe      = rpeCount     ? (rpeSum/rpeCount).toFixed(1)   : '—';
   const avgSys      = sysCount     ? Math.round(sysSum/sysCount)    : '—';
   const avgEnergia  = energiaCount ? (energiaSum/energiaCount).toFixed(1) : '—';
@@ -5761,7 +5766,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
       datasets.forEach(ds => {
         const lastPt = [...ds.data].reverse().find(p => p.value !== null);
         if (!lastPt) return;
-        const lbl = lastPt.value.toFixed(lastPt.value % 1 === 0 ? 0 : 1);
+        const lbl = (lastPt.est && lastPt.range) ? hrvRangeTxt(lastPt) : lastPt.value.toFixed(lastPt.value % 1 === 0 ? 0 : 1);
         const w = ctx.measureText(lbl).width;
         if (w > maxValLabelW) maxValLabelW = w;
       });
@@ -5872,7 +5877,7 @@ function drawDashChart(canvasId, datasets, options = {}) {
       x: ML + (nv > 1 ? i / (nv - 1) * CW : CW / 2),
       y: MT + CH - ((p.value - mn) / rng) * CH,
       v: p.value,
-      date: p.date
+      date: p.date, est: !!p.est, range: p.range || null
     }));
 
     // Fill area
@@ -5886,9 +5891,13 @@ function drawDashChart(canvasId, datasets, options = {}) {
     ctx.fillStyle = g; ctx.fill();
 
     // Line
-    ctx.beginPath();
-    pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-    ctx.strokeStyle = ds.color; ctx.lineWidth = 1.8; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+    /* PORTING HRV: i segmenti che toccano un punto stimato (punto medio dell'intervallo) sono tratteggiati */
+    ctx.strokeStyle = ds.color; ctx.lineWidth = 1.8; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    for (let i = 1; i < pts.length; i++) {
+      ctx.beginPath(); ctx.setLineDash((pts[i].est || pts[i-1].est) ? [3, 3] : []);
+      ctx.moveTo(pts[i-1].x, pts[i-1].y); ctx.lineTo(pts[i].x, pts[i].y); ctx.stroke();
+    }
+    ctx.setLineDash([]);
 
     // Dots — pallini pieni piccoli invece del cerchietto vuoto bianco+bordo
     // (1/08/2026: l'effetto "collana di perline" segnalato da Giorgio non
@@ -5898,13 +5907,14 @@ function drawDashChart(canvasId, datasets, options = {}) {
     const dotsToShow = compact ? [pts[pts.length - 1]] : pts;
     dotsToShow.forEach(p => {
       ctx.beginPath(); ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
-      ctx.fillStyle = ds.color; ctx.fill();
+      if (p.est) { ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = ds.color; ctx.lineWidth = 1.2; ctx.stroke(); }
+      else { ctx.fillStyle = ds.color; ctx.fill(); }
     });
 
     if (!options.hideLabel) {
       // Last value label — nel margine destro (MR), allineato al punto Y
       ctx.font = '500 10px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = ds.color;
-      const lbl = lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1);
+      const lbl = (lp.est && lp.range) ? hrvRangeTxt(lp) : lp.v.toFixed(lp.v % 1 === 0 ? 0 : 1);
       const lx = ML + CW + 5; // sempre nel margine destro, fuori dal plot
       let ly = lp.y;
       // clamp verticale: non uscire dal canvas
@@ -6055,7 +6065,7 @@ function drawRichKpiChart(canvasId, points, options = {}) {
 
   const lastValidForWidth = [...validPts].reverse()[0];
   ctx.font = VALUE_FONT;
-  const endValueW = ctx.measureText(fmtV(lastValidForWidth.value)).width;
+  const endValueW = ctx.measureText((lastValidForWidth.est && lastValidForWidth.range) ? hrvRangeTxt(lastValidForWidth) : fmtV(lastValidForWidth.value)).width;
   const MR = Math.max(16, Math.ceil(endValueW) + 6);
 
   const CW = W - ML - MR;
@@ -6120,7 +6130,7 @@ function drawRichKpiChart(canvasId, points, options = {}) {
   const pxPoints = points.map((p, i) => ({
     x: ML + (n > 1 ? i / (n - 1) * CW : CW / 2),
     y: p.value === null ? null : MT + CH - ((p.value - mn) / rng) * CH,
-    v: p.value, date: p.date
+    v: p.value, date: p.date, est: !!p.est, range: p.range || null
   }));
 
   // Area riempita — solo sui segmenti con entrambi gli estremi validi
@@ -6137,20 +6147,22 @@ function drawRichKpiChart(canvasId, points, options = {}) {
   });
 
   // Linea (interrotta sui buchi)
-  ctx.beginPath();
-  let started = false;
-  pxPoints.forEach(p => {
-    if (p.y === null) { started = false; return; }
-    if (!started) { ctx.moveTo(p.x, p.y); started = true; }
-    else ctx.lineTo(p.x, p.y);
-  });
-  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke();
+  /* PORTING HRV: segmenti che toccano un punto stimato -> tratteggiati */
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  for (let i = 1; i < pxPoints.length; i++) {
+    const a0 = pxPoints[i-1], b0 = pxPoints[i];
+    if (a0.y === null || b0.y === null) continue;
+    ctx.beginPath(); ctx.setLineDash((a0.est || b0.est) ? [3, 3] : []);
+    ctx.moveTo(a0.x, a0.y); ctx.lineTo(b0.x, b0.y); ctx.stroke();
+  }
+  ctx.setLineDash([]);
 
   // Pallini sui punti validi
   pxPoints.forEach(p => {
     if (p.y === null) return;
     ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-    ctx.fillStyle = color; ctx.fill();
+    if (p.est) { ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.stroke(); }
+    else { ctx.fillStyle = color; ctx.fill(); }
   });
 
   // Linea di tendenza (regressione lineare) — tratteggiata, opacità ridotta,
@@ -6189,7 +6201,7 @@ function drawRichKpiChart(canvasId, points, options = {}) {
   // MAX / MIN — linea tratteggiata + etichetta
   let maxP = null, minP = null;
   pxPoints.forEach(p => {
-    if (p.v === null) return;
+    if (p.v === null || p.est) return;   /* PORTING HRV: MAX/MIN solo su valori veri */
     if (maxP === null || p.v > maxP.v) maxP = p;
     if (minP === null || p.v < minP.v) minP = p;
   });
@@ -6218,7 +6230,7 @@ function drawRichKpiChart(canvasId, points, options = {}) {
 
     ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", Arial, sans-serif'; ctx.fillStyle = color; ctx.textAlign = 'left';
     const ly = Math.max(MT + 8, Math.min(lastValid.y + 4, MT + CH - 2));
-    ctx.fillText(fmtV(lastValid.v), ML + CW + 5, ly);
+    ctx.fillText((lastValid.est && lastValid.range) ? hrvRangeTxt(lastValid) : fmtV(lastValid.v), ML + CW + 5, ly);
     ctx.textAlign = 'left';
   }
 }
@@ -6343,7 +6355,7 @@ function getHrvVsVolume(days) {
   for (let i = from; i <= elapsed && i < TOTAL_DAYS; i++) {
     const id = 'day_' + i;
     const _dd = _lastData[id] || {};
-    const hrv = parseFloat(_dd['hrv']) || NaN;
+    const hrv = hrvMeanN(_dd) || NaN;
     const volRawHV = getWorkoutVolume2(_dd);
     const vol = (volRawHV===null) ? NaN : volRawHV;
     if (!isNaN(hrv) && hrv > 0 && !isNaN(vol) && vol > 0)
@@ -6686,6 +6698,27 @@ function pearsonExplain(points, xLabel, yLabel) {
   return `Il legame più netto tra quelli misurati finora: ${xLabel} sembra spiegare buona parte di ${yLabel}, giorno per giorno. Resta comunque una correlazione osservata, non una causa dimostrata.`;
 }
 
+/* ══ HRV: media storica (hrv) oppure intervallo (hrv_min/hrv_max) — migrazione 21/09/2026 ══
+   Regole confermate da Giorgio (15-17/09): l'intervallo VINCE sulla media se presente; il punto medio serve SOLO
+   a disegnare le linee (tratteggiato/vuoto) e la tendenza, mai come "media" in un numero di testa; medie e
+   aggregati usano solo medie vere. */
+function hrvNum(v){ const x=parseFloat(String(v==null?'':v).replace(',','.')); return isNaN(x)?null:x; }
+function hrvRange(rec){ if(!rec) return null; const lo=hrvNum(rec.hrv_min), hi=hrvNum(rec.hrv_max); return (lo!==null&&hi!==null)?{lo:lo,hi:hi}:null; }
+function hrvMean(rec){ if(!rec||hrvRange(rec)) return null; return hrvNum(rec.hrv); }
+function hrvMeanN(rec){ const m=hrvMean(rec); return m===null?NaN:m; }
+function hrvMid(rec){ const r=hrvRange(rec); return r?(r.lo+r.hi)/2:null; }
+function hrvLine(rec){ const m=hrvMean(rec); return m!==null?m:hrvMid(rec); }
+function hrvHead(rec){ const r=hrvRange(rec); if(r) return Math.round(r.lo)+'\u2013'+Math.round(r.hi); const m=hrvMean(rec); return m===null?'':String(m); }
+function hrvRangeTxt(p){ return Math.round(p.range.lo)+'\u2013'+Math.round(p.range.hi); }
+function onHrvInput(id){
+  const g=(f)=>{ const e=document.querySelector('[data-id="'+id+'"][data-f="'+f+'"]'); return e?e.value:''; };
+  const rec={hrv:g('hrv'),hrv_min:g('hrv_min'),hrv_max:g('hrv_max')};
+  const h=hrvHead(rec), q=document.getElementById('q-'+id+'-hrv');
+  if(q){ if(h){ q.textContent=h; q.classList.remove('empty'); } else { q.textContent='\u2014'; q.classList.add('empty'); } }
+  const old=document.getElementById('hrvold-'+id);
+  if(old){ const m=hrvNum(rec.hrv); if(m!==null){ old.style.display='block'; old.textContent='media storica: '+m+(hrvRange(rec)?' (prevale l\'intervallo)':''); } else { old.style.display='none'; } }
+}
+
 function getDayDataAll(field, days) {
   // D5 (Fase D, 28/07/2026): migrata a resolveDay() -- ultima delle 4
   // migrazioni del Gruppo 2. Nessun bug qui: gestiva gia' correttamente
@@ -6710,7 +6743,13 @@ function getDayDataAll(field, days) {
       }
       if (!isNaN(fv)) v=fv;
     }
-    result.push({date:d, value:v});
+    let est = false, range = null;
+    if (field === 'hrv') {   /* PORTING HRV: l'intervallo vince; il punto medio serve solo a disegnare */
+      const recH = (rd.period==='test_proto' || rd.period==='v2') ? ((_lastData2||{})[rd.id]||{}) : (rd.period==='warmup' ? (_lastData[rd.id]||{}) : null);
+      const rg = recH ? hrvRange(recH) : null;
+      if (rg) { v = (rg.lo + rg.hi) / 2; est = true; range = rg; }
+    }
+    result.push({date:d, value:v, est:est, range:range});
   }
   return result;
 }
@@ -6890,9 +6929,9 @@ function getSessionsAll(days) {
       // ma motra_log completo — non solo durante Bangkok, il buco è più
       // diffuso). getWorkoutVolume2() replica il fallback corretto, già
       // usato altrove nell'app per lo stesso identico problema.
-      const volRaw=getWorkoutVolume2(rec), rpe=parseFloat(rec.rpe)||NaN, hrv=parseFloat(rec.hrv);
+      const volRaw=getWorkoutVolume2(rec), rpe=parseFloat(rec.rpe)||NaN, hrv=hrvMeanN(rec);
       const vol=(volRaw===null)?NaN:volRaw;
-      sess={date:d,type:rd.workout.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,phase:rd.period==='v2'?'v2':'test'};
+      sess={date:d,type:rd.workout.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,hrvR:hrvHead(rec),phase:rd.period==='v2'?'v2':'test'};
     } else if (rd.period==='warmup') {
       const rec=_lastData[rd.id]||{};
       let rawVol=parseFloat(rec.wo_volume);
@@ -6903,8 +6942,8 @@ function getSessionsAll(days) {
       // e' generica (legge solo wo_volume/motra_log, nessun riferimento
       // specifico a v1/v2) quindi riutilizzabile qui a costo zero.
       if (isNaN(rawVol)) { const vFallback = getWorkoutVolume2(rec); if (vFallback !== null) rawVol = vFallback; }
-      const vol=isNaN(rawVol)?NaN:rawVol, rpe=parseFloat(rec.wo_rpe)||NaN, hrv=parseFloat(rec.hrv);
-      sess={date:d,type:rd.workout.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,phase:'wu'};
+      const vol=isNaN(rawVol)?NaN:rawVol, rpe=parseFloat(rec.wo_rpe)||NaN, hrv=hrvMeanN(rec);
+      sess={date:d,type:rd.workout.type,volume:isNaN(vol)?null:vol,rpe:isNaN(rpe)?null:rpe,hrv:isNaN(hrv)?null:hrv,hrvR:hrvHead(rec),phase:'wu'};
     }
     if (sess) sessions.push(sess);
   }
@@ -7036,7 +7075,7 @@ function exportAllCSV() {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const testStart = new Date(TEST_PROTO_START); testStart.setHours(0, 0, 0, 0);
 
-  const bioRows = [['data', 'giorno_ciclo', 'settimana', 'peso_kg', 'bp_sys', 'bp_dia', 'hrv_ms', 'rhr_bpm', 'ore_sonno_decimali', 'sonno_veglia_min', 'sonno_rem_min', 'sonno_principale_min', 'sonno_profondo_min', 'sonno_risvegli']];
+  const bioRows = [['data', 'giorno_ciclo', 'settimana', 'peso_kg', 'bp_sys', 'bp_dia', 'hrv_ms', 'hrv_min', 'hrv_max', 'rhr_bpm', 'ore_sonno_decimali', 'sonno_veglia_min', 'sonno_rem_min', 'sonno_principale_min', 'sonno_profondo_min', 'sonno_risvegli']];
   const protoRows = [['data', 'giorno_ciclo', 'ader_iniezioni_pct', 'ader_integratori_pct']];
   const woRows = [['data', 'giorno_ciclo', 'workout_fatto', 'wo_tipo', 'wo_durata_min', 'wo_volume_kg', 'wo_kcal']];
 
@@ -7056,7 +7095,7 @@ function exportAllCSV() {
     // canonica già corretta in altri 2 punti, sezione 26.14 KB) e
     // arrotondato a 2 decimali per un export leggibile.
     const sonnoDecOut = (() => { const v = parseSonnoHours(rec.ore_sonno); return isNaN(v) ? '' : Math.round(v*100)/100; })();
-    bioRows.push([dateStr, giornoCiclo, settimana, rec.peso || '', rec.bp_sys || '', rec.bp_dia || '', rec.hrv || '', rec.rhr || '', sonnoDecOut, rec.sonno_veglia_min || '', rec.sonno_rem_min || '', rec.sonno_principale_min || '', rec.sonno_profondo_min || '', rec.sonno_risvegli || '']);
+    bioRows.push([dateStr, giornoCiclo, settimana, rec.peso || '', rec.bp_sys || '', rec.bp_dia || '', rec.hrv || '', rec.hrv_min || '', rec.hrv_max || '', rec.rhr || '', sonnoDecOut, rec.sonno_veglia_min || '', rec.sonno_rem_min || '', rec.sonno_principale_min || '', rec.sonno_profondo_min || '', rec.sonno_risvegli || '']);
 
     let injPct = '', suppPct = '';
     if (!isToday) {
@@ -7525,11 +7564,13 @@ function buildDashboard() {
     // posizione — corretto sia a giorno compilato che non ancora compilato.
     let lastValidIdx = -1;
     cfg.series7.forEach((p,i) => { if (p.value!==null) lastValidIdx = i; });
+    const lastPt = lastValidIdx>=0 ? cfg.series7[lastValidIdx] : null;
+    const lastEst = !!(lastPt && lastPt.est);   /* PORTING HRV: ultimo giorno a intervallo */
     const last = lastValidIdx>=0 ? cfg.series7[lastValidIdx].value : null;
     const yestP = lastValidIdx>=1 ? cfg.series7[lastValidIdx-1] : null;
     const yestVal = yestP && yestP.value!==null ? yestP.value : null;
-    const deltaIeri = (last!==null && yestVal!==null) ? (last-yestVal) : null;
-    const valid = cfg.series7.filter(p=>p.value!==null);
+    const deltaIeri = (last!==null && yestVal!==null && !lastEst && !(yestP && yestP.est)) ? (last-yestVal) : null;
+    const valid = cfg.series7.filter(p=>p.value!==null && !p.est);
     const vals = valid.map(p=>p.value);
     const minV = vals.length ? Math.min(...vals) : null;
     const maxV = vals.length ? Math.max(...vals) : null;
@@ -7548,7 +7589,7 @@ function buildDashboard() {
     let line2 = '';
     if (!cfg.noLine2) {
       if (cfg.t0 !== undefined && cfg.t0 !== null) {
-        const deltaT0 = last!==null ? (last-cfg.t0) : null;
+        const deltaT0 = (last!==null && !lastEst) ? (last-cfg.t0) : null;
         line2 = deltaRow(deltaT0, 'vs T0', `${fmt(cfg.t0)}${cfg.t0Suffix||''}`);
       } else {
         line2 = avgV!==null
@@ -7587,7 +7628,7 @@ function buildDashboard() {
         </div>
         ${badgeHtml}
       </div>
-      <div class="rich-kpi-value">${fmt(last)}<span> ${cfg.unit}</span></div>
+      <div class="rich-kpi-value">${(lastEst && lastPt.range) ? hrvRangeTxt(lastPt) : fmt(last)}<span> ${cfg.unit}</span></div>
       ${line1}
       ${line2}
       <canvas class="rich-kpi-chart" id="${cfg.canvasId}"></canvas>
@@ -7773,6 +7814,7 @@ function buildDashboard() {
             <div id="dc-hrv-trend" style="font-size: var(--fs-2xs);color:var(--muted);font-weight: var(--fw-med)"></div>
           </div>
           <canvas class="dash-chart" id="dc-hrv" height="110"></canvas>
+      <div style="font-size: var(--fs-2xs);color:var(--muted);margin-top:4px;line-height:1.4">Tratteggiato/punto vuoto = punto medio dell'intervallo giornaliero: serve solo a disegnare la tendenza, non è una media misurata.</div>
         </div>
         </div>
         <div>
@@ -8133,7 +8175,7 @@ function refreshDashCharts() {
   const shPoints = [];
   for (let i=0; i<sonno60.length-1; i++) {
     const s = sonno60[i].value;
-    const h = hrvAll60[i+1] ? hrvAll60[i+1].value : null;  // HRV del giorno DOPO
+    const h = (hrvAll60[i+1] && !hrvAll60[i+1].est) ? hrvAll60[i+1].value : null;  // HRV del giorno DOPO (solo medie vere)
     if (s!==null && h!==null) shPoints.push({x:s, y:h});
   }
   drawXYScatter('dc-sleep-hrv', shPoints, {height:150, color:'#34c759', xLabel:'ore di sonno'});
@@ -8180,10 +8222,10 @@ function refreshDashCharts() {
     // con scroll, mostrare prima le piu' vecchie nascondeva le sessioni recenti
     // dietro lo scroll (bug scoperto 27/07/2026 con 31 sessioni accumulate).
     const sessionRows = sessions
-      .filter(s => s.volume!==null || s.hrv!==null)
+      .filter(s => s.volume!==null || s.hrv!==null || s.hrvR)
       .map(s => ({
         date: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'short'}),
-        type: s.type, hrv: s.hrv, vol: s.volume, rpe: s.rpe
+        type: s.type, hrv: s.hrv, hrvR: s.hrvR, vol: s.volume, rpe: s.rpe
       }))
       .reverse();
     const tblEl = document.getElementById('dc-scatter-table');
@@ -8197,7 +8239,7 @@ function refreshDashCharts() {
           <td style="padding:4px 6px;color:var(--muted)">${r.date}</td>
           <td style="padding:4px 6px;font-weight: var(--fw-semi);color:${C[r.type]||'#6e6e73'}">${r.type}</td>
           <td style="padding:4px 6px;text-align:right">${r.vol===null?'—':(r.vol/1000).toFixed(1)}</td>
-          <td style="padding:4px 6px;text-align:right">${r.hrv===null?'—':Math.round(r.hrv)}</td>
+          <td style="padding:4px 6px;text-align:right">${r.hrv!==null?Math.round(r.hrv):(r.hrvR?r.hrvR:'—')}</td>
           <td style="padding:4px 6px;text-align:right">${r.rpe===null?'—':r.rpe}</td>
         </tr>`).join('')}</tbody></table>`
         : '<div style="font-size: var(--fs-xs);color:var(--muted);padding:12px">Nessuna sessione</div>';
@@ -8523,7 +8565,7 @@ function refreshInsightsCharts() {
     // stessa regola "delta positivo = verde", sbagliata per RHR (dove salire
     // e' la direzione da monitorare, non quella favorevole).
     const metrics = [
-      { label: 'HRV', data: getDayDataAll('hrv', cmpN * 2), unit: 'ms', decimals: 1, goodDir: 1 },
+      { label: 'HRV', data: getDayDataAll('hrv', cmpN * 2).map(p => p.est ? {date:p.date, value:null} : p), unit: 'ms', decimals: 1, goodDir: 1 },
       { label: 'RHR', data: getDayDataAll('rhr', cmpN * 2), unit: 'bpm', decimals: 1, goodDir: -1 },
       { label: 'Sonno', data: getSonnoOreAll(cmpN * 2), unit: 'h', decimals: 1, goodDir: 1 },
       { label: 'Peso', data: getDayDataAll('peso', cmpN * 2), unit: 'kg', decimals: 1, goodDir: 0 },
@@ -8986,7 +9028,7 @@ function getPhaseAverages() {
     const rec = (rd.period === 'warmup') ? (_lastData[rd.id]||{}) : (_lastData2[rd.id]||{});
 
     const peso = parseFloat(rec.peso); if (!isNaN(peso)) b.peso.push(peso);
-    const hrv = parseFloat(rec.hrv); if (!isNaN(hrv)) b.hrv.push(hrv);
+    const hrv = hrvMeanN(rec); if (!isNaN(hrv)) b.hrv.push(hrv);
     const rhr = parseFloat(rec.rhr); if (!isNaN(rhr)) b.rhr.push(rhr);
     if (rec.ore_sonno !== undefined && rec.ore_sonno !== '') {
       const sh = parseSonnoHours(rec.ore_sonno);
@@ -9264,11 +9306,11 @@ function buildCharts2(container) {
   const elapsed = Math.floor((today-start)/86400000);
   if (elapsed < 2) return;
   const from = Math.max(0, elapsed-13);
-  const pesoData = [], hrvData = [];
+  const pesoData = [], hrvData = [], hrvEst = []; let hrvLastLbl = '';
   for (let i=from; i<=elapsed && i<TOTAL_DAYS2; i++) {
     const dc = _lastData2['p2_day_'+i] || {};
     pesoData.push(dc['peso'] ? parseFloat(dc['peso']) : null);
-    hrvData.push(dc['hrv']  ? parseFloat(dc['hrv'])  : null);
+    hrvData.push(hrvLine(dc)); hrvEst.push(hrvRange(dc)!==null); if(hrvLine(dc)!==null) hrvLastLbl=hrvHead(dc);
   }
   if (!pesoData.some(v=>v!==null) && !hrvData.some(v=>v!==null)) return;
 
@@ -9295,7 +9337,7 @@ function buildCharts2(container) {
   }
   setTimeout(() => {
     drawChart('chart2-peso', pesoData, '#0071e3');
-    drawChart('chart2-hrv',  hrvData,  '#34c759');
+    drawChart('chart2-hrv',  hrvData,  '#34c759', hrvEst, hrvLastLbl);
   }, 100);
 }
 
@@ -9569,7 +9611,7 @@ function computeSettimanaTipo() {
       // giorno risulta "migliore/peggiore" nella tabella Insights). Stessa
       // fonte canonica (parseSonnoHours) già usata correttamente in
       // getPhaseAverages() per lo stesso identico calcolo.
-      const v = key === 'ore_sonno' ? parseSonnoHours(rec[key]) : parseFloat(rec[key]);
+      const v = key === 'ore_sonno' ? parseSonnoHours(rec[key]) : (key === 'hrv' ? hrvMeanN(rec) : parseFloat(rec[key]));
       if (!isNaN(v)) byWd[wd][key].push(v);
     });
 
@@ -9655,7 +9697,7 @@ function computeWeekStats2(wkIdx) {
 
   function computeStats(dayList) {
     let totalInj=0, doneInj=0, totalWo=0, doneWo=0;
-    let pesoSum=0, pesoCount=0, hrvSum=0, hrvCount=0, sonnoSum=0, sonnoCount=0;
+    let pesoSum=0, pesoCount=0, hrvSum=0, hrvCount=0, hrvLo=null, hrvHi=null, sonnoSum=0, sonnoCount=0;
     let rpeSum=0, rpeCount=0, sysSum=0, sysCount=0, energiaSum=0, energiaCount=0, kcalTotal=0;
     let suppTaken=0, suppPossible=0;
     let ritenzioneGg=0, formicolioGg=0, pienezzaGg=0, daysLogged=0;
@@ -9686,7 +9728,8 @@ function computeWeekStats2(wkIdx) {
       }
 
       const peso = parseFloat(get(id,'peso'));   if(!isNaN(peso))  { pesoSum+=peso;   pesoCount++; }
-      const hrv  = parseFloat(get(id,'hrv'));    if(!isNaN(hrv))   { hrvSum+=hrv;     hrvCount++; }
+      const hrv  = hrvMeanN({hrv:get(id,'hrv'),hrv_min:get(id,'hrv_min'),hrv_max:get(id,'hrv_max')});    if(!isNaN(hrv))   { hrvSum+=hrv;     hrvCount++; }
+      { const _r=hrvRange({hrv_min:get(id,'hrv_min'),hrv_max:get(id,'hrv_max')}); if(_r){ hrvLo=(hrvLo===null||_r.lo<hrvLo)?_r.lo:hrvLo; hrvHi=(hrvHi===null||_r.hi>hrvHi)?_r.hi:hrvHi; } }
       const sonno= parseSonnoHours(get(id,'ore_sonno'));if(!isNaN(sonno)){ sonnoSum+=sonno; sonnoCount++; }
       const sys  = parseFloat(get(id,'bp_sys'));  if(!isNaN(sys))   { sysSum+=sys;     sysCount++; }
       const en   = parseFloat(get(id,'energia')); if(!isNaN(en))    { energiaSum+=en;  energiaCount++; }
@@ -9702,7 +9745,7 @@ function computeWeekStats2(wkIdx) {
       if (peso || hrv || sonno) daysLogged++;
     });
 
-    return { totalInj,doneInj,totalWo,doneWo,pesoSum,pesoCount,hrvSum,hrvCount,sonnoSum,sonnoCount,
+    return { totalInj,doneInj,totalWo,doneWo,pesoSum,pesoCount,hrvSum,hrvCount,hrvLo,hrvHi,sonnoSum,sonnoCount,
       rpeSum,rpeCount,sysSum,sysCount,energiaSum,energiaCount,kcalTotal,suppTaken,suppPossible,
       ritenzioneGg,formicolioGg,pienezzaGg,daysLogged };
   }
@@ -9765,7 +9808,7 @@ function buildWeekSummary2(container, wkIdx) {
     if (dayIdx>=0 && dayIdx>elapsed) return;
     const dDate = new Date(START2); dDate.setDate(dDate.getDate()+dayIdx); dDate.setHours(0,0,0,0);
     const p=parseFloat(get(id,'peso')); if(!isNaN(p)) sparkPeso.push({date:dDate, value:p});
-    const hv=parseFloat(get(id,'hrv')); if(!isNaN(hv)) sparkHrv.push({date:dDate, value:hv});
+    { const _hr={hrv:get(id,'hrv'),hrv_min:get(id,'hrv_min'),hrv_max:get(id,'hrv_max')}; const hv=hrvLine(_hr); if(hv!==null) sparkHrv.push({date:dDate, value:hv, est:hrvRange(_hr)!==null, range:hrvRange(_hr)}); }
   });
 
   // (miniSparkline rimossa il 29/07/2026: sostituita da drawDashChart per
@@ -9960,7 +10003,7 @@ function buildTestProtoCards(container) {
         <div class="section-label">Biometria</div>
         <div class="bio-grid">
           <div class="bio-box"><input type="number" placeholder="70.0" data-id="${id}" data-f="peso" oninput="onInput(this,'${id}','peso')"><div class="bio-lbl">Peso kg</div></div>
-          <div class="bio-box"><input type="number" placeholder="48"   data-id="${id}" data-f="hrv"  oninput="onInput(this,'${id}','hrv')"><div class="bio-lbl">HRV ms</div></div>
+          <div class="bio-box"><div style="display:flex;gap:4px"><input type="number" placeholder="min" data-id="${id}" data-f="hrv_min" oninput="onHrvInput('${id}')" style="min-width:0"><input type="number" placeholder="max" data-id="${id}" data-f="hrv_max" oninput="onHrvInput('${id}')" style="min-width:0"></div><input type="hidden" data-id="${id}" data-f="hrv"><div class="bio-lbl">HRV min\u2013max ms</div><div class="bio-lbl" id="hrvold-${id}" style="display:none"></div></div>
           <div class="bio-box"><input type="number" placeholder="55"   data-id="${id}" data-f="rhr"><div class="bio-lbl">RHR bpm</div></div>
           <div class="bio-box"><input type="number" placeholder="120"  data-id="${id}" data-f="bp_sys"><div class="bio-lbl">Sistolica</div></div>
           <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="bp_dia"><div class="bio-lbl">Diastolica</div></div>
@@ -10350,7 +10393,7 @@ function buildProtoV2() {
         <div class="section-label">Biometria</div>
         <div class="bio-grid">
           <div class="bio-box"><input type="number" placeholder="70.0" data-id="${id}" data-f="peso" oninput="onInput(this,'${id}','peso')"><div class="bio-lbl">Peso kg</div></div>
-          <div class="bio-box"><input type="number" placeholder="48"   data-id="${id}" data-f="hrv"  oninput="onInput(this,'${id}','hrv')"><div class="bio-lbl">HRV ms</div></div>
+          <div class="bio-box"><div style="display:flex;gap:4px"><input type="number" placeholder="min" data-id="${id}" data-f="hrv_min" oninput="onHrvInput('${id}')" style="min-width:0"><input type="number" placeholder="max" data-id="${id}" data-f="hrv_max" oninput="onHrvInput('${id}')" style="min-width:0"></div><input type="hidden" data-id="${id}" data-f="hrv"><div class="bio-lbl">HRV min\u2013max ms</div><div class="bio-lbl" id="hrvold-${id}" style="display:none"></div></div>
           <div class="bio-box"><input type="number" placeholder="55"   data-id="${id}" data-f="rhr"><div class="bio-lbl">RHR bpm</div></div>
           <div class="bio-box"><input type="number" placeholder="120"  data-id="${id}" data-f="bp_sys"><div class="bio-lbl">Sistolica</div></div>
           <div class="bio-box"><input type="number" placeholder="75"   data-id="${id}" data-f="bp_dia"><div class="bio-lbl">Diastolica</div></div>
@@ -10593,7 +10636,7 @@ function applyProto2Data() {
     const qHrv   = document.getElementById('q-'+id+'-hrv');
     const qSonno = document.getElementById('q-'+id+'-ore_sonno');
     if (qPeso  && fields.peso)     { qPeso.textContent  = fields.peso;     qPeso.classList.remove('empty'); }
-    if (qHrv   && fields.hrv)      { qHrv.textContent   = fields.hrv;      qHrv.classList.remove('empty'); }
+    { const _hh = hrvHead(fields); if (qHrv && _hh) { qHrv.textContent = _hh; qHrv.classList.remove('empty'); } }
     if (qSonno && fields.ore_sonno){ qSonno.textContent = fields.ore_sonno; qSonno.classList.remove('empty'); }
     // Iniezioni fatte vs totale (card v2 reali + Test Protocollo)
     let dayIdxForSlots = null;
@@ -13187,7 +13230,7 @@ function fotoComputeEntryData(entry) {
     // ovunque altrove, es. exportAllCSV/exportPDF).
     const dayIdx = rd.period === 'v2' ? rd.index : rd.index - TEST_PROTO_DAYS;
 
-    const hrvVal = parseFloat(rec.hrv); if (!isNaN(hrvVal)) hrv = hrvVal;
+    { const _hh = hrvHead(rec); if (_hh) hrv = _hh; }
     sonnoTxt = rec.ore_sonno || '';
 
     const slots = getInjectionSlots2(dayIdx);
