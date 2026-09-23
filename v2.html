@@ -4615,9 +4615,9 @@ function renderOggiFull() {
     <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
       <span style="font-size:9px;font-weight:600;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${L.tile.pressione}</span>
       <div style="display:flex;align-items:center;justify-content:center;gap:2px;background:var(--surf2);border-radius:6px;padding:5px 4px;">
-        <input data-f="bp_sys" value="${esc(day.bp_sys || '')}" placeholder="—" style="${micro}width:26px;background:transparent;text-align:right;">
+        <input data-f="bp_sys" value="${esc(day.bp_sys || '')}" placeholder="—" style="${micro}width:32px;background:transparent;text-align:right;">
         <span style="${micro}">/</span>
-        <input data-f="bp_dia" value="${esc(day.bp_dia || '')}" placeholder="—" style="${micro}width:26px;background:transparent;text-align:left;">
+        <input data-f="bp_dia" value="${esc(day.bp_dia || '')}" placeholder="—" style="${micro}width:32px;background:transparent;text-align:left;">
       </div>
     </div>`;
   const sonnoTot = parseSonnoHours(day.ore_sonno);
