@@ -2492,6 +2492,8 @@ function buildFoto(root){
       var i=photoDayIndex(p), cell=document.createElement("div"); cell.className="an-fcell";
       var sh=photoSlot(p);
       var t1=document.createElement("span"); t1.className="an-ftag an-ftag-d"; t1.textContent=gTag(i); sh.appendChild(t1);
+      var pw=(PHOTO_METRICS[p.date]||{}).peso;
+      if (pw!=null) { var t2=document.createElement("span"); t2.className="an-ftag"; t2.style.cssText="top:5px;right:5px;left:auto"; t2.textContent=it(pw,1)+" kg"; sh.appendChild(t2); }
       cell.appendChild(sh);
       var meta=document.createElement("div"); meta.className="an-fmeta";
       meta.innerHTML='<span class="an-fdate">'+fmtDM(dateOfDay(i))+'</span><span class="an-fsub">'+(p.luogo||"")+(p.note?" \u00b7 "+p.note:"")+'</span>';
@@ -2506,11 +2508,23 @@ function buildFoto(root){
     hl.innerHTML="";
     if (!log.length) hl.innerHTML='<div class="an-chart-state">'+T().noShots+'</div>';
     log.slice().reverse().forEach(function(p){
-      var i=photoDayIndex(p), el=document.createElement("div"); el.className="an-flrow";
+      var i=photoDayIndex(p), wrap=document.createElement("div");
+      var el=document.createElement("div"); el.className="an-flrow";
       el.setAttribute("data-photo", p.filename);
       el.innerHTML='<span style="font-weight:600;color:var(--ink)">'+fmtDM(dateOfDay(i))+'</span>'+
         '<span class="an-num">'+gTag(i)+'</span><span>'+(p.luogo||"\u2014")+'</span><span>'+(p.note||"\u2014")+'</span>';
-      hl.appendChild(el);
+      wrap.appendChild(el);
+      /* PORTING 23/09: dati a corredo anche in Lista, non solo in Scrubber/Confronto */
+      var tl=document.createElement("div"); tl.className="an-ftiles"; tl.style.marginTop="2px";
+      var any=false;
+      photoMetrics(p).forEach(function(q){
+        if (q[1]==null) return; any=true;
+        var e=document.createElement("div"); e.className="an-ftile";
+        e.innerHTML='<span class="an-ftile-l">'+q[0]+'</span><strong>'+q[1]+'</strong>';
+        tl.appendChild(e);
+      });
+      if (any) wrap.appendChild(tl);
+      hl.appendChild(wrap);
     });
   }
 
@@ -2528,7 +2542,10 @@ function buildFoto(root){
       var g=document.createElement("div"); g.className="an-fgrid"; g.style.marginTop="8px";
       byW[k].forEach(function(p){
         var i=photoDayIndex(p), c=document.createElement("div"); c.className="an-fcell";
-        c.appendChild(photoSlot(p));
+        var shk=photoSlot(p);
+        var pw2=(PHOTO_METRICS[p.date]||{}).peso;
+        if (pw2!=null) { var t3=document.createElement("span"); t3.className="an-ftag"; t3.style.cssText="top:5px;right:5px;left:auto"; t3.textContent=it(pw2,1)+" kg"; shk.appendChild(t3); }
+        c.appendChild(shk);
         var m=document.createElement("div"); m.className="an-fmeta";
         m.innerHTML='<span class="an-fdate">'+fmtDM(dateOfDay(i))+'</span>';
         c.appendChild(m); g.appendChild(c);
@@ -2932,12 +2949,9 @@ function AN_mount(){
   root.querySelectorAll(".an-range button").forEach(function(b){ b.classList.toggle("is-active", parseInt(b.getAttribute("data-days"), 10) === AN.range); });
   root.querySelectorAll("[data-an-fmode]").forEach(function(b){ b.classList.toggle("is-active", b.getAttribute("data-an-fmode") === AN.fotoMode); });
   root.querySelectorAll("[data-an-fpane]").forEach(function(p){ p.classList.toggle("is-active", p.getAttribute("data-an-fpane") === AN.fotoMode); });
-  root.addEventListener("an:photo:new", function(){
-    var host = root.querySelector("[data-an-photo-submit]"); if (!host) return;
-    var n = root.querySelector("[data-an-photo-note]");
-    if (!n) { n = document.createElement("span"); n.setAttribute("data-an-photo-note", ""); n.className = "an-note"; host.insertAdjacentElement("afterend", n); }
-    n.textContent = "Il caricamento di un nuovo scatto resta nella vecchia app (Foto \u2192 Nuovo scatto): da qui non viene scritto nulla.";
-  });
+  /* PORTING 23/09: rimosso il secondo avviso duplicato — quello statico nel pannello "Nuovo
+     scatto" gia' dice la stessa cosa; il pulsante resta volutamente di sola lettura (nessuna
+     scrittura, nessun upload: la funzione vera resta nella vecchia app). */
   anInit();
   AN_loadV1();
 }
