@@ -474,7 +474,7 @@
 .c-phase{grid-column:span 3;}
 .c-week{grid-column:span 4;}
 .c-sent{grid-column:span 6;}
-.c-musc{grid-column:span 6;}
+.c-musc{grid-column:span 6;}.c-progress{grid-column:span 7;}.c-freq{grid-column:span 5;}
 .c-foto{grid-column:span 12;}
 .an-fgrid{grid-template-columns:repeat(8,1fr);}
 .an-fcmp{grid-template-columns:1fr 1fr;}
@@ -670,7 +670,7 @@ const I18N = {
     notMigrated: 'Questa sezione vive ancora nella versione attuale.',
     phases: { adattamento: 'Adattamento', costruzione: 'Costruzione', peak: 'Peak', mantenimento: 'Mantenimento' },
     phaseDates: ['20 LUG', '8 NOV'],
-    tile: { pressione: 'Pressione', sonno: 'Sonno', rem: 'REM', profondo: 'Profondo', risvegli: 'Risvegli' },
+    tile: { pressione: 'Pressione', sonno: 'Sonno', rem: 'REM', profondo: 'Profondo', risvegli: 'Risvegli', girovita: 'Girovita' },
     injLegendSC: 'SC addome, spalla, gluteo',
     injLegendIM: 'IM gruppo target · solo IGF-1',
     injectionsRing: 'Iniezioni', workoutsRing: 'Allenamenti',
@@ -703,7 +703,7 @@ const I18N = {
     notMigrated: 'This section still lives in the current version.',
     phases: { adattamento: 'Adaptation', costruzione: 'Build', peak: 'Peak', mantenimento: 'Maintenance' },
     phaseDates: ['20 JUL', '8 NOV'],
-    tile: { pressione: 'Blood pressure', sonno: 'Sleep', rem: 'REM', profondo: 'Deep', risvegli: 'Awakenings' },
+    tile: { pressione: 'Blood pressure', sonno: 'Sleep', rem: 'REM', profondo: 'Deep', risvegli: 'Awakenings', girovita: 'Waist' },
     injLegendSC: 'SC abdomen, shoulder, glute',
     injLegendIM: 'IM target group · IGF-1 only',
     injectionsRing: 'Injections', workoutsRing: 'Workouts',
@@ -1252,7 +1252,8 @@ var TARGETS = { peso:null, leanMass:null, hrv:null };
 var DEXA = [ { date:{y:2026,m:5,d:9}, lean_kg:55.4, fat_pct:18.2 } ];
 /* Girovita: oggi una sola misura (Fit3D). Meno di 2 = nessuna linea. */
 /* PORTING: una sola misura (Fit3D 07-08/08/2026, vita 85,2 cm, da KB): meno di 2 = nessuna linea. */
-var WAIST = [ { date:{y:2026,m:8,d:7}, cm:85.2, source:"Fit3D" } ];
+var WAIST_FIXED = [ { date:{y:2026,m:8,d:7}, cm:85.2, source:"Fit3D" } ];
+var WAIST = WAIST_FIXED.slice();
 
 var CAT_LABELS = {
   ritenzione:   ["Assente","Lieve","Moderata","Marcata"],
@@ -1943,6 +1944,36 @@ function buildAdherence(root){
       wk.appendChild(b);
     }
   }
+  /* PORTING 23/09: dettaglio a richiesta, una riga per dominio (stesso criterio di sempre,
+     non mediato); niente soglie nuove — stessa soglia 90%/75% già usata per la barra unica. */
+  var gr = ch(root, "adh.grid");
+  if (gr) {
+    gr.innerHTML = "";
+    gr.style.flexDirection = "column";
+    gr.style.gap = "3px";
+    [["weeksInj", T().injections], ["weeksSupp", T().supplements], ["weeksWo", T().workouts]].forEach(function(row){
+      var arr = ADHERENCE[row[0]] || [];
+      var line = document.createElement("div");
+      line.style.cssText = "display:flex;align-items:center;gap:6px";
+      var lbl = document.createElement("span");
+      lbl.style.cssText = "flex:0 0 74px;font-size:9.5px;color:var(--ink2)";
+      lbl.textContent = row[1];
+      line.appendChild(lbl);
+      var cells = document.createElement("div");
+      cells.style.cssText = "flex:1;display:flex;gap:2px";
+      for (var i = 0; i < 16; i++) {
+        var v = arr[i];
+        var cell = document.createElement("span");
+        var future = (v == null && i >= cur);
+        cell.style.cssText = "flex:1;aspect-ratio:1;border-radius:2px;background:" +
+          (future ? "var(--line2)" : (v == null ? "var(--line2)" : (v >= 90 ? "var(--ok)" : (v >= 75 ? "var(--warn)" : "var(--bad)")))) +
+          (i === cur ? ";border:1.3px solid var(--accent)" : "");
+        cells.appendChild(cell);
+      }
+      line.appendChild(cells);
+      gr.appendChild(line);
+    });
+  }
 }
 
 /* Marker clinici T0 → T1. Colore dalla regola `better` di ciascun
@@ -2227,6 +2258,109 @@ function buildWorkout(root){
   }
   buildSentinels(root);
   buildMuscles(root);
+  buildProgression(root);
+  buildMuscleFreq(root);
+}
+
+/* PORTING 23/09 - Progressione esercizi. Da history_sessions (V1): nome esatto + muscolo, come
+   importato da Motra, non dalla mappa fissa dei sentinel. Segue da sola le sostituzioni (stessa
+   macchina occupata -> esercizio diverso, stesso muscolo). Soglia: 2 sessioni per avere riga
+   propria; sotto soglia finisce in "altri esercizi" per muscolo, senza tendenza. Un esercizio
+   fatto su due macchine diverse (es. due shoulder press diverse) resta due righe separate: nome
+   esatto, mai raggruppato, perche' i limiti sono specifici della macchina, non del movimento. */
+function AN_progressionData(){
+  var byKey = {};
+  HISTORY_SESSIONS.forEach(function(s){
+    (s.exercises || []).forEach(function(e){
+      var ws = (e.sets || []).filter(function(st){ return st.kg != null; });
+      if (!ws.length) return;
+      var best = ws[0];
+      ws.forEach(function(st){ if (st.kg > best.kg || (st.kg === best.kg && (st.reps || 0) > (best.reps || 0))) best = st; });
+      var muscle = (e.muscle || "").split(",")[0].trim() || "altro";
+      var key = muscle + "|" + e.name;
+      if (!byKey[key]) byKey[key] = { muscle: muscle, name: e.name, hits: [] };
+      byKey[key].hits.push({ date: s.date, kg: best.kg, reps: best.reps });
+    });
+  });
+  var byMuscle = {};
+  Object.keys(byKey).forEach(function(k){
+    var x = byKey[k];
+    x.hits.sort(function(a, b){ return a.date < b.date ? -1 : 1; });
+    var first = x.hits[0], last = x.hits[x.hits.length - 1];
+    var row = { name: x.name, n: x.hits.length, kg: last.kg, reps: last.reps, date: last.date,
+                delta: x.hits.length >= 2 ? last.kg - first.kg : null };
+    (byMuscle[x.muscle] = byMuscle[x.muscle] || { rows: [], other: [] });
+    if (x.hits.length >= 2) byMuscle[x.muscle].rows.push(row); else byMuscle[x.muscle].other.push(x.name);
+  });
+  return byMuscle;
+}
+function buildProgression(root){
+  var host = ch(root, "wo.progress"); if (!host) return;
+  host.innerHTML = "";
+  if (!HISTORY_SESSIONS.length) { host.innerHTML = '<div class="an-chart-state">' + (AN_V1.status === "loading" ? "Caricamento..." : T().noData) + '</div>'; return; }
+  var data = AN_progressionData();
+  MUSCLES.forEach(function(m){
+    var g = data[m.id]; if (!g || !g.rows.length) return;
+    g.rows.sort(function(a, b){ return b.n - a.n; });
+    var head = document.createElement("div");
+    head.style.cssText = "display:flex;align-items:center;gap:7px;margin:10px 0 4px";
+    head.innerHTML = '<span style="width:8px;height:8px;border-radius:2px;background:' + m.color + '"></span><span style="font-size:10.5px;font-weight:600;color:var(--ink2)">' + m.label + '</span>';
+    host.appendChild(head);
+    g.rows.forEach(function(r){
+      var el = document.createElement("div"); el.className = "an-trow";
+      el.style.gridTemplateColumns = "1fr 54px 48px 54px";
+      /* PORTING 23/09: RDL (qualunque attrezzo) e' vincolato -- niente stacco tradizionale sopra
+         60-70 kg, ernia cervicale/lombare -- il verdetto non e' mai "in salita/in calo". */
+      var capped = /romanian deadlift/i.test(r.name);
+      var col = capped ? "var(--ink2)" : (r.delta == null ? "var(--ink3)" : (r.delta > 0 ? "var(--ok)" : (r.delta < 0 ? "var(--warn-ink)" : "var(--ink3)")));
+      var deltaTxt = capped ? "entro il limite" : (r.delta == null ? "\u2014" : itSigned(r.delta, 1));
+      el.innerHTML = '<span style="font-weight:500;color:var(--ink)">' + esc(r.name) + '</span>' +
+        '<strong class="an-num">' + it(r.kg, 1) + ' kg</strong>' +
+        '<span class="an-num" style="color:var(--ink3)">n=' + r.n + '</span>' +
+        '<span class="an-num" style="font-weight:600;color:' + col + '">' + deltaTxt + '</span>';
+      host.appendChild(el);
+    });
+    if (g.other.length) {
+      var o = document.createElement("div");
+      o.style.cssText = "font-size:9.5px;color:var(--ink3);padding:3px 0 2px";
+      o.textContent = "altri esercizi (1 sola sessione): " + g.other.join(", ");
+      host.appendChild(o);
+    }
+  });
+  if (!host.children.length) host.innerHTML = '<div class="an-chart-state">' + T().noData + '</div>';
+}
+
+/* PORTING 23/09 - Frequenza per gruppo muscolare, ultime 4 settimane: quante sessioni hanno
+   toccato ogni muscolo e da quanti giorni non viene allenato -- completa il volume cumulativo,
+   che non dice se un gruppo e' trascurato di recente. */
+function buildMuscleFreq(root){
+  var host = ch(root, "wo.freq"); if (!host) return;
+  host.innerHTML = "";
+  if (!HISTORY_SESSIONS.length) { host.innerHTML = '<div class="an-chart-state">' + (AN_V1.status === "loading" ? "Caricamento..." : T().noData) + '</div>'; return; }
+  var todayISO = today, cutoff = new Date(todayISO); cutoff.setDate(cutoff.getDate() - 28);
+  var stats = {};
+  HISTORY_SESSIONS.forEach(function(s){
+    var seen = {};
+    (s.exercises || []).forEach(function(e){
+      (e.muscle || "").split(",").forEach(function(m){
+        m = m.trim(); if (!m) return;
+        var st = (stats[m] = stats[m] || { count28: 0, last: null });
+        if (st.last == null || s.date > st.last) st.last = s.date;
+        if (new Date(s.date) >= cutoff && !seen[m]) { st.count28++; seen[m] = true; }
+      });
+    });
+  });
+  MUSCLES.forEach(function(m){
+    var st = stats[m.id]; if (!st) return;
+    var days = st.last ? Math.round((new Date(todayISO) - new Date(st.last)) / 86400000) : null;
+    var el = document.createElement("div"); el.className = "an-trow";
+    el.style.gridTemplateColumns = "1fr 70px 90px";
+    el.innerHTML = '<span style="display:flex;align-items:center;gap:7px;font-weight:600;color:var(--ink)"><span style="width:8px;height:8px;border-radius:2px;background:' + m.color + '"></span>' + m.label + '</span>' +
+      '<strong class="an-num">' + st.count28 + '</strong>' +
+      '<span class="an-num" style="color:' + (days == null ? "var(--ink3)" : (days > 10 ? "var(--warn-ink)" : "var(--ink3)")) + '">' + (days == null ? "\u2014" : days + "gg fa") + '</span>';
+    host.appendChild(el);
+  });
+  if (!host.children.length) host.innerHTML = '<div class="an-chart-state">' + T().noData + '</div>';
 }
 
 function buildSentinels(root){
@@ -2263,11 +2397,15 @@ function buildSentinels(root){
       if (!x.last){ row.innerHTML='<span class="an-slname">'+x.def.label+'</span><span class="an-slempty" style="grid-column:2 / -1">'+T().noShots.toLowerCase()+'</span>'; }
       else {
         var dl=x.first!=null?x.last.kg-x.first:null;
-        var col=dl==null?"var(--ink3)":(dl>0?"var(--ok)":(dl<0?"var(--warn-ink)":"var(--ink3)"));
+        /* PORTING 23/09: RDL è vincolato (ernia cervicale/lombare, niente stacco tradizionale
+           sopra 60-70 kg) — il carico non deve "salire", va giudicato entro il limite, mai in rosso. */
+        var capped = x.def.id === "rdl";
+        var col = capped ? "var(--ink2)" : (dl==null?"var(--ink3)":(dl>0?"var(--ok)":(dl<0?"var(--warn-ink)":"var(--ink3)")));
+        var deltaTxt = capped ? "entro il limite" : (dl==null?"\u2014":itSigned(dl,1));
         row.innerHTML='<span class="an-slname">'+x.def.label+'</span>'+
           '<strong class="an-num" style="font-size:11px">'+it(x.last.kg,1)+' kg</strong>'+
           '<span class="an-num" style="font-size:10px;color:var(--ink3)">'+(x.last.sets||"?")+"\u00d7"+(x.last.reps||"?")+'</span>'+
-          '<span class="an-num" style="font-size:10px;font-weight:600;color:'+col+'">'+(dl==null?"\u2014":itSigned(dl,1))+'</span>';
+          '<span class="an-num" style="font-size:10px;font-weight:600;color:'+col+'">'+deltaTxt+'</span>';
       }
       body.appendChild(row);
     });
@@ -2278,6 +2416,7 @@ function buildSentinels(root){
 /* Volume per gruppo muscolare: 11 muscoli cumulativi, nessun
    selettore. I kg per muscolo li passi tu in MUSCLE_VOL.       */
 var MUSCLE_VOL = {};
+var HISTORY_SESSIONS = [];
 function buildMuscles(root){
   var host=ch(root,"wo.muscles"); if(!host) return;
   host.innerHTML="";
@@ -2610,6 +2749,13 @@ function anInit(){
       buildFoto(root);
     });
   });
+  var adhT = root.querySelector('[data-an="adh-toggle"]');
+  if (adhT) adhT.addEventListener("click", function(){
+    var g = ch(root, "adh.grid"); if (!g) return;
+    var open = g.style.display === "none";
+    g.style.display = open ? "flex" : "none";
+    adhT.textContent = open ? "Nascondi dettaglio" : "Dettaglio per settimana";
+  });
   bindFotoNew(root);
   if (!anInit._g) {
     anInit._g = true;
@@ -2667,8 +2813,11 @@ function AN_dayAdh(idx){
 function AN_buildAdherence(){
   var a = adherence(store.blob);
   var cur = Math.floor(dayIdxFromISO(today) / 7), weeks = [];
+  /* PORTING 23/09: griglia settimanale per dominio (dettaglio a richiesta), stessi tre domini e
+     stesso criterio giorno-per-giorno di sempre (AN_dayAdh) — solo scomposti invece che mediati. */
+  var weeksInj = [], weeksSupp = [], weeksWo = [];
   for (var k = 0; k < 16; k++) {
-    if (k >= cur) { weeks.push(null); continue; }
+    if (k >= cur) { weeks.push(null); weeksInj.push(null); weeksSupp.push(null); weeksWo.push(null); continue; }
     var s = { injDone:0, injTot:0, suppDone:0, suppTot:0, woDone:0, woTot:0 };
     for (var j = 0; j < 7; j++) { var x = AN_dayAdh(k * 7 + j); for (var q in s) s[q] += x[q]; }
     var p = [];
@@ -2676,8 +2825,12 @@ function AN_buildAdherence(){
     if (s.suppTot) p.push(s.suppDone / s.suppTot * 100);
     if (s.woTot) p.push(s.woDone / s.woTot * 100);
     weeks.push(p.length ? Math.round(p.reduce(function(u, v){ return u + v; }, 0) / p.length) : null);
+    weeksInj.push(s.injTot ? Math.round(s.injDone / s.injTot * 100) : null);
+    weeksSupp.push(s.suppTot ? Math.round(s.suppDone / s.suppTot * 100) : null);
+    weeksWo.push(s.woTot ? Math.round(s.woDone / s.woTot * 100) : null);
   }
-  return { inj: a.injTot ? a.inj : null, supp: a.suppTot ? a.supp : null, wo: a.woTot ? a.wo : null, weeks: weeks };
+  return { inj: a.injTot ? a.inj : null, supp: a.suppTot ? a.supp : null, wo: a.woTot ? a.wo : null,
+           weeks: weeks, weeksInj: weeksInj, weeksSupp: weeksSupp, weeksWo: weeksWo };
 }
 function AN_buildPhotoMetrics(){
   var out = {}, t = dayIdxFromISO(today);
@@ -2702,13 +2855,30 @@ function AN_refresh(){
   MOCK.todayIndex = dayIdxFromISO(today);
   ADHERENCE = AN_buildAdherence();
   PHOTO_METRICS = AN_buildPhotoMetrics();
+  /* PORTING 23/09: girovita reale (campo libero, un solo livello ombelicale) accanto al punto
+     storico Fit3D. Un solo valore per giorno: se esiste già un punto Fit3D nello stesso giorno,
+     vince quello (nessun doppione). */
+  var wReal = [];
+  MOCK.days.forEach(function(d, i){
+    if (!d) return;
+    var v = num(d.girovita_cm);
+    if (v == null) return;
+    var dt = dateOfDay(i);
+    wReal.push({ date: { y: dt.getFullYear(), m: dt.getMonth() + 1, d: dt.getDate() }, cm: v, source: "diario" });
+  });
+  var wFixed = WAIST_FIXED.filter(function(f){
+    return !wReal.some(function(r){ return r.date.y === f.date.y && r.date.m === f.date.m && r.date.d === f.date.d; });
+  });
+  WAIST = wFixed.concat(wReal).sort(function(a, b){
+    return (a.date.y - b.date.y) || (a.date.m - b.date.m) || (a.date.d - b.date.d);
+  });
 }
 /* record V1 (sola lettura): riepilogo muscoli, T1 ematici, DEXA T1, photo_log */
 var AN_V1 = { status: "idle" };
 function AN_loadV1(){
   if (AN_V1.status !== "idle") return;
   AN_V1.status = "loading";
-  var q = "?user_id=eq.giorgio_protocollo_2026&select=data-%3Emuscle_volume_summary,data-%3Elab_wk8,data-%3Edexa_t1,data-%3Ephoto_log";
+  var q = "?user_id=eq.giorgio_protocollo_2026&select=data-%3Emuscle_volume_summary,data-%3Elab_wk8,data-%3Edexa_t1,data-%3Ephoto_log,data-%3Ehistory_sessions";
   fetch(CFG.PROXY_URL + q, { headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY } })
     .then(function(r){ if (!r.ok) throw new Error("v1 " + r.status); return r.json(); })
     .then(function(j){
@@ -2722,6 +2892,7 @@ function AN_loadV1(){
       DEXA = DEXA.filter(function(x){ return !(x.date.y === 2026 && x.date.m === 9 && x.date.d === 12); });
       if (lean != null && bf != null) DEXA.push({ date:{y:2026,m:9,d:12}, lean_kg:lean, fat_pct:bf });
       PHOTO_LOG = (r0.photo_log || []).filter(function(p){ return p && p.date && p.filename; });
+      HISTORY_SESSIONS = Array.isArray(r0.history_sessions) ? r0.history_sessions : [];
       AN_V1.status = "ok";
     })
     .catch(function(){ AN_V1.status = "err"; })
@@ -2771,7 +2942,7 @@ function AN_mount(){
   AN_loadV1();
 }
 
-var AN_HTML = "<div class=\"an-root\">\n  <div class=\"an-subnav\">\n    <div class=\"an-chips\">\n      <button type=\"button\" class=\"an-chip is-active\" data-an-tab=\"cruscotto\" data-i18n-tab=\"cruscotto\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"insights\" data-i18n-tab=\"insights\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"foto\" data-i18n-tab=\"foto\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"workout\" data-i18n-tab=\"workout\"></button>\n    </div>\n    <div class=\"an-globalrange\">\n      <span class=\"an-globalrange-l\"></span>\n      <div class=\"an-range\">\n        <button type=\"button\" data-days=\"30\">30g</button>\n        <button type=\"button\" data-days=\"60\" class=\"is-active\">60g</button>\n        <button type=\"button\" data-days=\"90\">90g</button>\n        <button type=\"button\" data-days=\"0\"></button>\n      </div>\n    </div>\n    </div>\n  <div class=\"an-main\">\n<div class=\"an-view is-active\" data-an-view=\"cruscotto\"><section class=\"an-card an-card-hero c-hero\"><div class=\"an-hero\"><div class=\"an-hero-l\"><span class=\"an-title\" data-i18n=\"heroTitle\"></span><span class=\"an-hero-t\" data-bind=\"hero.headline\"></span><span class=\"an-hero-s\" data-bind=\"hero.sub\"></span></div><div class=\"an-hero-r\" data-chart=\"hero.pillars\"></div></div></section><section class=\"an-card c-cycle\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"cycleState\"></span><span class=\"an-sub\" data-bind=\"cycle.day\"></span></div><div class=\"an-phases\"></div><div class=\"an-legend an-phase-legend\"></div><div class=\"an-warn\" data-an-today style=\"display:none\"><span data-i18n=\"todayEmpty\"></span></div></section><section class=\"an-card c-recomp\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"recomp\"></span></div><div class=\"an-chart\" data-chart=\"recomp.chart\" style=\"height:148px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>peso</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-mark)\"></span>DEXA</span><span class=\"an-legend-item\"><span class=\"an-sw is-band\" style=\"background:var(--c-event)\"></span>viaggio</span></div><div style=\"display:flex;flex-direction:column;gap:6px;padding-top:8px;border-top:1px solid var(--line2)\"><div style=\"display:flex;align-items:baseline;justify-content:space-between;gap:8px\"><span class=\"an-sub\" data-i18n=\"waist\"></span><strong style=\"font-size:11.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums\" data-bind=\"recomp.waist\"></strong></div><div class=\"an-tbl\" data-chart=\"recomp.dexa\"></div></div><span class=\"an-note\">Il peso è giornaliero. DEXA e girovita esistono solo in pochi punti: restano marcatori. Con meno di due misure non si traccia nulla.</span></section><section class=\"an-card c-load\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"load\"></span><span class=\"an-sub\" data-bind=\"load.verdict\"></span></div><div class=\"an-chart\" data-chart=\"load.chart\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--accent-soft)\"></span>volume settimanale</span><span class=\"an-legend-item\"><span class=\"an-sw is-dash\" style=\"background:var(--c-s1)\"></span>HRV</span></div><span class=\"an-note\">Regola: volume ±5% e HRV ±3% fra le ultime due settimane piene. Sotto soglia la frase resta neutra. La linea HRV ha scala propria (min–max del periodo).</span></section><section class=\"an-card c-adh\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"adherence\"></span></div><div data-chart=\"adh.rows\" style=\"display:flex;flex-direction:column;gap:10px\"></div><span class=\"an-sub\">soglia 90%</span><div style=\"height:42px;display:flex;align-items:flex-end;gap:3px;padding-top:6px;border-top:1px solid var(--line2)\" data-chart=\"adh.weeks\"></div></section><section class=\"an-card c-clin\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"clinical\"></span><span class=\"an-sub\" data-bind=\"clin.state\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 62px 16px 62px 74px\"><span>Marker</span><span class=\"an-num\">T0</span><span></span><span class=\"an-num\">T1</span><span class=\"an-num\">rif.</span></div><div class=\"an-tbl\" data-chart=\"clin.rows\"></div></section><section class=\"an-card c-stock\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"stock\"></span><span class=\"an-sub\" data-bind=\"stock.left\"></span></div><div class=\"an-tbl\" data-chart=\"stock.rows\"></div><span class=\"an-note\">Rosso se la scorta non arriva a fine ciclo, ambra entro 14 giorni di margine, verde oltre.</span></section><section class=\"an-card c-narr\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"narrative\"></span></div><p style=\"margin:0;font-size:13px;line-height:1.55;color:var(--ink2)\" data-bind=\"narrative.text\"></p></section></div>\n<div class=\"an-view\" data-an-view=\"insights\"><section class=\"an-card c-subja\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"subjA\"></span></div><div class=\"an-chart\" data-chart=\"subj.a\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>Energia</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s2)\"></span>Recupero</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s3)\"></span>Umore</span></div><span class=\"an-note\">Asse fisso 1–10: un asse auto-scalato ingrandirebbe il rumore.</span></section><section class=\"an-card c-subjb\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"subjB\"></span></div><div class=\"an-chart\" data-chart=\"subj.b\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>Appetito</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s2)\"></span>Sonno perc.</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s3)\"></span>Chiarezza</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s4)\"></span>Libido</span></div></section><section class=\"an-card c-cat\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"symptoms\"></span></div><div data-chart=\"subj.cat\" style=\"display:flex;flex-direction:column;gap:4px\"></div><span class=\"an-note\">Categorie ordinali, non linee. Casella vuota = non registrata.</span></section><section class=\"an-card c-sleep\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sleep\"></span></div><div class=\"an-chart\" data-chart=\"sleep.hours\" style=\"height:112px\"></div><span class=\"an-sub\">fasi, minuti</span><div class=\"an-chart\" data-chart=\"sleep.stages\" style=\"height:112px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>REM</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s2)\"></span>profondo</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s3)\"></span>principale</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s4)\"></span>veglia</span></div><span class=\"an-sub\">risvegli</span><div class=\"an-chart\" data-chart=\"sleep.wakes\" style=\"height:68px\"></div><span class=\"an-note\">Sonno in ore e minuti; uno 0 vale non registrato.</span></section><section class=\"an-card c-scatter\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"scatter\"></span></div><div class=\"an-chart\" data-chart=\"sleep.scatter\" style=\"height:134px\"></div><span class=\"an-sub\" data-bind=\"sleep.r\"></span></section><section class=\"an-card c-corr\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"corr\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 120px 48px 74px 42px\"><span>Coppia</span><span></span><span class=\"an-num\">r</span><span class=\"an-num\">forza</span><span class=\"an-num\">n</span></div><div class=\"an-tbl\" data-chart=\"corr.rows\"></div></section><section class=\"an-card c-d14\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"delta14\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 72px 72px 66px\"><span>Misura</span><span class=\"an-num\">prima</span><span class=\"an-num\">ora</span><span class=\"an-num\">Δ</span></div><div class=\"an-tbl\" data-chart=\"corr.d14\"></div><span class=\"an-note\">Il delta di peso è neutro: salire o scendere non è di per sé meglio.</span></section></div>\n<div class=\"an-view\" data-an-view=\"workout\"><section class=\"an-card c-vol\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"volume\"></span></div><div class=\"an-chart\" data-chart=\"wo.volume\" style=\"height:120px\"></div><span class=\"an-sub\" data-i18n=\"rpe\"></span><div class=\"an-chart\" data-chart=\"wo.rpe\" style=\"height:64px\"></div></section><section class=\"an-card c-type\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"byType\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:92px 1fr 62px 52px 58px\"><span>Tipo</span><span></span><span class=\"an-num\">fatte / previste</span><span class=\"an-num\">%</span><span class=\"an-num\">volume</span></div><div class=\"an-tbl\" data-chart=\"wo.type\"></div><span class=\"an-note\">Sedute fatte su previste dal piano settimanale. Fatta = calorie, volume o RPE presenti; il giorno in corso non conta come saltato.</span></section><section class=\"an-card c-sess\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sessions\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:56px 58px 1fr 60px 46px 36px\"><span>Data</span><span>Tipo</span><span>Giorno</span><span class=\"an-num\">volume</span><span class=\"an-num\">durata</span><span class=\"an-num\">RPE</span></div><div class=\"an-tbl\" data-chart=\"wo.table\"></div></section><section class=\"an-card c-phase\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"byPhase\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 54px 60px 46px\"><span>Fase</span><span class=\"an-num\">sedute</span><span class=\"an-num\">volume</span><span class=\"an-num\">RPE</span></div><div class=\"an-tbl\" data-chart=\"wo.phase\"></div></section><section class=\"an-card c-week\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"typicalWeek\"></span></div><div data-chart=\"wo.week\"></div><span class=\"an-note\">Volume medio per giorno della settimana, in tonnellate. n sempre visibile.</span></section><section class=\"an-card c-sent\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sentinels\"></span></div><div data-chart=\"wo.sent\" style=\"display:flex;flex-direction:column\"></div><span class=\"an-note\">20 esercizi sentinella in 6 gruppi. Δ = ultimo carico meno il primo registrato.</span></section><section class=\"an-card c-musc\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"muscleVol\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:96px 1fr 56px 44px\"><span>Muscolo</span><span></span><span class=\"an-num\">volume</span><span class=\"an-num\">quota</span></div><div class=\"an-tbl\" data-chart=\"wo.muscles\"></div><span class=\"an-note\">Volume cumulativo per muscolo, dal riepilogo del diario V1: non dipende dall'intervallo.</span></section></div>\n<div class=\"an-view\" data-an-view=\"foto\"><section class=\"an-card c-foto\"><div class=\"an-head\"><div class=\"an-fmodes\"><button type=\"button\" data-an-fmode=\"list\" data-i18n=\"fList\"></button><button type=\"button\" data-an-fmode=\"grid\" class=\"is-active\" data-i18n=\"fGrid\"></button><button type=\"button\" data-an-fmode=\"week\" data-i18n=\"fWeek\"></button><button type=\"button\" data-an-fmode=\"scrub\" data-i18n=\"fScrub\"></button><button type=\"button\" data-an-fmode=\"cmp\" data-i18n=\"fSide\"></button><button type=\"button\" data-an-fmode=\"ratings\" data-i18n=\"fRatings\"></button><button type=\"button\" data-an-fmode=\"new\" data-i18n=\"fNew\"></button></div><span class=\"an-sub\" data-bind=\"foto.count\"></span></div><div class=\"an-fpane\" data-an-fpane=\"list\"><div class=\"an-flist\" data-chart=\"foto.list\"></div></div><div class=\"an-fpane is-active\" data-an-fpane=\"grid\"><div class=\"an-fgrid\" data-chart=\"foto.grid\"></div></div><div class=\"an-fpane\" data-an-fpane=\"week\"><div class=\"an-fweek\" data-chart=\"foto.week\"></div></div><div class=\"an-fpane\" data-an-fpane=\"scrub\"><div class=\"an-fscroll\" data-chart=\"foto.scrub\"></div></div><div class=\"an-fpane\" data-an-fpane=\"cmp\"><div style=\"display:flex;gap:3px;align-self:flex-start;background:var(--surf2);border-radius:8px;padding:3px\"><button type=\"button\" class=\"an-fmode2 is-active\" data-an-cmpmode=\"side\" data-i18n=\"fSide\" style=\"border:none;cursor:pointer;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;background:var(--accent);color:#fff\"></button><button type=\"button\" class=\"an-fmode2\" data-an-cmpmode=\"over\" data-i18n=\"fOver\" style=\"border:none;cursor:pointer;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;background:transparent;color:var(--ink2)\"></button></div><div class=\"an-fcmp\" data-chart=\"foto.cmp\"></div><div class=\"an-fdiff\" data-chart=\"foto.diff\"></div></div><div class=\"an-fpane\" data-an-fpane=\"ratings\"><div class=\"an-chart\" data-chart=\"foto.ratings\" style=\"height:110px\"></div><span class=\"an-note\">Valutazione 1–5 per scatto (campo rating): al momento non è compilata in nessuno scatto.</span></div><div class=\"an-fpane\" data-an-fpane=\"new\"><div class=\"an-fnew\"><div class=\"an-field\"><label>Data</label><input type=\"date\" data-an-photo=\"date\"></div><div class=\"an-field\"><label>Luogo</label><input type=\"text\" data-an-photo=\"luogo\"></div><div class=\"an-field\"><label>Peso manuale (kg)</label><input type=\"text\" inputmode=\"decimal\" data-an-photo=\"peso\"></div><div class=\"an-field\"><label>Valutazione 1–5</label><input type=\"number\" min=\"1\" max=\"5\" data-an-photo=\"rating\"></div><div class=\"an-field\"><label>Nota</label><textarea data-an-photo=\"note\"></textarea></div><button type=\"button\" class=\"an-btn\" data-an-photo-submit>Registra scatto</button><span class=\"an-note\">Da qui non si carica e non si salva nulla: un nuovo scatto si aggiunge dalla vecchia app (Foto → Nuovo scatto).</span></div></div></section></div>\n  </div>\n</div>";
+var AN_HTML = "<div class=\"an-root\">\n  <div class=\"an-subnav\">\n    <div class=\"an-chips\">\n      <button type=\"button\" class=\"an-chip is-active\" data-an-tab=\"cruscotto\" data-i18n-tab=\"cruscotto\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"insights\" data-i18n-tab=\"insights\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"foto\" data-i18n-tab=\"foto\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"workout\" data-i18n-tab=\"workout\"></button>\n    </div>\n    <div class=\"an-globalrange\">\n      <span class=\"an-globalrange-l\"></span>\n      <div class=\"an-range\">\n        <button type=\"button\" data-days=\"30\">30g</button>\n        <button type=\"button\" data-days=\"60\" class=\"is-active\">60g</button>\n        <button type=\"button\" data-days=\"90\">90g</button>\n        <button type=\"button\" data-days=\"0\"></button>\n      </div>\n    </div>\n    </div>\n  <div class=\"an-main\">\n<div class=\"an-view is-active\" data-an-view=\"cruscotto\"><section class=\"an-card an-card-hero c-hero\"><div class=\"an-hero\"><div class=\"an-hero-l\"><span class=\"an-title\" data-i18n=\"heroTitle\"></span><span class=\"an-hero-t\" data-bind=\"hero.headline\"></span><span class=\"an-hero-s\" data-bind=\"hero.sub\"></span></div><div class=\"an-hero-r\" data-chart=\"hero.pillars\"></div></div></section><section class=\"an-card c-cycle\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"cycleState\"></span><span class=\"an-sub\" data-bind=\"cycle.day\"></span></div><div class=\"an-phases\"></div><div class=\"an-legend an-phase-legend\"></div><div class=\"an-warn\" data-an-today style=\"display:none\"><span data-i18n=\"todayEmpty\"></span></div></section><section class=\"an-card c-recomp\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"recomp\"></span></div><div class=\"an-chart\" data-chart=\"recomp.chart\" style=\"height:148px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>peso</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-mark)\"></span>DEXA</span><span class=\"an-legend-item\"><span class=\"an-sw is-band\" style=\"background:var(--c-event)\"></span>viaggio</span></div><div style=\"display:flex;flex-direction:column;gap:6px;padding-top:8px;border-top:1px solid var(--line2)\"><div style=\"display:flex;align-items:baseline;justify-content:space-between;gap:8px\"><span class=\"an-sub\" data-i18n=\"waist\"></span><strong style=\"font-size:11.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums\" data-bind=\"recomp.waist\"></strong></div><div class=\"an-tbl\" data-chart=\"recomp.dexa\"></div></div><span class=\"an-note\">Il peso è giornaliero. DEXA e girovita esistono solo in pochi punti: restano marcatori. Con meno di due misure non si traccia nulla.</span></section><section class=\"an-card c-load\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"load\"></span><span class=\"an-sub\" data-bind=\"load.verdict\"></span></div><div class=\"an-chart\" data-chart=\"load.chart\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--accent-soft)\"></span>volume settimanale</span><span class=\"an-legend-item\"><span class=\"an-sw is-dash\" style=\"background:var(--c-s1)\"></span>HRV</span></div><span class=\"an-note\">Regola: volume ±5% e HRV ±3% fra le ultime due settimane piene. Sotto soglia la frase resta neutra. La linea HRV ha scala propria (min–max del periodo).</span></section><section class=\"an-card c-adh\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"adherence\"></span></div><div data-chart=\"adh.rows\" style=\"display:flex;flex-direction:column;gap:10px\"></div><span class=\"an-sub\">soglia 90%</span><div style=\"height:42px;display:flex;align-items:flex-end;gap:3px;padding-top:6px;border-top:1px solid var(--line2)\" data-chart=\"adh.weeks\"></div><button type=\"button\" class=\"an-btn\" data-an=\"adh-toggle\" style=\"margin-top:9px;font-size:10.5px;padding:4px 9px;align-self:flex-start\">Dettaglio per settimana</button><div data-chart=\"adh.grid\" style=\"display:none;margin-top:8px\"></div></section><section class=\"an-card c-clin\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"clinical\"></span><span class=\"an-sub\" data-bind=\"clin.state\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 62px 16px 62px 74px\"><span>Marker</span><span class=\"an-num\">T0</span><span></span><span class=\"an-num\">T1</span><span class=\"an-num\">rif.</span></div><div class=\"an-tbl\" data-chart=\"clin.rows\"></div></section><section class=\"an-card c-stock\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"stock\"></span><span class=\"an-sub\" data-bind=\"stock.left\"></span></div><div class=\"an-tbl\" data-chart=\"stock.rows\"></div><span class=\"an-note\">Rosso se la scorta non arriva a fine ciclo, ambra entro 14 giorni di margine, verde oltre.</span></section><section class=\"an-card c-narr\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"narrative\"></span></div><p style=\"margin:0;font-size:13px;line-height:1.55;color:var(--ink2)\" data-bind=\"narrative.text\"></p></section></div>\n<div class=\"an-view\" data-an-view=\"insights\"><section class=\"an-card c-subja\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"subjA\"></span></div><div class=\"an-chart\" data-chart=\"subj.a\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>Energia</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s2)\"></span>Recupero</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s3)\"></span>Umore</span></div><span class=\"an-note\">Asse fisso 1–10: un asse auto-scalato ingrandirebbe il rumore.</span></section><section class=\"an-card c-subjb\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"subjB\"></span></div><div class=\"an-chart\" data-chart=\"subj.b\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>Appetito</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s2)\"></span>Sonno perc.</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s3)\"></span>Chiarezza</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s4)\"></span>Libido</span></div></section><section class=\"an-card c-cat\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"symptoms\"></span></div><div data-chart=\"subj.cat\" style=\"display:flex;flex-direction:column;gap:4px\"></div><span class=\"an-note\">Categorie ordinali, non linee. Casella vuota = non registrata.</span></section><section class=\"an-card c-sleep\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sleep\"></span></div><div class=\"an-chart\" data-chart=\"sleep.hours\" style=\"height:112px\"></div><span class=\"an-sub\">fasi, minuti</span><div class=\"an-chart\" data-chart=\"sleep.stages\" style=\"height:112px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>REM</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s2)\"></span>profondo</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s3)\"></span>principale</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s4)\"></span>veglia</span></div><span class=\"an-sub\">risvegli</span><div class=\"an-chart\" data-chart=\"sleep.wakes\" style=\"height:68px\"></div><span class=\"an-note\">Sonno in ore e minuti; uno 0 vale non registrato.</span></section><section class=\"an-card c-scatter\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"scatter\"></span></div><div class=\"an-chart\" data-chart=\"sleep.scatter\" style=\"height:134px\"></div><span class=\"an-sub\" data-bind=\"sleep.r\"></span></section><section class=\"an-card c-corr\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"corr\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 120px 48px 74px 42px\"><span>Coppia</span><span></span><span class=\"an-num\">r</span><span class=\"an-num\">forza</span><span class=\"an-num\">n</span></div><div class=\"an-tbl\" data-chart=\"corr.rows\"></div></section><section class=\"an-card c-d14\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"delta14\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 72px 72px 66px\"><span>Misura</span><span class=\"an-num\">prima</span><span class=\"an-num\">ora</span><span class=\"an-num\">Δ</span></div><div class=\"an-tbl\" data-chart=\"corr.d14\"></div><span class=\"an-note\">Il delta di peso è neutro: salire o scendere non è di per sé meglio.</span></section></div>\n<div class=\"an-view\" data-an-view=\"workout\"><section class=\"an-card c-vol\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"volume\"></span></div><div class=\"an-chart\" data-chart=\"wo.volume\" style=\"height:120px\"></div><span class=\"an-sub\" data-i18n=\"rpe\"></span><div class=\"an-chart\" data-chart=\"wo.rpe\" style=\"height:64px\"></div></section><section class=\"an-card c-type\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"byType\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:92px 1fr 62px 52px 58px\"><span>Tipo</span><span></span><span class=\"an-num\">fatte / previste</span><span class=\"an-num\">%</span><span class=\"an-num\">volume</span></div><div class=\"an-tbl\" data-chart=\"wo.type\"></div><span class=\"an-note\">Sedute fatte su previste dal piano settimanale. Fatta = calorie, volume o RPE presenti; il giorno in corso non conta come saltato.</span></section><section class=\"an-card c-sess\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sessions\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:56px 58px 1fr 60px 46px 36px\"><span>Data</span><span>Tipo</span><span>Giorno</span><span class=\"an-num\">volume</span><span class=\"an-num\">durata</span><span class=\"an-num\">RPE</span></div><div class=\"an-tbl\" data-chart=\"wo.table\"></div></section><section class=\"an-card c-phase\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"byPhase\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 54px 60px 46px\"><span>Fase</span><span class=\"an-num\">sedute</span><span class=\"an-num\">volume</span><span class=\"an-num\">RPE</span></div><div class=\"an-tbl\" data-chart=\"wo.phase\"></div></section><section class=\"an-card c-week\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"typicalWeek\"></span></div><div data-chart=\"wo.week\"></div><span class=\"an-note\">Volume medio per giorno della settimana, in tonnellate. n sempre visibile.</span></section><section class=\"an-card c-sent\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sentinels\"></span></div><div data-chart=\"wo.sent\" style=\"display:flex;flex-direction:column\"></div><span class=\"an-note\">20 esercizi sentinella in 6 gruppi. Δ = ultimo carico meno il primo registrato.</span></section><section class=\"an-card c-musc\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"muscleVol\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:96px 1fr 56px 44px\"><span>Muscolo</span><span></span><span class=\"an-num\">volume</span><span class=\"an-num\">quota</span></div><div class=\"an-tbl\" data-chart=\"wo.muscles\"></div><span class=\"an-note\">Volume cumulativo per muscolo, dal riepilogo del diario V1: non dipende dall'intervallo.</span></section><section class=\"an-card c-progress\"><div class=\"an-head\"><span class=\"an-title\">Progressione esercizi</span><span class=\"an-sub\">soglia 2 sessioni</span></div><div data-chart=\"wo.progress\"></div><span class=\"an-note\">Per esercizio esatto (non per macchina generica), da history_sessions: segue da sola le sostituzioni in palestra.</span></section><section class=\"an-card c-freq\"><div class=\"an-head\"><span class=\"an-title\">Frequenza per gruppo muscolare</span><span class=\"an-sub\">ultime 4 settimane</span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 70px 90px\"><span></span><span class=\"an-num\">sessioni</span><span class=\"an-num\">ultima volta</span></div><div data-chart=\"wo.freq\"></div><span class=\"an-note\">Completa il volume cumulativo: dice se un gruppo è trascurato di recente.</span></section></div>\n<div class=\"an-view\" data-an-view=\"foto\"><section class=\"an-card c-foto\"><div class=\"an-head\"><div class=\"an-fmodes\"><button type=\"button\" data-an-fmode=\"list\" data-i18n=\"fList\"></button><button type=\"button\" data-an-fmode=\"grid\" class=\"is-active\" data-i18n=\"fGrid\"></button><button type=\"button\" data-an-fmode=\"week\" data-i18n=\"fWeek\"></button><button type=\"button\" data-an-fmode=\"scrub\" data-i18n=\"fScrub\"></button><button type=\"button\" data-an-fmode=\"cmp\" data-i18n=\"fSide\"></button><button type=\"button\" data-an-fmode=\"ratings\" data-i18n=\"fRatings\"></button><button type=\"button\" data-an-fmode=\"new\" data-i18n=\"fNew\"></button></div><span class=\"an-sub\" data-bind=\"foto.count\"></span></div><div class=\"an-fpane\" data-an-fpane=\"list\"><div class=\"an-flist\" data-chart=\"foto.list\"></div></div><div class=\"an-fpane is-active\" data-an-fpane=\"grid\"><div class=\"an-fgrid\" data-chart=\"foto.grid\"></div></div><div class=\"an-fpane\" data-an-fpane=\"week\"><div class=\"an-fweek\" data-chart=\"foto.week\"></div></div><div class=\"an-fpane\" data-an-fpane=\"scrub\"><div class=\"an-fscroll\" data-chart=\"foto.scrub\"></div></div><div class=\"an-fpane\" data-an-fpane=\"cmp\"><div style=\"display:flex;gap:3px;align-self:flex-start;background:var(--surf2);border-radius:8px;padding:3px\"><button type=\"button\" class=\"an-fmode2 is-active\" data-an-cmpmode=\"side\" data-i18n=\"fSide\" style=\"border:none;cursor:pointer;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;background:var(--accent);color:#fff\"></button><button type=\"button\" class=\"an-fmode2\" data-an-cmpmode=\"over\" data-i18n=\"fOver\" style=\"border:none;cursor:pointer;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;background:transparent;color:var(--ink2)\"></button></div><div class=\"an-fcmp\" data-chart=\"foto.cmp\"></div><div class=\"an-fdiff\" data-chart=\"foto.diff\"></div></div><div class=\"an-fpane\" data-an-fpane=\"ratings\"><div class=\"an-chart\" data-chart=\"foto.ratings\" style=\"height:110px\"></div><span class=\"an-note\">Valutazione 1–5 per scatto (campo rating): al momento non è compilata in nessuno scatto.</span></div><div class=\"an-fpane\" data-an-fpane=\"new\"><div class=\"an-fnew\"><div class=\"an-field\"><label>Data</label><input type=\"date\" data-an-photo=\"date\"></div><div class=\"an-field\"><label>Luogo</label><input type=\"text\" data-an-photo=\"luogo\"></div><div class=\"an-field\"><label>Peso manuale (kg)</label><input type=\"text\" inputmode=\"decimal\" data-an-photo=\"peso\"></div><div class=\"an-field\"><label>Valutazione 1–5</label><input type=\"number\" min=\"1\" max=\"5\" data-an-photo=\"rating\"></div><div class=\"an-field\"><label>Nota</label><textarea data-an-photo=\"note\"></textarea></div><button type=\"button\" class=\"an-btn\" data-an-photo-submit>Registra scatto</button><span class=\"an-note\">Da qui non si carica e non si salva nulla: un nuovo scatto si aggiunge dalla vecchia app (Foto → Nuovo scatto).</span></div></div></section></div>\n  </div>\n</div>";
 return { html: function(){ return AN_HTML; }, mount: AN_mount };
 })();
 
@@ -4290,6 +4461,19 @@ function renderOggiFull() {
       return Array.isArray(parsed.exercises) ? parsed.exercises : null;
     } catch (e) { return null; }
   })();
+  /* PORTING 23/09: peso per ogni serie, come Motra — non solo la prima. Se il peso è uguale in
+     tutte le serie di lavoro, resta il vecchio formato "4×10  75kg"; se varia, elenca ogni set. */
+  const setsSummary = (sets) => {
+    const w = (sets || []).filter(st => st.label !== 'W');
+    const src = w.length ? w : (sets || []);
+    if (!src.length) return { reps: '—', kg: '' };
+    const kgs = src.map(st => st.kg);
+    const sameKg = kgs.every(k => k === kgs[0]);
+    if (sameKg) return { reps: src.length + '×' + (src[0].reps != null ? src[0].reps : '—'), kg: kgs[0] != null ? kgs[0] + 'kg' : '' };
+    const sameReps = src.every(st => st.reps === src[0].reps);
+    const parts = src.map(st => sameReps ? (st.kg != null ? String(st.kg) : '—') : ((st.reps != null ? st.reps : '—') + '×' + (st.kg != null ? st.kg : '—')));
+    return { reps: src.length + '×' + (sameReps ? src[0].reps : '—'), kg: parts.join('\u00b7') + 'kg' };
+  };
 
   if (!isDesktop) {
     // ============================================================
@@ -4407,6 +4591,7 @@ function renderOggiFull() {
           </span>
           <span style="flex:0 0 34px;font-size:11px;font-weight:500;color:var(--ink2);">mmHg</span>
         </div>
+        ${bioRow(L.tile.girovita, 'girovita_cm', 'cm')}
       </div>`;
     const sonnoM = `
       <div style="flex:0 0 auto;border-radius:18px;background:var(--surf);box-shadow:var(--shadow);overflow:hidden;">
@@ -4511,14 +4696,12 @@ function renderOggiFull() {
         <div style="display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line2);padding-top:9px;">
           <span style="font-size:10px;font-weight:600;color:var(--ink2);">${L.exercises}</span>
           ${exList ? exList.map(e => {
-            const working = (e.sets || []).filter(st => st.label !== 'W');
-            const reps = working[0] ? working[0].reps : ((e.sets || [])[0] || {}).reps;
-            const kg = working[0] ? working[0].kg : ((e.sets || [])[0] || {}).kg;
+            const sm = setsSummary(e.sets);
             return `
               <div style="display:flex;align-items:center;gap:9px;">
                 <span style="flex:1 1 auto;min-width:0;font-size:12px;font-weight:500;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(e.name)}</span>
-                <span style="flex:0 0 40px;text-align:right;font-size:10.5px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${(working.length || (e.sets || []).length) + '×' + (reps != null ? reps : '—')}</span>
-                <span style="flex:0 0 auto;font-size:12px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${kg != null ? kg + 'kg' : ''}</span>
+                <span style="flex:0 0 40px;text-align:right;font-size:10.5px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${sm.reps}</span>
+                <span style="flex:0 1 auto;min-width:0;text-align:right;font-size:12px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sm.kg}</span>
               </div>`;
           }).join('') : `<span style="font-size:12px;font-weight:500;color:var(--ink2);">—</span>`}
         </div>`}
@@ -4647,7 +4830,8 @@ function renderOggiFull() {
     </div>`;
   const TILES_HTML = [
     hrvTile, simpleTile(LANG === 'it' ? 'Freq. riposo' : 'Resting HR', 'rhr'), bpTile, sonnoTile,
-    simpleTile(L.tile.rem, 'sonno_rem_min'), simpleTile(L.tile.profondo, 'sonno_profondo_min'), simpleTile(L.tile.risvegli, 'sonno_risvegli')
+    simpleTile(L.tile.rem, 'sonno_rem_min'), simpleTile(L.tile.profondo, 'sonno_profondo_min'), simpleTile(L.tile.risvegli, 'sonno_risvegli'),
+    simpleTile(L.tile.girovita, 'girovita_cm')
   ];
 
   const RINGS = [
@@ -4747,7 +4931,7 @@ function renderOggiFull() {
         <path d="${svgTrend(pesoS, 560, 120, 12)}" fill="none" stroke="var(--ink2)" stroke-width="1.3" stroke-dasharray="4 5" opacity="0.6"></path>
         <circle cx="${pl.lastX}" cy="${pl.lastY}" r="4" fill="var(--accent)"></circle>
       </svg>
-      <div style="flex:0 0 auto;display:grid;grid-template-columns:repeat(7,1fr);gap:10px;padding-top:9px;border-top:1px solid var(--line2);">
+      <div style="flex:0 0 auto;display:grid;grid-template-columns:repeat(8,1fr);gap:8px;padding-top:9px;border-top:1px solid var(--line2);">
         ${TILES_HTML.join('')}
       </div>
     </section>`;
@@ -4867,14 +5051,12 @@ function renderOggiFull() {
       <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:3px;">
         <span style="font-size:9.5px;font-weight:600;color:var(--ink2);">${L.exercises}</span>
         ${exList ? exList.map(e => {
-          const working = (e.sets || []).filter(st => st.label !== 'W');
-          const reps = working[0] ? working[0].reps : ((e.sets || [])[0] || {}).reps;
-          const kg = working[0] ? working[0].kg : ((e.sets || [])[0] || {}).kg;
+          const sm = setsSummary(e.sets);
           return `
             <div style="display:flex;align-items:center;gap:8px;padding:2px 0;">
               <span style="flex:1 1 auto;min-width:0;font-size:11px;font-weight:500;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(e.name)}</span>
-              <span style="flex:0 0 38px;text-align:right;font-size:10px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${(working.length || (e.sets || []).length) + '×' + (reps != null ? reps : '—')}</span>
-              <span style="flex:0 0 auto;font-size:11px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${kg != null ? kg + 'kg' : ''}</span>
+              <span style="flex:0 0 38px;text-align:right;font-size:10px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${sm.reps}</span>
+              <span style="flex:0 1 auto;min-width:0;text-align:right;font-size:11px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sm.kg}</span>
             </div>`;
         }).join('') : `<span style="font-size:11px;font-weight:500;color:var(--ink2);">—</span>`}
       </div>`}
