@@ -2649,7 +2649,8 @@ function buildFoto(root){
       var meta=document.createElement("div"); meta.className="an-fmeta";
       var sub=[];
       if (m.hrvHead!=null) sub.push("HRV "+m.hrvHead);
-      if (m.inj!=null) sub.push("<span style=\"color:"+pctColor(m.inj)+"\">Inj "+m.inj+"%</span>");
+      /* PORTING 26/09: frazione fatte/previste, come in Lista e come in V1 -- non percentuale. */
+      if (m.injTot!=null) { var injColG = m.injDone===m.injTot?"var(--ok)":(m.injDone>0?"var(--warn-ink)":"var(--bad)"); sub.push("<span style=\"color:"+injColG+"\">Inj "+m.injDone+"/"+m.injTot+"</span>"); }
       if (m.supp!=null) sub.push("<span style=\"color:"+pctColor(m.supp)+"\">Integr "+m.supp+"%</span>");
       if (m.workout) sub.push("WO "+esc(m.workout));
       meta.innerHTML='<span class="an-fdate">'+fmtDM(dateOfDay(i))+(p.luogo?" \u00b7 "+esc(p.luogo):"")+'</span>'+
@@ -2678,27 +2679,32 @@ function buildFoto(root){
       card.appendChild(photoDeleteBtn(p.filename, "top:8px;right:8px;"));
       card.appendChild(photoSlot(p, "an-fshot an-flphoto2"));
       var body=document.createElement("div"); body.className="an-flbody2";
+      var m=PHOTO_METRICS[p.date]||{};
       var head=document.createElement("div");
       head.innerHTML='<div style="font-size:13px;font-weight:600;color:var(--ink)">'+fmtDM(dateOfDay(i))+
+        (p.time?' \u00b7 '+esc(p.time):'')+
         '<span style="font-size:11px;color:var(--ink3);font-weight:500"> \u00b7 '+gTag(i)+'</span></div>'+
         '<div style="font-size:11px;color:var(--c-mark);font-weight:600;margin-top:1px">'+photoDayWeekLabel(p)+'</div>';
       body.appendChild(head);
-      var d = D()[i] || {};
-      if (i >= 0 && d._type){
+      /* PORTING 26/09: badge sempre presente (anche "Riposo", muted, senza pallino) -- prima
+         spariva del tutto nei giorni senza allenamento previsto. */
+      if (i >= 0 && m.woLabel){
         var badge=document.createElement("div"); badge.style.cssText="margin-top:6px";
-        var dotCol = d._done ? "var(--ok)" : "var(--bad)";
-        badge.innerHTML='<span style="display:inline-flex;align-items:center;gap:5px;background:var(--surf2);border-radius:20px;padding:3px 10px;font-size:10.5px;font-weight:600;color:var(--ink2)">'+esc(d._type)+
-          '<span style="width:6px;height:6px;border-radius:50%;background:'+dotCol+';display:inline-block"></span></span>';
+        var dot = m.woIsRest ? "" : '<span style="width:6px;height:6px;border-radius:50%;background:'+(m.woDone?"var(--ok)":"var(--bad)")+';display:inline-block"></span>';
+        var badgeCol = m.woIsRest ? "var(--ink3)" : "var(--ink2)";
+        badge.innerHTML='<span style="display:inline-flex;align-items:center;gap:5px;background:var(--surf2);border-radius:20px;padding:3px 10px;font-size:10.5px;font-weight:600;color:'+badgeCol+'">'+esc(m.woLabel)+dot+'</span>';
         body.appendChild(badge);
       }
-      var m=PHOTO_METRICS[p.date]||{};
       var pesoVal = m.peso!=null?m.peso:(p.peso_manual?num(p.peso_manual):null);
       var deltaTxt = pesoVal!=null ? itSigned(pesoVal - T0_PESO, 1) : null;
+      /* PORTING 26/09: iniezioni come frazione fatte/previste (2/7), come in V1 -- non percentuale. */
+      var injTxt = m.injTot!=null ? (m.injDone+"/"+m.injTot) : null;
+      var injCol = m.injTot!=null ? (m.injDone===m.injTot?"var(--ok)":(m.injDone>0?"var(--warn-ink)":"var(--bad)")) : "var(--ink3)";
       var pills=[
         statPill(T().peso, pesoVal!=null?(it(pesoVal,1)+(deltaTxt?' <span style="font-size:9px;font-weight:600;color:var(--warn-ink)">'+deltaTxt+'</span>':"")):null),
         statPill(T().hrv, m.hrvHead),
         statPill(T().sonno, m.sonno!=null?fmtHours(m.sonno):null),
-        statPill(T().injections, m.inj!=null?m.inj+"%":null, pctColor(m.inj)),
+        statPill(T().injections, injTxt, injCol),
         statPill(T().supplements, m.supp!=null?m.supp+"%":null, pctColor(m.supp)),
         statPill("WO sett.", photoWorkoutWeekLabel(p))
       ].join("");
@@ -2711,7 +2717,7 @@ function buildFoto(root){
        ["T2 (7 nov)", photoT1T2Label(p).split(" \u00b7 ")[1].replace("T2 ","")]].forEach(function(pp){
         var box=document.createElement("div");
         box.style.cssText="flex:1;background:var(--accent-soft);border-radius:8px;padding:6px 9px";
-        box.innerHTML='<div style="font-size:8.5px;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.03em">'+pp[0]+'</div>'+
+        box.innerHTML='<div style="font-size:8.5px;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.03em">\ud83e\ude78 '+pp[0]+'</div>'+
           '<div style="font-size:12px;font-weight:700;color:var(--accent-ink)">'+pp[1]+'</div>';
         t1t2.appendChild(box);
       });
@@ -3228,10 +3234,20 @@ function AN_buildPhotoMetrics(){
     var sh = sleepH(rec.ore_sonno); if (sh != null) m.sonno = sh;
     if (i < t) {
       var x = AN_dayAdh(i);
-      if (x.injTot) m.inj = Math.round(x.injDone / x.injTot * 100);
+      /* PORTING 26/09: iniezioni come frazione fatte/previste (2/7), non percentuale -- V1 le
+         mostra cosi', solo gli integratori restano in %. */
+      if (x.injTot) { m.injDone = x.injDone; m.injTot = x.injTot; }
       if (x.suppTot) m.supp = Math.round(x.suppDone / x.suppTot * 100);
     }
-    var dd = MOCK.days[i]; if (dd && dd._done) m.workout = dd._type;
+    /* PORTING 26/09: badge allenamento sempre presente, anche nei giorni di riposo (V1 mostra
+       "Riposo" invece di nascondere il badge). woDone solo per i giorni non di riposo e gia'
+       passati (stesso criterio di AN_dayAdh: kcal/volume/RPE). */
+    var wo = getWorkout2(i);
+    m.woLabel = AN_TYPE_LABEL[wo.type] || wo.type; m.woIsRest = (wo.type === "Riposo");
+    if (!m.woIsRest && i < t) {
+      var kcalW = num(rec.wo_kcal), rpeW = num(rec.rpe), volW = getWorkoutVolume2(rec);
+      m.woDone = (kcalW != null && kcalW > 0) || (volW != null && volW > 0) || (rpeW != null);
+    }
     out[p.date] = m;
   });
   return out;
