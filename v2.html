@@ -529,6 +529,8 @@
 </style>
 </head>
 <body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
 
 <!-- ============================================================
      Diario Protocollo · v2
@@ -2322,13 +2324,27 @@ function buildProgression(root){
   host.innerHTML = "";
   if (!HISTORY_SESSIONS.length) { host.innerHTML = '<div class="an-chart-state">' + (AN_V1.status === "loading" ? "Caricamento..." : T().noData) + '</div>'; return; }
   var data = AN_progressionData();
+  /* PORTING 25/09: sezioni collassabili per muscolo, stesso pattern del Sentinel Lift
+     (an-grp/an-grp-head/an-grp-body, stato AN.open) -- la card era troppo lunga aperta tutta
+     insieme. Chiave "prog_<muscolo>" per non toccare lo stato dei gruppi Sentinel. */
   MUSCLES.forEach(function(m){
     var g = data[m.id]; if (!g || !g.rows.length) return;
     g.rows.sort(function(a, b){ return b.n - a.n; });
-    var head = document.createElement("div");
-    head.style.cssText = "display:flex;align-items:center;gap:7px;margin:10px 0 4px";
-    head.innerHTML = '<span style="width:8px;height:8px;border-radius:2px;background:' + m.color + '"></span><span style="font-size:10.5px;font-weight:600;color:var(--ink2)">' + m.label + '</span>';
-    host.appendChild(head);
+    var openKey = "prog_" + m.id;
+    var grp = document.createElement("div");
+    grp.className = "an-grp" + (AN.open[openKey] ? " is-open" : "");
+    var head = document.createElement("button");
+    head.type = "button"; head.className = "an-grp-head";
+    head.setAttribute("aria-expanded", AN.open[openKey] ? "true" : "false");
+    head.innerHTML = '<span class="an-caret">\u25B6</span><span class="an-gsw" style="background:' + m.color + '"></span>' +
+      '<span class="an-gname">' + m.label + '</span><span class="an-gmeta">' + g.rows.length + '</span>';
+    head.addEventListener("click", function(){
+      AN.open[openKey] = !AN.open[openKey];
+      grp.classList.toggle("is-open");
+      head.setAttribute("aria-expanded", AN.open[openKey] ? "true" : "false");
+    });
+    grp.appendChild(head);
+    var body = document.createElement("div"); body.className = "an-grp-body";
     g.rows.forEach(function(r){
       var el = document.createElement("div"); el.className = "an-trow";
       el.style.gridTemplateColumns = "1fr 54px 48px 54px";
@@ -2341,14 +2357,16 @@ function buildProgression(root){
         '<strong class="an-num">' + it(r.kg, 1) + ' kg</strong>' +
         '<span class="an-num" style="color:var(--ink3)">n=' + r.n + '</span>' +
         '<span class="an-num" style="font-weight:600;color:' + col + '">' + deltaTxt + '</span>';
-      host.appendChild(el);
+      body.appendChild(el);
     });
     if (g.other.length) {
       var o = document.createElement("div");
-      o.style.cssText = "font-size:9.5px;color:var(--ink3);padding:3px 0 2px";
+      o.style.cssText = "font-size:9.5px;color:var(--ink3);padding:3px 9px 6px";
       o.textContent = "altri esercizi (1 sola sessione): " + g.other.join(", ");
-      host.appendChild(o);
+      body.appendChild(o);
     }
+    grp.appendChild(body);
+    host.appendChild(grp);
   });
   if (!host.children.length) host.innerHTML = '<div class="an-chart-state">' + T().noData + '</div>';
 }
@@ -2748,14 +2766,165 @@ function buildFoto(root){
 
 /* Nuovo scatto: solo UI. La scrittura resta fuori dal design:
    il modulo emette un evento e non tocca i dati.               */
-function bindFotoNew(root){
-  var btn=$(root,"[data-an-photo-submit]"); if(!btn) return;
-  btn.addEventListener("click",function(){
-    var get=function(n){ var e=$(root,'[data-an-photo="'+n+'"]'); return e?e.value:""; };
-    root.dispatchEvent(new CustomEvent("an:photo:new",{ bubbles:true, detail:{
-      date:get("date"), luogo:get("luogo"), note:get("note"), peso_manual:get("peso"), rating:get("rating")
-    }}));
+/* PORTING 25/09 -- upload reale, pipeline identica a index.html (V1): EXIF prima di ogni
+   conversione (data/ora + GPS), HEIC->JPEG con heic2any se serve, ridimensionamento su canvas
+   a 1200px lato lungo e ricompressione JPEG 85%, nome file "<data>_<timestamp>.jpg", reverse
+   geocoding via Nominatim per il luogo se ci sono coordinate. Al salvataggio: POST multipart a
+   {base}/photo-upload (stesso Edge Function diario-proxy), poi fetch fresco + append a
+   photo_log + PATCH sul record V1 -- stesso read-modify-write di sempre. */
+var AN_PHOTO_PENDING = null;
+function AN_photoIsHeic(file){
+  return /heic|heif/i.test(file.type || "") || /\.(heic|heif)$/i.test(file.name || "");
+}
+function AN_photoReadExif(file){
+  return new Promise(function(resolve){
+    if (typeof EXIF === "undefined") { resolve({date:null,time:null,lat:null,lon:null}); return; }
+    try {
+      EXIF.getData(file, function(){
+        var raw = EXIF.getTag(this, "DateTimeOriginal");
+        var date = null, time = null;
+        if (raw) { var m = /^(\d{4}):(\d{2}):(\d{2})\s+(\d{2}):(\d{2})/.exec(raw); if (m) { date = m[1]+"-"+m[2]+"-"+m[3]; time = m[4]+":"+m[5]; } }
+        var latDMS = EXIF.getTag(this, "GPSLatitude"), lonDMS = EXIF.getTag(this, "GPSLongitude");
+        var latRef = EXIF.getTag(this, "GPSLatitudeRef"), lonRef = EXIF.getTag(this, "GPSLongitudeRef");
+        var lat = null, lon = null;
+        if (latDMS && lonDMS && latRef && lonRef) {
+          var toDec = function(dms, ref){ var dec = dms[0] + dms[1]/60 + dms[2]/3600; return (ref === "S" || ref === "W") ? -dec : dec; };
+          lat = toDec(latDMS, latRef); lon = toDec(lonDMS, lonRef);
+        }
+        resolve({date:date, time:time, lat:lat, lon:lon});
+      });
+    } catch (e) { resolve({date:null,time:null,lat:null,lon:null}); }
   });
+}
+function AN_photoMaybeHeic(file){
+  if (!AN_photoIsHeic(file)) return Promise.resolve(file);
+  if (typeof heic2any === "undefined") return Promise.reject(new Error("Libreria di conversione HEIC non disponibile"));
+  return heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 }).then(function(converted){
+    return Array.isArray(converted) ? converted[0] : converted;
+  });
+}
+function AN_photoCompress(blob, maxDim, quality){
+  return new Promise(function(resolve, reject){
+    var img = new Image(); var url = URL.createObjectURL(blob);
+    img.onload = function(){
+      var width = img.width, height = img.height;
+      if (width > height && width > maxDim) { height = Math.round(height * maxDim / width); width = maxDim; }
+      else if (height >= width && height > maxDim) { width = Math.round(width * maxDim / height); height = maxDim; }
+      var canvas = document.createElement("canvas"); canvas.width = width; canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      canvas.toBlob(function(out){ URL.revokeObjectURL(url); out ? resolve(out) : reject(new Error("Compressione fallita")); }, "image/jpeg", quality);
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error("Immagine non leggibile")); };
+    img.src = url;
+  });
+}
+function AN_photoReverseGeocode(lat, lon){
+  return fetch("https://nominatim.openstreetmap.org/reverse?format=json&lat=" + lat + "&lon=" + lon + "&zoom=10")
+    .then(function(res){ return res.ok ? res.json() : null; })
+    .then(function(data){
+      if (!data) return null;
+      var a = data.address || {};
+      var city = a.city || a.town || a.village || a.suburb || a.county;
+      if (!city) return null;
+      return a.country ? city + ", " + a.country : city;
+    })
+    .catch(function(){ return null; });
+}
+function AN_photoFileSelected(root, file){
+  var statusEl = root.querySelector("[data-an-photo-status]");
+  var previewWrap = root.querySelector("[data-an-photo-preview]");
+  var btn = root.querySelector("[data-an-photo-submit]");
+  AN_PHOTO_PENDING = null;
+  if (btn) btn.disabled = true;
+  if (previewWrap) previewWrap.style.display = "block";
+  if (statusEl) statusEl.textContent = "Elaborazione in corso\u2026";
+  var exifMeta;
+  AN_photoReadExif(file)
+    .then(function(m){ exifMeta = m; return AN_photoMaybeHeic(file); })
+    .then(function(converted){ return AN_photoCompress(converted, 1200, 0.85); })
+    .then(function(compressed){
+      var finalDate = exifMeta.date || today;
+      var filename = finalDate + "_" + Date.now() + ".jpg";
+      AN_PHOTO_PENDING = { blob: compressed, filename: filename };
+      var dateIn = root.querySelector('[data-an-photo="date"]'); if (dateIn && !dateIn.value) dateIn.value = finalDate;
+      var img = root.querySelector("[data-an-photo-img]"); if (img) img.src = URL.createObjectURL(compressed);
+      if (statusEl) statusEl.textContent = "Pronta (" + Math.round(compressed.size/1024) + " KB dopo compressione, originale " + Math.round(file.size/1024) + " KB).";
+      if (btn) btn.disabled = false;
+      var luogoIn = root.querySelector('[data-an-photo="luogo"]');
+      if (luogoIn && !luogoIn.value && exifMeta.lat != null && exifMeta.lon != null) {
+        if (statusEl) statusEl.textContent += " Ricerca luogo da GPS\u2026";
+        return AN_photoReverseGeocode(exifMeta.lat, exifMeta.lon).then(function(place){
+          if (place) luogoIn.value = place;
+          if (statusEl) statusEl.textContent = statusEl.textContent.replace(" Ricerca luogo da GPS\u2026", "");
+        });
+      }
+    })
+    .catch(function(e){ if (statusEl) statusEl.textContent = "Errore nella preparazione della foto: " + e.message; });
+}
+function AN_photoUploadAndSave(root){
+  var statusEl = root.querySelector("[data-an-photo-status]");
+  var btn = root.querySelector("[data-an-photo-submit]");
+  if (!AN_PHOTO_PENDING) { if (statusEl) statusEl.textContent = "Seleziona prima una foto."; return; }
+  var g = function(f){ var e = root.querySelector('[data-an-photo="' + f + '"]'); return e ? e.value.trim() : ""; };
+  var date = g("date") || AN_PHOTO_PENDING.filename.slice(0, 10);
+  var luogo = g("luogo") || null, note = g("note") || null, pesoManual = g("peso") || null;
+  var ratingRaw = g("rating"), rating = ratingRaw ? parseInt(ratingRaw, 10) : null;
+  if (btn) { btn.disabled = true; btn.textContent = "Caricamento\u2026"; }
+  if (statusEl) statusEl.textContent = "";
+  var base = CFG.PROXY_URL.replace(/\/rest\/v1\/diary$/, ""), qs = "?user_id=eq.giorgio_protocollo_2026";
+  var form = new FormData();
+  form.append("file", AN_PHOTO_PENDING.blob, AN_PHOTO_PENDING.filename);
+  form.append("filename", AN_PHOTO_PENDING.filename);
+  fetch(base + "/photo-upload", { method: "POST", headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY }, body: form })
+    .then(function(upRes){
+      if (!upRes.ok) return upRes.text().then(function(t){ throw new Error("Upload fallito: " + t); });
+      return fetch(CFG.PROXY_URL + qs + "&select=data", { headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY } });
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      var freshData = (rows[0] && rows[0].data) || {};
+      if (!Array.isArray(freshData.photo_log)) freshData.photo_log = [];
+      var entry = { filename: AN_PHOTO_PENDING.filename, date: date, time: null, luogo: luogo, note: note };
+      if (pesoManual) entry.peso_manual = pesoManual;
+      if (rating) entry.rating = rating;
+      freshData.photo_log.push(entry);
+      return fetch(CFG.PROXY_URL + qs, {
+        method: "PATCH",
+        headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
+        body: JSON.stringify({ data: freshData })
+      }).then(function(patchRes){
+        if (!patchRes.ok) throw new Error("Salvataggio riferimento foto fallito (HTTP " + patchRes.status + ")");
+        PHOTO_LOG.push(entry);
+      });
+    })
+    .then(function(){
+      AN_PHOTO_PENDING = null;
+      if (statusEl) statusEl.textContent = "Foto caricata e salvata correttamente.";
+      if (btn) { btn.disabled = true; btn.textContent = "Registra scatto"; }
+      var fileIn = root.querySelector("[data-an-photo-file]"); if (fileIn) fileIn.value = "";
+      var prev = root.querySelector("[data-an-photo-preview]"); if (prev) prev.style.display = "none";
+      ["date","luogo","peso","rating","note"].forEach(function(f){ var e = root.querySelector('[data-an-photo="' + f + '"]'); if (e) e.value = ""; });
+      AN_refresh(); renderAll();
+    })
+    .catch(function(e){
+      if (statusEl) statusEl.textContent = "Errore: " + e.message;
+      if (btn) { btn.disabled = false; btn.textContent = "Registra scatto"; }
+    });
+}
+function bindFotoNew(root){
+  var fileIn = root.querySelector("[data-an-photo-file]");
+  if (fileIn && !fileIn.dataset.bound) {
+    fileIn.dataset.bound = "1";
+    fileIn.addEventListener("change", function(){
+      var f = fileIn.files && fileIn.files[0];
+      if (f) AN_photoFileSelected(root, f);
+    });
+  }
+  var btn = root.querySelector("[data-an-photo-submit]");
+  if (btn && !btn.dataset.bound) {
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", function(){ AN_photoUploadAndSave(root); });
+  }
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -3035,7 +3204,7 @@ function AN_mount(){
   AN_loadV1();
 }
 
-var AN_HTML = "<div class=\"an-root\">\n  <div class=\"an-subnav\">\n    <div class=\"an-chips\">\n      <button type=\"button\" class=\"an-chip is-active\" data-an-tab=\"cruscotto\" data-i18n-tab=\"cruscotto\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"insights\" data-i18n-tab=\"insights\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"foto\" data-i18n-tab=\"foto\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"workout\" data-i18n-tab=\"workout\"></button>\n    </div>\n    <div class=\"an-globalrange\">\n      <span class=\"an-globalrange-l\"></span>\n      <div class=\"an-range\">\n        <button type=\"button\" data-days=\"30\">30g</button>\n        <button type=\"button\" data-days=\"60\" class=\"is-active\">60g</button>\n        <button type=\"button\" data-days=\"90\">90g</button>\n        <button type=\"button\" data-days=\"0\"></button>\n      </div>\n    </div>\n    </div>\n  <div class=\"an-main\">\n<div class=\"an-view is-active\" data-an-view=\"cruscotto\"><section class=\"an-card an-card-hero c-hero\"><div class=\"an-hero\"><div class=\"an-hero-l\"><span class=\"an-title\" data-i18n=\"heroTitle\"></span><span class=\"an-hero-t\" data-bind=\"hero.headline\"></span><span class=\"an-hero-s\" data-bind=\"hero.sub\"></span></div><div class=\"an-hero-r\" data-chart=\"hero.pillars\"></div></div></section><section class=\"an-card c-cycle\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"cycleState\"></span><span class=\"an-sub\" data-bind=\"cycle.day\"></span></div><div class=\"an-phases\"></div><div class=\"an-legend an-phase-legend\"></div><div class=\"an-warn\" data-an-today style=\"display:none\"><span data-i18n=\"todayEmpty\"></span></div></section><section class=\"an-card c-recomp\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"recomp\"></span></div><div class=\"an-chart\" data-chart=\"recomp.chart\" style=\"height:148px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>peso</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-mark)\"></span>DEXA</span><span class=\"an-legend-item\"><span class=\"an-sw is-band\" style=\"background:var(--c-event)\"></span>viaggio</span></div><div style=\"display:flex;flex-direction:column;gap:6px;padding-top:8px;border-top:1px solid var(--line2)\"><div style=\"display:flex;align-items:baseline;justify-content:space-between;gap:8px\"><span class=\"an-sub\" data-i18n=\"waist\"></span><strong style=\"font-size:11.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums\" data-bind=\"recomp.waist\"></strong></div><div class=\"an-tbl\" data-chart=\"recomp.dexa\"></div></div><span class=\"an-note\">Il peso è giornaliero. DEXA e girovita esistono solo in pochi punti: restano marcatori. Con meno di due misure non si traccia nulla.</span></section><section class=\"an-card c-load\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"load\"></span><span class=\"an-sub\" data-bind=\"load.verdict\"></span></div><div class=\"an-chart\" data-chart=\"load.chart\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--accent-soft)\"></span>volume settimanale</span><span class=\"an-legend-item\"><span class=\"an-sw is-dash\" style=\"background:var(--c-s1)\"></span>HRV</span></div><span class=\"an-note\">Regola: volume ±5% e HRV ±3% fra le ultime due settimane piene. Sotto soglia la frase resta neutra. La linea HRV ha scala propria (min–max del periodo).</span></section><section class=\"an-card c-adh\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"adherence\"></span></div><div data-chart=\"adh.rows\" style=\"display:flex;flex-direction:column;gap:10px\"></div><span class=\"an-sub\">soglia 90%</span><div style=\"height:42px;display:flex;align-items:flex-end;gap:3px;padding-top:6px;border-top:1px solid var(--line2)\" data-chart=\"adh.weeks\"></div><button type=\"button\" class=\"an-btn\" data-an=\"adh-toggle\" style=\"margin-top:9px;font-size:10.5px;padding:4px 9px;align-self:flex-start\">Dettaglio per settimana</button><div data-chart=\"adh.grid\" style=\"display:none;margin-top:8px\"></div></section><section class=\"an-card c-clin\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"clinical\"></span><span class=\"an-sub\" data-bind=\"clin.state\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 62px 16px 62px 74px\"><span>Marker</span><span class=\"an-num\">T0</span><span></span><span class=\"an-num\">T1</span><span class=\"an-num\">rif.</span></div><div class=\"an-tbl\" data-chart=\"clin.rows\"></div></section><section class=\"an-card c-stock\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"stock\"></span><span class=\"an-sub\" data-bind=\"stock.left\"></span></div><div class=\"an-tbl\" data-chart=\"stock.rows\"></div><span class=\"an-note\">Rosso se la scorta non arriva a fine ciclo, ambra entro 14 giorni di margine, verde oltre.</span></section><section class=\"an-card c-narr\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"narrative\"></span></div><p style=\"margin:0;font-size:13px;line-height:1.55;color:var(--ink2)\" data-bind=\"narrative.text\"></p></section></div>\n<div class=\"an-view\" data-an-view=\"insights\"><section class=\"an-card c-subja\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"subjA\"></span></div><div class=\"an-chart\" data-chart=\"subj.a\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>Energia</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s2)\"></span>Recupero</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s3)\"></span>Umore</span></div><span class=\"an-note\">Asse fisso 1–10: un asse auto-scalato ingrandirebbe il rumore.</span></section><section class=\"an-card c-subjb\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"subjB\"></span></div><div class=\"an-chart\" data-chart=\"subj.b\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>Appetito</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s2)\"></span>Sonno perc.</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s3)\"></span>Chiarezza</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s4)\"></span>Libido</span></div></section><section class=\"an-card c-cat\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"symptoms\"></span></div><div data-chart=\"subj.cat\" style=\"display:flex;flex-direction:column;gap:4px\"></div><span class=\"an-note\">Categorie ordinali, non linee. Casella vuota = non registrata.</span></section><section class=\"an-card c-sleep\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sleep\"></span></div><div class=\"an-chart\" data-chart=\"sleep.hours\" style=\"height:112px\"></div><span class=\"an-sub\">fasi, minuti</span><div class=\"an-chart\" data-chart=\"sleep.stages\" style=\"height:112px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>REM</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s2)\"></span>profondo</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s3)\"></span>principale</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s4)\"></span>veglia</span></div><span class=\"an-sub\">risvegli</span><div class=\"an-chart\" data-chart=\"sleep.wakes\" style=\"height:68px\"></div><span class=\"an-note\">Sonno in ore e minuti; uno 0 vale non registrato.</span></section><section class=\"an-card c-scatter\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"scatter\"></span></div><div class=\"an-chart\" data-chart=\"sleep.scatter\" style=\"height:134px\"></div><span class=\"an-sub\" data-bind=\"sleep.r\"></span></section><section class=\"an-card c-corr\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"corr\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 120px 48px 74px 42px\"><span>Coppia</span><span></span><span class=\"an-num\">r</span><span class=\"an-num\">forza</span><span class=\"an-num\">n</span></div><div class=\"an-tbl\" data-chart=\"corr.rows\"></div></section><section class=\"an-card c-d14\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"delta14\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 72px 72px 66px\"><span>Misura</span><span class=\"an-num\">prima</span><span class=\"an-num\">ora</span><span class=\"an-num\">Δ</span></div><div class=\"an-tbl\" data-chart=\"corr.d14\"></div><span class=\"an-note\">Il delta di peso è neutro: salire o scendere non è di per sé meglio.</span></section></div>\n<div class=\"an-view\" data-an-view=\"workout\"><section class=\"an-card c-vol\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"volume\"></span></div><div class=\"an-chart\" data-chart=\"wo.volume\" style=\"height:120px\"></div><span class=\"an-sub\" data-i18n=\"rpe\"></span><div class=\"an-chart\" data-chart=\"wo.rpe\" style=\"height:64px\"></div></section><section class=\"an-card c-type\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"byType\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:92px 1fr 62px 52px 58px\"><span>Tipo</span><span></span><span class=\"an-num\">fatte / previste</span><span class=\"an-num\">%</span><span class=\"an-num\">volume</span></div><div class=\"an-tbl\" data-chart=\"wo.type\"></div><span class=\"an-note\">Sedute fatte su previste dal piano settimanale. Fatta = calorie, volume o RPE presenti; il giorno in corso non conta come saltato.</span></section><section class=\"an-card c-sess\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sessions\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:56px 58px 1fr 60px 46px 36px\"><span>Data</span><span>Tipo</span><span>Giorno</span><span class=\"an-num\">volume</span><span class=\"an-num\">durata</span><span class=\"an-num\">RPE</span></div><div class=\"an-tbl\" data-chart=\"wo.table\"></div></section><section class=\"an-card c-phase\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"byPhase\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 54px 60px 46px\"><span>Fase</span><span class=\"an-num\">sedute</span><span class=\"an-num\">volume</span><span class=\"an-num\">RPE</span></div><div class=\"an-tbl\" data-chart=\"wo.phase\"></div></section><section class=\"an-card c-week\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"typicalWeek\"></span></div><div data-chart=\"wo.week\"></div><span class=\"an-note\">Volume medio per giorno della settimana, in tonnellate. n sempre visibile.</span></section><section class=\"an-card c-sent\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sentinels\"></span></div><div data-chart=\"wo.sent\" style=\"display:flex;flex-direction:column\"></div><span class=\"an-note\">20 esercizi sentinella in 6 gruppi. Δ = ultimo carico meno il primo registrato.</span></section><section class=\"an-card c-musc\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"muscleVol\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:96px 1fr 56px 44px\"><span>Muscolo</span><span></span><span class=\"an-num\">volume</span><span class=\"an-num\">quota</span></div><div class=\"an-tbl\" data-chart=\"wo.muscles\"></div><span class=\"an-note\">Volume cumulativo per muscolo, dal riepilogo del diario V1: non dipende dall'intervallo.</span></section><section class=\"an-card c-progress\"><div class=\"an-head\"><span class=\"an-title\">Progressione esercizi</span><span class=\"an-sub\">soglia 2 sessioni</span></div><div data-chart=\"wo.progress\"></div><span class=\"an-note\">Per esercizio esatto (non per macchina generica), da history_sessions: segue da sola le sostituzioni in palestra.</span></section><section class=\"an-card c-freq\"><div class=\"an-head\"><span class=\"an-title\">Frequenza per gruppo muscolare</span><span class=\"an-sub\">ultime 4 settimane</span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 70px 90px\"><span></span><span class=\"an-num\">sessioni</span><span class=\"an-num\">ultima volta</span></div><div data-chart=\"wo.freq\"></div><span class=\"an-note\">Completa il volume cumulativo: dice se un gruppo è trascurato di recente.</span></section></div>\n<div class=\"an-view\" data-an-view=\"foto\"><section class=\"an-card c-foto\"><div class=\"an-head\"><div class=\"an-fmodes\"><button type=\"button\" data-an-fmode=\"list\" data-i18n=\"fList\"></button><button type=\"button\" data-an-fmode=\"grid\" class=\"is-active\" data-i18n=\"fGrid\"></button><button type=\"button\" data-an-fmode=\"week\" data-i18n=\"fWeek\"></button><button type=\"button\" data-an-fmode=\"scrub\" data-i18n=\"fScrub\"></button><button type=\"button\" data-an-fmode=\"cmp\" data-i18n=\"fSide\"></button><button type=\"button\" data-an-fmode=\"ratings\" data-i18n=\"fRatings\"></button><button type=\"button\" data-an-fmode=\"new\" data-i18n=\"fNew\"></button></div><span class=\"an-sub\" data-bind=\"foto.count\"></span></div><div class=\"an-fpane\" data-an-fpane=\"list\"><div class=\"an-flist\" data-chart=\"foto.list\"></div></div><div class=\"an-fpane is-active\" data-an-fpane=\"grid\"><div class=\"an-fgrid\" data-chart=\"foto.grid\"></div></div><div class=\"an-fpane\" data-an-fpane=\"week\"><div class=\"an-fweek\" data-chart=\"foto.week\"></div></div><div class=\"an-fpane\" data-an-fpane=\"scrub\"><div class=\"an-fscroll\" data-chart=\"foto.scrub\"></div></div><div class=\"an-fpane\" data-an-fpane=\"cmp\"><div style=\"display:flex;gap:3px;align-self:flex-start;background:var(--surf2);border-radius:8px;padding:3px\"><button type=\"button\" class=\"an-fmode2 is-active\" data-an-cmpmode=\"side\" data-i18n=\"fSide\" style=\"border:none;cursor:pointer;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;background:var(--accent);color:#fff\"></button><button type=\"button\" class=\"an-fmode2\" data-an-cmpmode=\"over\" data-i18n=\"fOver\" style=\"border:none;cursor:pointer;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;background:transparent;color:var(--ink2)\"></button></div><div class=\"an-fcmp\" data-chart=\"foto.cmp\"></div><div class=\"an-fdiff\" data-chart=\"foto.diff\"></div></div><div class=\"an-fpane\" data-an-fpane=\"ratings\"><div class=\"an-chart\" data-chart=\"foto.ratings\" style=\"height:110px\"></div><span class=\"an-note\">Valutazione 1–5 per scatto (campo rating): al momento non è compilata in nessuno scatto.</span></div><div class=\"an-fpane\" data-an-fpane=\"new\"><div class=\"an-fnew\"><div class=\"an-field\"><label>Data</label><input type=\"date\" data-an-photo=\"date\"></div><div class=\"an-field\"><label>Luogo</label><input type=\"text\" data-an-photo=\"luogo\"></div><div class=\"an-field\"><label>Peso manuale (kg)</label><input type=\"text\" inputmode=\"decimal\" data-an-photo=\"peso\"></div><div class=\"an-field\"><label>Valutazione 1–5</label><input type=\"number\" min=\"1\" max=\"5\" data-an-photo=\"rating\"></div><div class=\"an-field\"><label>Nota</label><textarea data-an-photo=\"note\"></textarea></div><button type=\"button\" class=\"an-btn\" data-an-photo-submit>Registra scatto</button><span class=\"an-note\">Da qui non si carica e non si salva nulla: un nuovo scatto si aggiunge dalla vecchia app (Foto → Nuovo scatto).</span></div></div></section></div>\n  </div>\n</div>";
+var AN_HTML = "<div class=\"an-root\">\n  <div class=\"an-subnav\">\n    <div class=\"an-chips\">\n      <button type=\"button\" class=\"an-chip is-active\" data-an-tab=\"cruscotto\" data-i18n-tab=\"cruscotto\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"insights\" data-i18n-tab=\"insights\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"foto\" data-i18n-tab=\"foto\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"workout\" data-i18n-tab=\"workout\"></button>\n    </div>\n    <div class=\"an-globalrange\">\n      <span class=\"an-globalrange-l\"></span>\n      <div class=\"an-range\">\n        <button type=\"button\" data-days=\"30\">30g</button>\n        <button type=\"button\" data-days=\"60\" class=\"is-active\">60g</button>\n        <button type=\"button\" data-days=\"90\">90g</button>\n        <button type=\"button\" data-days=\"0\"></button>\n      </div>\n    </div>\n    </div>\n  <div class=\"an-main\">\n<div class=\"an-view is-active\" data-an-view=\"cruscotto\"><section class=\"an-card an-card-hero c-hero\"><div class=\"an-hero\"><div class=\"an-hero-l\"><span class=\"an-title\" data-i18n=\"heroTitle\"></span><span class=\"an-hero-t\" data-bind=\"hero.headline\"></span><span class=\"an-hero-s\" data-bind=\"hero.sub\"></span></div><div class=\"an-hero-r\" data-chart=\"hero.pillars\"></div></div></section><section class=\"an-card c-cycle\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"cycleState\"></span><span class=\"an-sub\" data-bind=\"cycle.day\"></span></div><div class=\"an-phases\"></div><div class=\"an-legend an-phase-legend\"></div><div class=\"an-warn\" data-an-today style=\"display:none\"><span data-i18n=\"todayEmpty\"></span></div></section><section class=\"an-card c-recomp\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"recomp\"></span></div><div class=\"an-chart\" data-chart=\"recomp.chart\" style=\"height:148px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>peso</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-mark)\"></span>DEXA</span><span class=\"an-legend-item\"><span class=\"an-sw is-band\" style=\"background:var(--c-event)\"></span>viaggio</span></div><div style=\"display:flex;flex-direction:column;gap:6px;padding-top:8px;border-top:1px solid var(--line2)\"><div style=\"display:flex;align-items:baseline;justify-content:space-between;gap:8px\"><span class=\"an-sub\" data-i18n=\"waist\"></span><strong style=\"font-size:11.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums\" data-bind=\"recomp.waist\"></strong></div><div class=\"an-tbl\" data-chart=\"recomp.dexa\"></div></div><span class=\"an-note\">Il peso è giornaliero. DEXA e girovita esistono solo in pochi punti: restano marcatori. Con meno di due misure non si traccia nulla.</span></section><section class=\"an-card c-load\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"load\"></span><span class=\"an-sub\" data-bind=\"load.verdict\"></span></div><div class=\"an-chart\" data-chart=\"load.chart\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--accent-soft)\"></span>volume settimanale</span><span class=\"an-legend-item\"><span class=\"an-sw is-dash\" style=\"background:var(--c-s1)\"></span>HRV</span></div><span class=\"an-note\">Regola: volume ±5% e HRV ±3% fra le ultime due settimane piene. Sotto soglia la frase resta neutra. La linea HRV ha scala propria (min–max del periodo).</span></section><section class=\"an-card c-adh\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"adherence\"></span></div><div data-chart=\"adh.rows\" style=\"display:flex;flex-direction:column;gap:10px\"></div><span class=\"an-sub\">soglia 90%</span><div style=\"height:42px;display:flex;align-items:flex-end;gap:3px;padding-top:6px;border-top:1px solid var(--line2)\" data-chart=\"adh.weeks\"></div><button type=\"button\" class=\"an-btn\" data-an=\"adh-toggle\" style=\"margin-top:9px;font-size:10.5px;padding:4px 9px;align-self:flex-start\">Dettaglio per settimana</button><div data-chart=\"adh.grid\" style=\"display:none;margin-top:8px\"></div></section><section class=\"an-card c-clin\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"clinical\"></span><span class=\"an-sub\" data-bind=\"clin.state\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 62px 16px 62px 74px\"><span>Marker</span><span class=\"an-num\">T0</span><span></span><span class=\"an-num\">T1</span><span class=\"an-num\">rif.</span></div><div class=\"an-tbl\" data-chart=\"clin.rows\"></div></section><section class=\"an-card c-stock\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"stock\"></span><span class=\"an-sub\" data-bind=\"stock.left\"></span></div><div class=\"an-tbl\" data-chart=\"stock.rows\"></div><span class=\"an-note\">Rosso se la scorta non arriva a fine ciclo, ambra entro 14 giorni di margine, verde oltre.</span></section><section class=\"an-card c-narr\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"narrative\"></span></div><p style=\"margin:0;font-size:13px;line-height:1.55;color:var(--ink2)\" data-bind=\"narrative.text\"></p></section></div>\n<div class=\"an-view\" data-an-view=\"insights\"><section class=\"an-card c-subja\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"subjA\"></span></div><div class=\"an-chart\" data-chart=\"subj.a\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>Energia</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s2)\"></span>Recupero</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s3)\"></span>Umore</span></div><span class=\"an-note\">Asse fisso 1–10: un asse auto-scalato ingrandirebbe il rumore.</span></section><section class=\"an-card c-subjb\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"subjB\"></span></div><div class=\"an-chart\" data-chart=\"subj.b\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>Appetito</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s2)\"></span>Sonno perc.</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s3)\"></span>Chiarezza</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s4)\"></span>Libido</span></div></section><section class=\"an-card c-cat\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"symptoms\"></span></div><div data-chart=\"subj.cat\" style=\"display:flex;flex-direction:column;gap:4px\"></div><span class=\"an-note\">Categorie ordinali, non linee. Casella vuota = non registrata.</span></section><section class=\"an-card c-sleep\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sleep\"></span></div><div class=\"an-chart\" data-chart=\"sleep.hours\" style=\"height:112px\"></div><span class=\"an-sub\">fasi, minuti</span><div class=\"an-chart\" data-chart=\"sleep.stages\" style=\"height:112px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>REM</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s2)\"></span>profondo</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s3)\"></span>principale</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s4)\"></span>veglia</span></div><span class=\"an-sub\">risvegli</span><div class=\"an-chart\" data-chart=\"sleep.wakes\" style=\"height:68px\"></div><span class=\"an-note\">Sonno in ore e minuti; uno 0 vale non registrato.</span></section><section class=\"an-card c-scatter\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"scatter\"></span></div><div class=\"an-chart\" data-chart=\"sleep.scatter\" style=\"height:134px\"></div><span class=\"an-sub\" data-bind=\"sleep.r\"></span></section><section class=\"an-card c-corr\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"corr\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 120px 48px 74px 42px\"><span>Coppia</span><span></span><span class=\"an-num\">r</span><span class=\"an-num\">forza</span><span class=\"an-num\">n</span></div><div class=\"an-tbl\" data-chart=\"corr.rows\"></div></section><section class=\"an-card c-d14\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"delta14\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 72px 72px 66px\"><span>Misura</span><span class=\"an-num\">prima</span><span class=\"an-num\">ora</span><span class=\"an-num\">Δ</span></div><div class=\"an-tbl\" data-chart=\"corr.d14\"></div><span class=\"an-note\">Il delta di peso è neutro: salire o scendere non è di per sé meglio.</span></section></div>\n<div class=\"an-view\" data-an-view=\"workout\"><section class=\"an-card c-vol\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"volume\"></span></div><div class=\"an-chart\" data-chart=\"wo.volume\" style=\"height:120px\"></div><span class=\"an-sub\" data-i18n=\"rpe\"></span><div class=\"an-chart\" data-chart=\"wo.rpe\" style=\"height:64px\"></div></section><section class=\"an-card c-type\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"byType\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:92px 1fr 62px 52px 58px\"><span>Tipo</span><span></span><span class=\"an-num\">fatte / previste</span><span class=\"an-num\">%</span><span class=\"an-num\">volume</span></div><div class=\"an-tbl\" data-chart=\"wo.type\"></div><span class=\"an-note\">Sedute fatte su previste dal piano settimanale. Fatta = calorie, volume o RPE presenti; il giorno in corso non conta come saltato.</span></section><section class=\"an-card c-sess\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sessions\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:56px 58px 1fr 60px 46px 36px\"><span>Data</span><span>Tipo</span><span>Giorno</span><span class=\"an-num\">volume</span><span class=\"an-num\">durata</span><span class=\"an-num\">RPE</span></div><div class=\"an-tbl\" data-chart=\"wo.table\"></div></section><section class=\"an-card c-phase\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"byPhase\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 54px 60px 46px\"><span>Fase</span><span class=\"an-num\">sedute</span><span class=\"an-num\">volume</span><span class=\"an-num\">RPE</span></div><div class=\"an-tbl\" data-chart=\"wo.phase\"></div></section><section class=\"an-card c-week\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"typicalWeek\"></span></div><div data-chart=\"wo.week\"></div><span class=\"an-note\">Volume medio per giorno della settimana, in tonnellate. n sempre visibile.</span></section><section class=\"an-card c-sent\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sentinels\"></span></div><div data-chart=\"wo.sent\" style=\"display:flex;flex-direction:column\"></div><span class=\"an-note\">20 esercizi sentinella in 6 gruppi. Δ = ultimo carico meno il primo registrato.</span></section><section class=\"an-card c-musc\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"muscleVol\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:96px 1fr 56px 44px\"><span>Muscolo</span><span></span><span class=\"an-num\">volume</span><span class=\"an-num\">quota</span></div><div class=\"an-tbl\" data-chart=\"wo.muscles\"></div><span class=\"an-note\">Volume cumulativo per muscolo, dal riepilogo del diario V1: non dipende dall'intervallo.</span></section><section class=\"an-card c-progress\"><div class=\"an-head\"><span class=\"an-title\">Progressione esercizi</span><span class=\"an-sub\">soglia 2 sessioni</span></div><div data-chart=\"wo.progress\"></div><span class=\"an-note\">Per esercizio esatto (non per macchina generica), da history_sessions: segue da sola le sostituzioni in palestra.</span></section><section class=\"an-card c-freq\"><div class=\"an-head\"><span class=\"an-title\">Frequenza per gruppo muscolare</span><span class=\"an-sub\">ultime 4 settimane</span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 70px 90px\"><span></span><span class=\"an-num\">sessioni</span><span class=\"an-num\">ultima volta</span></div><div data-chart=\"wo.freq\"></div><span class=\"an-note\">Completa il volume cumulativo: dice se un gruppo è trascurato di recente.</span></section></div>\n<div class=\"an-view\" data-an-view=\"foto\"><section class=\"an-card c-foto\"><div class=\"an-head\"><div class=\"an-fmodes\"><button type=\"button\" data-an-fmode=\"list\" data-i18n=\"fList\"></button><button type=\"button\" data-an-fmode=\"grid\" class=\"is-active\" data-i18n=\"fGrid\"></button><button type=\"button\" data-an-fmode=\"week\" data-i18n=\"fWeek\"></button><button type=\"button\" data-an-fmode=\"scrub\" data-i18n=\"fScrub\"></button><button type=\"button\" data-an-fmode=\"cmp\" data-i18n=\"fSide\"></button><button type=\"button\" data-an-fmode=\"ratings\" data-i18n=\"fRatings\"></button><button type=\"button\" data-an-fmode=\"new\" data-i18n=\"fNew\"></button></div><span class=\"an-sub\" data-bind=\"foto.count\"></span></div><div class=\"an-fpane\" data-an-fpane=\"list\"><div class=\"an-flist\" data-chart=\"foto.list\"></div></div><div class=\"an-fpane is-active\" data-an-fpane=\"grid\"><div class=\"an-fgrid\" data-chart=\"foto.grid\"></div></div><div class=\"an-fpane\" data-an-fpane=\"week\"><div class=\"an-fweek\" data-chart=\"foto.week\"></div></div><div class=\"an-fpane\" data-an-fpane=\"scrub\"><div class=\"an-fscroll\" data-chart=\"foto.scrub\"></div></div><div class=\"an-fpane\" data-an-fpane=\"cmp\"><div style=\"display:flex;gap:3px;align-self:flex-start;background:var(--surf2);border-radius:8px;padding:3px\"><button type=\"button\" class=\"an-fmode2 is-active\" data-an-cmpmode=\"side\" data-i18n=\"fSide\" style=\"border:none;cursor:pointer;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;background:var(--accent);color:#fff\"></button><button type=\"button\" class=\"an-fmode2\" data-an-cmpmode=\"over\" data-i18n=\"fOver\" style=\"border:none;cursor:pointer;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;background:transparent;color:var(--ink2)\"></button></div><div class=\"an-fcmp\" data-chart=\"foto.cmp\"></div><div class=\"an-fdiff\" data-chart=\"foto.diff\"></div></div><div class=\"an-fpane\" data-an-fpane=\"ratings\"><div class=\"an-chart\" data-chart=\"foto.ratings\" style=\"height:110px\"></div><span class=\"an-note\">Valutazione 1–5 per scatto (campo rating): al momento non è compilata in nessuno scatto.</span></div><div class=\"an-fpane\" data-an-fpane=\"new\"><div class=\"an-fnew\"><div class=\"an-field\"><label>Foto</label><input type=\"file\" accept=\"image/*,.heic,.heif\" data-an-photo-file></div><div data-an-photo-preview style=\"display:none\"><img data-an-photo-img style=\"max-width:160px;border-radius:8px;display:block;margin-bottom:6px\"><span class=\"an-note\" data-an-photo-status></span></div><div class=\"an-field\"><label>Data</label><input type=\"date\" data-an-photo=\"date\"></div><div class=\"an-field\"><label>Luogo</label><input type=\"text\" data-an-photo=\"luogo\"></div><div class=\"an-field\"><label>Peso manuale (kg)</label><input type=\"text\" inputmode=\"decimal\" data-an-photo=\"peso\"></div><div class=\"an-field\"><label>Valutazione 1–5</label><input type=\"number\" min=\"1\" max=\"5\" data-an-photo=\"rating\"></div><div class=\"an-field\"><label>Nota</label><textarea data-an-photo=\"note\"></textarea></div><button type=\"button\" class=\"an-btn\" data-an-photo-submit disabled>Registra scatto</button><span class=\"an-note\">Seleziona un file: data e GPS letti dall’EXIF quando presenti. La foto viene compressa (max 1200px, JPEG 85%) prima del caricamento.</span></div></div></section></div>\n  </div>\n</div>";
 return { html: function(){ return AN_HTML; }, mount: AN_mount };
 })();
 
