@@ -267,16 +267,21 @@
   --shadow-lg:0 2px 4px rgba(10,10,14,.06),0 24px 60px -20px rgba(10,10,14,.22);
   --r-card:16px;
   
-  --c-s1:#1f5fbf; --c-s2:#2e9e4f; --c-s3:#8a6d00; --c-s4:#d81e05;
-  --c-band:rgba(31,95,191,.16);
-  --c-ph1:#c9d8ee; --c-ph2:#8fb4de; --c-ph3:#1f5fbf; --c-ph4:#7f93ab; --c-ph5:#cfd3d9;
+  /* PORTING 26/09: prima ogni serie/gruppo partiva dallo stesso blu (--accent) ripetuto ovunque
+     (grafico peso, HRV, volume, prima fascia muscolo, prima fascia sentinel, evidenziazione
+     viaggio) -- risultato una dominante azzurra che in Oggi non c'e', dove il blu resta riservato
+     a pulsanti/stati attivi. Qui il blu resta SOLO dove segna "fase attuale/enfasi", il resto
+     passa a grigi neutri o ai colori semantici gia' in uso (verde/ambra/rosso). */
+  --c-s1:var(--ink2); --c-s2:#2e9e4f; --c-s3:#8a6d00; --c-s4:#d81e05;
+  --c-band:rgba(10,10,14,.07);
+  --c-ph1:#e4e4e8; --c-ph2:#b6b6be; --c-ph3:var(--accent); --c-ph4:#8a8a93; --c-ph5:#eeeef1;
   --c-event:rgba(138,109,0,.14); --c-event-ink:#8a6d00;
   --c-mark:#d81e05;
   
-  --c-g1:#1f5fbf; --c-g2:#2e9e4f; --c-g3:#8a6d00; --c-g4:#d81e05; --c-g5:#6b4ea8; --c-g6:#57575f;
+  --c-g1:var(--ink2); --c-g2:#2e9e4f; --c-g3:#8a6d00; --c-g4:#d81e05; --c-g5:#6b4ea8; --c-g6:#57575f;
   
-  --c-m1:#1f5fbf; --c-m2:#2e9e4f; --c-m3:#d81e05; --c-m4:#6b4ea8; --c-m5:#a8591a;
-  --c-m6:#b03060; --c-m7:#12796b; --c-m8:#8a6d00; --c-m9:#2b6fa8; --c-m10:#6e6e78; --c-m11:#7a5a3a;
+  --c-m1:var(--ink2); --c-m2:#2e9e4f; --c-m3:#d81e05; --c-m4:#6b4ea8; --c-m5:#a8591a;
+  --c-m6:#b03060; --c-m7:#12796b; --c-m8:#8a6d00; --c-m9:#6e6e78; --c-m10:#4a4a54; --c-m11:#7a5a3a;
   font:400 15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,sans-serif;
   color:var(--ink); background:var(--bg);
   display:flex; flex-direction:column; min-height:0;}
@@ -2080,7 +2085,8 @@ function buildInsights(root){
     host.innerHTML="";
     if (AN.loading){ host.innerHTML='<div class="an-chart-skel" style="height:80px"></div>'; }
     else {
-      var sh=["var(--line2)","var(--c-ph1)","var(--c-ph2)","var(--c-ph3)"];
+      /* PORTING 26/09: la griglia Sintomi riusava i colori di fase del ciclo (--c-ph1/2/3), e per i sintomi binari (es. Formicolio) "Presente" finiva sempre sul blu di --c-ph3 -- una lastra blu su tutta la riga. Scala di gravita' propria, ambra-rosso, coerente con come Oggi segnala i sintomi (mai il blu per un sintomo presente). */
+      var sh=["var(--line2)","var(--warn)","var(--warn-ink)","var(--bad)"];
       [["ritenzione","Ritenzione"],["formicolio","Formicolio"],["pienezza_add","Pienezza add."]].forEach(function(c){
         var lab=CAT_LABELS[c[0]], row=document.createElement("div"); row.className="an-catrow";
         row.innerHTML='<span class="an-catname">'+c[1]+'</span>';
@@ -3238,19 +3244,19 @@ function AN_buildPhotoMetrics(){
     if (hLo != null && hHi != null) { m.hrv = (hLo + hHi) / 2; m.hrvHead = Math.round(hLo) + "–" + Math.round(hHi); }
     else if (hSc != null) { m.hrv = hSc; m.hrvHead = String(Math.round(hSc)); }
     var sh = sleepH(rec.ore_sonno); if (sh != null) m.sonno = sh;
-    if (i < t) {
-      var x = AN_dayAdh(i);
-      /* PORTING 26/09: iniezioni come frazione fatte/previste (2/7), non percentuale -- V1 le
-         mostra cosi', solo gli integratori restano in %. */
-      if (x.injTot) { m.injDone = x.injDone; m.injTot = x.injTot; }
-      if (x.suppTot) m.supp = Math.round(x.suppDone / x.suppTot * 100);
-    }
+    /* PORTING 26/09: oggi ora mostra il PARZIALE reale, non piu' vuoto fino a fine giornata --
+       come in V1, che aggiorna in tempo reale mentre spunti iniezioni/integratori. Il divieto
+       "il giorno in corso non conta come saltato" resta valido per il VERDETTO di Aderenza (i<t
+       li' non cambia), ma qui e' solo un dato descrittivo, non un giudizio: niente da nascondere. */
+    var x = AN_dayAdh(i);
+    if (x.injTot) { m.injDone = x.injDone; m.injTot = x.injTot; }
+    if (x.suppTot) m.supp = Math.round(x.suppDone / x.suppTot * 100);
     /* PORTING 26/09: badge allenamento sempre presente, anche nei giorni di riposo (V1 mostra
-       "Riposo" invece di nascondere il badge). woDone solo per i giorni non di riposo e gia'
-       passati (stesso criterio di AN_dayAdh: kcal/volume/RPE). */
+       "Riposo" invece di nascondere il badge); woDone riflette il progresso reale di oggi, non
+       solo i giorni gia' conclusi. */
     var wo = getWorkout2(i);
     m.woLabel = AN_TYPE_LABEL[wo.type] || wo.type; m.woIsRest = (wo.type === "Riposo");
-    if (!m.woIsRest && i < t) {
+    if (!m.woIsRest) {
       var kcalW = num(rec.wo_kcal), rpeW = num(rec.rpe), volW = getWorkoutVolume2(rec);
       m.woDone = (kcalW != null && kcalW > 0) || (volW != null && volW > 0) || (rpeW != null);
     }
