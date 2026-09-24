@@ -2547,10 +2547,16 @@ function photoWorkoutWeekLabel(p){
   for (var k = wkStart; k <= i; k++) { var x = AN_dayAdh(k); tot += x.woTot; done += x.woDone; }
   return tot > 0 ? (done + "/" + tot) : null;
 }
+/* PORTING 26/09: la pillola ora renderizza sempre, anche senza dato -- un trattino invece di
+   una cella vuota. Prima una cella nulla lasciava un buco nella griglia 3x2 (visto sul 21/09,
+   primo giorno della settimana: "WO sett." a 0/0 spariva del tutto invece di mostrare "0/0"
+   o un trattino), che sembrava un problema di visualizzazione. */
 function statPill(label, val, color){
-  if (val == null || val === "") return "";
+  var empty = (val == null || val === "");
+  var display = empty ? "\u2014" : val;
+  var col = empty ? "var(--ink3)" : (color || "var(--ink)");
   return '<div style="background:var(--surf2);border-radius:10px;padding:10px 6px;text-align:center">' +
-    '<div style="font-size:15px;font-weight:700;letter-spacing:-.01em' + (color ? ";color:" + color : "") + '">' + val + '</div>' +
+    '<div style="font-size:15px;font-weight:700;letter-spacing:-.01em;color:' + col + '">' + display + '</div>' +
     '<div style="font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em;margin-top:2px">' + label + '</div></div>';
 }
 function photoDeleteBtn(filename, pos){
