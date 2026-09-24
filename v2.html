@@ -414,7 +414,7 @@
 .an-fdate{font-size:10px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;}
 .an-fsub{font-size:9px;font-weight:500;color:var(--ink3);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .an-flist{display:flex;flex-direction:column;}
-.an-flrow{display:grid;grid-template-columns:64px 74px 1fr 1fr;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line2);font-size:11.5px;color:var(--ink2);min-height:40px;}
+.an-flrow{display:grid;grid-template-columns:46px 64px 74px 1fr 1fr;gap:10px;align-items:center;padding:7px 0;border-top:1px solid var(--line2);font-size:11.5px;color:var(--ink2);min-height:40px;}.an-flthumb{width:46px;height:58px;aspect-ratio:unset;border-radius:6px;}
 .an-fweek{display:flex;flex-direction:column;gap:10px;}
 .an-fweek-h{font-size:10.5px;font-weight:600;color:var(--ink2);padding-bottom:4px;border-bottom:1px solid var(--line2);}
 .an-fcmp{display:grid;gap:14px;}
@@ -1118,7 +1118,13 @@ var AN_I18N = {
     onePoint:"un solo rilevamento", notRecorded:"non registrato",
     days:"giorni", shots:"scatti", noShots:"Nessuno scatto",
     t0:"T0", t1:"T1", t2:"T2", t1Missing:"T1 non ancora disponibile",
-    needTwo:"Servono almeno due misure", threshold:"soglia"
+    needTwo:"Servono almeno due misure", threshold:"soglia",
+    vdText: {
+      onTrack:      ["Il ciclo procede in linea.", function(a){ return "Iniezioni al "+a.inj+"%, allenamenti al "+a.wo+"%, integratori al "+a.supp+"%. Nessuno dei tre scende sotto la soglia."; }],
+      someGaps:     ["Qualche buco, niente di strutturale.", function(a){ return "Iniezioni al "+a.inj+"%, integratori al "+a.supp+"%. Gli allenamenti restano al "+a.wo+"%."; }],
+      trainingGaps: ["Gli allenamenti sono il punto debole.", function(a){ return "Sedute al "+a.wo+"%: "+(a.woTot-a.woDone)+" salti su "+a.woTot+" previste. Iniezioni al "+a.inj+"%."; }],
+      noData:       ["Nessun dato ancora registrato.", function(){ return "Compila il primo giorno per vedere la sintesi."; }]
+    }
   },
   en: {
     tabs: { cruscotto:"Overview", insights:"Insights", foto:"Photos", workout:"Workout" },
@@ -1143,7 +1149,13 @@ var AN_I18N = {
     onePoint:"single reading", notRecorded:"not recorded",
     days:"days", shots:"shots", noShots:"No shots",
     t0:"T0", t1:"T1", t2:"T2", t1Missing:"T1 not available yet",
-    needTwo:"At least two measurements needed", threshold:"threshold"
+    needTwo:"At least two measurements needed", threshold:"threshold",
+    vdText: {
+      onTrack:      ["The cycle is on track.", function(a){ return "Injections at "+a.inj+"%, workouts at "+a.wo+"%, supplements at "+a.supp+"%. None of the three falls below threshold."; }],
+      someGaps:     ["A few gaps, nothing structural.", function(a){ return "Injections at "+a.inj+"%, supplements at "+a.supp+"%. Workouts remain at "+a.wo+"%."; }],
+      trainingGaps: ["Workouts are the weak point.", function(a){ return "Sessions at "+a.wo+"%: "+(a.woTot-a.woDone)+" missed out of "+a.woTot+" planned. Injections at "+a.inj+"%."; }],
+      noData:       ["No data recorded yet.", function(){ return "Fill in the first day to see the summary."; }]
+    }
   }
 };
 var AN_LANG = "it";
@@ -1209,23 +1221,20 @@ var MUSCLES = [
    "quadro CDI" (index.html lo dichiara "non è il T0 ufficiale"): T0 e T1 devono venire dallo stesso laboratorio.
    Valori e riferimenti come da referto. HOMA = gluc x insul / 405 (calcolato, come in index.html). `better` come
    in LAB_CDI_QUADRO di index.html. Vitamina D, zinco e folato non sono nel panel Santagostino e sono stati tolti. */
+/* PORTING 24/09: card ridotta ai soli marker direttamente legati al protocollo (24/09, richiesta
+   di Giorgio). Tolti T Libero, SHBG, HDL, LDL, Trigliceridi, Estradiolo E2, PCR, LH, FSH: restano
+   nei referti ufficiali, solo fuori da questa card. Motivo di ciascuno tenuto:
+   IGF-1/Glucosio/Insulina/HOMA = asse GH-IGF (Tesamorelin/Ipamorelin/IGF-1 DES); Emoglobina =
+   rischio noto di eritrocitosi da peptidi GH; Creatinina = follow-up nefrologo + creatina;
+   T Totale = unico marker tenuto per l'asse gonadico, rilevante per la decisione TRT di ottobre. */
 var LAB_T0 = [
   {id:"igf1",    label:"IGF-1",         unit:"\u00b5g/L",   val:"86.00",  ref:"55\u2013248",       better:"up"},
   {id:"gluc",    label:"Glucosio",      unit:"mg/dL",       val:"82",     ref:"70\u2013100",       better:"down"},
   {id:"insulina",label:"Insulina",      unit:"\u00b5U/mL",  val:"3.6",    ref:"2.6\u201324.0",     better:"down"},
   {id:"homa",    label:"HOMA (calc.)",  unit:"",            val:"0.73",   ref:"<2.5",             better:"down"},
   {id:"t_tot",   label:"T Totale",      unit:"ng/dL",       val:"526.20", ref:"127\u20131020",     better:"up"},
-  {id:"t_lib",   label:"T Libero",      unit:"pg/mL",       val:"18.80",  ref:"9.57\u201340.60",   better:"up"},
-  {id:"shbg",    label:"SHBG",          unit:"nmol/L",      val:"54.10",  ref:"11.2\u201378.1",    better:"down"},
-  {id:"hdl",     label:"HDL",           unit:"mg/dL",       val:"32",     ref:"\u226540",          better:"up"},
-  {id:"ldl",     label:"LDL",           unit:"mg/dL",       val:"49",     ref:"\u2264115",         better:"down"},
-  {id:"tg",      label:"Trigliceridi",  unit:"mg/dL",       val:"50",     ref:"\u2264170",         better:"down"},
-  {id:"e2",      label:"Estradiolo E2", unit:"pg/mL",       val:"<24",    ref:"<44",              better:"neutral"},
   {id:"creat",   label:"Creatinina",    unit:"mg/dL",       val:"1.28",   ref:"0.73\u20131.18",    better:"down"},
-  {id:"crp",     label:"PCR",           unit:"mg/L",        val:"<0.40",  ref:"\u22645.00",        better:"down"},
-  {id:"hb",      label:"Emoglobina",    unit:"g/L",         val:"118.0",  ref:"140\u2013180",      better:"up"},
-  {id:"lh",      label:"LH",            unit:"mUI/mL",      val:"14.24",  ref:"0.57\u201312.7",    better:"down"},
-  {id:"fsh",     label:"FSH",           unit:"mIU/mL",      val:"24.27",  ref:"0.95\u201311.95",   better:"down"}
+  {id:"hb",      label:"Emoglobina",    unit:"g/L",         val:"118.0",  ref:"140\u2013180",      better:"up"}
 ];
 /* SLOT: i valori T1 li passi tu. Vuoto = "T1 non ancora disponibile". */
 var LAB_T1 = {};
@@ -1245,7 +1254,8 @@ var STOCK_DAYS = {};
 
 /* SLOT: obiettivi di fine ciclo. Vuoto = la barra non si disegna e
    il KPI mostra solo il valore attuale. Nessun numero inventato. */
-var TARGETS = { peso:null, leanMass:null, hrv:null };
+/* PORTING 24/09: obiettivi T2 (7/11) concordati il 21/09 -- punto medio della fascia. HRV: nessun obiettivo numerico e' mai stato fissato, resta vuoto di proposito. */
+var TARGETS = { peso:72.25, leanMass:60.0, hrv:null };
 
 /* DEXA: esiste solo ai checkpoint. Marcatori, non curva. */
 /* PORTING: T0 = DEXA_T0 di index.html (09/05/2026: massa magra 55,4 kg, BF 18,2%). T1 (12/09/2026) si aggiunge da dexa_t1 (V1). */
@@ -1805,6 +1815,19 @@ function buildCycle(root){
 
 /* Hero: 5 KPI. La barra si disegna SOLO se esiste un target.
    Nessun obiettivo è inventato: TARGETS parte vuoto.           */
+/* PORTING 24/09: testo dell'hero mai calcolato -- i template vdText esistevano
+   ma nessuna funzione li usava. Soglie: 90% come ovunque nell'app; sotto 70% sugli
+   allenamenti si segnala quello come punto debole specifico. */
+function buildHeroNarrative(root){
+  var a = adherence(store.blob), L = T().vdText, key;
+  if (!a.injTot && !a.suppTot && !a.woTot) key = "noData";
+  else if (a.woTot && a.wo < 70) key = "trainingGaps";
+  else if (a.inj < 90 || a.supp < 90 || a.wo < 90) key = "someGaps";
+  else key = "onTrack";
+  var tpl = L[key];
+  setB(root, "hero.headline", tpl[0]);
+  setB(root, "hero.sub", tpl[1](a));
+}
 function buildHero(root){
   var host=ch(root,"hero.pillars"); if(!host) return;
   host.innerHTML="";
@@ -2461,7 +2484,7 @@ function photoMetrics(p){
   var i=photoDayIndex(p), d=D()[i]||{};
   return [
     [T().peso, m.peso!=null?it(m.peso,1)+" kg":(p.peso_manual?it(num(p.peso_manual),1)+" kg":(num(d.peso)!=null?it(num(d.peso),1)+" kg":null))],
-    [T().hrv,  m.hrv!=null?Math.round(m.hrv)+" ms":null],
+    [T().hrv,  m.hrvHead!=null?m.hrvHead+" ms":null],
     [T().sonno,m.sonno!=null?fmtHours(m.sonno):null],
     ["% "+T().injections,  m.inj!=null?m.inj+"%":null],
     ["% "+T().supplements, m.supp!=null?m.supp+"%":null],
@@ -2477,6 +2500,34 @@ function photoSlot(p, cls){
   AN_lazyPhoto(el, p.filename);   /* PORTING */
   return el;
 }
+/* PORTING 24/09: salva SOLO il rating (1-5) sullo scatto -- fetch fresco, aggiorna la sola
+   voce del filename in photo_log, PATCH, poi allinea PHOTO_LOG in locale e ridisegna. */
+function AN_savePhotoRating(filename, rating){
+  var base = CFG.PROXY_URL, qs = "?user_id=eq.giorgio_protocollo_2026";
+  fetch(base + qs + "&select=data", { headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY } })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      var d = (rows[0] && rows[0].data) || {};
+      var log = Array.isArray(d.photo_log) ? d.photo_log.slice() : [];
+      var idx = -1;
+      for (var i = 0; i < log.length; i++) if (log[i] && log[i].filename === filename) { idx = i; break; }
+      if (idx < 0) throw new Error("scatto non trovato in photo_log: " + filename);
+      log[idx] = Object.assign({}, log[idx], { rating: rating });
+      d.photo_log = log;
+      return fetch(base + qs, {
+        method: "PATCH",
+        headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
+        body: JSON.stringify({ data: d })
+      });
+    })
+    .then(function(){
+      var e = PHOTO_LOG.find ? PHOTO_LOG.find(function(p){ return p.filename === filename; }) : null;
+      if (!e) { for (var i = 0; i < PHOTO_LOG.length; i++) if (PHOTO_LOG[i].filename === filename) { e = PHOTO_LOG[i]; break; } }
+      if (e) e.rating = rating;
+      renderAll();
+    })
+    .catch(function(err){ console.error("Salvataggio valutazione fallito:", err); });
+}
 function buildFoto(root){
   var log=PHOTO_LOG.slice().sort(function(a,b){ return a.date<b.date?-1:1; });
   setB(root,"foto.count", log.length? log.length+" "+T().shots : T().noShots);
@@ -2485,10 +2536,11 @@ function buildFoto(root){
   var hg=ch(root,"foto.grid");
   if (hg){
     hg.innerHTML="";
-    var wf=W();
-    var inWin=log.filter(function(p){ var i=photoDayIndex(p); return i>=wf.from&&i<=TODAY(); });
-    if (!inWin.length) hg.innerHTML='<div class="an-empty" style="grid-column:1 / -1"><span class="an-empty-t">'+T().noShots+'</span></div>';
-    inWin.forEach(function(p){
+    /* PORTING 24/09: non più filtrata dall'Intervallo globale -- escludeva sempre gli scatti
+       pre-ciclo (indice negativo) perché la finestra parte al più da 0, "ciclo" compreso. Una
+       galleria foto si scorre per intero, come le altre 4 modalità già fanno. */
+    if (!log.length) hg.innerHTML='<div class="an-empty" style="grid-column:1 / -1"><span class="an-empty-t">'+T().noShots+'</span></div>';
+    log.slice().reverse().forEach(function(p){
       var i=photoDayIndex(p), cell=document.createElement("div"); cell.className="an-fcell";
       var sh=photoSlot(p);
       var t1=document.createElement("span"); t1.className="an-ftag an-ftag-d"; t1.textContent=gTag(i); sh.appendChild(t1);
@@ -2511,8 +2563,15 @@ function buildFoto(root){
       var i=photoDayIndex(p), wrap=document.createElement("div");
       var el=document.createElement("div"); el.className="an-flrow";
       el.setAttribute("data-photo", p.filename);
-      el.innerHTML='<span style="font-weight:600;color:var(--ink)">'+fmtDM(dateOfDay(i))+'</span>'+
-        '<span class="an-num">'+gTag(i)+'</span><span>'+(p.luogo||"\u2014")+'</span><span>'+(p.note||"\u2014")+'</span>';
+      /* PORTING 24/09: la riga era solo testo, senza la foto -- aggiunta una miniatura */
+      var thumb=photoSlot(p,"an-fshot an-flthumb");
+      el.appendChild(thumb);
+      var meta=document.createElement("span"); meta.style.cssText="font-weight:600;color:var(--ink)";
+      meta.textContent=fmtDM(dateOfDay(i));
+      el.appendChild(meta);
+      var g=document.createElement("span"); g.className="an-num"; g.textContent=gTag(i); el.appendChild(g);
+      var lg=document.createElement("span"); lg.textContent=p.luogo||"\u2014"; el.appendChild(lg);
+      var nt=document.createElement("span"); nt.textContent=p.note||"\u2014"; el.appendChild(nt);
       wrap.appendChild(el);
       /* PORTING 23/09: dati a corredo anche in Lista, non solo in Scrubber/Confronto */
       var tl=document.createElement("div"); tl.className="an-ftiles"; tl.style.marginTop="2px";
@@ -2583,6 +2642,23 @@ function buildFoto(root){
         tl.appendChild(e);
       });
       Rr.appendChild(tl);
+      /* PORTING 24/09: valutazione 1-5 per scatto -- unico modo per popolare "Andamento
+         valutazioni" (rimasta vuota perché nessuno scatto aveva mai un rating). Scrive solo
+         il campo rating dentro photo_log, non l'immagine: nessun collegamento con l'upload,
+         che resta un lavoro a parte. */
+      var rt=document.createElement("div"); rt.className="an-frating"; rt.style.cssText="display:flex;align-items:center;gap:3px;margin-top:9px";
+      var rl=document.createElement("span"); rl.style.cssText="font-size:9.5px;color:var(--ink3);margin-right:5px"; rl.textContent="Valutazione";
+      rt.appendChild(rl);
+      var curRating = p.rating!=null?+p.rating:0;
+      for (var rv=1; rv<=5; rv++){
+        (function(v){
+          var b=document.createElement("button"); b.type="button"; b.textContent="★";
+          b.style.cssText="border:none;background:none;cursor:pointer;font-size:16px;line-height:1;padding:2px;color:"+(curRating>=v?"var(--warn)":"var(--line2)");
+          b.addEventListener("click", function(){ AN_savePhotoRating(p.filename, v); });
+          rt.appendChild(b);
+        })(rv);
+      }
+      Rr.appendChild(rt);
       hs.appendChild(L); hs.appendChild(Rr);
     }
   }
@@ -2701,7 +2777,7 @@ function applyI18N(root){
 function renderAll(){
   var root=document.querySelector(".an-root"); if(!root) return;
   applyI18N(root);
-  buildCycle(root); buildHero(root); buildRecomp(root); buildLoad(root);
+  buildCycle(root); buildHero(root); buildHeroNarrative(root); buildRecomp(root); buildLoad(root);
   buildAdherence(root); buildClinical(root); buildStock(root);
   buildInsights(root); buildWorkout(root); buildFoto(root);
   var td=D()[TODAY()];
@@ -2855,7 +2931,10 @@ function AN_buildPhotoMetrics(){
     var i = photoDayIndex(p); if (i < 0 || i > t) return;
     var rec = (store.blob && store.blob["p2_day_" + i]) || {}, m = {};
     var pv = num(rec.peso); if (pv != null) m.peso = pv;
-    if (num(rec.hrv_min) == null || num(rec.hrv_max) == null) { var hv = num(rec.hrv); if (hv != null) m.hrv = hv; }
+    /* PORTING 24/09: HRV era sempre vuoto per ogni giorno a intervallo (la norma dal cambio iOS26) -- leggeva solo la vecchia media singola. m.hrv resta numerico (punto medio se a intervallo, solo per il delta di Confronto); m.hrvHead e' il testo mostrato (min-max, o il numero). */
+    var hLo = num(rec.hrv_min), hHi = num(rec.hrv_max), hSc = num(rec.hrv);
+    if (hLo != null && hHi != null) { m.hrv = (hLo + hHi) / 2; m.hrvHead = Math.round(hLo) + "–" + Math.round(hHi); }
+    else if (hSc != null) { m.hrv = hSc; m.hrvHead = String(Math.round(hSc)); }
     var sh = sleepH(rec.ore_sonno); if (sh != null) m.sonno = sh;
     if (i < t) {
       var x = AN_dayAdh(i);
