@@ -404,6 +404,11 @@
 .an-fgrid{display:grid;gap:9px;}
 .an-fcell{display:flex;flex-direction:column;gap:5px;min-width:0;}
 .an-fshot{position:relative;aspect-ratio:3 / 4;border-radius:10px;background:var(--surf2);border:1px solid var(--line2);overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.an-fdel{position:absolute;width:24px;height:24px;border-radius:50%;background:rgba(10,10,14,.55);border:none;color:#fff;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:2;}
+.an-fdel:hover{background:var(--bad);}
+.an-flcard2{position:relative;display:flex;gap:14px;align-items:flex-start;background:var(--surf);border:1px solid var(--line2);border-radius:14px;padding:14px;box-shadow:var(--shadow);}
+.an-flphoto2{width:clamp(96px,28vw,168px);height:clamp(124px,36vw,216px);aspect-ratio:unset;flex:0 0 auto;}
+.an-flbody2{flex:1;min-width:0;padding-right:20px;}
 .an-fshot.is-empty{border:1.5px dashed var(--line);background:transparent;}
 .an-fslot{font-size:9px;font-weight:600;color:var(--ink3);text-align:center;padding:0 6px;word-break:break-all;}
 .an-ftag{position:absolute;padding:2px 6px;border-radius:4px;background:rgba(10,10,14,.74);color:#fff;font-size:9.5px;font-weight:700;font-variant-numeric:tabular-nums;}
@@ -2532,6 +2537,53 @@ function photoDayWeekLabel(p){
   if (i < 0) return "Pre-ciclo";
   return "Giorno " + i + "/" + CYCLE.days + " \u00b7 Settimana " + (Math.floor(i / 7) + 1);
 }
+/* PORTING 26/09: quota allenamenti della settimana, congelata alla data dello scatto (non a
+   oggi) -- stesso identico criterio (AN_dayAdh) gia' usato ovunque, letto giorno per giorno
+   dall'inizio della settimana fino al giorno della foto. */
+function photoWorkoutWeekLabel(p){
+  var i = photoDayIndex(p);
+  if (i < 0) return null;
+  var wkStart = Math.floor(i / 7) * 7, tot = 0, done = 0;
+  for (var k = wkStart; k <= i; k++) { var x = AN_dayAdh(k); tot += x.woTot; done += x.woDone; }
+  return tot > 0 ? (done + "/" + tot) : null;
+}
+function statPill(label, val, color){
+  if (val == null || val === "") return "";
+  return '<div style="background:var(--surf2);border-radius:10px;padding:10px 6px;text-align:center">' +
+    '<div style="font-size:15px;font-weight:700;letter-spacing:-.01em' + (color ? ";color:" + color : "") + '">' + val + '</div>' +
+    '<div style="font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.03em;margin-top:2px">' + label + '</div></div>';
+}
+function photoDeleteBtn(filename, pos){
+  var b = document.createElement("button"); b.type = "button"; b.className = "an-fdel";
+  b.style.cssText = pos || "top:5px;right:5px;";
+  b.title = "Elimina foto"; b.textContent = "\u2715";
+  b.addEventListener("click", function(ev){ ev.stopPropagation(); AN_deletePhotoEntry(filename); });
+  return b;
+}
+/* PORTING 26/09: elimina SOLO il riferimento in photo_log (stesso comportamento di V1 --
+   fotoDeleteEntry -- il file nello storage non viene rimosso: gia' cosi' in V1, decisione
+   presa in precedenza e mai cambiata). Stesso read-modify-write di sempre. */
+function AN_deletePhotoEntry(filename){
+  if (!confirm("Eliminare questa foto dalla timeline?")) return;
+  var qs = "?user_id=eq.giorgio_protocollo_2026";
+  fetch(CFG.PROXY_URL + qs + "&select=data", { headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY } })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      var d = (rows[0] && rows[0].data) || {};
+      d.photo_log = (Array.isArray(d.photo_log) ? d.photo_log : []).filter(function(e){ return e.filename !== filename; });
+      return fetch(CFG.PROXY_URL + qs, {
+        method: "PATCH",
+        headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
+        body: JSON.stringify({ data: d })
+      });
+    })
+    .then(function(res){
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      PHOTO_LOG = PHOTO_LOG.filter(function(e){ return e.filename !== filename; });
+      renderAll();
+    })
+    .catch(function(e){ alert("Errore nella cancellazione: " + e.message); });
+}
 function pctColor(pct){ return pct == null ? "var(--ink3)" : (pct >= 100 ? "var(--ok)" : (pct > 0 ? "var(--warn-ink)" : "var(--bad)")); }
 function photoSlot(p, cls){
   var el=document.createElement("div");
@@ -2586,6 +2638,7 @@ function buildFoto(root){
       var i=photoDayIndex(p), cell=document.createElement("div"); cell.className="an-fcell";
       var sh=photoSlot(p);
       var t1=document.createElement("span"); t1.className="an-ftag an-ftag-d"; t1.textContent=gTag(i); sh.appendChild(t1);
+      sh.appendChild(photoDeleteBtn(p.filename, "bottom:5px;right:5px;"));
       var m=PHOTO_METRICS[p.date]||{};
       var pw = m.peso!=null?m.peso:(p.peso_manual?num(p.peso_manual):null);
       if (pw!=null) { var t2=document.createElement("span"); t2.className="an-ftag"; t2.style.cssText="top:5px;right:5px;left:auto"; t2.textContent=it(pw,1)+" kg"; sh.appendChild(t2); }
@@ -2612,37 +2665,62 @@ function buildFoto(root){
   var hl=ch(root,"foto.list");
   if (hl){
     hl.innerHTML="";
-    if (!log.length) hl.innerHTML='<div class="an-chart-state">'+T().noShots+'</div>';
-    /* PORTING 25/09: card grande come in V1 (foto grande + testata + griglia di tessere
-       colorate + T1/T2), non più una riga sottile di sola anagrafica. */
+    hl.style.cssText="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(440px,100%),1fr));gap:14px";
+    if (!log.length) hl.innerHTML='<div class="an-chart-state" style="grid-column:1 / -1">'+T().noShots+'</div>';
+    /* PORTING 26/09: vista Lista com'era in V1 -- 2 colonne, foto grande, testata con
+       giorno/settimana, badge allenamento, griglia 3x2 di pillole (non tessere in riga),
+       T1/T2 come due pillole colorate, pulsante elimina. Colori dai token di v2, non gli hex
+       letterali di V1. */
     log.slice().reverse().forEach(function(p){
       var i=photoDayIndex(p);
-      var card=document.createElement("div"); card.className="an-flcard";
+      var card=document.createElement("div"); card.className="an-flcard2";
       card.setAttribute("data-photo", p.filename);
-      card.appendChild(photoSlot(p, "an-fshot an-flphoto"));
-      var body=document.createElement("div"); body.className="an-flbody";
-      var head=document.createElement("div"); head.className="an-flhead";
-      head.innerHTML='<strong>'+fmtDM(dateOfDay(i))+'</strong><span class="an-num">'+gTag(i)+'</span>'+
-        '<span class="an-fldw">'+photoDayWeekLabel(p)+'</span>';
+      card.appendChild(photoDeleteBtn(p.filename, "top:8px;right:8px;"));
+      card.appendChild(photoSlot(p, "an-fshot an-flphoto2"));
+      var body=document.createElement("div"); body.className="an-flbody2";
+      var head=document.createElement("div");
+      head.innerHTML='<div style="font-size:13px;font-weight:600;color:var(--ink)">'+fmtDM(dateOfDay(i))+
+        '<span style="font-size:11px;color:var(--ink3);font-weight:500"> \u00b7 '+gTag(i)+'</span></div>'+
+        '<div style="font-size:11px;color:var(--c-mark);font-weight:600;margin-top:1px">'+photoDayWeekLabel(p)+'</div>';
       body.appendChild(head);
+      var d = D()[i] || {};
+      if (i >= 0 && d._type){
+        var badge=document.createElement("div"); badge.style.cssText="margin-top:6px";
+        var dotCol = d._done ? "var(--ok)" : "var(--bad)";
+        badge.innerHTML='<span style="display:inline-flex;align-items:center;gap:5px;background:var(--surf2);border-radius:20px;padding:3px 10px;font-size:10.5px;font-weight:600;color:var(--ink2)">'+esc(d._type)+
+          '<span style="width:6px;height:6px;border-radius:50%;background:'+dotCol+';display:inline-block"></span></span>';
+        body.appendChild(badge);
+      }
+      var m=PHOTO_METRICS[p.date]||{};
+      var pesoVal = m.peso!=null?m.peso:(p.peso_manual?num(p.peso_manual):null);
+      var deltaTxt = pesoVal!=null ? itSigned(pesoVal - T0_PESO, 1) : null;
+      var pills=[
+        statPill(T().peso, pesoVal!=null?(it(pesoVal,1)+(deltaTxt?' <span style="font-size:9px;font-weight:600;color:var(--warn-ink)">'+deltaTxt+'</span>':"")):null),
+        statPill(T().hrv, m.hrvHead),
+        statPill(T().sonno, m.sonno!=null?fmtHours(m.sonno):null),
+        statPill(T().injections, m.inj!=null?m.inj+"%":null, pctColor(m.inj)),
+        statPill(T().supplements, m.supp!=null?m.supp+"%":null, pctColor(m.supp)),
+        statPill("WO sett.", photoWorkoutWeekLabel(p))
+      ].join("");
+      var grid=document.createElement("div");
+      grid.style.cssText="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px";
+      grid.innerHTML=pills;
+      body.appendChild(grid);
+      var t1t2=document.createElement("div"); t1t2.style.cssText="display:flex;gap:6px;margin-top:8px";
+      [["T1 (12 set)", photoT1T2Label(p).split(" \u00b7 ")[0].replace("T1 ","")],
+       ["T2 (7 nov)", photoT1T2Label(p).split(" \u00b7 ")[1].replace("T2 ","")]].forEach(function(pp){
+        var box=document.createElement("div");
+        box.style.cssText="flex:1;background:var(--accent-soft);border-radius:8px;padding:6px 9px";
+        box.innerHTML='<div style="font-size:8.5px;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.03em">'+pp[0]+'</div>'+
+          '<div style="font-size:12px;font-weight:700;color:var(--accent-ink)">'+pp[1]+'</div>';
+        t1t2.appendChild(box);
+      });
+      body.appendChild(t1t2);
       if (p.luogo || p.note){
-        var loc=document.createElement("div"); loc.className="an-flloc";
+        var loc=document.createElement("div"); loc.style.cssText="font-size:10.5px;color:var(--ink3);margin-top:6px";
         loc.textContent=[p.luogo, p.note].filter(Boolean).join(" \u00b7 ");
         body.appendChild(loc);
       }
-      var m=PHOTO_METRICS[p.date]||{};
-      var tl=document.createElement("div"); tl.className="an-ftiles"; tl.style.marginTop="6px";
-      var any=false;
-      photoMetrics(p).forEach(function(q){
-        if (q[1]==null) return; any=true;
-        var col = (q[0]==="% "+T().injections) ? pctColor(m.inj) : ((q[0]==="% "+T().supplements) ? pctColor(m.supp) : "var(--ink)");
-        var e=document.createElement("div"); e.className="an-ftile";
-        e.innerHTML='<span class="an-ftile-l">'+q[0]+'</span><strong style="color:'+col+'">'+q[1]+'</strong>';
-        tl.appendChild(e);
-      });
-      if (any) body.appendChild(tl); else { var none=document.createElement("div"); none.className="an-fldw"; none.style.marginTop="4px"; none.textContent=T().noData; body.appendChild(none); }
-      var t1t2=document.createElement("div"); t1t2.className="an-flt1t2"; t1t2.textContent=photoT1T2Label(p);
-      body.appendChild(t1t2);
       card.appendChild(body);
       hl.appendChild(card);
     });
