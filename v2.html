@@ -13,6 +13,9 @@
     --accent:#1f5fbf; --accent-soft:#e7effc; --accent-ink:#1a4f9e;
     --hero:#0a0a0c;
     --ok:#2e9e4f; --warn:#f5c400; --warn-ink:#8a6d00; --bad:#d81e05; --idle:#b6b6be;
+    /* PORTING 26/09: due colori dal mockup approvato, non presenti nella palette base --
+       servono all'identita' per composto in Stock (IGF-1 DES, TB-500). */
+    --c-igf:#7a4fc9; --c-tb:#45454e;
     --shadow:0 1px 2px rgba(10,10,14,.05), 0 8px 24px -8px rgba(10,10,14,.10);
     --shadow-lg:0 2px 4px rgba(10,10,14,.06), 0 24px 60px -20px rgba(10,10,14,.22);
     --r-card:16px;
@@ -6119,28 +6122,28 @@ var UC_PEPTIDES_G = [
 // suppliers[].key + vial di base servono per ricostruire le STESSE chiavi già scritte
 // in stock_v2_vials da mesi di uso reale (compoundId_supplierKey_vN).
 var GST_COMPOUNDS = [
-  { id:"tesa", name:"Tesamorelin", dose_mcg:2000, voltePerDie:1, doseLabel:"2 mg \u00b7 sera",
+  { id:"tesa", name:"Tesamorelin", dose_mcg:2000, voltePerDie:1, doseLabel:"2 mg \u00b7 sera", color:"var(--accent)",
     stabilityDays:21, defaultMg:10, defaultBac:2.0,
     suppliers:[
       { key:"bachem", label:"Bachem", vials: mkVialsG(24,"intatto") },
       { key:"limitless", label:"Limitless", vials:[{n:1,stato:"perso"},{n:2,stato:"perso"},{n:3,stato:"intatto"},{n:4,stato:"intatto"},{n:5,stato:"intatto"},{n:6,stato:"intatto"},{n:7,stato:"intatto"},{n:8,stato:"intatto"},{n:9,stato:"intatto"},{n:10,stato:"intatto"},{n:11,stato:"intatto"},{n:12,stato:"intatto"}] }
     ] },
-  { id:"fragment", name:"Fragment 176-191", dose_mcg:250, voltePerDie:2, doseLabel:"250 mcg \u00d7 2",
+  { id:"fragment", name:"Fragment 176-191", dose_mcg:250, voltePerDie:2, doseLabel:"250 mcg \u00d7 2", color:"var(--bad)",
     stabilityDays:30, defaultMg:10, defaultBac:2.0,
     suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(6,"intatto") } ] },
-  { id:"ipa", name:"Ipamorelin", dose_mcg:100, voltePerDie:1, doseLabel:"100 mcg \u00b7 sera",
+  { id:"ipa", name:"Ipamorelin", dose_mcg:100, voltePerDie:1, doseLabel:"100 mcg \u00b7 sera", color:"var(--ok)",
     stabilityDays:30, defaultMg:10, defaultBac:2.0,
     suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(4,"intatto") } ] },
-  { id:"igf", name:"IGF-1 DES", dose_mcg:50, voltePerDie:5/7, doseLabel:"50 mcg post-WO \u00b7 IM bilat.",
+  { id:"igf", name:"IGF-1 DES", dose_mcg:50, voltePerDie:5/7, doseLabel:"50 mcg post-WO \u00b7 IM bilat.", color:"var(--c-igf)",
     stabilityDays:30, defaultMg:2, defaultBac:3.0, bilat:true,
     suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(4,"intatto") } ] },
-  { id:"bpc", name:"BPC-157", dose_mcg:250, voltePerDie:2, doseLabel:"250 mcg \u00d7 2",
+  { id:"bpc", name:"BPC-157", dose_mcg:250, voltePerDie:2, doseLabel:"250 mcg \u00d7 2", color:"var(--warn)",
     stabilityDays:28, defaultMg:10, defaultBac:2.0,
     suppliers:[
       { key:"bachem", label:"Bachem", vials: mkVialsG(6,"intatto") },
       { key:"limitless", label:"Limitless", vials:[{n:1,stato:"in_uso"},{n:2,stato:"intatto"}] }
     ] },
-  { id:"tb500", name:"TB-500", dose_mcg:500, voltePerDie:1, doseLabel:"500 mcg \u00b7 sera",
+  { id:"tb500", name:"TB-500", dose_mcg:500, voltePerDie:1, doseLabel:"500 mcg \u00b7 sera", color:"var(--c-tb)",
     stabilityDays:28, defaultMg:10, defaultBac:2.0,
     suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(6,"intatto") } ] }
 ];
@@ -6469,10 +6472,12 @@ function GST_renderStock(){
       '<div class="an-field"><label>BAC (mL)</label><input type="number" step="0.1" data-gst-uc="bac" value="'+GST.ucBac+'"></div>' +
       '<div class="an-field"><label>Dose (mcg)</label><input type="number" step="1" data-gst-uc="dose" value="'+GST.ucDose+'"></div>' +
     '</div>' +
-    '<div style="background:var(--hero);color:#fff;border-radius:12px;padding:14px 16px;margin-top:4px">' +
-      '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#fff9;">Da prelevare</div>' +
-      '<div style="font-size:30px;font-weight:700">' + (ui!=null?gstIt(ui,1):"\u2014") + ' <span style="font-size:14px;font-weight:500;color:#fff9">UI</span></div>' +
-      '<div style="font-size:11.5px;color:#fffc;margin-top:2px">' + (ucP.bilat && ui!=null ? ("\u2192 "+gstIt(ui/2,1)+" UI per lato") : "dose intera, un'iniezione") + '</div>' +
+    /* PORTING 26/09: il mockup approvato usa un riquadro in tinta azzurra (accent-soft/accent-ink),
+       non nero -- avevo messo il colore "hero" (nero) usato altrove in Andamento, per errore. */
+    '<div style="background:var(--accent-soft);color:var(--accent-ink);border-radius:12px;padding:14px 16px;margin-top:4px">' +
+      '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent-ink);opacity:.75">Da prelevare</div>' +
+      '<div style="font-size:30px;font-weight:700;color:var(--accent-ink)">' + (ui!=null?gstIt(ui,1):"\u2014") + ' <span style="font-size:14px;font-weight:600;color:var(--accent-ink)">UI</span></div>' +
+      '<div style="font-size:11.5px;color:var(--accent-ink);font-weight:600;margin-top:2px">' + (ucP.bilat && ui!=null ? ("\u2192 "+gstIt(ui/2,1)+" UI per lato") : "dose intera, un'iniezione") + '</div>' +
     '</div>' +
     '<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink2)">' +
       '<span>Concentrazione <strong style="color:var(--ink)">'+(conc!=null?gstIt(conc,0):"\u2014")+' mcg/mL</strong></span>' +
@@ -6503,11 +6508,13 @@ function GST_renderStock(){
     }
     var row = document.createElement("div"); // solo per costruire html via sicurezza esc? uso stringhe dirette qui
     html += '<div class="an-trow" style="grid-template-columns:1.3fr 70px 70px 90px 90px 90px 90px">' +
-      '<span style="font-weight:500;color:var(--ink)">'+esc(c.name)+'<div style="font-size:10px;color:var(--ink3)">'+esc(c.doseLabel)+'</div></span>' +
+      /* PORTING 26/09: pallino colorato per composto e "Da prelevare" in blu (accent-ink) --
+         nel mockup approvato ogni riga porta l'identita' colore del composto, qui mancava. */
+      '<span style="display:flex;align-items:center;gap:8px;min-width:0"><span style="width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span><span style="font-weight:600;color:var(--ink);min-width:0"><div>'+esc(c.name)+'</div><div style="font-size:10px;color:var(--ink3);font-weight:500">'+esc(c.doseLabel)+'</div></span></span>' +
       '<input type="number" step="0.1" data-gst-recon-mg="'+c.id+'" value="'+mg+'" style="width:60px;border:1px solid var(--line2);border-radius:6px;padding:3px 5px;font-size:12px;text-align:right">' +
       '<input type="number" step="0.1" data-gst-recon-bac="'+c.id+'" value="'+bac+'" style="width:60px;border:1px solid var(--line2);border-radius:6px;padding:3px 5px;font-size:12px;text-align:right">' +
       '<span class="an-num">'+(cc!=null?gstIt(cc,0):"\u2014")+' mcg/mL</span>' +
-      '<span class="an-num" style="font-weight:600">'+(uiC!=null?(c.bilat?gstIt(uiC/2,1)+" UI/lato":gstIt(uiC,1)+" UI"):"\u2014")+'</span>' +
+      '<span class="an-num" style="font-weight:700;color:var(--accent-ink)">'+(uiC!=null?(c.bilat?gstIt(uiC/2,1)+" UI/lato":gstIt(uiC,1)+" UI"):"\u2014")+'</span>' +
       '<span class="an-num">'+(recoDate?gstFmtDate(new Date(recoDate+"T00:00:00")):"\u2014")+'</span>' +
       '<span class="an-num" style="color:'+scadeCol+';font-weight:600">'+scadeHtml+'</span>' +
     '</div>';
@@ -6530,7 +6537,7 @@ function GST_renderStock(){
         /* PORTING 25/09: puo' capitare mentre stock_v2_vials sta ancora caricando (il vial
            "in uso" di base non ha ancora una data di ricostituzione reale) -- niente crash,
            solo uno stato transitorio onesto invece di un numero inventato. */
-        html += '<div class="an-head"><span class="an-title">'+esc(c.name)+'</span><span class="an-sub">vial '+av.n+' · in uso</span></div>' +
+        html += '<div class="an-head"><span class="an-title" style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span>'+esc(c.name)+'</span><span style="padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font-size:10px;font-weight:700">vial '+av.n+' · in uso</span></div>' +
           '<div class="an-note">Caricamento dati scorte…</div></section>';
         return;
       }
@@ -6538,7 +6545,7 @@ function GST_renderStock(){
       var pctVita = st ? Math.min(100, st.etaGiorni/c.stabilityDays*100) : 0;
       var colDosi = pctDosi>=90 ? "var(--bad)" : (pctDosi>=70?"var(--warn-ink)":"var(--ok)");
       var colVita = pctVita>=90 ? "var(--bad)" : (pctVita>=70?"var(--warn-ink)":"var(--ok)");
-      html += '<div class="an-head"><span class="an-title">'+esc(c.name)+'</span><span class="an-sub">vial '+av.n+' ('+esc(av.sup)+') \u00b7 in uso</span></div>' +
+      html += '<div class="an-head"><span class="an-title" style="display:flex;align-items:center;gap:8px;min-width:0"><span style="width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(c.name)+'</span></span><span style="padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font-size:10px;font-weight:700;white-space:nowrap">vial '+av.n+' ('+esc(av.sup)+') \u00b7 in uso</span></div>' +
         '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink2)"><span>'+st.fatte.toFixed(0)+' fatte \u00b7 '+st.rimaste+' rimaste / '+st.totali+'</span></div>' +
         '<div style="height:6px;background:var(--surf2);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pctDosi.toFixed(0)+'%;background:'+colDosi+'"></div></div>' +
         '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink2);margin-top:6px"><span>Vita residua</span><span>'+st.vitaResidua+' gg / '+c.stabilityDays+'</span></div>' +
@@ -6561,7 +6568,8 @@ function GST_renderStock(){
     var margineTxt = diff>=0 ? ("+"+diff+" gg oltre fine ciclo") : ("mancano "+(-diff)+" gg");
     var margineCol = diff>=0 ? "var(--ok)" : "var(--bad)";
     html += '<div class="an-trow" style="grid-template-columns:1.2fr 50px 50px 50px 100px 1fr">' +
-      '<span style="font-weight:500">'+esc(c.name)+'</span><span class="an-num">'+cov.intatti+'</span><span class="an-num">'+cov.finiti+'</span><span class="an-num">'+cov.persi+'</span>' +
+      /* PORTING 26/09: pallino colorato per composto, come nel mockup approvato (era assente). */
+      '<span style="display:flex;align-items:center;gap:8px;min-width:0"><span style="width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span><span style="font-weight:600;color:var(--ink)">'+esc(c.name)+'</span></span><span class="an-num">'+cov.intatti+'</span><span class="an-num">'+cov.finiti+'</span><span class="an-num">'+cov.persi+'</span>' +
       '<span class="an-num">'+copreTxt+'</span><span style="color:'+margineCol+';font-weight:600">'+margineTxt+'</span></div>';
   });
   html += '</div></div></section>';
