@@ -1758,7 +1758,7 @@ PHOTO_LOG = [];
    4 · STATO — un solo intervallo, globale.
    ══════════════════════════════════════════════════════════ */
 var AN = { tab:"cruscotto", range:60, theme:"light", loading:false,
-           fotoMode:"grid", cmpMode:"side", cmpA:null, cmpB:null, scrub:null, open:{chest:true} };
+           fotoMode:"list", cmpMode:"side", cmpA:null, cmpB:null, scrub:null, open:{chest:true} };
 function D(){ return MOCK.days; }
 function TODAY(){ return MOCK.todayIndex; }
 function R(){ return AN.range === 0 ? CYCLE.days : AN.range; }
@@ -2689,6 +2689,30 @@ function AN_deletePhotoEntry(filename){
     })
     .catch(function(e){ alert("Errore nella cancellazione: " + e.message); });
 }
+/* PORTING 26/09: Griglia troncava "Integr 100%" in una riga unica troppo stretta; Per
+   settimana non aveva alcun dato oltre al peso. Estratti in due helper condivisi cosi' le due
+   viste restano identiche invece di avere ciascuna la propria copia (parzialmente diversa) della
+   stessa logica. Ogni informazione sulla propria riga: niente piu' da troncare. */
+function photoOverlayTiles(sh, p, i){
+  var t1=document.createElement("span"); t1.className="an-ftag an-ftag-d"; t1.textContent=gTag(i); sh.appendChild(t1);
+  sh.appendChild(photoDeleteBtn(p.filename, "bottom:5px;right:5px;"));
+  var m=PHOTO_METRICS[p.date]||{};
+  var pw = m.peso!=null?m.peso:(p.peso_manual?num(p.peso_manual):null);
+  if (pw!=null){ var t2=document.createElement("span"); t2.className="an-ftag"; t2.style.cssText="top:5px;right:5px;left:auto"; t2.textContent=it(pw,1)+" kg"; sh.appendChild(t2); }
+  return m;
+}
+function photoMetaLinesHTML(p, i, m){
+  var sub=[];
+  if (m.hrvHead!=null) sub.push("HRV "+m.hrvHead);
+  if (m.injTot!=null){ var injColG=m.injDone===m.injTot?"var(--ok)":(m.injDone>0?"var(--warn-ink)":"var(--bad)"); sub.push('<span style="color:'+injColG+'">Inj '+m.injDone+"/"+m.injTot+'</span>'); }
+  if (m.supp!=null) sub.push('<span style="color:'+pctColor(m.supp)+'">Integr '+m.supp+'%</span>');
+  if (m.workout) sub.push("WO "+esc(m.workout));
+  var html='<span class="an-fdate">'+fmtDM(dateOfDay(i))+(p.luogo?" \u00b7 "+esc(p.luogo):"")+'</span>'+
+    '<span class="an-fsub">'+photoDayWeekLabel(p)+'</span>';
+  sub.forEach(function(x){ html += '<span class="an-fsub">'+x+'</span>'; });
+  html += '<span class="an-fsub" style="color:var(--c-mark)">'+photoT1T2Label(p)+'</span>';
+  return html;
+}
 function pctColor(pct){ return pct == null ? "var(--ink3)" : (pct >= 100 ? "var(--ok)" : (pct > 0 ? "var(--warn-ink)" : "var(--bad)")); }
 function photoSlot(p, cls){
   var el=document.createElement("div");
@@ -2742,26 +2766,10 @@ function buildFoto(root){
     log.slice().reverse().forEach(function(p){
       var i=photoDayIndex(p), cell=document.createElement("div"); cell.className="an-fcell";
       var sh=photoSlot(p);
-      var t1=document.createElement("span"); t1.className="an-ftag an-ftag-d"; t1.textContent=gTag(i); sh.appendChild(t1);
-      sh.appendChild(photoDeleteBtn(p.filename, "bottom:5px;right:5px;"));
-      var m=PHOTO_METRICS[p.date]||{};
-      var pw = m.peso!=null?m.peso:(p.peso_manual?num(p.peso_manual):null);
-      if (pw!=null) { var t2=document.createElement("span"); t2.className="an-ftag"; t2.style.cssText="top:5px;right:5px;left:auto"; t2.textContent=it(pw,1)+" kg"; sh.appendChild(t2); }
+      var m=photoOverlayTiles(sh, p, i);
       cell.appendChild(sh);
-      /* PORTING 25/09: overlay arricchito come in V1 -- giorno/settimana, sostanze a
-         colpo d'occhio (peso/HRV/inj/integr/workout, iniezioni e integratori colorati),
-         countdown T1/T2 calcolato sulla data dello scatto. */
       var meta=document.createElement("div"); meta.className="an-fmeta";
-      var sub=[];
-      if (m.hrvHead!=null) sub.push("HRV "+m.hrvHead);
-      /* PORTING 26/09: frazione fatte/previste, come in Lista e come in V1 -- non percentuale. */
-      if (m.injTot!=null) { var injColG = m.injDone===m.injTot?"var(--ok)":(m.injDone>0?"var(--warn-ink)":"var(--bad)"); sub.push("<span style=\"color:"+injColG+"\">Inj "+m.injDone+"/"+m.injTot+"</span>"); }
-      if (m.supp!=null) sub.push("<span style=\"color:"+pctColor(m.supp)+"\">Integr "+m.supp+"%</span>");
-      if (m.workout) sub.push("WO "+esc(m.workout));
-      meta.innerHTML='<span class="an-fdate">'+fmtDM(dateOfDay(i))+(p.luogo?" \u00b7 "+esc(p.luogo):"")+'</span>'+
-        '<span class="an-fsub">'+photoDayWeekLabel(p)+'</span>'+
-        (sub.length?'<span class="an-fsub">'+sub.join(" \u00b7 ")+'</span>':"")+
-        '<span class="an-fsub" style="color:var(--c-mark)">'+photoT1T2Label(p)+'</span>';
+      meta.innerHTML=photoMetaLinesHTML(p, i, m);
       cell.appendChild(meta);
       hg.appendChild(cell);
     });
@@ -2849,15 +2857,16 @@ function buildFoto(root){
       var blk=document.createElement("div");
       blk.innerHTML='<div class="an-fweek-h">'+(+k<0?"Pre-ciclo":"W"+(+k+1))+' \u00b7 '+byW[k].length+' '+T().shots+'</div>';
       var g=document.createElement("div"); g.className="an-fgrid"; g.style.marginTop="8px";
+      /* PORTING 26/09: mancavano tutti i dati oltre al peso -- stessi helper di Griglia, non
+         una copia ridotta a parte. */
       byW[k].forEach(function(p){
         var i=photoDayIndex(p), c=document.createElement("div"); c.className="an-fcell";
         var shk=photoSlot(p);
-        var pw2=(PHOTO_METRICS[p.date]||{}).peso;
-        if (pw2!=null) { var t3=document.createElement("span"); t3.className="an-ftag"; t3.style.cssText="top:5px;right:5px;left:auto"; t3.textContent=it(pw2,1)+" kg"; shk.appendChild(t3); }
+        var mk=photoOverlayTiles(shk, p, i);
         c.appendChild(shk);
-        var m=document.createElement("div"); m.className="an-fmeta";
-        m.innerHTML='<span class="an-fdate">'+fmtDM(dateOfDay(i))+'</span>';
-        c.appendChild(m); g.appendChild(c);
+        var mm=document.createElement("div"); mm.className="an-fmeta";
+        mm.innerHTML=photoMetaLinesHTML(p, i, mk);
+        c.appendChild(mm); g.appendChild(c);
       });
       blk.appendChild(g); hw.appendChild(blk);
     });
@@ -2876,6 +2885,22 @@ function buildFoto(root){
       var tg=document.createElement("span"); tg.className="an-ftag an-ftag-d"; tg.textContent=gTag(i); big.appendChild(tg);
       L.appendChild(big);
       var Rr=document.createElement("div"); Rr.className="an-fscroll-r";
+      /* PORTING 26/09: mancavano giorno/settimana, luogo, badge allenamento e T1/T2 -- li
+         aveva solo Lista/Griglia. Stessa intestazione, stesso helper photoMetaLinesHTML usato
+         li', qui sopra le tessere invece che sotto la foto. */
+      var mScrub=PHOTO_METRICS[p.date]||{};
+      var head=document.createElement("div"); head.style.cssText="margin-bottom:8px";
+      head.innerHTML='<div style="font-size:13px;font-weight:600;color:var(--ink)">'+fmtDM(dateOfDay(i))+
+        (p.time?" \u00b7 "+esc(p.time):"")+'</div>'+
+        '<div style="font-size:11px;color:var(--c-mark);font-weight:600;margin-top:1px">'+photoDayWeekLabel(p)+
+        (p.luogo?' \u00b7 '+esc(p.luogo):'')+'</div>';
+      Rr.appendChild(head);
+      if (i>=0 && mScrub.woLabel){
+        var badgeS=document.createElement("div"); badgeS.style.cssText="margin-bottom:8px";
+        var dotS = mScrub.woIsRest ? "" : '<span style="width:6px;height:6px;border-radius:50%;background:'+(mScrub.woDone?"var(--ok)":"var(--bad)")+';display:inline-block"></span>';
+        badgeS.innerHTML='<span style="display:inline-flex;align-items:center;gap:5px;background:var(--surf2);border-radius:20px;padding:3px 10px;font-size:10.5px;font-weight:600;color:'+(mScrub.woIsRest?"var(--ink3)":"var(--ink2)")+'">'+esc(mScrub.woLabel)+dotS+'</span>';
+        Rr.appendChild(badgeS);
+      }
       var rg=document.createElement("input"); rg.type="range"; rg.className="an-frange";
       rg.min=0; rg.max=log.length-1; rg.value=AN.scrub;
       rg.addEventListener("input",function(){ AN.scrub=parseInt(rg.value,10); buildFoto(root); });
@@ -2909,6 +2934,9 @@ function buildFoto(root){
         })(rv);
       }
       Rr.appendChild(rt);
+      var t1t2S=document.createElement("div"); t1t2S.style.cssText="font-size:10.5px;color:var(--c-mark);margin-top:9px";
+      t1t2S.textContent=photoT1T2Label(p);
+      Rr.appendChild(t1t2S);
       hs.appendChild(L); hs.appendChild(Rr);
     }
   }
