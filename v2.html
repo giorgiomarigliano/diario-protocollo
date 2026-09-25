@@ -1854,6 +1854,38 @@ function buildHeroNarrative(root){
    un'estrapolazione statistica), quindi niente barra verso un obiettivo. Al suo posto un
    confronto con te stesso: media dei primi 14 giorni del ciclo contro la media degli ultimi 14
    giorni fino a oggi, punto medio dell'intervallo dove il dato e' a intervallo. */
+/* PORTING 26/09: Volume -- niente estrapolazione a fine ciclo (sarebbe un numero calcolato
+   spacciato per obiettivo). Due indicatori concreti al suo posto: quanti esercizi sono in salita
+   (dalla stessa Progressione di Workout) e il confronto delle ultime 2 settimane piene contro le
+   2 precedenti, stesso principio del confronto HRV -- con te stesso, non con un target. */
+function weeklyVolumeSeriesFull(){
+  /* PORTING 26/09: D() e' sempre lungo 112 (i giorni futuri esistono come null) -- il numero di
+     settimane concluse va calcolato da OGGI, non dalla lunghezza dell'array, altrimenti le
+     "ultime 2 settimane" prese con slice(-2) sono settimane future a zero. */
+  var days = D(), nW = Math.floor((dayIdxFromISO(today) + 1) / 7), weeks = [];
+  for (var w = 0; w < nW; w++) {
+    var sum = 0;
+    for (var d = 0; d < 7; d++) { var day = days[w*7+d]; if (day) sum += num(day.wo_volume) || 0; }
+    weeks.push(sum);
+  }
+  return weeks;
+}
+function volumeTrendVsPrev(){
+  var weeks = weeklyVolumeSeriesFull();
+  if (weeks.length < 4) return null;
+  var lastTwo = weeks.slice(-2), prevTwo = weeks.slice(-4, -2);
+  var a = (lastTwo[0]+lastTwo[1]) / 2, b = (prevTwo[0]+prevTwo[1]) / 2;
+  if (!b) return null;
+  return { pct: Math.round((a - b) / b * 100) };
+}
+function progressionQuota(){
+  if (!HISTORY_SESSIONS.length) return null;
+  var data = AN_progressionData(), total = 0, rising = 0;
+  Object.keys(data).forEach(function(m){
+    data[m].rows.forEach(function(r){ total++; if (r.delta > 0) rising++; });
+  });
+  return total ? { rising: rising, total: total } : null;
+}
 function hrvMidOf(d){
   if (!d) return null;
   var lo = num(d.hrv_min), hi = num(d.hrv_max);
@@ -1886,6 +1918,7 @@ function buildHero(root){
     {k:"vol",  l:t.volShort, v:volTot?it(Math.round(volTot/100)/10,1)+"t":null, u:"", cur:null, tgt:null, from:null, c:"var(--c-s3)"}
   ];
   var hrvCmp = hrvBaselineVsNow();
+  var volTrend = volumeTrendVsPrev(), progQ = progressionQuota();
   pills.forEach(function(p){
     var el=document.createElement("div"); el.className="an-pill";
     var pct=null;
@@ -1896,6 +1929,14 @@ function buildHero(root){
          solo il numero e il verso (su/giu'/invariato rispetto ai primi 14 giorni). */
       sub = (hrvCmp==null) ? '<span class="an-pill-t"><span class="an-slot"></span> vs inizio ciclo</span>'
         : '<span class="an-pill-t">'+(Math.abs(hrvCmp.delta)<1?"invariato":itSigned(Math.round(hrvCmp.delta),0)+" ms")+' vs inizio ciclo</span>';
+    } else if (p.k==="vol"){
+      /* PORTING 26/09: due righe invece della barra a target -- quota esercizi in salita
+         (Progressione) e confronto ultime 2 settimane piene vs le 2 precedenti. */
+      var l1 = progQ==null ? '<span class="an-pill-t"><span class="an-slot"></span> esercizi in salita</span>'
+        : '<span class="an-pill-t">'+progQ.rising+"/"+progQ.total+' esercizi in salita</span>';
+      var l2 = volTrend==null ? '<span class="an-pill-t"><span class="an-slot"></span> vs 2 sett. prima</span>'
+        : '<span class="an-pill-t">'+itSigned(volTrend.pct,0)+'% vs 2 sett. prima</span>';
+      sub = '<div style="display:flex;flex-direction:column;gap:2px;margin-top:2px">'+l1+l2+'</div>';
     } else {
       sub = (pct==null?'<span class="an-pill-t"><span class="an-slot"></span> '+T().target+'</span>'
                  :'<div class="an-pill-bar"><i style="width:'+pct.toFixed(0)+'%;background:'+p.c+'"></i></div>'+
