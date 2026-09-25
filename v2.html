@@ -279,10 +279,17 @@
   --c-event:rgba(10,10,14,.07); --c-event-ink:var(--ink2);
   --c-mark:#d81e05;
   
-  --c-g1:var(--ink2); --c-g2:#2e9e4f; --c-g3:#8a6d00; --c-g4:#d81e05; --c-g5:#6b4ea8; --c-g6:#57575f;
+  /* PORTING 26/09: la palette muscoli era fatta di sfumature spente, con tre grigi diversi
+     (Spalle/Femorali/Polpacci) e piu' toni di marrone/oliva facilmente confondibili tra loro
+     (Quadricipiti/Bicipiti/Lombari). Rifatta con 11 colori pieni e ben distinti, nessuno spento
+     e nessun doppione. I sei gruppi Sentinel riusano ESATTAMENTE lo stesso colore del muscolo
+     corrispondente in Volume/Progressione/Frequenza (stesso token, non un valore vicino):
+     Petto=c-m3, Dorso=c-m2, Spalle=c-m1, Bicipiti=c-m8, Tricipiti=c-m4, Gambe=c-m5 (quadricipiti,
+     il piu' rappresentativo del gruppo "Gambe"). */
+  --c-g1:var(--c-m3); --c-g2:var(--c-m2); --c-g3:var(--c-m1); --c-g4:var(--c-m8); --c-g5:var(--c-m4); --c-g6:var(--c-m5);
   
-  --c-m1:var(--ink2); --c-m2:#2e9e4f; --c-m3:#d81e05; --c-m4:#6b4ea8; --c-m5:#a8591a;
-  --c-m6:#b03060; --c-m7:#12796b; --c-m8:#8a6d00; --c-m9:#6e6e78; --c-m10:#4a4a54; --c-m11:#7a5a3a;
+  --c-m1:#1f5fbf; --c-m2:#2e9e4f; --c-m3:#d81e05; --c-m4:#7d3fc4; --c-m5:#e07b00;
+  --c-m6:#d6336c; --c-m7:#0f9b8e; --c-m8:#c9a400; --c-m9:#0ea5c4; --c-m10:#5c6bc0; --c-m11:#a05a2c;
   font:400 15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,sans-serif;
   color:var(--ink); background:var(--bg);
   display:flex; flex-direction:column; min-height:0;}
