@@ -1850,6 +1850,24 @@ function buildHeroNarrative(root){
   setB(root, "hero.headline", tpl[0]);
   setB(root, "hero.sub", tpl[1](a));
 }
+/* PORTING 26/09: HRV -- nessun target numerico e' mai stato fissato (serve un clinico, non
+   un'estrapolazione statistica), quindi niente barra verso un obiettivo. Al suo posto un
+   confronto con te stesso: media dei primi 14 giorni del ciclo contro la media degli ultimi 14
+   giorni fino a oggi, punto medio dell'intervallo dove il dato e' a intervallo. */
+function hrvMidOf(d){
+  if (!d) return null;
+  var lo = num(d.hrv_min), hi = num(d.hrv_max);
+  if (lo != null && hi != null) return (lo + hi) / 2;
+  return num(d.hrv);
+}
+function hrvBaselineVsNow(){
+  var days = D(), t = dayIdxFromISO(today), base = [], cur = [];
+  for (var i = 0; i < 14 && i < days.length; i++) { var v = hrvMidOf(days[i]); if (v != null) base.push(v); }
+  for (var j = Math.max(0, t - 13); j <= t; j++) { var v2 = hrvMidOf(days[j]); if (v2 != null) cur.push(v2); }
+  if (!base.length || !cur.length) return null;
+  var avg = function(a){ return a.reduce(function(s,x){ return s+x; },0) / a.length; };
+  return { base: avg(base), cur: avg(cur), delta: avg(cur) - avg(base) };
+}
 function buildHero(root){
   var host=ch(root,"hero.pillars"); if(!host) return;
   host.innerHTML="";
@@ -1867,15 +1885,25 @@ function buildHero(root){
     {k:"adh",  l:t.adhShort, v:adhAvg==null?null:adhAvg, u:"%", cur:adhAvg, tgt:100, from:0, c:"var(--c-s2)"},
     {k:"vol",  l:t.volShort, v:volTot?it(Math.round(volTot/100)/10,1)+"t":null, u:"", cur:null, tgt:null, from:null, c:"var(--c-s3)"}
   ];
+  var hrvCmp = hrvBaselineVsNow();
   pills.forEach(function(p){
     var el=document.createElement("div"); el.className="an-pill";
     var pct=null;
     if (p.tgt!=null&&p.cur!=null&&p.from!=null&&p.tgt!==p.from) pct=Math.max(0,Math.min(100,(p.cur-p.from)/(p.tgt-p.from)*100));
+    var sub;
+    if (p.k==="hrv"){
+      /* PORTING 26/09: confronto con l'inizio ciclo, non un target -- niente barra colorata,
+         solo il numero e il verso (su/giu'/invariato rispetto ai primi 14 giorni). */
+      sub = (hrvCmp==null) ? '<span class="an-pill-t"><span class="an-slot"></span> vs inizio ciclo</span>'
+        : '<span class="an-pill-t">'+(Math.abs(hrvCmp.delta)<1?"invariato":itSigned(Math.round(hrvCmp.delta),0)+" ms")+' vs inizio ciclo</span>';
+    } else {
+      sub = (pct==null?'<span class="an-pill-t"><span class="an-slot"></span> '+T().target+'</span>'
+                 :'<div class="an-pill-bar"><i style="width:'+pct.toFixed(0)+'%;background:'+p.c+'"></i></div>'+
+                  '<span class="an-pill-t">'+pct.toFixed(0)+'% verso '+it(p.tgt,1)+'</span>');
+    }
     el.innerHTML='<span class="an-pill-l">'+p.l+'</span>'+
       '<div class="an-pill-v"><strong data-bind="hero.'+p.k+'">'+(p.v==null?"\u2014":p.v)+'</strong><span>'+p.u+'</span></div>'+
-      (pct==null?'<span class="an-pill-t"><span class="an-slot"></span> '+T().target+'</span>'
-               :'<div class="an-pill-bar"><i style="width:'+pct.toFixed(0)+'%;background:'+p.c+'"></i></div>'+
-                '<span class="an-pill-t">'+pct.toFixed(0)+'% verso '+it(p.tgt,1)+'</span>');
+      sub;
     host.appendChild(el);
   });
 }
