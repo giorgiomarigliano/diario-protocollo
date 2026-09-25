@@ -6455,42 +6455,58 @@ function GST_renderAll(){
 function GST_renderStock(){
   var host = document.querySelector('[data-gst-view="stock"]'); if (!host) return;
   var vd = GST_V1.stock_v2_vials || {};
-  var todayStr = today; // ISO locale, gia' calcolato altrove nel file
+  var todayStr = today;
   var html = "";
 
-  // ── 1.2 Convertitore unita' ──
+  /* PORTING 26/09: riscritta per rispecchiare esattamente il layout del mockup approvato --
+     griglia a 12 colonne con span espliciti (Convertitore + Ricostituzione affiancate,
+     Scorte + Consumo + Fuori protocollo affiancate), non piu' tutto impilato a piena
+     larghezza come nel primo giro. Su mobile la stessa regola condivisa di Andamento
+     (.an-view.is-active > .an-card{grid-column:span 1 !important}) impila tutto in una sola
+     colonna, quindi la responsivita' resta quella gia' testata. */
+
+  // ── 1.2 Convertitore unita' (span 1/6) ──
   var ucList = UC_PEPTIDES_G.concat();
   var ucP = ucList.find(function(p){return p.id===GST.ucPeptide;}) || ucList[0];
   var conc = gstConc(GST.ucMg, GST.ucBac);
   var ui = (conc>0) ? gstUI(GST.ucDose, conc) : null;
   var dpv = (GST.ucDose>0) ? gstDosesPerVial(GST.ucMg, GST.ucDose) : null;
   var vol = (conc>0) ? (GST.ucDose/conc) : null;
-  html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Convertitore unit\u00e0</span><span class="an-sub">siringa da insulina U-100</span></div>' +
-    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">' +
+  var fillPct = ui!=null ? Math.min(100, ui) : 0;
+  var ticksHtml = "";
+  for (var tk=10; tk<=90; tk+=10) { ticksHtml += '<span style="position:absolute;top:0;bottom:0;left:'+tk+'%;width:1px;background:var(--ink3);opacity:.35"></span>'; }
+  html += '<section class="an-card" style="grid-column:1 / 6"><div class="an-head"><span class="an-title">Convertitore unit\u00e0</span><span class="an-sub">siringa da insulina U-100</span></div>' +
+    '<div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:8px">' +
       '<div class="an-field"><label>Peptide</label><select data-gst-uc="peptide">' + ucList.map(function(p){return '<option value="'+p.id+'"'+(p.id===GST.ucPeptide?' selected':'')+'>'+p.name+'</option>';}).join('') + '</select></div>' +
       '<div class="an-field"><label>Vial (mg)</label><input type="number" step="0.1" data-gst-uc="mg" value="'+GST.ucMg+'"></div>' +
       '<div class="an-field"><label>BAC (mL)</label><input type="number" step="0.1" data-gst-uc="bac" value="'+GST.ucBac+'"></div>' +
       '<div class="an-field"><label>Dose (mcg)</label><input type="number" step="1" data-gst-uc="dose" value="'+GST.ucDose+'"></div>' +
     '</div>' +
-    /* PORTING 26/09: il mockup approvato usa un riquadro in tinta azzurra (accent-soft/accent-ink),
-       non nero -- avevo messo il colore "hero" (nero) usato altrove in Andamento, per errore. */
-    '<div style="background:var(--accent-soft);color:var(--accent-ink);border-radius:12px;padding:14px 16px;margin-top:4px">' +
-      '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--accent-ink);opacity:.75">Da prelevare</div>' +
-      '<div style="font-size:30px;font-weight:700;color:var(--accent-ink)">' + (ui!=null?gstIt(ui,1):"\u2014") + ' <span style="font-size:14px;font-weight:600;color:var(--accent-ink)">UI</span></div>' +
-      '<div style="font-size:11.5px;color:var(--accent-ink);font-weight:600;margin-top:2px">' + (ucP.bilat && ui!=null ? ("\u2192 "+gstIt(ui/2,1)+" UI per lato") : "dose intera, un'iniezione") + '</div>' +
+    '<div style="display:flex;align-items:flex-end;gap:18px;padding:12px 14px;border-radius:12px;background:var(--accent-soft)">' +
+      '<div style="display:flex;flex-direction:column;gap:2px">' +
+        '<span style="font-size:10px;font-weight:700;color:var(--accent-ink);text-transform:uppercase">Da prelevare</span>' +
+        '<div style="display:flex;align-items:baseline;gap:5px"><span style="font-size:32px;line-height:1;font-weight:700;letter-spacing:-.02em;color:var(--accent-ink)">'+(ui!=null?gstIt(ui,1):"\u2014")+'</span><span style="font-size:13px;font-weight:600;color:var(--accent-ink)">UI</span></div>' +
+        '<span style="font-size:11px;font-weight:600;color:var(--accent-ink)">'+(ucP.bilat && ui!=null ? ("\u2192 "+gstIt(ui/2,1)+" UI per lato") : "dose intera, un\'iniezione")+'</span>' +
+      '</div>' +
+      '<div style="flex:1 1 auto;display:flex;flex-direction:column;gap:6px;padding-bottom:3px">' +
+        '<div style="position:relative;height:18px;border-radius:5px;background:var(--surf);border:1px solid var(--line);overflow:hidden">' +
+          '<div style="position:absolute;left:0;top:0;bottom:0;width:'+fillPct+'%;background:var(--accent);opacity:.85"></div>' + ticksHtml +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:9.5px;font-weight:600;color:var(--accent-ink)"><span>0</span><span>50</span><span>100 UI</span></div>' +
+      '</div>' +
     '</div>' +
-    '<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink2)">' +
-      '<span>Concentrazione <strong style="color:var(--ink)">'+(conc!=null?gstIt(conc,0):"\u2014")+' mcg/mL</strong></span>' +
-      '<span>Dosi per vial <strong style="color:var(--ink)">'+(dpv!=null?dpv:"\u2014")+'</strong></span>' +
-      '<span>Volume <strong style="color:var(--ink)">'+(vol!=null?gstIt(vol,2):"\u2014")+' mL</strong></span>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
+      '<div style="display:flex;flex-direction:column;gap:2px;padding:9px 11px;border-radius:10px;background:var(--surf2)"><span style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase">Concentrazione</span><span style="font-size:15px;font-weight:700;color:var(--ink)">'+(conc!=null?gstIt(conc,0):"\u2014")+' mcg/mL</span></div>' +
+      '<div style="display:flex;flex-direction:column;gap:2px;padding:9px 11px;border-radius:10px;background:var(--surf2)"><span style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase">Dosi per vial</span><span style="font-size:15px;font-weight:700;color:var(--ink)">'+(dpv!=null?dpv:"\u2014")+'</span></div>' +
+      '<div style="display:flex;flex-direction:column;gap:2px;padding:9px 11px;border-radius:10px;background:var(--surf2)"><span style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase">Volume</span><span style="font-size:15px;font-weight:700;color:var(--ink)">'+(vol!=null?gstIt(vol,2):"\u2014")+' mL</span></div>' +
     '</div>' +
-    (ui!=null && ui>100 ? '<div class="an-warn"><span>Oltre 100 UI: non entra in una siringa da 1 mL, dividi la dose.</span></div>' : '') +
+    (ui!=null && ui>100 ? '<span style="font-size:11px;font-weight:600;color:var(--bad)">Oltre 100 UI: non entra in una siringa da 1 mL, dividi la dose.</span>' : '') +
   '</section>';
 
-  // ── 1.3 Tabella ricostituzione ──
+  // ── 1.3 Tabella ricostituzione (span 6/13) ──
   var reco = (store.blob && store.blob.peptide_reconstitution) || [];
-  html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Tabella ricostituzione</span></div>' +
-    '<div class="gst-scroll"><div class="an-thead" style="grid-template-columns:1.3fr 70px 70px 90px 90px 90px 90px"><span>Composto</span><span class="an-num">Vial mg</span><span class="an-num">BAC mL</span><span class="an-num">Concentr.</span><span class="an-num">Da prelevare</span><span class="an-num">Ricostituito</span><span class="an-num">Scade</span></div>' +
+  html += '<section class="an-card" style="grid-column:6 / 13"><div class="an-head"><span class="an-title">Tabella ricostituzione</span><span class="an-sub">modifica mg o BAC: le unit\u00e0 si ricalcolano</span></div>' +
+    '<div class="gst-scroll"><div class="an-thead" style="grid-template-columns:1.7fr 66px 66px 1fr 1fr .9fr .9fr"><span>Composto</span><span class="an-num">Vial mg</span><span class="an-num">BAC mL</span><span class="an-num">Concentr.</span><span class="an-num">Da prelevare</span><span class="an-num">Ricostituito</span><span class="an-num">Scade</span></div>' +
     '<div class="an-tbl">';
   GST_COMPOUNDS.forEach(function(c){
     var r = reco.find(function(x){return x.id===c.id;});
@@ -6506,10 +6522,7 @@ function GST_renderStock(){
       scadeCol = left<0 ? "var(--bad)" : (left<=5 ? "var(--warn-ink)" : "var(--ink3)");
       scadeHtml = gstFmtDate(scadeDate);
     }
-    var row = document.createElement("div"); // solo per costruire html via sicurezza esc? uso stringhe dirette qui
-    html += '<div class="an-trow" style="grid-template-columns:1.3fr 70px 70px 90px 90px 90px 90px">' +
-      /* PORTING 26/09: pallino colorato per composto e "Da prelevare" in blu (accent-ink) --
-         nel mockup approvato ogni riga porta l'identita' colore del composto, qui mancava. */
+    html += '<div class="an-trow" style="grid-template-columns:1.7fr 66px 66px 1fr 1fr .9fr .9fr">' +
       '<span style="display:flex;align-items:center;gap:8px;min-width:0"><span style="width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span><span style="font-weight:600;color:var(--ink);min-width:0"><div>'+esc(c.name)+'</div><div style="font-size:10px;color:var(--ink3);font-weight:500">'+esc(c.doseLabel)+'</div></span></span>' +
       '<input type="number" step="0.1" data-gst-recon-mg="'+c.id+'" value="'+mg+'" style="width:60px;border:1px solid var(--line2);border-radius:6px;padding:3px 5px;font-size:12px;text-align:right">' +
       '<input type="number" step="0.1" data-gst-recon-bac="'+c.id+'" value="'+bac+'" style="width:60px;border:1px solid var(--line2);border-radius:6px;padding:3px 5px;font-size:12px;text-align:right">' +
@@ -6521,24 +6534,23 @@ function GST_renderStock(){
   });
   html += '</div></div><span class="an-note">UI = dose \u00f7 concentrazione \u00d7 100 \u00b7 IGF-1 DES \u00e8 bilaterale: met\u00e0 per lato</span></section>';
 
-  // ── 1.4 Vial in uso: dosi e vita residua ──
-  html += '<div style="display:grid;grid-column:1/-1;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">';
+  // ── 1.4 Vial in uso: intestazione a riga piena, poi le card, span 4/12 ciascuna ──
+  html += '<div style="grid-column:1 / -1;display:flex;align-items:baseline;justify-content:space-between;padding:6px 4px 0">' +
+    '<span class="an-sub" style="text-transform:uppercase;font-weight:600;letter-spacing:.01em">Vial in uso \u00b7 dosi e vita residua</span>' +
+    '<span class="an-sub">dosi contate dalle iniezioni registrate dal giorno di ricostituzione</span></div>';
   GST_COMPOUNDS.forEach(function(c){
     var av = gstActiveVial(c, vd);
-    html += '<section class="an-card">';
+    html += '<section class="an-card" style="grid-column:span 4">';
     if (!av) {
       var vs = gstAllVials(c, vd), intatti = vs.filter(function(v){return v.stato==="intatto";}).length;
-      html += '<div class="an-head"><span class="an-title">'+esc(c.name)+'</span></div>' +
+      html += '<div class="an-head"><span class="an-title" style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span>'+esc(c.name)+'</span></div>' +
         '<div class="an-note" style="color:var(--ink2);font-weight:600">Nessun vial in uso</div>' +
         '<div class="an-note">'+intatti+' intatti disponibili \u00b7 ricostituisci il prossimo</div>';
     } else {
       var st = gstVialStatus(c, av, todayStr);
       if (!st) {
-        /* PORTING 25/09: puo' capitare mentre stock_v2_vials sta ancora caricando (il vial
-           "in uso" di base non ha ancora una data di ricostituzione reale) -- niente crash,
-           solo uno stato transitorio onesto invece di un numero inventato. */
-        html += '<div class="an-head"><span class="an-title" style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span>'+esc(c.name)+'</span><span style="padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font-size:10px;font-weight:700">vial '+av.n+' · in uso</span></div>' +
-          '<div class="an-note">Caricamento dati scorte…</div></section>';
+        html += '<div class="an-head"><span class="an-title" style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span>'+esc(c.name)+'</span><span style="padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font-size:10px;font-weight:700">vial '+av.n+' \u00b7 in uso</span></div>' +
+          '<div class="an-note">Caricamento dati scorte\u2026</div></section>';
         return;
       }
       var pctDosi = st ? Math.min(100, st.rimaste>=0 ? (st.fatte/st.totali*100) : 0) : 0;
@@ -6546,56 +6558,65 @@ function GST_renderStock(){
       var colDosi = pctDosi>=90 ? "var(--bad)" : (pctDosi>=70?"var(--warn-ink)":"var(--ok)");
       var colVita = pctVita>=90 ? "var(--bad)" : (pctVita>=70?"var(--warn-ink)":"var(--ok)");
       html += '<div class="an-head"><span class="an-title" style="display:flex;align-items:center;gap:8px;min-width:0"><span style="width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(c.name)+'</span></span><span style="padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font-size:10px;font-weight:700;white-space:nowrap">vial '+av.n+' ('+esc(av.sup)+') \u00b7 in uso</span></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink2)"><span>'+st.fatte.toFixed(0)+' fatte \u00b7 '+st.rimaste+' rimaste / '+st.totali+'</span></div>' +
-        '<div style="height:6px;background:var(--surf2);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pctDosi.toFixed(0)+'%;background:'+colDosi+'"></div></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink2);margin-top:6px"><span>Vita residua</span><span>'+st.vitaResidua+' gg / '+c.stabilityDays+'</span></div>' +
-        '<div style="height:6px;background:var(--surf2);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pctVita.toFixed(0)+'%;background:'+colVita+'"></div></div>' +
-        '<div class="an-note" style="color:'+st.esito.col+';font-weight:600;margin-top:6px">'+st.esito.testo+'</div>' +
-        '<div class="an-note">Ricostituito '+gstFmtDate(new Date(av.reco+"T00:00:00"))+' \u00b7 '+gstIt(av.mg,0)+' mg in '+gstIt(av.bac,1)+' mL</div>';
+        '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink2)"><span>Dosi su questo vial</span><span style="font-weight:600;color:var(--ink)">'+st.fatte.toFixed(0)+' fatte \u00b7 '+st.rimaste+' rimaste / '+st.totali+'</span></div>' +
+        '<div style="height:6px;background:var(--line2);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+pctDosi.toFixed(0)+'%;background:'+colDosi+'"></div></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink2);margin-top:6px"><span>Vita residua</span><span style="font-weight:600;color:var(--ink)">'+st.vitaResidua+' gg / '+c.stabilityDays+'</span></div>' +
+        '<div style="height:6px;background:var(--line2);border-radius:999px;overflow:hidden"><div style="height:100%;width:'+pctVita.toFixed(0)+'%;background:'+colVita+'"></div></div>' +
+        '<span style="font-size:11px;font-weight:600;color:'+st.esito.col+';margin-top:6px">'+st.esito.testo+'</span>' +
+        '<span style="font-size:10px;color:var(--ink3)">Ricostituito '+gstFmtDate(new Date(av.reco+"T00:00:00"))+' \u00b7 '+gstIt(av.mg,0)+' mg in '+gstIt(av.bac,1)+' mL \u00b7 '+(uiForCard(c,av))+'</span>';
     }
     html += '</section>';
   });
-  html += '</div>';
+  function uiForCard(c, av){
+    var cc2 = gstConc(av.mg, av.bac); if (!(cc2>0)) return "\u2014";
+    var u2 = gstUI(c.dose_mcg, cc2);
+    return c.bilat ? gstIt(u2/2,1)+" UI/lato" : gstIt(u2,1)+" UI";
+  }
 
-  // ── 1.6 Scorte per composto ──
+  // ── 1.6 Scorte per composto (span 1/7) ──
   var giorniAllaFine = gstGiorniAllaFine();
-  html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Scorte per composto</span></div>' +
-    '<div class="gst-scroll"><div class="an-thead" style="grid-template-columns:1.2fr 50px 50px 50px 100px 1fr"><span>Composto</span><span class="an-num">intatti</span><span class="an-num">finiti</span><span class="an-num">persi</span><span class="an-num">copre fino al</span><span>margine</span></div><div class="an-tbl">';
+  html += '<section class="an-card" style="grid-column:1 / 7"><div class="an-head"><span class="an-title">Scorte per composto</span><span class="an-sub">fine ciclo '+gstFmtDate(gstAddDays(today, giorniAllaFine))+'</span></div>' +
+    '<div class="gst-scroll"><div class="an-thead" style="grid-template-columns:1.5fr 42px 42px 42px 1.3fr"><span>Composto</span><span class="an-num">intatti</span><span class="an-num">finiti</span><span class="an-num">persi</span><span style="text-align:right">copre fino al</span></div><div class="an-tbl">';
   GST_COMPOUNDS.forEach(function(c){
     var cov = gstCopertura(c, vd, todayStr);
     var copreTxt = cov.giorni > 400 ? "oltre 1 anno" : gstFmtDate(gstAddDays(todayStr, cov.giorni));
     var diff = cov.giorni - giorniAllaFine;
     var margineTxt = diff>=0 ? ("+"+diff+" gg oltre fine ciclo") : ("mancano "+(-diff)+" gg");
     var margineCol = diff>=0 ? "var(--ok)" : "var(--bad)";
-    html += '<div class="an-trow" style="grid-template-columns:1.2fr 50px 50px 50px 100px 1fr">' +
-      /* PORTING 26/09: pallino colorato per composto, come nel mockup approvato (era assente). */
-      '<span style="display:flex;align-items:center;gap:8px;min-width:0"><span style="width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span><span style="font-weight:600;color:var(--ink)">'+esc(c.name)+'</span></span><span class="an-num">'+cov.intatti+'</span><span class="an-num">'+cov.finiti+'</span><span class="an-num">'+cov.persi+'</span>' +
-      '<span class="an-num">'+copreTxt+'</span><span style="color:'+margineCol+';font-weight:600">'+margineTxt+'</span></div>';
+    html += '<div class="an-trow" style="grid-template-columns:1.5fr 42px 42px 42px 1.3fr">' +
+      '<span style="display:flex;align-items:center;gap:8px;min-width:0"><span style="width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span><span style="font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(c.name)+'</span></span>' +
+      '<span class="an-num">'+cov.intatti+'</span><span class="an-num">'+cov.finiti+'</span><span class="an-num" style="color:var(--ink3)">'+cov.persi+'</span>' +
+      '<span style="display:flex;flex-direction:column;align-items:flex-end"><span style="font-weight:700;color:'+margineCol+'">'+copreTxt+'</span><span style="font-size:9.5px;color:var(--ink3)">'+margineTxt+'</span></span></div>';
   });
   html += '</div></div></section>';
 
-  // ── 1.7 Materiali di consumo ──
+  // ── 1.7 Materiali di consumo (span 7/11) -- blocco per voce, non tabella, come nel mockup ──
   var cons = gstConsumabili(), fab = gstFabbisognoConsumabili(vd);
-  function consRow(label, spec, scorta, necessarie, unit, testoBisogno){
+  function consBlock(id, label, spec, scorta, necessarie, testoUso){
     var margine = scorta - necessarie;
-    var esitoTxt = margine>=0 ? ("+"+margine+(unit==="mL"?" di margine":"")+(unit!=="mL"?(" \u00b7 copre fino al "+gstFmtDate(gstAddDays(todayStr, giorniAllaFine))):"")) : ("ne mancano "+(-margine));
-    return '<div class="an-trow" style="grid-template-columns:1.4fr 90px 1fr">' +
-      '<span style="font-weight:500">'+label+'<div style="font-size:10px;color:var(--ink3)">'+spec+'</div></span>' +
-      '<input type="number" data-gst-cons="'+unit+'" value="'+scorta+'" style="width:70px;border:1px solid var(--line2);border-radius:6px;padding:3px 5px;font-size:12px;text-align:right">' +
-      '<span style="font-size:11.5px"><span style="color:var(--ink2)">'+testoBisogno+'</span><br><span style="color:'+(margine>=0?"var(--ok)":"var(--bad)")+';font-weight:600">'+esitoTxt+'</span></span></div>';
+    var esitoTxt = margine>=0 ? ("+"+margine+" \u00b7 copre fino al "+gstFmtDate(gstAddDays(todayStr, giorniAllaFine))) : ("ne mancano "+(-margine));
+    return '<div style="display:flex;flex-direction:column;gap:5px;padding:8px 0;border-top:1px solid var(--line2)">' +
+      '<div style="display:flex;align-items:center;gap:10px">' +
+        '<div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column"><span style="font-size:12.5px;font-weight:600;color:var(--ink)">'+label+'</span><span style="font-size:10px;color:var(--ink3)">'+spec+'</span></div>' +
+        '<input type="number" min="0" step="1" data-gst-cons="'+id+'" value="'+scorta+'" style="width:70px;height:32px;border:1px solid var(--line2);border-radius:8px;background:var(--surf2);text-align:center;font-size:14px;font-weight:700">' +
+      '</div>' +
+      '<div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px"><span style="color:var(--ink2)">'+testoUso+'</span><span style="font-weight:700;color:'+(margine>=0?"var(--ok)":"var(--bad)")+'">'+esitoTxt+'</span></div>' +
+    '</div>';
   }
-  html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Materiali di consumo</span></div><div class="gst-scroll"><div class="an-tbl">' +
-    consRow("Siringhe SC","PIC 31G 8mm \u00b7 7 punture al giorno", cons.sc, fab.scNecessarie, "sc", "Servono "+fab.scNecessarie+" fino all'8 nov") +
-    consRow("Siringhe IM","PIC 29G 12,7mm \u00b7 IGF-1 bilaterale", cons.im, fab.imNecessarie, "im", "Servono "+fab.imNecessarie+" in "+gstGiorniWoRimasti()+" allenamenti") +
-    consRow("BAC Water","flaconi \u00b7 Limitless + Bachem \u00b7 frigo", cons.bac, fab.flaconiBac, "bac", "Servono "+Math.ceil(fab.mlBac)+" mL per "+fab.vialTotali+" vial da aprire") +
-  '</div></div><span class="an-note">Flacone BAC da 10 mL: ipotesi da confermare.</span></section>';
+  html += '<section class="an-card" style="grid-column:7 / 11"><div class="an-head"><span class="an-title">Materiali di consumo</span><span class="an-sub">scorta \u00b7 aggiornala a mano</span></div>' +
+    consBlock("sc", "Siringhe SC", "PIC 31G 8mm \u00b7 7 punture al giorno", cons.sc, fab.scNecessarie, "Servono "+fab.scNecessarie+" fino all\'8 nov") +
+    consBlock("im", "Siringhe IM", "PIC 29G 12,7mm \u00b7 IGF-1 bilaterale", cons.im, fab.imNecessarie, "Servono "+fab.imNecessarie+" in "+gstGiorniWoRimasti()+" allenamenti") +
+    consBlock("bac", "BAC Water", "flaconi \u00b7 Limitless + Bachem \u00b7 frigo", cons.bac, fab.flaconiBac, "Servono "+Math.ceil(fab.mlBac)+" mL per "+fab.vialTotali+" vial da aprire") +
+  '<span class="an-note">Flacone BAC da 10 mL: ipotesi da confermare.</span></section>';
 
-  // ── 1.8 Fuori protocollo ──
-  html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Fuori protocollo</span></div><div class="an-thead" style="grid-template-columns:1fr 1fr 1fr"><span>Nome</span><span>Fornitore</span><span>Vial</span></div><div class="an-tbl">';
+  // ── 1.8 Fuori protocollo (span 11/13) ──
+  html += '<section class="an-card" style="grid-column:11 / 13"><span class="an-sub" style="text-transform:uppercase;font-weight:600;letter-spacing:.01em">Fuori protocollo</span>';
   GST_OFFPROTO.forEach(function(o){
-    html += '<div class="an-trow" style="grid-template-columns:1fr 1fr 1fr"><span style="font-weight:500">'+o.name+'</span><span class="an-num">'+o.fornitore+'</span><span class="an-num">'+o.n+' intatti</span></div>';
+    html += '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:6px;padding:6px 0;border-top:1px solid var(--line2)">' +
+      '<div style="display:flex;flex-direction:column;min-width:0"><span style="font-size:12px;font-weight:600;color:var(--ink)">'+o.name+'</span><span style="font-size:9.5px;color:var(--ink3)">'+o.fornitore+'</span></div>' +
+      '<span style="font-size:13px;font-weight:700;color:var(--ink2)">'+o.n+' intatti</span></div>';
   });
-  html += '</div><span class="an-note">liofilizzati \u00b7 frigo</span></section>';
+  html += '<span class="an-note">liofilizzati \u00b7 frigo</span></section>';
 
   host.innerHTML = html;
   GST_bindStock(host);
