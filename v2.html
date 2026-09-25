@@ -3482,7 +3482,7 @@ return { html: function(){ return AN_HTML; }, mount: AN_mount };
    6 · SHELL — quattro tab. Solo Oggi è ricostruito: gli altri
    tre rimandano alla versione attuale, che resta intatta.
    ============================================================ */
-const MIGRATED = { oggi: true, andamento: true, clinica: false, gestione: false };
+const MIGRATED = { oggi: true, andamento: true, clinica: false, gestione: true };
 const TAB_KEYS = ['oggi', 'andamento', 'clinica', 'gestione'];
 const OLD_ANCHORS = { andamento: 'dashboard', clinica: 'referti', gestione: 'stock' };
 
@@ -3562,7 +3562,7 @@ function render() {
     </header>
 
     <main class="page-wrap" style="padding:12px;">
-      ${!store.loaded ? '<p style="padding:24px;color:var(--ink2)">Caricamento…</p>' : (MIGRATED[tab] ? (tab === 'andamento' ? ANV2.html() : (tab === 'oggi' && oggiViewMode === 'week' ? renderWeekFull() : renderOggiFull())) : renderNotMigrated(tab))}
+      ${!store.loaded ? '<p style="padding:24px;color:var(--ink2)">Caricamento…</p>' : (MIGRATED[tab] ? (tab === 'andamento' ? ANV2.html() : (tab === 'gestione' ? GST_HTML() : (tab === 'oggi' && oggiViewMode === 'week' ? renderWeekFull() : renderOggiFull()))) : renderNotMigrated(tab))}
     </main>
   `;
 
@@ -3593,6 +3593,7 @@ function render() {
   if (saveBtnM) saveBtnM.onclick = saveNowClicked;
   bindOggi(app);
   if (tab === 'andamento' && store.loaded) ANV2.mount();
+  if (tab === 'gestione' && store.loaded) GST_mount();
 
   if (focusInfo) {
     const restored = app.querySelector(`input[data-f="${focusInfo.f}"]`);
@@ -6030,6 +6031,773 @@ window.addEventListener('resize', () => {
     if (nowDesktop !== isDesktop) { isDesktop = nowDesktop; render(); }
   }, 150);
 });
+
+
+/* ════════════════════════ GESTIONE (Stock · Orari · Alimenti) ════════════════════════
+   PORTING 25/09: nuovo modulo, dati e formule dalla specifica SPEC_GESTIONE.md e dal
+   codice reale di V1 (index.html): array compounds/UC_PEPTIDES, chiavi vial
+   (compoundId_supplierKey_vN), countVialDosesUsed, calcExpiry, stSty. Ogni formula
+   verificata contro i numeri della specifica prima di essere collegata ai dati veri.
+   Le 7 decisioni aperte della specifica: vedi commento GST_DECISIONI più sotto. */
+
+// PORTING 25/09: le 7 decisioni della specifica (SPEC_GESTIONE.md §4), risolte così:
+// 1) consumabili_stock {sc,im,bac} -- nuovo campo creato su store.blob, seminato con
+//    i valori oggi fissi in V1 (SC 390, IM 210, BAC 24), poi modificabile e salvato.
+// 2) Pasto in Alimenti -- solo in sessione, come V1 (nessun nuovo campo).
+// 3) Flacone BAC da 10 mL -- usato come da specifica; è un'ipotesi di Giorgio, non mia,
+//    da confermare con lui (non verificabile da qui).
+// 4) Composto senza vial in uso -- testo esatto proposto nella specifica §1.4.
+// 5) Vial congelato/attesa nella copertura -- esclusi (scelta prudente: non ancora
+//    utilizzabili, non contarli come copertura reale).
+// 6) Quarto tipo di giornata (viaggio/malattia) -- non creato: nessun testo è stato
+//    fornito per un quarto tipo, e inventarlo sarebbe lo stesso errore che si voleva
+//    evitare altrove in questo progetto.
+// 7) Stabilità IGF-1 DES -- 30 giorni nel calcolo, come indicato dalla specifica.
+
+var GST = { subtab: "stock", ucPeptide: "bpc", ucMg: 10, ucBac: 2, ucDose: 250, orariType: null, mealCat: "all", mealQuery: "" };
+var GST_V1 = { loaded: false, stock_v2_vials: {} };
+var GST_MEAL = {}; // { foodName: qty } -- solo in sessione, come V1 (decisione #2)
+
+function mkVialsG(n, stato){ var out=[]; for (var i=1;i<=n;i++) out.push({n:i, stato:stato}); return out; }
+// PORTING 25/09: gstIt()/gstItSigned() sono privati alla closure di ANV2 (const ANV2 = (function(){...})();),
+// non raggiungibili da qui -- versione locale, con separatore delle migliaia col punto come
+// richiesto dalla specifica ("Migliaia col punto: 5.000"), assente nell'originale di ANV2.
+function gstIt(v, dec){
+  if (v == null || isNaN(v)) return "\u2014";
+  var s = (dec == null ? String(v) : Number(v).toFixed(dec));
+  var parts = s.split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  s = parts.join(",");
+  return s.replace("-", "\u2212");
+}
+function gstItSigned(v, dec){
+  if (v == null || isNaN(v)) return "\u2014";
+  return (v > 0 ? "+" : v < 0 ? "\u2212" : "") + gstIt(Math.abs(v), dec);
+}
+// PORTING 25/09: gstNum() e' anch'essa privata alla closure di ANV2 -- stessa ragione di gstIt.
+function gstNum(raw){
+  if (raw == null || raw === "") return null;
+  var v = parseFloat(String(raw).replace(",", "."));
+  return isNaN(v) ? null : v;
+}
+
+
+
+var UC_PEPTIDES_G = [
+  { id:"tesa", name:"Tesamorelin", dose_mcg:2000, defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:"fragment", name:"Fragment 176-191", dose_mcg:250, defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:"ipa", name:"Ipamorelin", dose_mcg:100, defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:"igf", name:"IGF-1 DES", dose_mcg:50, defaultMg:2, defaultBac:3.0, bilat:true },
+  { id:"bpc", name:"BPC-157", dose_mcg:250, defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:"tb500", name:"TB-500", dose_mcg:500, defaultMg:10, defaultBac:2.0, bilat:false },
+  { id:"custom", name:"Personalizzato", dose_mcg:250, defaultMg:10, defaultBac:2.0, bilat:false }
+];
+
+// PORTING 25/09: array reale da V1 (index.html, "const compounds"), non un riassunto --
+// suppliers[].key + vial di base servono per ricostruire le STESSE chiavi già scritte
+// in stock_v2_vials da mesi di uso reale (compoundId_supplierKey_vN).
+var GST_COMPOUNDS = [
+  { id:"tesa", name:"Tesamorelin", dose_mcg:2000, voltePerDie:1, doseLabel:"2 mg \u00b7 sera",
+    stabilityDays:21, defaultMg:10, defaultBac:2.0,
+    suppliers:[
+      { key:"bachem", label:"Bachem", vials: mkVialsG(24,"intatto") },
+      { key:"limitless", label:"Limitless", vials:[{n:1,stato:"perso"},{n:2,stato:"perso"},{n:3,stato:"intatto"},{n:4,stato:"intatto"},{n:5,stato:"intatto"},{n:6,stato:"intatto"},{n:7,stato:"intatto"},{n:8,stato:"intatto"},{n:9,stato:"intatto"},{n:10,stato:"intatto"},{n:11,stato:"intatto"},{n:12,stato:"intatto"}] }
+    ] },
+  { id:"fragment", name:"Fragment 176-191", dose_mcg:250, voltePerDie:2, doseLabel:"250 mcg \u00d7 2",
+    stabilityDays:30, defaultMg:10, defaultBac:2.0,
+    suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(6,"intatto") } ] },
+  { id:"ipa", name:"Ipamorelin", dose_mcg:100, voltePerDie:1, doseLabel:"100 mcg \u00b7 sera",
+    stabilityDays:30, defaultMg:10, defaultBac:2.0,
+    suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(4,"intatto") } ] },
+  { id:"igf", name:"IGF-1 DES", dose_mcg:50, voltePerDie:5/7, doseLabel:"50 mcg post-WO \u00b7 IM bilat.",
+    stabilityDays:30, defaultMg:2, defaultBac:3.0, bilat:true,
+    suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(4,"intatto") } ] },
+  { id:"bpc", name:"BPC-157", dose_mcg:250, voltePerDie:2, doseLabel:"250 mcg \u00d7 2",
+    stabilityDays:28, defaultMg:10, defaultBac:2.0,
+    suppliers:[
+      { key:"bachem", label:"Bachem", vials: mkVialsG(6,"intatto") },
+      { key:"limitless", label:"Limitless", vials:[{n:1,stato:"in_uso"},{n:2,stato:"intatto"}] }
+    ] },
+  { id:"tb500", name:"TB-500", dose_mcg:500, voltePerDie:1, doseLabel:"500 mcg \u00b7 sera",
+    stabilityDays:28, defaultMg:10, defaultBac:2.0,
+    suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(6,"intatto") } ] }
+];
+var GST_OFFPROTO = [
+  { name:"MOTS-C", fornitore:"Limitless", n:5 },
+  { name:"GHK-Cu", fornitore:"Limitless", n:1 }
+];
+
+// ── formule 1.2 / 1.3 ──
+function gstConc(mg, bac){ return (bac>0) ? mg*1000/bac : null; }
+function gstUI(dose_mcg, conc){ return (conc>0) ? dose_mcg/conc*100 : null; }
+function gstDosesPerVial(mg, dose_mcg){ return (dose_mcg>0) ? Math.floor(mg*1000/dose_mcg) : null; }
+
+// ── chiavi e stato vial (stessa logica di reconGetActiveVialDate/stSty in V1) ──
+function gstVialKey(compoundId, supplierKey, n){ return compoundId+"_"+supplierKey+"_v"+n; }
+function gstVialEff(c, sup, v, vd){
+  var k = gstVialKey(c.id, sup.key, v.n), sv = vd[k] || {};
+  return { n:v.n, key:k, sup:sup.label,
+    stato: sv.stato || v.stato,
+    mg: sv.mg!=null ? parseFloat(sv.mg) : c.defaultMg,
+    bac: sv.bac!=null ? parseFloat(sv.bac) : c.defaultBac,
+    reco: sv.reco || null };
+}
+function gstAllVials(c, vd){
+  var out=[]; c.suppliers.forEach(function(sup){ sup.vials.forEach(function(v){ out.push(gstVialEff(c,sup,v,vd)); }); }); return out;
+}
+function gstActiveVial(c, vd){ var vs=gstAllVials(c,vd); for (var i=0;i<vs.length;i++) if (vs[i].stato==="in_uso") return vs[i]; return null; }
+
+var GST_STATO_LABEL = { intatto:"Intatto", in_uso:"In uso", esaurito:"Esaurito", perso:"Perso", congelato:"Congelato", attesa:"In arrivo" };
+var GST_STATO_COLOR = { intatto:"var(--ok)", in_uso:"var(--accent)", esaurito:"var(--ink3)", perso:"var(--bad)", congelato:"#0ea5c4", attesa:"var(--warn-ink)" };
+
+// ── conteggio dosi reali fatte per composto (MIRROR di countVialDosesUsed, V1) ──
+function gstDosesUsed(compoundName, compoundId, doseMcg, recoStr){
+  if (!recoStr || !doseMcg) return null;
+  var recoDate = new Date(recoStr+"T00:00:00");
+  var today = new Date(); today.setHours(0,0,0,0);
+  if (recoDate > today) return 0;
+  var mcgUsed = 0;
+  var testStart = new Date(TEST_PROTO_START+"T00:00:00");
+  var testEnd = new Date(testStart); testEnd.setDate(testEnd.getDate()+TEST_PROTO_DAYS-1);
+  for (var d=new Date(Math.max(recoDate, testStart)); d<=today; d.setDate(d.getDate()+1)){
+    var rec, woIdx;
+    if (d>=testStart && d<=testEnd){
+      var t = Math.round((d-testStart)/86400000);
+      rec = store.blob["test_proto_"+t] || {}; woIdx = t - TEST_PROTO_DAYS;
+    } else {
+      var dIdx = dayIdxFromISO(isoLocal(d));
+      rec = store.blob["p2_day_"+dIdx] || {}; woIdx = dIdx;
+    }
+    getInjectionSlots2(woIdx).forEach(function(s){
+      s.fields.forEach(function(f){
+        if (f.indexOf(compoundName)!==0) return;
+        var k = "inj_"+s.n+"_"+fieldKey(f);
+        if ((rec[k]||"")==="fatto") mcgUsed += (compoundId==="igf") ? doseMcg/2 : doseMcg;
+      });
+    });
+  }
+  return mcgUsed/doseMcg;
+}
+
+function gstDoseTotals(c, mg){ return Math.floor(mg*1000/c.dose_mcg); }
+function gstDaysBetween(a,b){ var A=new Date(a+"T00:00:00"), B=new Date(b+"T00:00:00"); return Math.round((B-A)/86400000); }
+function gstAddDays(dateStr, n){ var d=new Date(dateStr+"T00:00:00"); d.setDate(d.getDate()+Math.round(n)); return d; }
+function gstFmtDate(d){ return d.getDate()+" "+["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"][d.getMonth()]; }
+
+// ── esito 1.4: vince la prima condizione vera ──
+function gstVialStatus(c, av, todayStr){
+  if (!av || !av.reco) return null;
+  var fatte = gstDosesUsed(c.name, c.id, c.dose_mcg, av.reco);
+  if (fatte == null) fatte = 0;
+  var totali = gstDoseTotals(c, av.mg);
+  var rimaste = Math.max(0, totali - Math.round(fatte));
+  var etaGiorni = gstDaysBetween(av.reco, todayStr);
+  var vitaResidua = Math.max(0, c.stabilityDays - etaGiorni);
+  var esito;
+  if (vitaResidua <= 0) esito = { tipo:"scaduto", testo:"Scaduto: segna il vial come esaurito", col:"var(--bad)" };
+  else if (rimaste === 0) esito = { tipo:"esaurite", testo:"Dosi esaurite: segna il vial come esaurito", col:"var(--bad)" };
+  else {
+    var giorniPerDosi = rimaste / c.voltePerDie;
+    if (giorniPerDosi > vitaResidua) {
+      var N = Math.round(rimaste - vitaResidua*c.voltePerDie);
+      var scadeIl = gstAddDays(todayStr, vitaResidua);
+      esito = { tipo:"scade", testo:"Scade il "+gstFmtDate(scadeIl)+" con "+N+" dosi non usate", col:"var(--warn-ink)" };
+    } else {
+      var finisceIl = gstAddDays(todayStr, giorniPerDosi);
+      esito = { tipo:"finisce", testo:"Finisce per dosi il "+gstFmtDate(finisceIl), col:"var(--ink2)" };
+    }
+  }
+  return { fatte:fatte, totali:totali, rimaste:rimaste, vitaResidua:vitaResidua, etaGiorni:etaGiorni, esito:esito };
+}
+
+// ── copertura 1.6 (esclude congelato/attesa: decisione #5) ──
+function gstDurataVial(c){ return Math.min(gstDoseTotals(c, c.defaultMg)/c.voltePerDie, c.stabilityDays); }
+function gstCopertura(c, vd, todayStr){
+  var av = gstActiveVial(c, vd);
+  var vs = gstAllVials(c, vd);
+  var intatti = vs.filter(function(v){return v.stato==="intatto";}).length;
+  var finiti = vs.filter(function(v){return v.stato==="esaurito";}).length;
+  var persi = vs.filter(function(v){return v.stato==="perso";}).length;
+  var usoRimasti = 0, st = null;
+  if (av) { st = gstVialStatus(c, av, todayStr); if (st) usoRimasti = Math.min(st.rimaste/c.voltePerDie, st.vitaResidua); }
+  var giorni = Math.floor(usoRimasti + intatti*gstDurataVial(c));
+  return { intatti:intatti, finiti:finiti, persi:persi, giorni:giorni, vialInUso:av, statoInUso:st };
+}
+
+// ── testata comune (spec §0) ──
+function gstE(){ return Math.max(0, Math.min(111, dayIdxFromISO(today))); }
+function gstGiorniAllaFine(){ return 111 - gstE(); }
+
+// ── 1.7 materiali di consumo ──
+// PORTING 25/09: nuovo campo (decisione #1), seminato ai valori oggi fissi in V1.
+function gstConsumabiliDefaults(){ return { sc: 390, im: 210, bac: 24 }; }
+function gstConsumabili(){
+  var v = (store.blob && store.blob.consumabili_stock) || gstConsumabiliDefaults();
+  return { sc: gstNum(v.sc)!=null?gstNum(v.sc):390, im: gstNum(v.im)!=null?gstNum(v.im):210, bac: gstNum(v.bac)!=null?gstNum(v.bac):24 };
+}
+// giorni di allenamento rimasti da domani a fine ciclo (mar,mer,ven,sab,dom -- tipo settimana reale, non isBkkDate)
+function gstGiorniWoRimasti(){
+  var t = dayIdxFromISO(today), fine = 111, n = 0;
+  for (var i = t+1; i <= fine; i++){ if (getWorkout2(i).type !== "Riposo") n++; }
+  return n;
+}
+function gstFabbisognoConsumabili(vd){
+  var giorniAllaFine = gstGiorniAllaFine();
+  var scNecessarie = 7 * giorniAllaFine;
+  var imNecessarie = 2 * gstGiorniWoRimasti();
+  var mlBac = 0, vialTotali = 0;
+  GST_COMPOUNDS.forEach(function(c){
+    var cov = gstCopertura(c, vd, today);
+    var usoRimasti = cov.statoInUso ? Math.min(cov.statoInUso.rimaste/c.voltePerDie, cov.statoInUso.vitaResidua) : 0;
+    var vialDaAprire = Math.max(0, Math.ceil((giorniAllaFine - usoRimasti) / gstDurataVial(c)));
+    vialTotali += vialDaAprire;
+    mlBac += vialDaAprire * c.defaultBac;
+  });
+  var flaconi = Math.ceil(mlBac / 10); // decisione #3: 10 mL/flacone, ipotesi da confermare
+  return { scNecessarie:scNecessarie, imNecessarie:imNecessarie, mlBac:mlBac, vialTotali:vialTotali, flaconiBac:flaconi };
+}
+
+// ══════════════════ 2. ORARI — testo copiato alla lettera dalla specifica (V1) ══════════════════
+var GST_ORARI_TYPE_COLOR = { iniezione:"var(--accent)", integratori:"var(--ok)", pasto:"var(--idle)", allenamento:"var(--warn)" };
+var GST_ORARI = {
+  allenamento: { label:"Allenamento", sub:"Mar \u00b7 Mer \u00b7 Ven", giorni:[2,3,5], rows:[
+    ["06:00","iniezione","Fragment 176-191 250mcg SC + BPC-157 250mcg SC","digiuno"],
+    ["06:05","pasto","Caff\u00e8 Nespresso Vertuo + Alpro","ok"],
+    ["06:05","integratori","D3+K2 \u00b7 B12+folato","con caff\u00e8"],
+    ["09:15","pasto","Colazione \u2014 shaker proteico + bresaola",""],
+    ["09:15","integratori","Creatina 5g","con shaker"],
+    ["09:30","integratori","Omega-3 \u00d71 \u00b7 Zinco bisglicinato 15mg","dopo colazione \u00b7 in ufficio"],
+    ["11:00","pasto","Spuntino \u2014 carne secca",""],
+    ["13:00","pasto","Pranzo",""],
+    ["13:00","integratori","Omega-3 \u00d72 \u00b7 Normocis 400",""],
+    ["16:00","iniezione","Fragment 176-191 250mcg SC","3h post-pranzo"],
+    ["17:00","pasto","2Bar Net Integratori (22g prot \u00b7 0.3g zuccheri) o bresaola","no-carb \u00b7 post-Fragment"],
+    ["19:00","allenamento","Allenamento","fino alle 21:00"],
+    ["21:00","iniezione","IGF-1 DES 50mcg IM bilaterale (25mcg R + 25mcg L)","immediato post-WO"],
+    ["21:30","pasto","Pasto post-WO \u2014 albumi + verdure (no grassi)","NO carbs 2h30 \u00b7 low-fat per Tesa"],
+    ["00:00","iniezione","Tesamorelin 2mg + Ipamorelin 100mcg + BPC-157 250mcg + TB-500 500mcg SC","2h30 post-pasto light"],
+    ["00:30","integratori","Mg bisglicinato + Glicina 3g + Melatonina 1mg","pre-sleep"]
+  ]},
+  weekend: { label:"Weekend", sub:"Sab \u00b7 Dom (orari flessibili)", giorni:[6,0], rows:[
+    ["06:00","iniezione","Fragment 176-191 250mcg SC + BPC-157 250mcg SC","digiuno"],
+    ["06:05","pasto","Caff\u00e8 Nespresso Vertuo + Alpro","ok"],
+    ["08:00","pasto","Colazione","orario flessibile"],
+    ["08:00","integratori","D3+K2 \u00b7 B12+folato","con caff\u00e8"],
+    ["08:00","integratori","Creatina 5g \u00b7 Omega-3 \u00d71 \u00b7 Zinco 15mg","con colazione"],
+    ["10:00","allenamento","Allenamento (mattina)","orario flessibile"],
+    ["11:30","iniezione","IGF-1 DES 50mcg IM bilaterale (25mcg R + 25mcg L)","immediato post-WO"],
+    ["13:00","pasto","Pranzo","NO carbs 1h30 post IGF-1"],
+    ["13:30","integratori","Omega-3 \u00d72 \u00b7 Normocis 400",""],
+    ["16:00","iniezione","Fragment 176-191 250mcg SC","2h+ post-pranzo"],
+    ["17:00","pasto","2Bar Net Integratori (22g prot \u00b7 0.3g zuccheri) o bresaola","no-carb \u00b7 post-Fragment"],
+    ["20:00","pasto","Cena \u2014 pesce/carne magra + verdure + max 4-5 Wasa","low-fat \u00b7 low-GI \u00b7 no grassi aggiunti"],
+    ["23:00","iniezione","Tesamorelin 2mg + Ipamorelin 100mcg + BPC-157 250mcg + TB-500 500mcg SC","3h post-cena"],
+    ["23:30","integratori","Mg bisglicinato + Glicina 3g + Melatonina 1mg","pre-sleep"]
+  ]},
+  rest: { label:"Rest Day", sub:"Lun \u00b7 Gio", giorni:[1,4], rows:[
+    ["06:00","iniezione","Fragment 176-191 250mcg SC + BPC-157 250mcg SC","digiuno"],
+    ["06:05","pasto","Caff\u00e8 Nespresso Vertuo + Alpro","ok"],
+    ["06:05","integratori","D3+K2 \u00b7 B12+folato","con caff\u00e8"],
+    ["09:15","pasto","Colazione \u2014 shaker proteico + bresaola",""],
+    ["09:15","integratori","Creatina 5g","con shaker"],
+    ["09:30","integratori","Omega-3 \u00d71 \u00b7 Zinco bisglicinato 15mg","dopo colazione \u00b7 in ufficio"],
+    ["11:00","pasto","Spuntino \u2014 carne secca",""],
+    ["13:00","pasto","Pranzo",""],
+    ["13:00","integratori","Omega-3 \u00d72 \u00b7 Normocis 400",""],
+    ["16:00","iniezione","Fragment 176-191 250mcg SC","3h post-pranzo"],
+    ["17:00","pasto","2Bar Net Integratori (22g prot \u00b7 0.3g zuccheri) o bresaola","no-carb \u00b7 post-Fragment"],
+    ["19:30","pasto","Cena \u2014 pesce/carne magra + verdure + max 4-5 Wasa","low-fat \u00b7 low-GI \u00b7 no grassi aggiunti"],
+    ["22:30","iniezione","Tesamorelin 2mg + Ipamorelin 100mcg + BPC-157 250mcg + TB-500 500mcg SC","3h post-cena"],
+    ["23:00","integratori","Mg bisglicinato + Glicina 3g + Melatonina 1mg","pre-sleep"]
+  ]}
+};
+function gstTodayOrariType(){
+  var dow = new Date().getDay(); // 0=dom..6=sab
+  if ([2,3,5].indexOf(dow)>=0) return "allenamento";
+  if ([6,0].indexOf(dow)>=0) return "weekend";
+  return "rest";
+}
+
+// ══════════════════ 3. ALIMENTI — database copiato dalla specifica (V1) ══════════════════
+// unit "g": valori per 100g, ref = porzione tipica in grammi. unit "fixed": valori per 1 unità.
+var GST_FOOD_DB = {
+  "Carne": [
+    { name:"Bresaola", unit:"g", ref:80, kcal:112, p:20.5, c:0, g:1.2, note:"Alto sodio \u00b7 pre-Tesa ok" },
+    { name:"Ember Biltong Originale", unit:"g", ref:25, kcal:244, p:51.8, c:2.1, g:4.3, note:"1 bustina 25g \u00b7 no zuccheri aggiunti \u00b7 keto" },
+    { name:"Petto di pollo (friggitrice)", unit:"g", ref:300, kcal:110, p:23, c:0, g:1.5, note:"Cotto senza olio" },
+    { name:"Arrosto di Pollo Esselunga", unit:"g", ref:100, kcal:95, p:17, c:3.9, g:1.3, note:"Affettato \u00b7 sale 2.0g/100g \u00b7 senza glutine/latte" }
+  ],
+  "Pesce": [
+    { name:"Tonno in olio d'oliva sgocciolato", unit:"g", ref:110, kcal:170, p:25, c:0, g:8, note:"~110g sgocciolato da scatoletta 160g \u00b7 ben scolato" },
+    { name:"Salmone affumicato", unit:"g", ref:150, kcal:142, p:18, c:0, g:4.5, note:"Alto sodio \u00b7 ricco omega-3" },
+    { name:"Salmone cotto (friggitrice)", unit:"g", ref:300, kcal:156, p:20, c:0, g:7, note:"Ricco omega-3" }
+  ],
+  "Uova & albumi": [
+    { name:"Frittata (2 uova + 250ml albumi)", unit:"fixed", ref:1, kcal:220, p:32, c:2, g:7, note:"Post-WO \u00b7 cotta al micro \u00b7 ~220kcal \u00b7 32g P" },
+    { name:"Albumi liquidi", unit:"g", ref:250, kcal:50, p:10.5, c:0.7, g:0, note:"Post-WO serale" }
+  ],
+  "Latticini": [
+    { name:"Yogurt greco 0% Esselunga", unit:"g", ref:150, kcal:55, p:10, c:3.5, g:0.1, note:"Low-GI \u00b7 colazione ok" }
+  ],
+  "Integratori": [
+    { name:"Shaker VB Whey + 200ml Alpro cocco", unit:"fixed", ref:1, kcal:150, p:25, c:5, g:2, note:"1 scoop 34g + Alpro 200ml \u00b7 ~150kcal \u00b7 25g P" },
+    { name:"VB Bar 25 Net Integratori", unit:"fixed", ref:1, kcal:176, p:25, c:14, g:5.6, note:"1 barretta 50g \u00b7 176kcal \u00b7 25g P \u00b7 da etichetta", barLabel:true },
+    { name:"Scoop VB Whey (1 misurino 34g)", unit:"g", ref:34, kcal:353, p:88, c:2.7, g:2.6, note:"VB Whey 104 \u00b7 34g = ~120kcal \u00b7 30g P \u00b7 da aggiungere ad altro" }
+  ],
+  "Snack": [
+    { name:"Mandorle", unit:"g", ref:25, kcal:579, p:21, c:5, g:50, note:"Low-GI \u00b7 ottimo grassi sani" },
+    { name:"MyProtein Chips Proteiche Soffiate", unit:"fixed", ref:1, kcal:88, p:10, c:4.8, g:2, note:"1 busta 25g \u00b7 88kcal \u00b7 10g P \u00b7 cotte al forno \u00b7 vegane" }
+  ],
+  "Carboidrati": [
+    { name:"Wasa Fibra", unit:"g", ref:60, kcal:310, p:9, c:55, g:3, note:"4 gallette ~60g \u00b7 pre-Tesa ok" },
+    { name:"Gallette di riso/mais", unit:"g", ref:30, kcal:385, p:7, c:83, g:1, note:"3-4 gallette ~30g \u00b7 alto GI" },
+    { name:"Patate (bollite)", unit:"g", ref:200, kcal:77, p:2, c:17, g:0.1, note:"GI medio \u00b7 raffreddare abbassa GI" },
+    { name:"Pane bianco (ref. 100g)", unit:"g", ref:100, kcal:275, p:9, c:56, g:1.3, note:"GI alto \u00b7 riferimento comparativo" },
+    { name:"Riso bianco (cotto)", unit:"g", ref:250, kcal:130, p:2.7, c:28, g:0.3, note:"Cotto in acqua \u00b7 GI alto \u00b7 100g crudo \u2248 250-300g cotto" },
+    { name:"Pancakes Proteici Milk PRO High Protein", unit:"fixed", ref:1, kcal:416, p:20, c:45, g:15, note:"Latteria N\u00d6M \u00b7 1 confezione = 4 pancakes da 40g (160g tot) \u00b7 fibre 5g/porz \u00b7 sale 1.6g/porz \u00b7 da riscaldare" }
+  ],
+  "Frutta": [
+    { name:"Fragole", unit:"g", ref:250, kcal:32, p:0.7, c:7, g:0.3, note:"GI basso \u00b7 antiossidanti \u00b7 post-WO ok" },
+    { name:"Ananas", unit:"g", ref:250, kcal:50, p:0.5, c:12, g:0.1, note:"GI medio \u00b7 enzimi digestivi (bromelina)" },
+    { name:"Banana (1 media ~120g polpa)", unit:"g", ref:120, kcal:89, p:1.1, c:23, g:0.3, note:"GI medio-alto \u00b7 potassio \u00b7 buona pre-WO" },
+    { name:"Mela (1 media ~150g polpa)", unit:"g", ref:150, kcal:52, p:0.3, c:14, g:0.2, note:"GI basso \u00b7 fibra \u00b7 saziante" },
+    { name:"Mirtilli", unit:"g", ref:125, kcal:57, p:0.7, c:14.5, g:0.3, note:"GI basso \u00b7 alto in antociani/antiossidanti" }
+  ],
+  "Verdure": [
+    { name:"Carciofi", unit:"g", ref:200, kcal:47, p:3, c:5, g:0.2, note:"Alto contenuto di fibra" },
+    { name:"Mais dolce sottovuoto Esselunga", unit:"g", ref:140, kcal:83, p:2.6, c:12.2, g:1.8, note:"1 scatoletta 140g sgocciolato \u00b7 da etichetta" },
+    { name:"Avocado (intero, polpa)", unit:"g", ref:150, kcal:160, p:2, c:2, g:15, note:"1 avocado medio = ~150g polpa \u00b7 grassi monoinsaturi" }
+  ]
+};
+function gstMacroFor(food, qty){
+  if (food.unit === "fixed") return { kcal: Math.round(food.kcal*qty), p: +(food.p*qty).toFixed(1), c: +(food.c*qty).toFixed(1), g: +(food.g*qty).toFixed(1) };
+  var f = qty/100;
+  return { kcal: Math.round(food.kcal*f), p: +(food.p*f).toFixed(1), c: +(food.c*f).toFixed(1), g: +(food.g*f).toFixed(1) };
+}
+function gstQtyLabel(food, qty){
+  if (food.unit === "fixed") return food.barLabel ? (qty===1?"1 barretta":qty+" barrette") : (qty+" porz.");
+  return qty+" g";
+}
+
+// ══════════════════ RENDER ══════════════════
+function gstSub(root, sel){ return root.querySelector(sel); }
+
+function GST_HTML(){
+  return '<div class="an-root" style="gap:14px">' +
+    '<div class="an-subnav"><div class="an-chips">' +
+      '<button type="button" class="an-chip is-active" data-gst-tab="stock">Stock</button>' +
+      '<button type="button" class="an-chip" data-gst-tab="orari">Orari</button>' +
+      '<button type="button" class="an-chip" data-gst-tab="alimenti">Alimenti</button>' +
+    '</div><span class="an-sub" data-gst-cycle style="align-self:center;margin-left:auto;padding-right:4px"></span></div>' +
+    '<div class="an-main">' +
+      '<div class="an-view is-active" data-gst-view="stock"></div>' +
+      '<div class="an-view" data-gst-view="orari"></div>' +
+      '<div class="an-view" data-gst-view="alimenti"></div>' +
+    '</div></div>';
+}
+
+function GST_mount(){
+  var root = document.querySelector('[data-gst-view="stock"]') ? document.body : null;
+  root = document.body;
+  var cycleEl = document.querySelector('[data-gst-cycle]');
+  if (cycleEl) cycleEl.textContent = "Ciclo 1 \u00b7 giorno "+(gstE()+1)+" di 112 \u00b7 "+gstGiorniAllaFine()+" giorni alla fine";
+  document.querySelectorAll('[data-gst-tab]').forEach(function(b){
+    if (b.dataset.bound) return; b.dataset.bound = "1";
+    b.addEventListener("click", function(){
+      GST.subtab = b.getAttribute("data-gst-tab");
+      document.querySelectorAll('[data-gst-tab]').forEach(function(x){ x.classList.toggle("is-active", x===b); });
+      document.querySelectorAll('[data-gst-view]').forEach(function(v){ v.classList.toggle("is-active", v.getAttribute("data-gst-view")===GST.subtab); });
+    });
+  });
+  if (!GST_V1.loaded) {
+    GST_V1.loaded = true; // evita fetch doppie durante il caricamento
+    fetch(CFG.PROXY_URL + "?user_id=eq.giorgio_protocollo_2026&select=data-%3Estock_v2_vials", {
+      headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY }
+    }).then(function(r){ return r.json(); }).then(function(rows){
+      GST_V1.stock_v2_vials = (rows[0] && rows[0].stock_v2_vials) || {};
+      GST_renderAll();
+    }).catch(function(e){ console.error("Errore caricamento stock_v2_vials", e); GST_renderAll(); });
+  }
+  GST_renderAll();
+}
+
+function GST_renderAll(){
+  GST_renderStock();
+  GST_renderOrari();
+  GST_renderAlimenti();
+}
+
+function GST_renderStock(){
+  var host = document.querySelector('[data-gst-view="stock"]'); if (!host) return;
+  var vd = GST_V1.stock_v2_vials || {};
+  var todayStr = today; // ISO locale, gia' calcolato altrove nel file
+  var html = "";
+
+  // ── 1.2 Convertitore unita' ──
+  var ucList = UC_PEPTIDES_G.concat();
+  var ucP = ucList.find(function(p){return p.id===GST.ucPeptide;}) || ucList[0];
+  var conc = gstConc(GST.ucMg, GST.ucBac);
+  var ui = (conc>0) ? gstUI(GST.ucDose, conc) : null;
+  var dpv = (GST.ucDose>0) ? gstDosesPerVial(GST.ucMg, GST.ucDose) : null;
+  var vol = (conc>0) ? (GST.ucDose/conc) : null;
+  html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Convertitore unit\u00e0</span><span class="an-sub">siringa da insulina U-100</span></div>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px">' +
+      '<div class="an-field"><label>Peptide</label><select data-gst-uc="peptide">' + ucList.map(function(p){return '<option value="'+p.id+'"'+(p.id===GST.ucPeptide?' selected':'')+'>'+p.name+'</option>';}).join('') + '</select></div>' +
+      '<div class="an-field"><label>Vial (mg)</label><input type="number" step="0.1" data-gst-uc="mg" value="'+GST.ucMg+'"></div>' +
+      '<div class="an-field"><label>BAC (mL)</label><input type="number" step="0.1" data-gst-uc="bac" value="'+GST.ucBac+'"></div>' +
+      '<div class="an-field"><label>Dose (mcg)</label><input type="number" step="1" data-gst-uc="dose" value="'+GST.ucDose+'"></div>' +
+    '</div>' +
+    '<div style="background:var(--hero);color:#fff;border-radius:12px;padding:14px 16px;margin-top:4px">' +
+      '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#fff9;">Da prelevare</div>' +
+      '<div style="font-size:30px;font-weight:700">' + (ui!=null?gstIt(ui,1):"\u2014") + ' <span style="font-size:14px;font-weight:500;color:#fff9">UI</span></div>' +
+      '<div style="font-size:11.5px;color:#fffc;margin-top:2px">' + (ucP.bilat && ui!=null ? ("\u2192 "+gstIt(ui/2,1)+" UI per lato") : "dose intera, un'iniezione") + '</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink2)">' +
+      '<span>Concentrazione <strong style="color:var(--ink)">'+(conc!=null?gstIt(conc,0):"\u2014")+' mcg/mL</strong></span>' +
+      '<span>Dosi per vial <strong style="color:var(--ink)">'+(dpv!=null?dpv:"\u2014")+'</strong></span>' +
+      '<span>Volume <strong style="color:var(--ink)">'+(vol!=null?gstIt(vol,2):"\u2014")+' mL</strong></span>' +
+    '</div>' +
+    (ui!=null && ui>100 ? '<div class="an-warn"><span>Oltre 100 UI: non entra in una siringa da 1 mL, dividi la dose.</span></div>' : '') +
+  '</section>';
+
+  // ── 1.3 Tabella ricostituzione ──
+  var reco = (store.blob && store.blob.peptide_reconstitution) || [];
+  html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Tabella ricostituzione</span></div>' +
+    '<div class="an-thead" style="grid-template-columns:1.3fr 70px 70px 90px 90px 90px 90px"><span>Composto</span><span class="an-num">Vial mg</span><span class="an-num">BAC mL</span><span class="an-num">Concentr.</span><span class="an-num">Da prelevare</span><span class="an-num">Ricostituito</span><span class="an-num">Scade</span></div>' +
+    '<div class="an-tbl">';
+  GST_COMPOUNDS.forEach(function(c){
+    var r = reco.find(function(x){return x.id===c.id;});
+    var mg = r ? gstNum(r.vial_mg) : c.defaultMg, bac = r ? gstNum(r.bac_ml) : c.defaultBac;
+    var cc = gstConc(mg, bac);
+    var uiC = (cc>0) ? gstUI(c.dose_mcg, cc) : null;
+    var av = gstActiveVial(c, vd);
+    var recoDate = av ? av.reco : (r ? r.date_reconstituted : null);
+    var scadeHtml = "\u2014", scadeCol = "var(--ink3)";
+    if (recoDate) {
+      var scadeDate = gstAddDays(recoDate, c.stabilityDays);
+      var left = gstDaysBetween(today, isoLocal(scadeDate));
+      scadeCol = left<0 ? "var(--bad)" : (left<=5 ? "var(--warn-ink)" : "var(--ink3)");
+      scadeHtml = gstFmtDate(scadeDate);
+    }
+    var row = document.createElement("div"); // solo per costruire html via sicurezza esc? uso stringhe dirette qui
+    html += '<div class="an-trow" style="grid-template-columns:1.3fr 70px 70px 90px 90px 90px 90px">' +
+      '<span style="font-weight:500;color:var(--ink)">'+esc(c.name)+'<div style="font-size:10px;color:var(--ink3)">'+esc(c.doseLabel)+'</div></span>' +
+      '<input type="number" step="0.1" data-gst-recon-mg="'+c.id+'" value="'+mg+'" style="width:60px;border:1px solid var(--line2);border-radius:6px;padding:3px 5px;font-size:12px;text-align:right">' +
+      '<input type="number" step="0.1" data-gst-recon-bac="'+c.id+'" value="'+bac+'" style="width:60px;border:1px solid var(--line2);border-radius:6px;padding:3px 5px;font-size:12px;text-align:right">' +
+      '<span class="an-num">'+(cc!=null?gstIt(cc,0):"\u2014")+' mcg/mL</span>' +
+      '<span class="an-num" style="font-weight:600">'+(uiC!=null?(c.bilat?gstIt(uiC/2,1)+" UI/lato":gstIt(uiC,1)+" UI"):"\u2014")+'</span>' +
+      '<span class="an-num">'+(recoDate?gstFmtDate(new Date(recoDate+"T00:00:00")):"\u2014")+'</span>' +
+      '<span class="an-num" style="color:'+scadeCol+';font-weight:600">'+scadeHtml+'</span>' +
+    '</div>';
+  });
+  html += '</div><span class="an-note">UI = dose \u00f7 concentrazione \u00d7 100 \u00b7 IGF-1 DES \u00e8 bilaterale: met\u00e0 per lato</span></section>';
+
+  // ── 1.4 Vial in uso: dosi e vita residua ──
+  html += '<div style="display:grid;grid-column:1/-1;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">';
+  GST_COMPOUNDS.forEach(function(c){
+    var av = gstActiveVial(c, vd);
+    html += '<section class="an-card">';
+    if (!av) {
+      var vs = gstAllVials(c, vd), intatti = vs.filter(function(v){return v.stato==="intatto";}).length;
+      html += '<div class="an-head"><span class="an-title">'+esc(c.name)+'</span></div>' +
+        '<div class="an-note" style="color:var(--ink2);font-weight:600">Nessun vial in uso</div>' +
+        '<div class="an-note">'+intatti+' intatti disponibili \u00b7 ricostituisci il prossimo</div>';
+    } else {
+      var st = gstVialStatus(c, av, todayStr);
+      if (!st) {
+        /* PORTING 25/09: puo' capitare mentre stock_v2_vials sta ancora caricando (il vial
+           "in uso" di base non ha ancora una data di ricostituzione reale) -- niente crash,
+           solo uno stato transitorio onesto invece di un numero inventato. */
+        html += '<div class="an-head"><span class="an-title">'+esc(c.name)+'</span><span class="an-sub">vial '+av.n+' · in uso</span></div>' +
+          '<div class="an-note">Caricamento dati scorte…</div></section>';
+        return;
+      }
+      var pctDosi = st ? Math.min(100, st.rimaste>=0 ? (st.fatte/st.totali*100) : 0) : 0;
+      var pctVita = st ? Math.min(100, st.etaGiorni/c.stabilityDays*100) : 0;
+      var colDosi = pctDosi>=90 ? "var(--bad)" : (pctDosi>=70?"var(--warn-ink)":"var(--ok)");
+      var colVita = pctVita>=90 ? "var(--bad)" : (pctVita>=70?"var(--warn-ink)":"var(--ok)");
+      html += '<div class="an-head"><span class="an-title">'+esc(c.name)+'</span><span class="an-sub">vial '+av.n+' ('+esc(av.sup)+') \u00b7 in uso</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink2)"><span>'+st.fatte.toFixed(0)+' fatte \u00b7 '+st.rimaste+' rimaste / '+st.totali+'</span></div>' +
+        '<div style="height:6px;background:var(--surf2);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pctDosi.toFixed(0)+'%;background:'+colDosi+'"></div></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink2);margin-top:6px"><span>Vita residua</span><span>'+st.vitaResidua+' gg / '+c.stabilityDays+'</span></div>' +
+        '<div style="height:6px;background:var(--surf2);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+pctVita.toFixed(0)+'%;background:'+colVita+'"></div></div>' +
+        '<div class="an-note" style="color:'+st.esito.col+';font-weight:600;margin-top:6px">'+st.esito.testo+'</div>' +
+        '<div class="an-note">Ricostituito '+gstFmtDate(new Date(av.reco+"T00:00:00"))+' \u00b7 '+gstIt(av.mg,0)+' mg in '+gstIt(av.bac,1)+' mL</div>';
+    }
+    html += '</section>';
+  });
+  html += '</div>';
+
+  // ── 1.6 Scorte per composto ──
+  var giorniAllaFine = gstGiorniAllaFine();
+  html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Scorte per composto</span></div>' +
+    '<div class="an-thead" style="grid-template-columns:1.2fr 50px 50px 50px 100px 1fr"><span>Composto</span><span class="an-num">intatti</span><span class="an-num">finiti</span><span class="an-num">persi</span><span class="an-num">copre fino al</span><span>margine</span></div><div class="an-tbl">';
+  GST_COMPOUNDS.forEach(function(c){
+    var cov = gstCopertura(c, vd, todayStr);
+    var copreTxt = cov.giorni > 400 ? "oltre 1 anno" : gstFmtDate(gstAddDays(todayStr, cov.giorni));
+    var diff = cov.giorni - giorniAllaFine;
+    var margineTxt = diff>=0 ? ("+"+diff+" gg oltre fine ciclo") : ("mancano "+(-diff)+" gg");
+    var margineCol = diff>=0 ? "var(--ok)" : "var(--bad)";
+    html += '<div class="an-trow" style="grid-template-columns:1.2fr 50px 50px 50px 100px 1fr">' +
+      '<span style="font-weight:500">'+esc(c.name)+'</span><span class="an-num">'+cov.intatti+'</span><span class="an-num">'+cov.finiti+'</span><span class="an-num">'+cov.persi+'</span>' +
+      '<span class="an-num">'+copreTxt+'</span><span style="color:'+margineCol+';font-weight:600">'+margineTxt+'</span></div>';
+  });
+  html += '</div></section>';
+
+  // ── 1.7 Materiali di consumo ──
+  var cons = gstConsumabili(), fab = gstFabbisognoConsumabili(vd);
+  function consRow(label, spec, scorta, necessarie, unit, testoBisogno){
+    var margine = scorta - necessarie;
+    var esitoTxt = margine>=0 ? ("+"+margine+(unit==="mL"?" di margine":"")+(unit!=="mL"?(" \u00b7 copre fino al "+gstFmtDate(gstAddDays(todayStr, giorniAllaFine))):"")) : ("ne mancano "+(-margine));
+    return '<div class="an-trow" style="grid-template-columns:1.4fr 90px 1fr">' +
+      '<span style="font-weight:500">'+label+'<div style="font-size:10px;color:var(--ink3)">'+spec+'</div></span>' +
+      '<input type="number" data-gst-cons="'+unit+'" value="'+scorta+'" style="width:70px;border:1px solid var(--line2);border-radius:6px;padding:3px 5px;font-size:12px;text-align:right">' +
+      '<span style="font-size:11.5px"><span style="color:var(--ink2)">'+testoBisogno+'</span><br><span style="color:'+(margine>=0?"var(--ok)":"var(--bad)")+';font-weight:600">'+esitoTxt+'</span></span></div>';
+  }
+  html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Materiali di consumo</span></div><div class="an-tbl">' +
+    consRow("Siringhe SC","PIC 31G 8mm \u00b7 7 punture al giorno", cons.sc, fab.scNecessarie, "sc", "Servono "+fab.scNecessarie+" fino all'8 nov") +
+    consRow("Siringhe IM","PIC 29G 12,7mm \u00b7 IGF-1 bilaterale", cons.im, fab.imNecessarie, "im", "Servono "+fab.imNecessarie+" in "+gstGiorniWoRimasti()+" allenamenti") +
+    consRow("BAC Water","flaconi \u00b7 Limitless + Bachem \u00b7 frigo", cons.bac, fab.flaconiBac, "bac", "Servono "+Math.ceil(fab.mlBac)+" mL per "+fab.vialTotali+" vial da aprire") +
+  '</div><span class="an-note">Flacone BAC da 10 mL: ipotesi da confermare.</span></section>';
+
+  // ── 1.8 Fuori protocollo ──
+  html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Fuori protocollo</span></div><div class="an-thead" style="grid-template-columns:1fr 1fr 1fr"><span>Nome</span><span>Fornitore</span><span>Vial</span></div><div class="an-tbl">';
+  GST_OFFPROTO.forEach(function(o){
+    html += '<div class="an-trow" style="grid-template-columns:1fr 1fr 1fr"><span style="font-weight:500">'+o.name+'</span><span class="an-num">'+o.fornitore+'</span><span class="an-num">'+o.n+' intatti</span></div>';
+  });
+  html += '</div><span class="an-note">liofilizzati \u00b7 frigo</span></section>';
+
+  host.innerHTML = html;
+  GST_bindStock(host);
+}
+
+function GST_bindStock(host){
+  host.querySelectorAll('[data-gst-uc]').forEach(function(el){
+    el.addEventListener("input", function(){
+      var k = el.getAttribute("data-gst-uc");
+      if (k==="peptide") {
+        GST.ucPeptide = el.value;
+        var p = UC_PEPTIDES_G.find(function(x){return x.id===el.value;});
+        GST.ucMg = p.defaultMg; GST.ucBac = p.defaultBac;
+        if (el.value !== "custom") GST.ucDose = p.dose_mcg;
+      } else if (k==="mg") GST.ucMg = gstNum(el.value)||0;
+      else if (k==="bac") GST.ucBac = gstNum(el.value)||0;
+      else if (k==="dose") GST.ucDose = gstNum(el.value)||0;
+      GST_renderStock();
+    });
+  });
+  host.querySelectorAll('[data-gst-recon-mg],[data-gst-recon-bac]').forEach(function(el){
+    el.addEventListener("change", function(){ GST_saveRecon(el); });
+  });
+  host.querySelectorAll('[data-gst-cons]').forEach(function(el){
+    el.addEventListener("change", function(){ GST_saveConsumabili(); });
+  });
+}
+
+function GST_saveRecon(el){
+  var id = el.getAttribute("data-gst-recon-mg") || el.getAttribute("data-gst-recon-bac");
+  var qs = "?user_id=eq.giorgio_proto2_2026&select=data";
+  fetch(CFG.PROXY_URL + qs, { headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY } })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      var d = (rows[0] && rows[0].data) || {};
+      var list = Array.isArray(d.peptide_reconstitution) ? d.peptide_reconstitution.slice() : [];
+      var idx = list.findIndex(function(x){return x.id===id;});
+      var c = GST_COMPOUNDS.find(function(x){return x.id===id;});
+      var mgEl = document.querySelector('[data-gst-recon-mg="'+id+'"]'), bacEl = document.querySelector('[data-gst-recon-bac="'+id+'"]');
+      var entry = { id:id, name:c.name, vial_mg: gstNum(mgEl.value), bac_ml: gstNum(bacEl.value), date_reconstituted: (idx>=0?list[idx].date_reconstituted:isoLocal(new Date())) };
+      if (idx>=0) list[idx] = entry; else list.push(entry);
+      d.peptide_reconstitution = list;
+      store.blob.peptide_reconstitution = list;
+      return fetch(CFG.PROXY_URL + "?user_id=eq.giorgio_proto2_2026", {
+        method:"PATCH", headers:{ apikey:CFG.PROXY_KEY, Authorization:"Bearer "+CFG.PROXY_KEY, "Content-Type":"application/json", "Prefer":"return=minimal" },
+        body: JSON.stringify({ data: d })
+      });
+    }).then(function(){ GST_renderStock(); }).catch(function(e){ alert("Errore nel salvataggio: "+e.message); });
+}
+
+function GST_saveConsumabili(){
+  var sc = gstNum(document.querySelector('[data-gst-cons="sc"]').value)||0;
+  var im = gstNum(document.querySelector('[data-gst-cons="im"]').value)||0;
+  var bac = gstNum(document.querySelector('[data-gst-cons="bac"]').value)||0;
+  var val = { sc:sc, im:im, bac:bac };
+  var qs = "?user_id=eq.giorgio_proto2_2026&select=data";
+  fetch(CFG.PROXY_URL + qs, { headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY } })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      var d = (rows[0] && rows[0].data) || {};
+      d.consumabili_stock = val; store.blob.consumabili_stock = val;
+      return fetch(CFG.PROXY_URL + "?user_id=eq.giorgio_proto2_2026", {
+        method:"PATCH", headers:{ apikey:CFG.PROXY_KEY, Authorization:"Bearer "+CFG.PROXY_KEY, "Content-Type":"application/json", "Prefer":"return=minimal" },
+        body: JSON.stringify({ data: d })
+      });
+    }).then(function(){ GST_renderStock(); }).catch(function(e){ alert("Errore nel salvataggio: "+e.message); });
+}
+
+function GST_renderOrari(){
+  var host = document.querySelector('[data-gst-view="orari"]'); if (!host) return;
+  var todayType = gstTodayOrariType();
+  var dowNames = ["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
+  var todayLabel = GST_ORARI[todayType==="rest"?"rest":todayType].label;
+  var html = '<section class="an-card" style="grid-column:1/-1">' +
+    '<div class="an-note" style="margin-bottom:4px">Oggi \u00e8 '+todayLabel+' \u00b7 '+dowNames[new Date().getDay()]+'</div>' +
+    '<div class="an-legend" style="margin-bottom:6px">' +
+      '<span class="an-legend-item"><span class="an-sw" style="background:var(--accent)"></span>Iniezione</span>' +
+      '<span class="an-legend-item"><span class="an-sw" style="background:var(--ok)"></span>Integratori</span>' +
+      '<span class="an-legend-item"><span class="an-sw" style="background:var(--idle)"></span>Pasto</span>' +
+      '<span class="an-legend-item"><span class="an-sw" style="background:var(--warn)"></span>Allenamento</span>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">';
+  ["allenamento","weekend","rest"].forEach(function(key){
+    var o = GST_ORARI[key];
+    var isToday = key===todayType;
+    html += '<div style="border:'+(isToday?'2px solid var(--accent)':'1px solid var(--line2)')+';border-radius:12px;padding:10px;position:relative">' +
+      (isToday?'<span style="position:absolute;top:8px;right:10px;font-size:9px;font-weight:700;color:var(--accent);text-transform:uppercase">oggi</span>':'') +
+      '<div style="font-weight:700;font-size:13px;color:var(--ink)">'+o.label+'</div>' +
+      '<div style="font-size:11px;color:var(--ink3);margin-bottom:8px">'+o.sub+'</div>';
+    o.rows.forEach(function(r){
+      var dot = GST_ORARI_TYPE_COLOR[r[1]] || "var(--idle)";
+      html += '<div style="display:flex;gap:8px;padding:5px 0;border-top:1px solid var(--line2);align-items:flex-start">' +
+        '<span style="font-size:11px;color:var(--ink3);width:36px;flex:0 0 auto;font-variant-numeric:tabular-nums">'+r[0]+'</span>' +
+        '<span style="width:6px;height:6px;border-radius:50%;background:'+dot+';flex:0 0 auto;margin-top:5px"></span>' +
+        '<span style="flex:1;min-width:0"><div style="font-size:12px;color:var(--ink)">'+esc(r[2])+'</div>' +
+        (r[3]?'<div style="font-size:10px;color:var(--ink3)">'+esc(r[3])+'</div>':'') + '</span></div>';
+    });
+    html += '</div>';
+  });
+  html += '</div></section>';
+  host.innerHTML = html;
+}
+
+function GST_mealTotals(){
+  var kcal=0,p=0,c=0,g=0,n=0;
+  Object.keys(GST_MEAL).forEach(function(name){
+    var found = null;
+    Object.keys(GST_FOOD_DB).some(function(cat){ var f = GST_FOOD_DB[cat].find(function(x){return x.name===name;}); if (f){found=f; return true;} return false; });
+    if (!found) return;
+    var m = gstMacroFor(found, GST_MEAL[name]);
+    kcal+=m.kcal; p+=m.p; c+=m.c; g+=m.g; n++;
+  });
+  return { kcal:Math.round(kcal), p:+p.toFixed(1), c:+c.toFixed(1), g:+g.toFixed(1), n:n };
+}
+
+function GST_renderAlimenti(){
+  var host = document.querySelector('[data-gst-view="alimenti"]'); if (!host) return;
+  var cats = Object.keys(GST_FOOD_DB);
+  var html = '<div style="display:grid;grid-column:1 / -1;grid-template-columns:1fr 320px;gap:14px;align-items:flex-start">';
+  html += '<section class="an-card">' +
+    '<div class="an-note">Tocca + sull\'alimento \u00b7 Regola la quantit\u00e0 con \u2212 e + \u00b7 Il totale si aggiorna a destra</div>' +
+    '<input type="text" placeholder="Cerca un alimento\u2026" data-gst-food-q value="'+esc(GST.mealQuery)+'" style="border:1px solid var(--line2);border-radius:8px;padding:7px 10px;font-size:13px">' +
+    '<div style="display:flex;gap:5px;flex-wrap:wrap">' +
+      '<button type="button" class="an-chip'+(GST.mealCat==="all"?" is-active":"")+'" data-gst-food-cat="all" style="font-size:11px;padding:5px 10px">Tutti</button>' +
+      cats.map(function(c){ return '<button type="button" class="an-chip'+(GST.mealCat===c?" is-active":"")+'" data-gst-food-cat="'+esc(c)+'" style="font-size:11px;padding:5px 10px">'+esc(c)+'</button>'; }).join('') +
+    '</div>' +
+    '<div class="an-tbl" data-gst-food-list style="max-height:520px;overflow-y:auto"></div>' +
+  '</section>';
+  var tot = GST_mealTotals();
+  html += '<section class="an-card" style="position:sticky;top:8px">' +
+    '<div style="background:var(--hero);color:#fff;border-radius:12px;padding:14px 16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center">' +
+        '<span style="font-size:10px;text-transform:uppercase;color:#fff9">Totale pasto \u00b7 '+tot.n+(tot.n===1?' alimento':' alimenti')+'</span>' +
+        (tot.n>0?'<button type="button" data-gst-meal-clear style="border:none;background:#fff2;color:#fff;font-size:10px;border-radius:6px;padding:3px 8px;cursor:pointer">Svuota</button>':'') +
+      '</div>' +
+      '<div style="font-size:28px;font-weight:700">'+tot.kcal+' <span style="font-size:13px;font-weight:500;color:#fff9">kcal</span></div>' +
+      (tot.kcal>0 ? (function(){
+        var pk=tot.p*4, ck=tot.c*4, gk=tot.g*9, tk=pk+ck+gk||1;
+        return '<div style="display:flex;height:6px;border-radius:4px;overflow:hidden;margin-top:8px">' +
+          '<div style="width:'+(pk/tk*100)+'%;background:var(--accent)"></div><div style="width:'+(ck/tk*100)+'%;background:var(--warn)"></div><div style="width:'+(gk/tk*100)+'%;background:var(--bad)"></div></div>' +
+          '<div style="display:flex;gap:14px;margin-top:8px;font-size:11px;color:#fffc">' +
+          '<span>Proteine <strong style="color:#fff">'+gstIt(tot.p,1)+' g</strong> \u00b7 '+Math.round(pk/tk*100)+'%</span>' +
+          '<span>Carboidrati <strong style="color:#fff">'+gstIt(tot.c,1)+' g</strong> \u00b7 '+Math.round(ck/tk*100)+'%</span>' +
+          '<span>Grassi <strong style="color:#fff">'+gstIt(tot.g,1)+' g</strong> \u00b7 '+Math.round(gk/tk*100)+'%</span></div>';
+      })() : '') +
+    '</div>' +
+    '<div data-gst-meal-rows style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div>' +
+  '</section></div>';
+  host.innerHTML = html;
+  GST_renderFoodList(host);
+  GST_renderMealPanel(host);
+  GST_bindAlimenti(host);
+}
+
+function GST_renderFoodList(host){
+  var list = host.querySelector('[data-gst-food-list]'); if (!list) return;
+  var q = GST.mealQuery.toLowerCase();
+  var rows = [];
+  Object.keys(GST_FOOD_DB).forEach(function(cat){
+    if (GST.mealCat!=="all" && GST.mealCat!==cat) return;
+    GST_FOOD_DB[cat].forEach(function(f){ if (!q || f.name.toLowerCase().indexOf(q)>=0) rows.push([cat,f]); });
+  });
+  if (!rows.length) { list.innerHTML = '<div class="an-note">Nessun alimento trovato.</div>'; return; }
+  var html = "", lastCat = null;
+  rows.forEach(function(pair){
+    var cat=pair[0], f=pair[1], inMeal = GST_MEAL[f.name]!=null;
+    if (cat!==lastCat) { html += '<div style="font-size:10px;text-transform:uppercase;color:var(--ink3);font-weight:700;margin-top:8px">'+esc(cat)+'</div>'; lastCat=cat; }
+    var m = gstMacroFor(f, f.ref);
+    html += '<div class="an-trow" style="grid-template-columns:1fr 60px 40px 32px;align-items:center;'+(inMeal?"background:var(--accent-soft)":"")+'">' +
+      '<span><div style="font-weight:500;font-size:12.5px">'+esc(f.name)+'</div><div style="font-size:10px;color:var(--ink3)">'+gstQtyLabel(f,f.ref)+' \u00b7 '+esc(f.note||"")+'</div></span>' +
+      '<span class="an-num" style="font-size:12px">'+m.kcal+' kcal</span>' +
+      '<span class="an-num" style="font-size:11px;color:var(--ink3)">P'+gstIt(m.p,1)+'</span>' +
+      '<button type="button" data-gst-food-add="'+esc(f.name)+'" style="border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;background:'+(inMeal?"var(--ok)":"var(--accent)")+';color:#fff;font-weight:700">'+(inMeal?"\u2713":"+")+'</button>' +
+    '</div>';
+  });
+  list.innerHTML = html;
+}
+
+function GST_findFood(name){ var found=null; Object.keys(GST_FOOD_DB).some(function(cat){ var f=GST_FOOD_DB[cat].find(function(x){return x.name===name;}); if(f){found=f;return true;} return false;}); return found; }
+
+function GST_renderMealPanel(host){
+  var wrap = host.querySelector('[data-gst-meal-rows]'); if (!wrap) return;
+  var names = Object.keys(GST_MEAL);
+  if (!names.length) { wrap.innerHTML = '<div class="an-note">Il pasto \u00e8 vuoto. Tocca + su un alimento: compare qui con la sua porzione tipica.</div>'; return; }
+  var html = "";
+  names.forEach(function(name){
+    var f = GST_findFood(name); if (!f) return;
+    var qty = GST_MEAL[name], m = gstMacroFor(f, qty), step = f.unit==="fixed" ? 1 : 10;
+    html += '<div style="display:flex;align-items:center;gap:8px;border:1px solid var(--line2);border-radius:10px;padding:8px 10px">' +
+      '<span style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:500">'+esc(name)+'</div><div style="font-size:10px;color:var(--ink3)">'+m.kcal+' kcal \u00b7 P'+gstIt(m.p,1)+' \u00b7 C'+gstIt(m.c,1)+' \u00b7 G'+gstIt(m.g,1)+'</div></span>' +
+      '<button type="button" data-gst-meal-dec="'+esc(name)+'" style="width:22px;height:22px;border:1px solid var(--line2);border-radius:50%;background:var(--surf);cursor:pointer">\u2212</button>' +
+      '<span style="font-size:11px;min-width:44px;text-align:center">'+gstQtyLabel(f,qty)+'</span>' +
+      '<button type="button" data-gst-meal-inc="'+esc(name)+'" style="width:22px;height:22px;border:1px solid var(--line2);border-radius:50%;background:var(--surf);cursor:pointer">+</button>' +
+      '<button type="button" data-gst-meal-del="'+esc(name)+'" style="border:none;background:none;color:var(--ink3);cursor:pointer;font-size:13px">\u2715</button>' +
+    '</div>';
+  });
+  wrap.innerHTML = html;
+}
+
+function GST_bindAlimenti(host){
+  var q = host.querySelector('[data-gst-food-q]');
+  if (q) q.addEventListener("input", function(){ GST.mealQuery = q.value; GST_renderFoodList(host); });
+  host.querySelectorAll('[data-gst-food-cat]').forEach(function(b){
+    b.addEventListener("click", function(){ GST.mealCat = b.getAttribute("data-gst-food-cat"); GST_renderAlimenti(); });
+  });
+  host.querySelectorAll('[data-gst-food-add]').forEach(function(b){
+    b.addEventListener("click", function(){
+      /* PORTING 25/09: bug reale trovato in test -- l'aggiunta ridisegnava solo la lista e le
+         righe del pasto, non l'intestazione con il totale kcal/macro, che restava ferma a 0
+         anche dopo aver aggiunto alimenti. Ridisegno completo, come gia' fanno +/-/elimina. */
+      var name = b.getAttribute("data-gst-food-add"), f = GST_findFood(name);
+      GST_MEAL[name] = (GST_MEAL[name] || 0) + f.ref;
+      GST_renderAlimenti();
+    });
+  });
+  host.querySelectorAll('[data-gst-meal-inc],[data-gst-meal-dec]').forEach(function(b){
+    var isInc = b.hasAttribute("data-gst-meal-inc");
+    b.addEventListener("click", function(){
+      var name = b.getAttribute(isInc?"data-gst-meal-inc":"data-gst-meal-dec"), f = GST_findFood(name), step = f.unit==="fixed"?1:10;
+      GST_MEAL[name] = Math.max(0, (GST_MEAL[name]||0) + (isInc?step:-step));
+      if (GST_MEAL[name]<=0) delete GST_MEAL[name];
+      GST_renderAlimenti();
+    });
+  });
+  host.querySelectorAll('[data-gst-meal-del]').forEach(function(b){
+    b.addEventListener("click", function(){ delete GST_MEAL[b.getAttribute("data-gst-meal-del")]; GST_renderAlimenti(); });
+  });
+  var clearBtn = host.querySelector('[data-gst-meal-clear]');
+  if (clearBtn) clearBtn.addEventListener("click", function(){ GST_MEAL = {}; GST_renderAlimenti(); });
+}
+function GST_updateMealHero(){ /* il ridisegno completo di GST_renderAlimenti gia' aggiorna il totale */ }
+
 
 document.documentElement.lang = LANG;
 render();
