@@ -588,6 +588,20 @@
 
 <div id="app"></div>
 
+<style>
+/* PORTING 26/09: Gestione era stata provata solo a larghezza desktop -- su telefono vero il
+   layout a due colonne di Alimenti (1fr 320px fisso) e le tabelle di Stock a colonne fisse
+   in px non si adattavano, con testo sovrapposto e tagliato. Regole dedicate qui, non
+   inline, perche' le media query non funzionano su uno style="" inline. */
+.gst-2col{display:grid;grid-column:1 / -1;grid-template-columns:1fr 320px;gap:14px;align-items:flex-start;}
+.gst-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+/* PORTING 26/09: 560px lasciava alle colonne flessibili (1.2fr/1.3fr) troppo poco spazio dopo le colonne fisse in px -- "IGF-1 DES" continuava a spezzarsi lettera per lettera anche dentro l'area scorrevole. Alzato a sufficienza perche' le colonne a fr restino leggibili. */
+.gst-scroll > .an-thead, .gst-scroll > .an-tbl .an-trow{min-width:720px;}
+@media (max-width:860px){
+  .gst-2col{grid-template-columns:1fr;}
+  .gst-2col > section:last-child{position:static !important;}
+}
+</style>
 <script>
 /* ============================================================
    1 · CONFIG — copiare i valori da index.html (SB_URL/SB_KEY),
@@ -6463,7 +6477,7 @@ function GST_renderStock(){
   // ── 1.3 Tabella ricostituzione ──
   var reco = (store.blob && store.blob.peptide_reconstitution) || [];
   html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Tabella ricostituzione</span></div>' +
-    '<div class="an-thead" style="grid-template-columns:1.3fr 70px 70px 90px 90px 90px 90px"><span>Composto</span><span class="an-num">Vial mg</span><span class="an-num">BAC mL</span><span class="an-num">Concentr.</span><span class="an-num">Da prelevare</span><span class="an-num">Ricostituito</span><span class="an-num">Scade</span></div>' +
+    '<div class="gst-scroll"><div class="an-thead" style="grid-template-columns:1.3fr 70px 70px 90px 90px 90px 90px"><span>Composto</span><span class="an-num">Vial mg</span><span class="an-num">BAC mL</span><span class="an-num">Concentr.</span><span class="an-num">Da prelevare</span><span class="an-num">Ricostituito</span><span class="an-num">Scade</span></div>' +
     '<div class="an-tbl">';
   GST_COMPOUNDS.forEach(function(c){
     var r = reco.find(function(x){return x.id===c.id;});
@@ -6490,7 +6504,7 @@ function GST_renderStock(){
       '<span class="an-num" style="color:'+scadeCol+';font-weight:600">'+scadeHtml+'</span>' +
     '</div>';
   });
-  html += '</div><span class="an-note">UI = dose \u00f7 concentrazione \u00d7 100 \u00b7 IGF-1 DES \u00e8 bilaterale: met\u00e0 per lato</span></section>';
+  html += '</div></div><span class="an-note">UI = dose \u00f7 concentrazione \u00d7 100 \u00b7 IGF-1 DES \u00e8 bilaterale: met\u00e0 per lato</span></section>';
 
   // ── 1.4 Vial in uso: dosi e vita residua ──
   html += '<div style="display:grid;grid-column:1/-1;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">';
@@ -6531,7 +6545,7 @@ function GST_renderStock(){
   // ── 1.6 Scorte per composto ──
   var giorniAllaFine = gstGiorniAllaFine();
   html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Scorte per composto</span></div>' +
-    '<div class="an-thead" style="grid-template-columns:1.2fr 50px 50px 50px 100px 1fr"><span>Composto</span><span class="an-num">intatti</span><span class="an-num">finiti</span><span class="an-num">persi</span><span class="an-num">copre fino al</span><span>margine</span></div><div class="an-tbl">';
+    '<div class="gst-scroll"><div class="an-thead" style="grid-template-columns:1.2fr 50px 50px 50px 100px 1fr"><span>Composto</span><span class="an-num">intatti</span><span class="an-num">finiti</span><span class="an-num">persi</span><span class="an-num">copre fino al</span><span>margine</span></div><div class="an-tbl">';
   GST_COMPOUNDS.forEach(function(c){
     var cov = gstCopertura(c, vd, todayStr);
     var copreTxt = cov.giorni > 400 ? "oltre 1 anno" : gstFmtDate(gstAddDays(todayStr, cov.giorni));
@@ -6542,7 +6556,7 @@ function GST_renderStock(){
       '<span style="font-weight:500">'+esc(c.name)+'</span><span class="an-num">'+cov.intatti+'</span><span class="an-num">'+cov.finiti+'</span><span class="an-num">'+cov.persi+'</span>' +
       '<span class="an-num">'+copreTxt+'</span><span style="color:'+margineCol+';font-weight:600">'+margineTxt+'</span></div>';
   });
-  html += '</div></section>';
+  html += '</div></div></section>';
 
   // ── 1.7 Materiali di consumo ──
   var cons = gstConsumabili(), fab = gstFabbisognoConsumabili(vd);
@@ -6554,11 +6568,11 @@ function GST_renderStock(){
       '<input type="number" data-gst-cons="'+unit+'" value="'+scorta+'" style="width:70px;border:1px solid var(--line2);border-radius:6px;padding:3px 5px;font-size:12px;text-align:right">' +
       '<span style="font-size:11.5px"><span style="color:var(--ink2)">'+testoBisogno+'</span><br><span style="color:'+(margine>=0?"var(--ok)":"var(--bad)")+';font-weight:600">'+esitoTxt+'</span></span></div>';
   }
-  html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Materiali di consumo</span></div><div class="an-tbl">' +
+  html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Materiali di consumo</span></div><div class="gst-scroll"><div class="an-tbl">' +
     consRow("Siringhe SC","PIC 31G 8mm \u00b7 7 punture al giorno", cons.sc, fab.scNecessarie, "sc", "Servono "+fab.scNecessarie+" fino all'8 nov") +
     consRow("Siringhe IM","PIC 29G 12,7mm \u00b7 IGF-1 bilaterale", cons.im, fab.imNecessarie, "im", "Servono "+fab.imNecessarie+" in "+gstGiorniWoRimasti()+" allenamenti") +
     consRow("BAC Water","flaconi \u00b7 Limitless + Bachem \u00b7 frigo", cons.bac, fab.flaconiBac, "bac", "Servono "+Math.ceil(fab.mlBac)+" mL per "+fab.vialTotali+" vial da aprire") +
-  '</div><span class="an-note">Flacone BAC da 10 mL: ipotesi da confermare.</span></section>';
+  '</div></div><span class="an-note">Flacone BAC da 10 mL: ipotesi da confermare.</span></section>';
 
   // ── 1.8 Fuori protocollo ──
   html += '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Fuori protocollo</span></div><div class="an-thead" style="grid-template-columns:1fr 1fr 1fr"><span>Nome</span><span>Fornitore</span><span>Vial</span></div><div class="an-tbl">';
@@ -6684,7 +6698,7 @@ function GST_mealTotals(){
 function GST_renderAlimenti(){
   var host = document.querySelector('[data-gst-view="alimenti"]'); if (!host) return;
   var cats = Object.keys(GST_FOOD_DB);
-  var html = '<div style="display:grid;grid-column:1 / -1;grid-template-columns:1fr 320px;gap:14px;align-items:flex-start">';
+  var html = '<div class="gst-2col">';
   html += '<section class="an-card">' +
     '<div class="an-note">Tocca + sull\'alimento \u00b7 Regola la quantit\u00e0 con \u2212 e + \u00b7 Il totale si aggiorna a destra</div>' +
     '<input type="text" placeholder="Cerca un alimento\u2026" data-gst-food-q value="'+esc(GST.mealQuery)+'" style="border:1px solid var(--line2);border-radius:8px;padding:7px 10px;font-size:13px">' +
