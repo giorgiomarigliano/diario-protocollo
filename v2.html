@@ -595,6 +595,14 @@
    inline, perche' le media query non funzionano su uno style="" inline. */
 .gst-2col{display:grid;grid-column:1 / -1;grid-template-columns:1fr 320px;gap:14px;align-items:flex-start;}
 .gst-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+/* PORTING 26/09 (v2): trovata la vera causa della sovrapposizione delle note su due righe --
+   non era il <span> al posto di un <div> (provato, non cambiava nulla), ma questo max-height
+   con overflow-y:auto: dentro un genitore flex-column, un'altezza fissa fa RESTRINGERE le
+   righe fino al loro min-height invece di far scorrere il contenitore, tagliando le note su
+   due righe. Ha senso solo nella colonna desktop (accanto al pannello pasto, sticky); su
+   mobile, dove la pagina scorre gia' per intero e il pannello non e' piu' sticky, va tolto. */
+.gst-foodlist{max-height:520px;overflow-y:auto;}
+@media (max-width:860px){ .gst-foodlist{max-height:none;overflow-y:visible;} }
 /* PORTING 26/09: 560px lasciava alle colonne flessibili (1.2fr/1.3fr) troppo poco spazio dopo le colonne fisse in px -- "IGF-1 DES" continuava a spezzarsi lettera per lettera anche dentro l'area scorrevole. Alzato a sufficienza perche' le colonne a fr restino leggibili. */
 .gst-scroll > .an-thead, .gst-scroll > .an-tbl .an-trow{min-width:720px;}
 @media (max-width:860px){
@@ -6706,7 +6714,7 @@ function GST_renderAlimenti(){
       '<button type="button" class="an-chip'+(GST.mealCat==="all"?" is-active":"")+'" data-gst-food-cat="all" style="font-size:11px;padding:5px 10px">Tutti</button>' +
       cats.map(function(c){ return '<button type="button" class="an-chip'+(GST.mealCat===c?" is-active":"")+'" data-gst-food-cat="'+esc(c)+'" style="font-size:11px;padding:5px 10px">'+esc(c)+'</button>'; }).join('') +
     '</div>' +
-    '<div class="an-tbl" data-gst-food-list style="max-height:520px;overflow-y:auto"></div>' +
+    '<div class="an-tbl gst-foodlist" data-gst-food-list></div>' +
   '</section>';
   var tot = GST_mealTotals();
   html += '<section class="an-card" style="position:sticky;top:8px">' +
@@ -6749,7 +6757,12 @@ function GST_renderFoodList(host){
     if (cat!==lastCat) { html += '<div style="font-size:10px;text-transform:uppercase;color:var(--ink3);font-weight:700;margin-top:8px">'+esc(cat)+'</div>'; lastCat=cat; }
     var m = gstMacroFor(f, f.ref);
     html += '<div class="an-trow" style="grid-template-columns:1fr 60px 40px 32px;align-items:center;'+(inMeal?"background:var(--accent-soft)":"")+'">' +
-      '<span><div style="font-weight:500;font-size:12.5px">'+esc(f.name)+'</div><div style="font-size:10px;color:var(--ink3)">'+gstQtyLabel(f,f.ref)+' \u00b7 '+esc(f.note||"")+'</div></span>' +
+      /* PORTING 26/09: era un <span> (inline) a contenere due <div> -- su una nota lunga a
+         due righe (es. "Ember Biltong") la riga non cresceva per contenerla e sovrapponeva la
+         successiva. <div> con min-width:0 (necessario perche' un figlio di grid non si allarga
+         mai oltre la sua colonna di default, altrimenti il testo lungo avrebbe spinto la riga
+         intera fuori dai bordi invece di andare a capo). */
+      '<div style="min-width:0"><div style="font-weight:500;font-size:12.5px">'+esc(f.name)+'</div><div style="font-size:10px;color:var(--ink3)">'+gstQtyLabel(f,f.ref)+' \u00b7 '+esc(f.note||"")+'</div></div>' +
       '<span class="an-num" style="font-size:12px">'+m.kcal+' kcal</span>' +
       '<span class="an-num" style="font-size:11px;color:var(--ink3)">P'+gstIt(m.p,1)+'</span>' +
       '<button type="button" data-gst-food-add="'+esc(f.name)+'" style="border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;background:'+(inMeal?"var(--ok)":"var(--accent)")+';color:#fff;font-weight:700">'+(inMeal?"\u2713":"+")+'</button>' +
