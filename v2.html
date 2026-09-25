@@ -275,7 +275,8 @@
   --c-s1:var(--ink2); --c-s2:#2e9e4f; --c-s3:#8a6d00; --c-s4:#d81e05;
   --c-band:rgba(10,10,14,.07);
   --c-ph1:#e4e4e8; --c-ph2:#b6b6be; --c-ph3:var(--accent); --c-ph4:#8a8a93; --c-ph5:#eeeef1;
-  --c-event:rgba(138,109,0,.14); --c-event-ink:#8a6d00;
+  /* PORTING 26/09: Bangkok/Mallorca (etichetta + fascia) non hanno un corrispettivo in Oggi -- Oggi non mostra periodi di viaggio. Tolto il marrone-oliva, allineato al grigio neutro gia' usato per la fascia "viaggio" nel grafico Ricomposizione, stesso token. */
+  --c-event:rgba(10,10,14,.07); --c-event-ink:var(--ink2);
   --c-mark:#d81e05;
   
   --c-g1:var(--ink2); --c-g2:#2e9e4f; --c-g3:#8a6d00; --c-g4:#d81e05; --c-g5:#6b4ea8; --c-g6:#57575f;
