@@ -5281,7 +5281,7 @@ function renderOggiFull() {
       const RINGS = [
         { label: L.injectionsRing, pct: a.inj, sub: `${a.injDone}/${a.injTot}`, color: 'var(--accent)' },
         { label: L.supplements,    pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)' },
-        { label: L.workoutsRing,   pct: a.wo,  sub: `${a.woDone}/${a.woTot}`,  color: 'var(--warn)' }
+        { label: L.workoutsRing,   pct: a.wo,  sub: `${a.woDone}/${a.woTot}`,  color: '#ff2d12' } /* rosso fuoco, 28/09 */
       ];
       return `
       <div style="flex:0 0 auto;border-radius:18px;background:var(--surf);box-shadow:var(--shadow);padding:16px 12px;display:flex;justify-content:space-around;">
@@ -5592,7 +5592,7 @@ function renderOggiFull() {
   const RINGS = [
     { label: L.injectionsRing,       pct: a.inj,  sub: `${a.injDone}/${a.injTot}`,   color: 'var(--accent)' },
     { label: L.supplements,          pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)' },
-    { label: L.workoutsRing, pct: a.wo,   sub: `${a.woDone}/${a.woTot}`,     color: 'var(--warn)' }
+    { label: L.workoutsRing, pct: a.wo,   sub: `${a.woDone}/${a.woTot}`,     color: '#ff2d12' } /* rosso fuoco, 28/09 */
   ];
 
   // Iniezioni — appiattite in un'unica lista di righe (come nel mockup: non
