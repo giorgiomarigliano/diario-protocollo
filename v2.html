@@ -671,6 +671,20 @@
   .an-subnav .an-sub{font-size:11px;font-weight:600;color:var(--ink2);padding-right:0 !important;}
   .an-main{padding:12px 0 22px;}
 }
+/* PORTING 28/09: Gestione mobile -- barra a segmenti come nel mockup iPhone; Alimenti con il totale pasto in cima
+   e senza colonna proteine (la riga resta leggibile a 393px). Nessuno scorrimento laterale. */
+@media (max-width:1023px){
+  .gst-seg{display:flex;gap:3px;background:var(--surf2);border-radius:10px;padding:3px;margin:12px 14px 0;}
+  .gst-seg button{flex:1 1 0;min-height:40px;border:none;border-radius:8px;background:transparent;color:var(--ink2);font-size:12.5px;font-weight:600;cursor:pointer;}
+  .gst-seg button.is-active{background:var(--surf);color:var(--ink);box-shadow:var(--shadow);}
+  .gst-m .an-main{padding:10px 14px 22px;}
+  .gst-m .gst-2col{display:flex;flex-direction:column;gap:9px;}
+  .gst-m .gst-2col > section:last-child{order:-1;position:static !important;}
+  .gst-m .gst-macros{display:grid !important;grid-template-columns:repeat(3,1fr);gap:8px !important;}
+  .gst-m .gst-macros span{display:flex;flex-direction:column;line-height:1.35;}
+  .gst-m [data-gst-reco-f]{height:44px !important;font-size:14px !important;}
+  .gst-m [data-gst-reco-open],.gst-m [data-gst-reco-save],.gst-m [data-gst-reco-cancel]{min-height:44px;}
+}
 </style>
 <script>
 /* ============================================================
@@ -6691,6 +6705,17 @@ function gstQtyLabel(food, qty){
 function gstSub(root, sel){ return root.querySelector(sel); }
 
 function GST_HTML(){
+  if (!isDesktop) return '<div class="an-root gst-m">' +
+    '<div class="gst-seg">' +
+      '<button type="button" class="is-active" data-gst-tab="stock">Stock</button>' +
+      '<button type="button" data-gst-tab="orari">Orari</button>' +
+      '<button type="button" data-gst-tab="alimenti">Alimenti</button>' +
+    '</div>' +
+    '<div class="an-main">' +
+      '<div class="an-view is-active" data-gst-view="stock"></div>' +
+      '<div class="an-view" data-gst-view="orari"></div>' +
+      '<div class="an-view" data-gst-view="alimenti"></div>' +
+    '</div></div>';
   return '<div class="an-root">' +
     '<div class="an-subnav"><div class="an-chips">' +
       '<button type="button" class="an-chip is-active" data-gst-tab="stock">Stock</button>' +
@@ -6737,6 +6762,7 @@ function GST_renderAll(){
 
 function GST_renderStock(){
   var host = document.querySelector('[data-gst-view="stock"]'); if (!host) return;
+  if (!isDesktop) { GST_renderStockMobile(host); return; }
   var vd = GST_V1.stock_v2_vials || {};
   var todayStr = today;
   var html = "";
@@ -6910,6 +6936,173 @@ function GST_renderStock(){
   GST_bindStock(host);
 }
 
+/* PORTING 28/09: Gestione mobile ricostruita sul mockup iPhone approvato (393x852), letto dal sorgente
+   del mockup e non piu' derivata dal desktop. Differenze volute rispetto al mockup (errori del mockup
+   corretti): (1) la tabella ricostituzione e la card del vial sono fuse per composto come nel mockup, ma
+   il mockup perdeva le colonne "Ricostituito" e "Scade": qui restano in una riga sotto le barre;
+   (2) mancavano le note "Flacone BAC da 10 mL: ipotesi" e "liofilizzati . frigo"; (3) il resto e'
+   identico: card da 18px, campi da 44px, nessuno scorrimento laterale. */
+function gstTagInk(tag){
+  var t = tag || "";
+  if (/^NO carbs/.test(t)) return "var(--bad)";
+  if (/^digiuno ~/.test(t)) return "var(--ok)";
+  if (/^(digiuno|low-fat|no salumi)/.test(t)) return "var(--warn-ink)";
+  if (/post-WO/.test(t)) return "#7a4fc9";
+  if (/flessibile|pre-sleep|dormire/.test(t)) return "#0a8fb0";
+  if (/^(ok|2h|3h|~4h|nessun vincolo|no-carb)/.test(t)) return "var(--ok)";
+  return "var(--ink3)";
+}
+function GST_renderStockMobile(host){
+  var vd = GST_V1.stock_v2_vials || {}, todayStr = today, html = "";
+  var CARD = "border-radius:18px;background:var(--surf);box-shadow:var(--shadow);";
+  var LBL = "font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;";
+  var FLD = "width:100%;min-width:0;height:44px;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;background:var(--surf2);text-align:center;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);";
+
+  // ── Convertitore ──
+  var ucList = UC_PEPTIDES_G.concat();
+  var ucP = ucList.find(function(p){return p.id===GST.ucPeptide;}) || ucList[0];
+  var conc = gstConc(GST.ucMg, GST.ucBac);
+  var ui = (conc>0) ? gstUI(GST.ucDose, conc) : null;
+  var dpv = (GST.ucDose>0) ? gstDosesPerVial(GST.ucMg, GST.ucDose) : null;
+  var vol = (conc>0) ? (GST.ucDose/conc) : null;
+  html += '<div style="'+CARD+'padding:15px 16px;display:flex;flex-direction:column;gap:11px"><span style="'+LBL+'">Convertitore \u00b7 U-100</span>' +
+    '<select data-gst-uc="peptide" style="height:44px;border:1px solid var(--line);border-radius:10px;background:var(--surf2);padding:0 10px;font-size:14px;font-weight:600;color:var(--ink)">' +
+      ucList.map(function(p){return '<option value="'+p.id+'"'+(p.id===GST.ucPeptide?' selected':'')+'>'+p.name+'</option>';}).join('') + '</select>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px">' +
+      [["mg","Vial","mg",GST.ucMg,"0.5"],["bac","BAC","mL",GST.ucBac,"0.5"],["dose","Dose","mcg",GST.ucDose,"1"]].map(function(f){
+        return '<label style="display:flex;flex-direction:column;gap:4px;min-width:0"><span style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase">'+f[1]+' \u00b7 '+f[2]+'</span>' +
+          '<input type="number" step="'+f[4]+'" min="0" data-gst-uc="'+f[0]+'" value="'+f[3]+'" style="'+FLD+'"></label>';
+      }).join('') +
+    '</div>' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:12px;background:var(--accent-soft)">' +
+      '<div style="display:flex;flex-direction:column;min-width:0">' +
+        '<span style="font-size:10px;font-weight:600;color:var(--accent-ink);text-transform:uppercase">Da prelevare</span>' +
+        '<span style="font-size:30px;line-height:1.05;font-weight:700;color:var(--accent-ink);font-variant-numeric:tabular-nums">'+(ui!=null?gstIt(ui,1):"\u2014")+' <span style="font-size:13px">UI</span></span>' +
+        '<span style="font-size:11px;font-weight:600;color:var(--accent-ink)">'+(ucP.bilat && ui!=null ? ("\u2192 "+gstIt(ui/2,1)+" UI per lato") : "dose intera, un\u2019iniezione")+'</span>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:0;text-align:right">' +
+        '<span style="font-size:11px;color:var(--accent-ink);font-variant-numeric:tabular-nums">Concentrazione <strong>'+(conc?gstIt(conc,0)+' mcg/mL':"\u2014")+'</strong></span>' +
+        '<span style="font-size:11px;color:var(--accent-ink);font-variant-numeric:tabular-nums">Dosi per vial <strong>'+(dpv!=null?dpv:"\u2014")+'</strong></span>' +
+        '<span style="font-size:11px;color:var(--accent-ink);font-variant-numeric:tabular-nums">Volume <strong>'+(vol!=null?gstIt(vol,2)+' mL':"\u2014")+'</strong></span>' +
+      '</div>' +
+    '</div>' +
+    (ui!=null && ui>100 ? '<span style="font-size:11px;font-weight:600;color:var(--bad)">Oltre 100 UI: non entra in una siringa da 1 mL, dividi la dose.</span>' : '') +
+  '</div>';
+
+  // ── Ricostituzione + vial in uso, una card per composto ──
+  var reco = (store.blob && store.blob.peptide_reconstitution) || [];
+  html += '<div style="padding:4px 4px 0;display:flex;flex-direction:column;gap:2px"><span style="'+LBL+'">Ricostituzione e vial in uso</span><span style="font-size:10.5px;color:var(--ink3)">Modifica mg o BAC: le unit\u00e0 si ricalcolano \u00b7 IGF-1 DES \u00e8 bilaterale, met\u00e0 per lato</span></div>';
+  function bar(label, val, pct, col){
+    return '<div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--ink2)"><span>'+label+'</span><span style="font-weight:700;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums">'+val+'</span></div>' +
+      '<div style="height:7px;border-radius:999px;background:var(--line2);overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:999px"></div></div></div>';
+  }
+  GST_COMPOUNDS.forEach(function(c){
+    var r = reco.find(function(x){return x.id===c.id;});
+    var mg = r ? gstNum(r.vial_mg) : c.defaultMg, bac = r ? gstNum(r.bac_ml) : c.defaultBac;
+    var cc = gstConc(mg, bac), uiC = (cc>0) ? gstUI(c.dose_mcg, cc) : null;
+    var av = gstActiveVial(c, vd), st = av ? gstVialStatus(c, av, todayStr) : null;
+    var recoDate = av ? av.reco : (r ? r.date_reconstituted : null);
+    var uiLab = uiC!=null ? (c.bilat ? gstIt(uiC/2,1)+" UI/lato" : gstIt(uiC,1)+" UI") : "\u2014";
+    var meta = "";
+    if (recoDate) {
+      var scadeDate = gstAddDays(recoDate, c.stabilityDays), left = gstDaysBetween(today, isoLocal(scadeDate));
+      meta = (av ? 'Vial '+av.n+' \u00b7 ' : '') + 'Ricostituito '+gstFmtDate(new Date(recoDate+"T00:00:00"))+' \u00b7 scade <span style="font-weight:700;color:'+(left<0?"var(--bad)":(left<=5?"var(--warn-ink)":"var(--ink2)"))+'">'+gstFmtDate(scadeDate)+'</span>';
+    }
+    html += '<div style="'+CARD+'padding:14px 16px;display:flex;flex-direction:column;gap:10px">' +
+      '<div style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span>' +
+        '<span style="flex:1 1 auto;min-width:0;font-size:14px;font-weight:700;color:var(--ink)">'+esc(c.name)+'</span>' +
+        '<span style="font-size:18px;font-weight:700;color:var(--accent-ink);font-variant-numeric:tabular-nums;white-space:nowrap">'+uiLab+'</span></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:7px;align-items:end">' +
+        '<label style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font-size:10px;font-weight:600;color:var(--ink3)">VIAL \u00b7 mg</span><input type="number" step="0.1" min="0" data-gst-recon-mg="'+c.id+'" value="'+mg+'" style="'+FLD+'font-size:14px"></label>' +
+        '<label style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font-size:10px;font-weight:600;color:var(--ink3)">BAC \u00b7 mL</span><input type="number" step="0.1" min="0" data-gst-recon-bac="'+c.id+'" value="'+bac+'" style="'+FLD+'font-size:14px"></label>' +
+        '<div style="display:flex;flex-direction:column;gap:1px;padding-bottom:4px;min-width:0"><span style="font-size:10px;color:var(--ink3);font-variant-numeric:tabular-nums">'+(cc!=null?gstIt(cc,0)+' mcg/mL':"\u2014")+'</span><span style="font-size:12px;font-weight:600;color:var(--ink2)">'+esc(c.doseLabel)+'</span></div>' +
+      '</div>';
+    if (!av) {
+      var intatti = gstAllVials(c, vd).filter(function(v){return v.stato==="intatto";}).length;
+      html += '<span style="font-size:12px;font-weight:600;color:var(--ink2)">Nessun vial in uso \u00b7 '+intatti+' intatti disponibili</span>';
+    } else if (!st) {
+      html += '<span style="font-size:11px;color:var(--ink3)">Caricamento dati scorte\u2026</span>';
+    } else {
+      var pctDosi = Math.min(100, st.rimaste>=0 ? (st.fatte/st.totali*100) : 0), pctVita = Math.min(100, st.etaGiorni/c.stabilityDays*100);
+      var colDosi = pctDosi>=90 ? "var(--bad)" : (pctDosi>=70?"var(--warn-ink)":"var(--ok)"), colVita = pctVita>=90 ? "var(--bad)" : (pctVita>=70?"var(--warn-ink)":"var(--ok)");
+      html += bar("Dosi su questo vial", st.fatte.toFixed(0)+' fatte \u00b7 '+st.rimaste+' rimaste / '+st.totali, pctDosi.toFixed(0), colDosi) +
+        bar("Vita residua", st.vitaResidua+' gg / '+c.stabilityDays, pctVita.toFixed(0), colVita) +
+        '<span style="font-size:12px;line-height:1.4;font-weight:600;color:'+st.esito.col+'">'+st.esito.testo+'</span>';
+    }
+    if (meta) html += '<span style="font-size:10.5px;color:var(--ink3);font-variant-numeric:tabular-nums">'+meta+'</span>';
+    html += GST_recoBlock(c, vd, av) + '</div>';
+  });
+
+  // ── Scorte per composto ──
+  var giorniAllaFine = gstGiorniAllaFine();
+  html += '<div style="'+CARD+'padding:14px 16px;display:flex;flex-direction:column;gap:4px"><span style="'+LBL+'padding-bottom:4px">Scorte \u00b7 fine ciclo '+gstFmtDate(gstAddDays(today, giorniAllaFine))+'</span>';
+  GST_COMPOUNDS.forEach(function(c){
+    var cov = gstCopertura(c, vd, todayStr);
+    var copreTxt = cov.giorni > 400 ? "oltre 1 anno" : gstFmtDate(gstAddDays(todayStr, cov.giorni));
+    var diff = cov.giorni - giorniAllaFine;
+    html += '<div style="display:flex;align-items:center;gap:10px;min-height:48px;border-top:1px solid var(--line2)">' +
+      '<span style="width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span>' +
+      '<div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column"><span style="font-size:13px;font-weight:600;color:var(--ink)">'+esc(c.name)+'</span><span style="font-size:10.5px;color:var(--ink3)">'+cov.intatti+' intatti \u00b7 '+cov.finiti+' finiti \u00b7 '+cov.persi+' persi</span></div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font-size:13px;font-weight:700;color:'+(diff>=0?"var(--ok)":"var(--bad)")+'">'+copreTxt+'</span><span style="font-size:10px;color:var(--ink3)">'+(diff>=0?("+"+diff+" gg oltre fine ciclo"):("mancano "+(-diff)+" gg"))+'</span></div></div>';
+  });
+  html += '</div>';
+
+  // ── Materiali di consumo ──
+  var cons = gstConsumabili(), fab = gstFabbisognoConsumabili(vd);
+  function consBlock(id, label, spec, scorta, necessarie, testoUso){
+    var margine = scorta - necessarie;
+    var esitoTxt = margine>=0 ? ("+"+margine+" \u00b7 copre fino al "+gstFmtDate(gstAddDays(todayStr, giorniAllaFine))) : ("ne mancano "+(-margine));
+    return '<div style="display:flex;flex-direction:column;gap:5px;padding:9px 0;border-top:1px solid var(--line2)">' +
+      '<div style="display:flex;align-items:center;gap:10px"><div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column"><span style="font-size:13px;font-weight:600;color:var(--ink)">'+label+'</span><span style="font-size:10.5px;color:var(--ink3)">'+spec+'</span></div>' +
+      '<input type="number" min="0" step="1" data-gst-cons="'+id+'" value="'+scorta+'" style="width:78px;height:44px;box-sizing:border-box;border:1px solid var(--line);border-radius:10px;background:var(--surf2);text-align:center;font-size:15px;font-weight:700;color:var(--ink)"></div>' +
+      '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11px"><span style="color:var(--ink2)">'+testoUso+'</span><span style="font-weight:700;text-align:right;color:'+(margine>=0?"var(--ok)":"var(--bad)")+'">'+esitoTxt+'</span></div></div>';
+  }
+  html += '<div style="'+CARD+'padding:14px 16px;display:flex;flex-direction:column;gap:4px"><span style="'+LBL+'padding-bottom:4px">Materiali di consumo</span>' +
+    consBlock("sc","Siringhe SC","PIC 31G 8mm \u00b7 7 punture al giorno",cons.sc,fab.scNecessarie,"Servono "+fab.scNecessarie+" fino all\u20198 nov") +
+    consBlock("im","Siringhe IM","PIC 29G 12,7mm \u00b7 IGF-1 bilaterale",cons.im,fab.imNecessarie,"Servono "+fab.imNecessarie+" in "+gstGiorniWoRimasti()+" allenamenti") +
+    consBlock("bac","BAC Water","flaconi \u00b7 Limitless + Bachem \u00b7 frigo",cons.bac,fab.flaconiBac,"Servono "+Math.ceil(fab.mlBac)+" mL per "+fab.vialTotali+" vial da aprire") +
+    '<span style="font-size:10.5px;color:var(--ink3)">La scorta la aggiorni tu \u00b7 flacone BAC da 10 mL: ipotesi da confermare.</span></div>';
+
+  // ── Fuori protocollo ──
+  html += '<div style="'+CARD+'padding:12px 16px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center"><span style="'+LBL+'">Fuori protocollo</span>' +
+    GST_OFFPROTO.map(function(o){ return '<span style="font-size:12px;color:var(--ink2)">'+o.name+' <strong style="color:var(--ink)">'+o.n+'</strong> <span style="color:var(--ink3);font-size:10.5px">intatti</span></span>'; }).join('') +
+    '<span style="flex:1 1 100%;font-size:10.5px;color:var(--ink3)">liofilizzati \u00b7 frigo</span></div>';
+
+  host.innerHTML = html;
+  GST_bindStock(host);
+}
+
+function GST_renderOrariMobile(host){
+  var todayType = gstTodayOrariType(), cur = GST.orariType || todayType;
+  var CARD = "border-radius:18px;background:var(--surf);box-shadow:var(--shadow);";
+  var KEYS = [["allenamento","WO","var(--accent)"],["weekend","WO","#7a4fc9"],["rest","REST","var(--idle)"]];
+  var html = '<div style="display:flex;flex-direction:column;gap:5px">';
+  KEYS.forEach(function(k){
+    var o = GST_ORARI[k[0]], sel = k[0]===cur, isToday = k[0]===todayType;
+    html += '<button type="button" data-gst-orari-pick="'+k[0]+'" style="display:flex;align-items:center;gap:10px;min-height:52px;padding:0 14px;border-radius:12px;cursor:pointer;text-align:left;background:'+(sel?'var(--surf)':'transparent')+';border:1px solid '+(sel?'var(--accent)':'var(--line)')+'">' +
+      '<span style="padding:3px 8px;border-radius:6px;background:'+k[2]+';color:#fff;font-size:10px;font-weight:700">'+k[1]+'</span>' +
+      '<span style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column"><span style="font-size:13.5px;font-weight:700;color:var(--ink)">'+o.label+'</span><span style="font-size:11px;color:var(--ink2)">'+o.sub+'</span></span>' +
+      (isToday ? '<span style="padding:2px 8px;border-radius:999px;background:var(--accent);color:#fff;font-size:10px;font-weight:700">oggi</span>' : '') +
+    '</button>';
+  });
+  html += '</div>';
+  /* legenda dei pallini: nel mockup mobile mancava (su desktop c'e') */
+  html += '<div style="display:flex;flex-wrap:wrap;gap:4px 12px;padding:0 4px">' + [["Iniezione","var(--accent)"],["Integratori","var(--ok)"],["Pasto","var(--idle)"],["Allenamento","#ff2d12"]].map(function(l){
+    return '<span style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ink2)"><span style="width:8px;height:8px;border-radius:50%;background:'+l[1]+'"></span>'+l[0]+'</span>'; }).join('') + '</div>';
+  html += '<div style="'+CARD+'overflow:hidden">';
+  GST_ORARI[cur].rows.forEach(function(r){
+    html += '<div style="display:grid;grid-template-columns:44px 10px 1fr;gap:10px;align-items:start;min-height:48px;padding:10px 16px;border-top:1px solid var(--line2)">' +
+      '<span style="font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink)">'+r[0]+'</span>' +
+      '<span style="width:8px;height:8px;border-radius:50%;margin-top:6px;background:'+(GST_ORARI_TYPE_COLOR[r[1]]||"var(--idle)")+'"></span>' +
+      '<div style="display:flex;flex-direction:column;gap:4px;min-width:0"><span style="font-size:13px;line-height:1.35;color:var(--ink)">'+esc(r[2])+'</span>' +
+      (r[3] ? '<span style="align-self:flex-start;padding:2px 8px;border-radius:5px;background:var(--surf2);color:'+gstTagInk(r[3])+';font-size:10.5px;font-weight:600">'+esc(r[3])+'</span>' : '') + '</div></div>';
+  });
+  html += '</div>';
+  host.innerHTML = html;
+  host.querySelectorAll('[data-gst-orari-pick]').forEach(function(b){
+    b.addEventListener("click", function(){ GST.orariType = b.getAttribute("data-gst-orari-pick"); GST_renderOrari(); });
+  });
+}
 /* PORTING 28/09: registrazione di una nuova ricostituzione da V2 (prima si faceva solo da V1).
    Scrive SOLO stock_v2_vials sul record V1 (stessa forma di stockSetStato/stockSaveRecon di V1:
    {mg,bac,reco,stato} come stringhe), con lettura fresca subito prima, controllo che il vial
@@ -7075,6 +7268,7 @@ function GST_saveConsumabili(){
 
 function GST_renderOrari(){
   var host = document.querySelector('[data-gst-view="orari"]'); if (!host) return;
+  if (!isDesktop) { GST_renderOrariMobile(host); return; }
   var todayType = gstTodayOrariType();
   var dowNames = ["Dom","Lun","Mar","Mer","Gio","Ven","Sab"];
   var todayLabel = GST_ORARI[todayType==="rest"?"rest":todayType].label;
@@ -7100,7 +7294,7 @@ function GST_renderOrari(){
         '<span style="font-size:11px;color:var(--ink3);width:36px;flex:0 0 auto;font-variant-numeric:tabular-nums">'+r[0]+'</span>' +
         '<span style="width:6px;height:6px;border-radius:50%;background:'+dot+';flex:0 0 auto;margin-top:5px"></span>' +
         '<span style="flex:1;min-width:0"><div style="font-size:12px;color:var(--ink)">'+esc(r[2])+'</div>' +
-        (r[3]?'<div style="font-size:10px;color:var(--ink3)">'+esc(r[3])+'</div>':'') + '</span></div>';
+        (r[3]?'<div style="font-size:10px;font-weight:600;color:'+gstTagInk(r[3])+'">'+esc(r[3])+'</div>':'') + '</span></div>';
     });
     html += '</div>';
   });
@@ -7125,11 +7319,11 @@ function GST_renderAlimenti(){
   var cats = Object.keys(GST_FOOD_DB);
   var html = '<div class="gst-2col">';
   html += '<section class="an-card">' +
-    '<div class="an-note">Tocca + sull\'alimento \u00b7 Regola la quantit\u00e0 con \u2212 e + \u00b7 Il totale si aggiorna a destra</div>' +
-    '<input type="text" placeholder="Cerca un alimento\u2026" data-gst-food-q value="'+esc(GST.mealQuery)+'" style="border:1px solid var(--line2);border-radius:8px;padding:7px 10px;font-size:13px">' +
+    '<div class="an-note">Tocca + sull\'alimento \u00b7 Regola la quantit\u00e0 con \u2212 e + \u00b7 Il totale si aggiorna '+(isDesktop?'a destra':'in alto')+'</div>' +
+    '<input type="text" placeholder="Cerca un alimento\u2026" data-gst-food-q value="'+esc(GST.mealQuery)+'" style="border:1px solid var(--line2);border-radius:'+(isDesktop?'8px':'12px')+';padding:'+(isDesktop?'7px 10px':'0 14px;height:44px')+';font-size:'+(isDesktop?'13px':'14px')+'">' +
     '<div style="display:flex;gap:5px;flex-wrap:wrap">' +
-      '<button type="button" class="an-chip'+(GST.mealCat==="all"?" is-active":"")+'" data-gst-food-cat="all" style="font-size:11px;padding:5px 10px">Tutti</button>' +
-      cats.map(function(c){ return '<button type="button" class="an-chip'+(GST.mealCat===c?" is-active":"")+'" data-gst-food-cat="'+esc(c)+'" style="font-size:11px;padding:5px 10px">'+esc(c)+'</button>'; }).join('') +
+      '<button type="button" class="an-chip'+(GST.mealCat==="all"?" is-active":"")+'" data-gst-food-cat="all" style="font-size:11px;padding:5px 10px'+(isDesktop?'':';min-height:36px;font-size:12px;padding:6px 12px')+'">Tutti</button>' +
+      cats.map(function(c){ return '<button type="button" class="an-chip'+(GST.mealCat===c?" is-active":"")+'" data-gst-food-cat="'+esc(c)+'" style="font-size:11px;padding:5px 10px'+(isDesktop?'':';min-height:36px;font-size:12px;padding:6px 12px')+'">'+esc(c)+'</button>'; }).join('') +
     '</div>' +
     '<div class="an-tbl gst-foodlist" data-gst-food-list></div>' +
   '</section>';
@@ -7145,7 +7339,7 @@ function GST_renderAlimenti(){
         var pk=tot.p*4, ck=tot.c*4, gk=tot.g*9, tk=pk+ck+gk||1;
         return '<div style="display:flex;height:6px;border-radius:4px;overflow:hidden;margin-top:8px">' +
           '<div style="width:'+(pk/tk*100)+'%;background:var(--accent)"></div><div style="width:'+(ck/tk*100)+'%;background:var(--warn)"></div><div style="width:'+(gk/tk*100)+'%;background:var(--bad)"></div></div>' +
-          '<div style="display:flex;gap:14px;margin-top:8px;font-size:11px;color:#fffc">' +
+          '<div class="gst-macros" style="display:flex;gap:14px;margin-top:8px;font-size:11px;color:#fffc">' +
           '<span>Proteine <strong style="color:#fff">'+gstIt(tot.p,1)+' g</strong> \u00b7 '+Math.round(pk/tk*100)+'%</span>' +
           '<span>Carboidrati <strong style="color:#fff">'+gstIt(tot.c,1)+' g</strong> \u00b7 '+Math.round(ck/tk*100)+'%</span>' +
           '<span>Grassi <strong style="color:#fff">'+gstIt(tot.g,1)+' g</strong> \u00b7 '+Math.round(gk/tk*100)+'%</span></div>';
@@ -7173,7 +7367,7 @@ function GST_renderFoodList(host){
     var cat=pair[0], f=pair[1], inMeal = GST_MEAL[f.name]!=null;
     if (cat!==lastCat) { html += '<div style="font-size:10px;text-transform:uppercase;color:var(--ink3);font-weight:700;margin-top:8px">'+esc(cat)+'</div>'; lastCat=cat; }
     var m = gstMacroFor(f, f.ref);
-    html += '<div class="an-trow" style="grid-template-columns:1fr 60px 40px 32px;align-items:center;'+(inMeal?"background:var(--accent-soft)":"")+'">' +
+    html += '<div class="an-trow" style="grid-template-columns:'+(isDesktop?'1fr 60px 40px 32px':'1fr 58px 44px')+';'+(isDesktop?'':'min-height:56px;gap:8px;')+'align-items:center;'+(inMeal?"background:var(--accent-soft)":"")+'">' +
       /* PORTING 26/09: era un <span> (inline) a contenere due <div> -- su una nota lunga a
          due righe (es. "Ember Biltong") la riga non cresceva per contenerla e sovrapponeva la
          successiva. <div> con min-width:0 (necessario perche' un figlio di grid non si allarga
@@ -7181,8 +7375,8 @@ function GST_renderFoodList(host){
          intera fuori dai bordi invece di andare a capo). */
       '<div style="min-width:0"><div style="font-weight:500;font-size:12.5px">'+esc(f.name)+'</div><div style="font-size:10px;color:var(--ink3)">'+gstQtyLabel(f,f.ref)+' \u00b7 '+esc(f.note||"")+'</div></div>' +
       '<span class="an-num" style="font-size:12px">'+m.kcal+' kcal</span>' +
-      '<span class="an-num" style="font-size:11px;color:var(--ink3)">P'+gstIt(m.p,1)+'</span>' +
-      '<button type="button" data-gst-food-add="'+esc(f.name)+'" style="border:none;border-radius:50%;width:26px;height:26px;cursor:pointer;background:'+(inMeal?"var(--ok)":"var(--accent)")+';color:#fff;font-weight:700">'+(inMeal?"\u2713":"+")+'</button>' +
+      (isDesktop?'<span class="an-num" style="font-size:11px;color:var(--ink3)">P'+gstIt(m.p,1)+'</span>':'') +
+      '<button type="button" data-gst-food-add="'+esc(f.name)+'" style="border:none;border-radius:50%;width:'+(isDesktop?26:40)+'px;height:'+(isDesktop?26:40)+'px;cursor:pointer;font-size:'+(isDesktop?14:19)+'px;background:'+(inMeal?"var(--ok)":"var(--accent)")+';color:#fff;font-weight:700">'+(inMeal?"\u2713":"+")+'</button>' +
     '</div>';
   });
   list.innerHTML = html;
@@ -7200,10 +7394,10 @@ function GST_renderMealPanel(host){
     var qty = GST_MEAL[name], m = gstMacroFor(f, qty), step = f.unit==="fixed" ? 1 : 10;
     html += '<div style="display:flex;align-items:center;gap:8px;border:1px solid var(--line2);border-radius:10px;padding:8px 10px">' +
       '<span style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:500">'+esc(name)+'</div><div style="font-size:10px;color:var(--ink3)">'+m.kcal+' kcal \u00b7 P'+gstIt(m.p,1)+' \u00b7 C'+gstIt(m.c,1)+' \u00b7 G'+gstIt(m.g,1)+'</div></span>' +
-      '<button type="button" data-gst-meal-dec="'+esc(name)+'" style="width:22px;height:22px;border:1px solid var(--line2);border-radius:50%;background:var(--surf);cursor:pointer">\u2212</button>' +
+      '<button type="button" data-gst-meal-dec="'+esc(name)+'" style="width:'+(isDesktop?22:36)+'px;height:'+(isDesktop?22:36)+'px;border:1px solid var(--line2);border-radius:50%;background:var(--surf);cursor:pointer;color:var(--ink)">\u2212</button>' +
       '<span style="font-size:11px;min-width:44px;text-align:center">'+gstQtyLabel(f,qty)+'</span>' +
-      '<button type="button" data-gst-meal-inc="'+esc(name)+'" style="width:22px;height:22px;border:1px solid var(--line2);border-radius:50%;background:var(--surf);cursor:pointer">+</button>' +
-      '<button type="button" data-gst-meal-del="'+esc(name)+'" style="border:none;background:none;color:var(--ink3);cursor:pointer;font-size:13px">\u2715</button>' +
+      '<button type="button" data-gst-meal-inc="'+esc(name)+'" style="width:'+(isDesktop?22:36)+'px;height:'+(isDesktop?22:36)+'px;border:1px solid var(--line2);border-radius:50%;background:var(--surf);cursor:pointer;color:var(--ink)">+</button>' +
+      '<button type="button" data-gst-meal-del="'+esc(name)+'" style="border:none;background:none;color:var(--ink3);cursor:pointer;font-size:13px;'+(isDesktop?'':'width:36px;height:36px')+'">\u2715</button>' +
     '</div>';
   });
   wrap.innerHTML = html;
