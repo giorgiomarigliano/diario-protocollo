@@ -685,6 +685,19 @@
   .gst-m [data-gst-reco-f]{height:44px !important;font-size:14px !important;}
   .gst-m [data-gst-reco-open],.gst-m [data-gst-reco-save],.gst-m [data-gst-reco-cancel]{min-height:44px;}
 }
+/* PORTING 28/09: su mobile i pulsanti di Andamento e Gestione come quelli di Oggi (misure prese da Oggi a 393px):
+   chip a pillola 29px, 11,5px/600, padding 6x11, fondo surf2 con bordo; selettore Intervallo come il toggle
+   Giorno/Settimana (fondo surf2, raggio 8, padding 3, bottoni 6x11 raggio 6 attivo blu); barra senza fascia grigia. */
+@media (max-width:1023px){
+  .an-subnav{background:transparent;border-bottom:none;padding:6px 2px 0;gap:8px 12px;}
+  .an-chips{gap:5px;flex-wrap:wrap;overflow:visible;}
+  .an-root .an-chip{padding:6px 11px;min-height:0;font-size:11.5px;font-weight:600;font-variant-numeric:tabular-nums;background:var(--surf2);border:1px solid var(--line);color:var(--ink2);}
+  .an-root .an-chip.is-active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .an-range{background:var(--surf2);border:none;border-radius:8px;padding:3px;}
+  .an-range button{min-height:0;padding:6px 11px;font-size:11.5px;line-height:16.7px;border-radius:6px;}
+  .an-globalrange-l{font-size:11px;font-weight:600;color:var(--ink2);}
+  .gst-m .an-subnav{padding-bottom:2px;}
+}
 </style>
 <script>
 /* ============================================================
@@ -2295,15 +2308,21 @@ function buildStock(root){
   host.innerHTML="";
   var left=CYCLE.days-TODAY()-1;
   setB(root,"stock.left",left+" "+T().days);
+  /* giorni di copertura = stessa funzione di Gestione > Scorte (gstCopertura: dosi rimaste del vial in uso +
+     vial intatti; congelato/attesa esclusi). Se i vial non sono ancora caricati resta lo slot vuoto. */
+  var GSTID={tesamorelin:"tesa",ipamorelin:"ipa"};
+  var vdA=(typeof GST_V1!=="undefined" && GST_V1.stock_v2_vials) || null;
+  var haveVd=AN_V1.status==="ok" && vdA && Object.keys(vdA).length>0;
   STOCK_ITEMS.forEach(function(s){
     var v=STOCK_DAYS[s.id];
+    if (haveVd) { var gc=GST_COMPOUNDS.find(function(x){return x.id===(GSTID[s.id]||s.id);}); if (gc) v=gstCopertura(gc,vdA,today).giorni; }
     var col=v==null?"var(--idle)":(v<left?"var(--bad)":(v<left+14?"var(--warn)":"var(--ok)"));
     var el=document.createElement("div"); el.className="an-trow";
     el.style.gridTemplateColumns="118px 1fr 58px";
     el.innerHTML='<span>'+s.label+'</span>'+
       '<span style="height:6px;border-radius:999px;background:var(--line2);overflow:hidden;display:block">'+
         '<span style="display:block;height:100%;width:'+(v==null?0:Math.min(100,v/Math.max(1,left+30)*100))+'%;background:'+col+';border-radius:999px"></span></span>'+
-      '<strong class="an-num" data-bind="stock.'+s.id+'" style="color:'+col+'">'+(v==null?'<span class="an-slot"></span>':v+"g")+'</strong>';
+      '<strong class="an-num" data-bind="stock.'+s.id+'" style="color:'+col+'">'+(v==null?'<span class="an-slot"></span>':v+" gg")+'</strong>';
     host.appendChild(el);
   });
 }
@@ -3731,7 +3750,7 @@ var AN_V1 = { status: "idle" };
 function AN_loadV1(){
   if (AN_V1.status !== "idle") return;
   AN_V1.status = "loading";
-  var q = "?user_id=eq.giorgio_protocollo_2026&select=data-%3Emuscle_volume_summary,data-%3Elab_wk8,data-%3Edexa_t1,data-%3Ephoto_log,data-%3Ehistory_sessions";
+  var q = "?user_id=eq.giorgio_protocollo_2026&select=data-%3Emuscle_volume_summary,data-%3Elab_wk8,data-%3Edexa_t1,data-%3Ephoto_log,data-%3Ehistory_sessions,data-%3Estock_v2_vials";
   fetch(CFG.PROXY_URL + q, { headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY } })
     .then(function(r){ if (!r.ok) throw new Error("v1 " + r.status); return r.json(); })
     .then(function(j){
@@ -3746,6 +3765,9 @@ function AN_loadV1(){
       if (lean != null && bf != null) DEXA.push({ date:{y:2026,m:9,d:12}, lean_kg:lean, fat_pct:bf });
       PHOTO_LOG = (r0.photo_log || []).filter(function(p){ return p && p.date && p.filename; });
       HISTORY_SESSIONS = Array.isArray(r0.history_sessions) ? r0.history_sessions : [];
+      /* PORTING 28/09: la card Copertura scorte era vuota perche' STOCK_DAYS e' uno slot che nessuno riempiva.
+         Ora i vial (stock_v2_vials, riga V1) si leggono qui, con la stessa fetch, e li usa anche Gestione. */
+      if (r0.stock_v2_vials && typeof r0.stock_v2_vials === "object") { GST_V1.stock_v2_vials = r0.stock_v2_vials; GST_V1.loaded = true; }
       AN_V1.status = "ok";
     })
     .catch(function(){ AN_V1.status = "err"; })
@@ -5400,10 +5422,15 @@ function renderOggiFull() {
       </div>`;
     })();
 
+    /* PORTING 28/09: tutti i campi di Biometria e Sonno hanno la stessa misura (104x34px, 13px): prima gli
+       intervalli HRV e Pressione avevano larghezze diverse (78 e 97px) e due caselle da 33px che tagliavano i valori. */
+    const BIO_FLD = 'box-sizing:border-box;width:104px;height:34px;flex:0 0 104px;background:var(--surf2);border-radius:8px;padding:0 10px;font-size:13px;';
+    const BIO_PAIR = 'box-sizing:border-box;width:104px;height:34px;flex:0 0 104px;display:flex;align-items:center;justify-content:center;background:var(--surf2);border-radius:8px;padding:0 6px;';
+    const BIO_HALF = 'flex:1 1 0;min-width:0;width:0;background:transparent;font-size:13px;';
     const bioRow = (label, field, unit) => `
       <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
         <span style="flex:1 1 auto;font-size:13.5px;font-weight:500;color:var(--ink2);">${label}</span>
-        <input data-f="${field}" value="${esc(day[field] || '')}" placeholder="—" style="${micro}width:78px;background:var(--surf2);border-radius:7px;padding:7px 9px;text-align:right;">
+        <input data-f="${field}" value="${esc(day[field] || '')}" placeholder="—" style="${micro}${BIO_FLD}text-align:right;">
         <span style="flex:0 0 34px;font-size:11px;font-weight:500;color:var(--ink2);">${unit}</span>
       </div>`;
     // HRV: dal 15/09/2026 iOS mostra un intervallo min-max, non più una
@@ -5414,15 +5441,15 @@ function renderOggiFull() {
     const hrvRow = (!day.hrv_min && !day.hrv_max && day.hrv) ? `
       <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
         <span style="flex:1 1 auto;font-size:13.5px;font-weight:500;color:var(--ink2);">HRV</span>
-        <span style="${micro}width:78px;background:var(--surf2);border-radius:7px;padding:7px 9px;text-align:right;color:var(--ink3);" title="${LANG === 'it' ? 'Media storica, di sola lettura' : 'Historical average, read-only'}">${esc(day.hrv)}</span>
+        <span style="${micro}${BIO_FLD}display:flex;align-items:center;justify-content:flex-end;color:var(--ink3);" title="${LANG === 'it' ? 'Media storica, di sola lettura' : 'Historical average, read-only'}">${esc(day.hrv)}</span>
         <span style="flex:0 0 34px;font-size:11px;font-weight:500;color:var(--ink2);">ms</span>
       </div>` : `
       <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
         <span style="flex:1 1 auto;font-size:13.5px;font-weight:500;color:var(--ink2);">HRV</span>
-        <span style="flex:0 0 78px;display:flex;align-items:center;justify-content:center;gap:0;background:var(--surf2);border-radius:7px;padding:7px 4px;">
-          <input data-f="hrv_min" value="${esc(day.hrv_min || '')}" placeholder="min" style="${micro}width:33px;background:transparent;text-align:right;padding-right:1px;">
-          <span style="${micro}padding:0 1px;">–</span>
-          <input data-f="hrv_max" value="${esc(day.hrv_max || '')}" placeholder="max" style="${micro}width:33px;background:transparent;text-align:left;padding-left:1px;">
+        <span style="${BIO_PAIR}">
+          <input data-f="hrv_min" value="${esc(day.hrv_min || '')}" placeholder="min" style="${micro}${BIO_HALF}text-align:right;padding-right:2px;">
+          <span style="${micro}font-size:13px;padding:0 2px;">–</span>
+          <input data-f="hrv_max" value="${esc(day.hrv_max || '')}" placeholder="max" style="${micro}${BIO_HALF}text-align:left;padding-left:2px;">
         </span>
         <span style="flex:0 0 34px;font-size:11px;font-weight:500;color:var(--ink2);">ms</span>
       </div>`;
@@ -5437,10 +5464,10 @@ function renderOggiFull() {
         ${bioRow(LANG === 'it' ? 'Freq. a riposo' : 'Resting HR', 'rhr', 'bpm')}
         <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
           <span style="flex:1 1 auto;font-size:13.5px;font-weight:500;color:var(--ink2);">${L.tile.pressione}</span>
-          <span style="flex:0 0 97px;display:flex;align-items:center;justify-content:center;gap:0;background:var(--surf2);border-radius:7px;padding:7px 4px;">
-            <input data-f="bp_sys" value="${esc(day.bp_sys || '')}" placeholder="—" style="${micro}width:33px;background:transparent;text-align:right;padding-right:1px;">
-            <span style="${micro}padding:0 1px;">/</span>
-            <input data-f="bp_dia" value="${esc(day.bp_dia || '')}" placeholder="—" style="${micro}width:33px;background:transparent;text-align:left;padding-left:1px;">
+          <span style="${BIO_PAIR}">
+            <input data-f="bp_sys" value="${esc(day.bp_sys || '')}" placeholder="—" style="${micro}${BIO_HALF}text-align:right;padding-right:2px;">
+            <span style="${micro}font-size:13px;padding:0 2px;">/</span>
+            <input data-f="bp_dia" value="${esc(day.bp_dia || '')}" placeholder="—" style="${micro}${BIO_HALF}text-align:left;padding-left:2px;">
           </span>
           <span style="flex:0 0 34px;font-size:11px;font-weight:500;color:var(--ink2);">mmHg</span>
         </div>
@@ -5454,7 +5481,7 @@ function renderOggiFull() {
         </div>
         <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
           <span style="flex:1 1 auto;font-size:13.5px;font-weight:500;color:var(--ink2);">${LANG === 'it' ? 'Ore totali' : 'Total hours'}</span>
-          <input data-f="ore_sonno" value="${esc(day.ore_sonno || '')}" placeholder="—" style="${micro}width:78px;background:var(--surf2);border-radius:7px;padding:7px 9px;text-align:right;">
+          <input data-f="ore_sonno" value="${esc(day.ore_sonno || '')}" placeholder="—" style="${micro}${BIO_FLD}text-align:right;">
           <span style="flex:0 0 34px;font-size:11px;font-weight:500;color:var(--ink2);">h.mm</span>
         </div>
         ${bioRow('REM', 'sonno_rem_min', 'min')}
@@ -6705,18 +6732,9 @@ function gstQtyLabel(food, qty){
 function gstSub(root, sel){ return root.querySelector(sel); }
 
 function GST_HTML(){
-  if (!isDesktop) return '<div class="an-root gst-m">' +
-    '<div class="gst-seg">' +
-      '<button type="button" class="is-active" data-gst-tab="stock">Stock</button>' +
-      '<button type="button" data-gst-tab="orari">Orari</button>' +
-      '<button type="button" data-gst-tab="alimenti">Alimenti</button>' +
-    '</div>' +
-    '<div class="an-main">' +
-      '<div class="an-view is-active" data-gst-view="stock"></div>' +
-      '<div class="an-view" data-gst-view="orari"></div>' +
-      '<div class="an-view" data-gst-view="alimenti"></div>' +
-    '</div></div>';
-  return '<div class="an-root">' +
+  /* PORTING 28/09: su mobile stessa barra a chip di Andamento (e quindi di Oggi): niente piu' il
+     controllo a segmenti a parte del mockup. */
+  return '<div class="an-root'+(isDesktop?'':' gst-m')+'">' +
     '<div class="an-subnav"><div class="an-chips">' +
       '<button type="button" class="an-chip is-active" data-gst-tab="stock">Stock</button>' +
       '<button type="button" class="an-chip" data-gst-tab="orari">Orari</button>' +
