@@ -1124,6 +1124,70 @@ function getWorkoutVolume2(rec) {
   return null;
 }
 
+/* PORTING 28/09: aderenza della singola giornata nella card "Aderenza del ciclo" (Oggi > Giorno).
+   Stesse identiche regole di adherence() (skip/na esclusi, saltata = dovuta mancata, Riposo senza
+   allenamento previsto), applicate a UN giorno. Non modifica adherence(): i totali del ciclo restano
+   quelli di prima (che gia' includono le dosi dovute oggi). */
+function dayAdherence(dateISO) {
+  const d = new Date(dateISO + 'T00:00:00');
+  const testStart = new Date(TEST_PROTO_START + 'T00:00:00');
+  if (d < testStart) return null;
+  const testEnd = new Date(testStart); testEnd.setDate(testEnd.getDate() + TEST_PROTO_DAYS - 1);
+  const blob = store.blob || {};
+  let rec, woIdx;
+  if (d >= testStart && d <= testEnd) {
+    const t = Math.round((d - testStart) / 86400000);
+    rec = blob['test_proto_' + t] || {}; woIdx = t - TEST_PROTO_DAYS;
+  } else {
+    const dIdx = dayIdxFromISO(dateISO);
+    rec = blob['p2_day_' + dIdx] || {}; woIdx = dIdx;
+  }
+  const r = { injDone: 0, injTot: 0, suppDone: 0, suppTot: 0, woPlanned: false, woDone: false, woType: '' };
+  getInjectionSlots2(woIdx).forEach(s => {
+    s.fields.forEach(f => {
+      const v = rec['inj_' + s.n + '_' + fieldKey(f)] || '';
+      if (v === 'skip' || v === 'na') return;
+      r.injTot++; if (v === 'fatto') r.injDone++;
+    });
+  });
+  SUPP_FIELDS.forEach(sf => {
+    if (rec[sf + '_skip']) return;
+    r.suppTot++; if (rec[sf] === '1') r.suppDone++;
+  });
+  const wtype = getWorkout2(woIdx).type;
+  if (wtype !== 'Riposo') {
+    r.woPlanned = true; r.woType = wtype;
+    const kcal = parseFloat(rec.wo_kcal), rpe = parseFloat(rec.rpe), vol = getWorkoutVolume2(rec);
+    r.woDone = (!isNaN(kcal) && kcal > 0) || (vol !== null && vol > 0) || !isNaN(rpe);
+  }
+  return r;
+}
+function todayBarHtml(kind, r, wide) {
+  if (!r) return '';
+  const it = LANG === 'it';
+  const isToday = selDate === today;
+  const lab = isToday ? (it ? 'Oggi' : 'Today')
+    : (() => { const x = new Date(selDate + 'T00:00:00').toLocaleDateString(it ? 'it-IT' : 'en-GB', { weekday: 'short', day: 'numeric' }); return x.charAt(0).toUpperCase() + x.slice(1); })();
+  const col = kind === 'inj' ? 'var(--accent)' : kind === 'supp' ? 'var(--ok)' : '#ff2d12';
+  const ink = kind === 'inj' ? 'var(--accent-ink)' : kind === 'supp' ? 'var(--ok)' : '#ff2d12';
+  let txt, sec = '', pct = null;
+  if (kind === 'wo') {
+    if (!r.woPlanned) txt = lab + ': ' + (it ? 'riposo' : 'rest');
+    else if (r.woDone) { txt = lab + ' \u2713'; sec = r.woType; pct = 100; }
+    else { txt = lab + ': ' + (isToday ? (it ? 'da fare' : 'to do') : (it ? 'non fatto' : 'missed')); sec = r.woType; pct = 0; }
+  } else {
+    const done = kind === 'inj' ? r.injDone : r.suppDone, tot = kind === 'inj' ? r.injTot : r.suppTot;
+    if (!tot) txt = lab + ': ' + (it ? 'nessuna dose' : 'none due');
+    else { txt = lab + ' ' + done + '/' + tot; pct = Math.round(done / tot * 100); }
+  }
+  const w = wide ? 112 : 84;
+  return `<div data-oggi-bar="${kind}" style="display:flex;flex-direction:column;align-items:center;gap:3px;margin-top:3px;width:${w}px;min-height:36px;justify-content:flex-start;">` +
+    (pct !== null ? `<div style="width:100%;height:5px;border-radius:999px;background:var(--line2);overflow:hidden;"><div style="height:100%;width:${pct}%;background:${col};border-radius:999px;"></div></div>` : '<div style="height:5px;"></div>') +
+    `<span style="font-size:10.5px;font-weight:700;line-height:1.2;color:${pct !== null ? ink : 'var(--ink3)'};font-variant-numeric:tabular-nums;text-align:center;">${txt}</span>` +
+    (sec ? `<span style="font-size:9.5px;font-weight:500;line-height:1.2;color:var(--ink3);text-align:center;">${sec}</span>` : '') +
+    `</div>`;
+}
+
 function adherence(blob) {
   blob = blob || {};
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -2107,7 +2171,7 @@ function buildLoad(root){
 function buildAdherence(root){
   var host=ch(root,"adh.rows"); if(!host) return;
   host.innerHTML="";
-  [["inj",T().injections,"var(--accent)"],["supp",T().supplements,"var(--ok)"],["wo",T().workouts,"var(--warn-ink)"]]
+  [["inj",T().injections,"var(--accent)"],["supp",T().supplements,"var(--ok)"],["wo",T().workouts,"#ff2d12"]]
   .forEach(function(c){
     var v=ADHERENCE[c[0]];
     var el=document.createElement("div");
@@ -4731,7 +4795,7 @@ function renderWeekFull() {
       <div style="flex:0 0 auto;display:flex;justify-content:space-around;">
         ${ring(wk.injPct, 'var(--accent)', L.injectionsRing, `${wk.injDoneTot}/${wk.injApplTot}`, ringDelta(wk.injPct, prevShallow && prevShallow.injPct))}
         ${ring(wk.suppPct, 'var(--ok)', L.supplements, `${wk.suppDoneTot}/${wk.suppApplTot}`, ringDelta(wk.suppPct, prevShallow && prevShallow.suppPct))}
-        ${ring(wk.woPct, 'var(--warn)', L.workoutsRing, `${wk.woDone}/${wk.woTot}`, ringDelta(wk.woPct, prevShallow && prevShallow.woPct))}
+        ${ring(wk.woPct, '#ff2d12', L.workoutsRing, `${wk.woDone}/${wk.woTot}`, ringDelta(wk.woPct, prevShallow && prevShallow.woPct))}
       </div>
       <div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:7px;padding-top:10px;border-top:1px solid var(--line);">
         <span style="flex:0 0 auto;font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Le 16 settimane, la stessa misura' : 'All 16 weeks, same measure'}</span>
@@ -4919,7 +4983,7 @@ function renderWeekFull() {
       <div style="display:flex;justify-content:space-around;">
         ${ringM(wk.injPct, 'var(--accent)', L.injectionsRing, `${wk.injDoneTot}/${wk.injApplTot}`, ringDelta(wk.injPct, prevShallow && prevShallow.injPct))}
         ${ringM(wk.suppPct, 'var(--ok)', L.supplements, `${wk.suppDoneTot}/${wk.suppApplTot}`, ringDelta(wk.suppPct, prevShallow && prevShallow.suppPct))}
-        ${ringM(wk.woPct, 'var(--warn)', L.workoutsRing, `${wk.woDone}/${wk.woTot}`, ringDelta(wk.woPct, prevShallow && prevShallow.woPct))}
+        ${ringM(wk.woPct, '#ff2d12', L.workoutsRing, `${wk.woDone}/${wk.woTot}`, ringDelta(wk.woPct, prevShallow && prevShallow.woPct))}
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;padding:0 6px;">
         <span style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Le 16 settimane' : 'All 16 weeks'}</span>
@@ -5278,10 +5342,11 @@ function renderOggiFull() {
       </div>`;
 
     const ringsM = (() => {
+      const dAdh = dayAdherence(selDate);
       const RINGS = [
-        { label: L.injectionsRing, pct: a.inj, sub: `${a.injDone}/${a.injTot}`, color: 'var(--accent)' },
-        { label: L.supplements,    pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)' },
-        { label: L.workoutsRing,   pct: a.wo,  sub: `${a.woDone}/${a.woTot}`,  color: '#ff2d12' } /* rosso fuoco, 28/09 */
+        { label: L.injectionsRing, pct: a.inj, sub: `${a.injDone}/${a.injTot}`, color: 'var(--accent)', today: todayBarHtml('inj', dAdh, false) },
+        { label: L.supplements,    pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)', today: todayBarHtml('supp', dAdh, false) },
+        { label: L.workoutsRing,   pct: a.wo,  sub: `${a.woDone}/${a.woTot}`,  color: '#ff2d12', today: todayBarHtml('wo', dAdh, false) } /* rosso fuoco, 28/09 */
       ];
       return `
       <div style="flex:0 0 auto;border-radius:18px;background:var(--surf);box-shadow:var(--shadow);padding:16px 12px;display:flex;justify-content:space-around;">
@@ -5297,6 +5362,7 @@ function renderOggiFull() {
             <div style="display:flex;flex-direction:column;align-items:center;">
               <span style="font-size:11.5px;font-weight:600;color:var(--ink);">${r.label}</span>
               <span style="font-size:10px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${r.sub}</span>
+              ${r.today || ''}
             </div>
           </div>`).join('')}
       </div>`;
@@ -5589,10 +5655,11 @@ function renderOggiFull() {
     simpleTile(L.tile.girovita, 'girovita_cm')
   ];
 
+  const dAdh = dayAdherence(selDate);
   const RINGS = [
-    { label: L.injectionsRing,       pct: a.inj,  sub: `${a.injDone}/${a.injTot}`,   color: 'var(--accent)' },
-    { label: L.supplements,          pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)' },
-    { label: L.workoutsRing, pct: a.wo,   sub: `${a.woDone}/${a.woTot}`,     color: '#ff2d12' } /* rosso fuoco, 28/09 */
+    { label: L.injectionsRing,       pct: a.inj,  sub: `${a.injDone}/${a.injTot}`,   color: 'var(--accent)', today: todayBarHtml('inj', dAdh, true) },
+    { label: L.supplements,          pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)', today: todayBarHtml('supp', dAdh, true) },
+    { label: L.workoutsRing, pct: a.wo,   sub: `${a.woDone}/${a.woTot}`,     color: '#ff2d12', today: todayBarHtml('wo', dAdh, true) } /* rosso fuoco, 28/09 */
   ];
 
   // Iniezioni — appiattite in un'unica lista di righe (come nel mockup: non
@@ -5753,6 +5820,7 @@ function renderOggiFull() {
             <div style="display:flex;flex-direction:column;align-items:center;">
               <span style="font-size:12.5px;font-weight:600;color:var(--ink);">${r.label}</span>
               <span style="font-size:10.5px;font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${r.sub}</span>
+              ${r.today || ''}
             </div>
           </div>`).join('')}
       </div>
@@ -6480,7 +6548,7 @@ function gstFabbisognoConsumabili(vd){
 }
 
 // ══════════════════ 2. ORARI — testo copiato alla lettera dalla specifica (V1) ══════════════════
-var GST_ORARI_TYPE_COLOR = { iniezione:"var(--accent)", integratori:"var(--ok)", pasto:"var(--idle)", allenamento:"var(--warn)" };
+var GST_ORARI_TYPE_COLOR = { iniezione:"var(--accent)", integratori:"var(--ok)", pasto:"var(--idle)", allenamento:"#ff2d12" };
 var GST_ORARI = {
   allenamento: { label:"Allenamento", sub:"Mar \u00b7 Mer \u00b7 Ven", giorni:[2,3,5], rows:[
     ["06:00","iniezione","Fragment 176-191 250mcg SC + BPC-157 250mcg SC","digiuno"],
@@ -6998,7 +7066,7 @@ function GST_renderOrari(){
       '<span class="an-legend-item"><span class="an-sw" style="background:var(--accent)"></span>Iniezione</span>' +
       '<span class="an-legend-item"><span class="an-sw" style="background:var(--ok)"></span>Integratori</span>' +
       '<span class="an-legend-item"><span class="an-sw" style="background:var(--idle)"></span>Pasto</span>' +
-      '<span class="an-legend-item"><span class="an-sw" style="background:var(--warn)"></span>Allenamento</span>' +
+      '<span class="an-legend-item"><span class="an-sw" style="background:#ff2d12"></span>Allenamento</span>' +
     '</div>' +
     '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px">';
   ["allenamento","weekend","rest"].forEach(function(key){
