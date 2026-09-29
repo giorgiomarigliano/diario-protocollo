@@ -4184,7 +4184,15 @@ function CLIN_renderCheckpoint(host) {
       '<div style="position:absolute;left:' + pct(E) + ';top:14px;width:2px;height:12px;background:#fff"></div>' +
     '</div>' +
     '<div style="display:flex;justify-content:space-between;font-size:9.5px;color:#ffffff80"><span>T0 \u00b7 13 lug</span><span>T1 \u00b7 12 set</span><span>T2 \u00b7 7 nov</span></div>' +
-  '</section>';
+  '</section>' +
+  /* PORTING 30/09: legenda T0/T1/T2 richiesta da Giorgio -- senza, scorrendo la pagina lontano
+     dall'hero non e' chiaro a colpo d'occhio cosa siano le due colonne di ogni tessera. Riga
+     sottile, sempre visibile, subito sotto l'hero e sopra i gruppi di marker. */
+  '<div style="grid-column:1/-1;display:flex;gap:18px;flex-wrap:wrap;padding:0 2px">' +
+    [['T0', 'basale \u00b7 13 lug 2026'], ['T1', haveT1 ? 'attuale \u00b7 12 set 2026' : 'in attesa \u00b7 12 set 2026'], ['T2', 'fine ciclo \u00b7 7 nov 2026']].map(function (t) {
+      return '<span style="font-size:11px;color:var(--ink2)"><strong style="color:var(--ink)">' + t[0] + '</strong> = ' + t[1] + '</span>';
+    }).join('') +
+  '</div>';
   CLIN_GROUPS.forEach(function (g) {
     html += '<section class="an-card" style="grid-column:span ' + g.span + '">' +
       '<div class="an-head"><span class="an-title">' + esc(g.it) + '</span><span class="an-sub">' + g.keys.length + ' marker</span></div>' +
