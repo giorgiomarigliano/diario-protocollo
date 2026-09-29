@@ -707,6 +707,15 @@
 @media (max-width:1023px){
   .clin-foto-grid{grid-template-columns:1fr;}
 }
+
+/* CLINICA (30/09): .t-badge era usata (Checkpoint, Progressione) ma mai definita -- le
+   pillole "Fuori range"/"Sotto target"/T1 uscivano come testo semplice, senza il padding/
+   raggio/font-weight che hanno tutte le altre pillole dell'app (es. "vial N . in uso" in
+   Gestione, "oggi" in Oggi: padding 2x8, raggio 999, 10px/700). Causa della "non coerenza
+   grafica" segnalata su questi due sotto-tab. */
+.t-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;white-space:nowrap;}
+.t-badge.bad{background:rgba(216,30,5,.12);color:var(--bad);}
+.t-badge.warn{background:rgba(245,196,0,.20);color:var(--warn-ink);}
 </style>
 <script>
 /* ============================================================
@@ -4392,7 +4401,7 @@ function CLIN_renderProg(host) {
           var sk = CLIN_DATA.series[k], pk = CLIN_seriesPoints(k), lk = pk[pk.length - 1];
           var kind = lk ? CLIN_kindOf(lk, k) : null;
           var dot = kind === 'out' ? 'var(--bad)' : kind === 'target' ? 'var(--warn-ink)' : 'var(--ok)';
-          return '<button type="button" data-clin-marker="' + k + '" class="an-trow" style="width:100%;text-align:left;cursor:pointer;background:' + (k === sel ? 'var(--accent-soft)' : 'transparent') + ';border-radius:8px;padding:5px 8px;grid-template-columns:10px 1fr auto;border-top:none">' +
+          return '<button type="button" data-clin-marker="' + k + '" class="an-trow" style="width:100%;text-align:left;cursor:pointer;border:none;appearance:none;background:' + (k === sel ? 'var(--accent-soft)' : 'transparent') + ';border-radius:8px;padding:5px 8px;grid-template-columns:10px 1fr auto;border-top:none">' +
             '<span style="width:7px;height:7px;border-radius:50%;background:' + dot + '"></span>' +
             '<span style="font-weight:' + (k === sel ? 700 : 500) + ';color:var(--ink)">' + esc(sk.label) + '</span>' +
             '<span class="an-num" style="font-size:10px">' + (lk ? CLIN_fmtNum(lk.v) : '') + '</span></button>';
@@ -4546,7 +4555,7 @@ function CLIN_renderRef(host) {
       '<div class="an-head"><span class="an-title">Fuori range all\'ultima misura</span><span class="an-sub">' + watch.length + ' marker</span></div>' +
       watch.map(function (w) {
         var col = w.kind === 'target' ? 'var(--warn-ink)' : 'var(--bad)';
-        return '<button type="button" data-clin-goto="' + w.key + '" class="an-trow" style="width:100%;text-align:left;cursor:pointer;grid-template-columns:1fr auto auto;background:none;border-top:1px solid var(--line2)">' +
+        return '<button type="button" data-clin-goto="' + w.key + '" class="an-trow" style="width:100%;text-align:left;cursor:pointer;border:none;appearance:none;grid-template-columns:1fr auto auto;background:none;border-top:1px solid var(--line2)">' +
           '<span><strong style="color:var(--ink)">' + esc(w.label) + '</strong><br><span style="font-size:10px;color:var(--ink3)">' + w.persist + '</span></span>' +
           '<span class="an-num" style="font-weight:700;color:' + col + '">' + w.value + '</span><span></span></button>';
       }).join('') +
