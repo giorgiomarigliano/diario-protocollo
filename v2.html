@@ -698,6 +698,15 @@
   .an-globalrange-l{font-size:11px;font-weight:600;color:var(--ink2);}
   .gst-m .an-subnav{padding-bottom:2px;}
 }
+
+/* CLINICA (29/09): griglia foto a 3 colonne desktop, impilata su mobile -- MAI a
+   carosello che scorre di lato (regola ferma di questo progetto). */
+.clin-foto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.clin-photo{position:relative;width:100%;aspect-ratio:3/4;border-radius:12px;overflow:hidden;background:var(--surf2);display:flex;align-items:center;justify-content:center;}
+@media (max-width:640px){ .clin-phase-lbl{display:none;} }
+@media (max-width:1023px){
+  .clin-foto-grid{grid-template-columns:1fr;}
+}
 </style>
 <script>
 /* ============================================================
@@ -3815,14 +3824,819 @@ function AN_mount(){
 }
 
 var AN_HTML = "<div class=\"an-root\">\n  <div class=\"an-subnav\">\n    <div class=\"an-chips\">\n      <button type=\"button\" class=\"an-chip is-active\" data-an-tab=\"cruscotto\" data-i18n-tab=\"cruscotto\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"insights\" data-i18n-tab=\"insights\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"foto\" data-i18n-tab=\"foto\"></button>\n      <button type=\"button\" class=\"an-chip\" data-an-tab=\"workout\" data-i18n-tab=\"workout\"></button>\n    </div>\n    <div class=\"an-globalrange\">\n      <span class=\"an-globalrange-l\"></span>\n      <div class=\"an-range\">\n        <button type=\"button\" data-days=\"30\">30g</button>\n        <button type=\"button\" data-days=\"60\" class=\"is-active\">60g</button>\n        <button type=\"button\" data-days=\"90\">90g</button>\n        <button type=\"button\" data-days=\"0\"></button>\n      </div>\n    </div>\n    </div>\n  <div class=\"an-main\">\n<div class=\"an-view is-active\" data-an-view=\"cruscotto\"><section class=\"an-card an-card-hero c-hero\"><div class=\"an-hero\"><div class=\"an-hero-l\"><span class=\"an-title\" data-i18n=\"heroTitle\"></span><span class=\"an-hero-t\" data-bind=\"hero.headline\"></span><span class=\"an-hero-s\" data-bind=\"hero.sub\"></span></div><div class=\"an-hero-r\" data-chart=\"hero.pillars\"></div></div></section><section class=\"an-card c-cycle\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"cycleState\"></span><span class=\"an-sub\" data-bind=\"cycle.day\"></span></div><div class=\"an-phases\"></div><div class=\"an-legend an-phase-legend\"></div><div class=\"an-warn\" data-an-today style=\"display:none\"><span data-i18n=\"todayEmpty\"></span></div></section><section class=\"an-card c-recomp\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"recomp\"></span></div><div class=\"an-chart\" data-chart=\"recomp.chart\" style=\"height:148px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--accent)\"></span>peso</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-mark)\"></span>DEXA</span><span class=\"an-legend-item\"><span class=\"an-sw is-band\" style=\"background:var(--c-event)\"></span>viaggio</span></div><div style=\"display:flex;flex-direction:column;gap:6px;padding-top:8px;border-top:1px solid var(--line2)\"><div style=\"display:flex;align-items:baseline;justify-content:space-between;gap:8px\"><span class=\"an-sub\" data-i18n=\"waist\"></span><strong style=\"font-size:11.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums\" data-bind=\"recomp.waist\"></strong></div><div class=\"an-tbl\" data-chart=\"recomp.dexa\"></div></div><span class=\"an-note\">Il peso è giornaliero. DEXA e girovita esistono solo in pochi punti: restano marcatori. Con meno di due misure non si traccia nulla.</span></section><section class=\"an-card c-load\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"load\"></span><span class=\"an-sub\" data-bind=\"load.verdict\"></span></div><div class=\"an-chart\" data-chart=\"load.chart\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--accent-soft)\"></span>volume settimanale</span><span class=\"an-legend-item\"><span class=\"an-sw is-dash\" style=\"background:var(--c-s1)\"></span>HRV</span></div><span class=\"an-note\">Regola: volume ±5% e HRV ±3% fra le ultime due settimane piene. Sotto soglia la frase resta neutra. La linea HRV ha scala propria (min–max del periodo).</span></section><section class=\"an-card c-adh\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"adherence\"></span></div><div data-chart=\"adh.rows\" style=\"display:flex;flex-direction:column;gap:10px\"></div><span class=\"an-sub\">soglia 90%</span><div style=\"height:42px;display:flex;align-items:flex-end;gap:3px;padding-top:6px;border-top:1px solid var(--line2)\" data-chart=\"adh.weeks\"></div><button type=\"button\" class=\"an-btn\" data-an=\"adh-toggle\" style=\"margin-top:9px;font-size:10.5px;padding:4px 9px;align-self:flex-start\">Dettaglio per settimana</button><div data-chart=\"adh.grid\" style=\"display:none;margin-top:8px\"></div></section><section class=\"an-card c-clin\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"clinical\"></span><span class=\"an-sub\" data-bind=\"clin.state\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 62px 16px 62px 74px\"><span>Marker</span><span class=\"an-num\">T0</span><span></span><span class=\"an-num\">T1</span><span class=\"an-num\">rif.</span></div><div class=\"an-tbl\" data-chart=\"clin.rows\"></div></section><section class=\"an-card c-stock\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"stock\"></span><span class=\"an-sub\" data-bind=\"stock.left\"></span></div><div class=\"an-tbl\" data-chart=\"stock.rows\"></div><span class=\"an-note\">Rosso se la scorta non arriva a fine ciclo, ambra entro 14 giorni di margine, verde oltre.</span></section><section class=\"an-card c-narr\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"narrative\"></span></div><p style=\"margin:0;font-size:13px;line-height:1.55;color:var(--ink2)\" data-bind=\"narrative.text\"></p></section></div>\n<div class=\"an-view\" data-an-view=\"insights\"><section class=\"an-card c-subja\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"subjA\"></span></div><div class=\"an-chart\" data-chart=\"subj.a\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--accent)\"></span>Energia</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:#5b93cc\"></span>Recupero</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--warn)\"></span>Umore</span></div><span class=\"an-note\">Asse fisso 1–10: un asse auto-scalato ingrandirebbe il rumore.</span></section><section class=\"an-card c-subjb\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"subjB\"></span></div><div class=\"an-chart\" data-chart=\"subj.b\" style=\"height:124px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:#a86a00\"></span>Appetito</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:#3d6f9e\"></span>Sonno perc.</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:#6d6d76\"></span>Chiarezza</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--bad)\"></span>Libido</span></div></section><section class=\"an-card c-cat\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"symptoms\"></span></div><div data-chart=\"subj.cat\" style=\"display:flex;flex-direction:column;gap:4px\"></div><span class=\"an-note\">Categorie ordinali, non linee. Casella vuota = non registrata.</span></section><section class=\"an-card c-sleep\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sleep\"></span></div><div class=\"an-chart\" data-chart=\"sleep.hours\" style=\"height:112px\"></div><span class=\"an-sub\">fasi, minuti</span><div class=\"an-chart\" data-chart=\"sleep.stages\" style=\"height:112px\"></div><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s1)\"></span>REM</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s2)\"></span>profondo</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s3)\"></span>principale</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--c-s4)\"></span>veglia</span></div><span class=\"an-sub\">risvegli</span><div class=\"an-chart\" data-chart=\"sleep.wakes\" style=\"height:68px\"></div><span class=\"an-note\">Sonno in ore e minuti; uno 0 vale non registrato.</span></section><section class=\"an-card c-scatter\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"scatter\"></span></div><div class=\"an-chart\" data-chart=\"sleep.scatter\" style=\"height:134px\"></div><span class=\"an-sub\" data-bind=\"sleep.r\"></span></section><section class=\"an-card c-corr\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"corr\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 120px 48px 74px 42px\"><span>Coppia</span><span></span><span class=\"an-num\">r</span><span class=\"an-num\">forza</span><span class=\"an-num\">n</span></div><div class=\"an-tbl\" data-chart=\"corr.rows\"></div></section><section class=\"an-card c-d14\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"delta14\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 72px 72px 66px\"><span>Misura</span><span class=\"an-num\">prima</span><span class=\"an-num\">ora</span><span class=\"an-num\">Δ</span></div><div class=\"an-tbl\" data-chart=\"corr.d14\"></div><span class=\"an-note\">Il delta di peso è neutro: salire o scendere non è di per sé meglio.</span></section></div>\n<div class=\"an-view\" data-an-view=\"workout\"><section class=\"an-card c-vol\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"volume\"></span></div><div class=\"an-chart\" data-chart=\"wo.volume\" style=\"height:120px\"></div><span class=\"an-sub\" data-i18n=\"rpe\"></span><div class=\"an-chart\" data-chart=\"wo.rpe\" style=\"height:64px\"></div></section><section class=\"an-card c-type\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"byType\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:92px 1fr 62px 52px 58px\"><span>Tipo</span><span></span><span class=\"an-num\">fatte / previste</span><span class=\"an-num\">%</span><span class=\"an-num\">volume</span></div><div class=\"an-tbl\" data-chart=\"wo.type\"></div><span class=\"an-note\">Sedute fatte su previste dal piano settimanale. Fatta = calorie, volume o RPE presenti; il giorno in corso non conta come saltato.</span></section><section class=\"an-card c-woadh\" style=\"gap:8px\"><div class=\"an-head\"><span class=\"an-title\">Aderenza allenamenti</span><span class=\"an-sub\" data-bind=\"woadh.weeksLabel\"></span></div><div style=\"display:flex;gap:18px;align-items:center;flex-wrap:wrap\"><div data-chart=\"woadh.rings\" style=\"display:flex;gap:14px;align-items:flex-start\"></div><div data-chart=\"woadh.stats\" style=\"display:flex;gap:16px\"></div></div><div data-chart=\"woadh.weeks\" style=\"display:flex;flex-direction:column;gap:6px\"></div><button type=\"button\" data-an=\"woadh-toggle\" style=\"border:none;background:none;color:var(--accent-ink);font-size:11px;font-weight:700;cursor:pointer;padding:0;align-self:flex-start\"></button><div class=\"an-legend\"><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--ok)\"></span>allenato</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--line2)\"></span>non allenato</span><span class=\"an-legend-item\"><span class=\"an-sw\" style=\"background:var(--warn)\"></span>riposo pianificato</span></div></section><section class=\"an-card c-sess\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sessions\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:56px 76px 1fr 60px 46px 36px 16px\"><span>Data</span><span>Tipo</span><span>Giorno</span><span class=\"an-num\">volume</span><span class=\"an-num\">durata</span><span class=\"an-num\">RPE</span><span></span></div><div class=\"an-tbl\" data-chart=\"wo.table\" style=\"max-height:360px;overflow-y:auto\"></div></section><div class=\"c-stack\"><section class=\"an-card c-phase\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"byPhase\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 54px 60px 46px\"><span>Fase</span><span class=\"an-num\">sedute</span><span class=\"an-num\">volume</span><span class=\"an-num\">RPE</span></div><div class=\"an-tbl\" data-chart=\"wo.phase\"></div></section><section class=\"an-card c-week\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"typicalWeek\"></span></div><div data-chart=\"wo.week\"></div><span class=\"an-note\">Volume medio per giorno della settimana, in tonnellate. n sempre visibile.</span></section></div><section class=\"an-card c-sent\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"sentinels\"></span></div><div data-chart=\"wo.sent\" style=\"display:flex;flex-direction:column\"></div><span class=\"an-note\">20 esercizi sentinella in 6 gruppi. Δ = ultimo carico meno il primo registrato.</span></section><section class=\"an-card c-musc\"><div class=\"an-head\"><span class=\"an-title\" data-i18n=\"muscleVol\"></span></div><div class=\"an-thead\" style=\"grid-template-columns:96px 1fr 56px 44px\"><span>Muscolo</span><span></span><span class=\"an-num\">volume</span><span class=\"an-num\">quota</span></div><div class=\"an-tbl\" data-chart=\"wo.muscles\"></div><span class=\"an-note\">Volume cumulativo per muscolo, dal riepilogo del diario V1: non dipende dall'intervallo.</span></section><section class=\"an-card c-progress\"><div class=\"an-head\"><span class=\"an-title\">Progressione esercizi</span><span class=\"an-sub\">soglia 2 sessioni</span></div><div data-chart=\"wo.progress\"></div><span class=\"an-note\">Per esercizio esatto (non per macchina generica), da history_sessions: segue da sola le sostituzioni in palestra.</span></section><section class=\"an-card c-freq\"><div class=\"an-head\"><span class=\"an-title\">Frequenza per gruppo muscolare</span><span class=\"an-sub\">ultime 4 settimane</span></div><div class=\"an-thead\" style=\"grid-template-columns:1fr 70px 90px\"><span></span><span class=\"an-num\">sessioni</span><span class=\"an-num\">ultima volta</span></div><div data-chart=\"wo.freq\"></div><span class=\"an-note\">Completa il volume cumulativo: dice se un gruppo è trascurato di recente.</span></section></div>\n<div class=\"an-view\" data-an-view=\"foto\"><section class=\"an-card c-foto\"><div class=\"an-head\"><div class=\"an-fmodes\"><button type=\"button\" data-an-fmode=\"list\" data-i18n=\"fList\"></button><button type=\"button\" data-an-fmode=\"grid\" class=\"is-active\" data-i18n=\"fGrid\"></button><button type=\"button\" data-an-fmode=\"week\" data-i18n=\"fWeek\"></button><button type=\"button\" data-an-fmode=\"scrub\" data-i18n=\"fScrub\"></button><button type=\"button\" data-an-fmode=\"cmp\" data-i18n=\"fSide\"></button><button type=\"button\" data-an-fmode=\"ratings\" data-i18n=\"fRatings\"></button><button type=\"button\" data-an-fmode=\"new\" data-i18n=\"fNew\"></button></div><span class=\"an-sub\" data-bind=\"foto.count\"></span></div><div class=\"an-fpane\" data-an-fpane=\"list\"><div class=\"an-flist\" data-chart=\"foto.list\"></div></div><div class=\"an-fpane is-active\" data-an-fpane=\"grid\"><div class=\"an-fgrid\" data-chart=\"foto.grid\"></div></div><div class=\"an-fpane\" data-an-fpane=\"week\"><div class=\"an-fweek\" data-chart=\"foto.week\"></div></div><div class=\"an-fpane\" data-an-fpane=\"scrub\"><div class=\"an-fscroll\" data-chart=\"foto.scrub\"></div></div><div class=\"an-fpane\" data-an-fpane=\"cmp\"><div style=\"display:flex;gap:3px;align-self:flex-start;background:var(--surf2);border-radius:8px;padding:3px\"><button type=\"button\" class=\"an-fmode2 is-active\" data-an-cmpmode=\"side\" data-i18n=\"fSide\" style=\"border:none;cursor:pointer;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;background:var(--accent);color:#fff\"></button><button type=\"button\" class=\"an-fmode2\" data-an-cmpmode=\"over\" data-i18n=\"fOver\" style=\"border:none;cursor:pointer;padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;background:transparent;color:var(--ink2)\"></button></div><div class=\"an-fcmp\" data-chart=\"foto.cmp\"></div><div class=\"an-fdiff\" data-chart=\"foto.diff\"></div></div><div class=\"an-fpane\" data-an-fpane=\"ratings\"><div class=\"an-chart\" data-chart=\"foto.ratings\" style=\"height:110px\"></div><span class=\"an-note\">Valutazione 1–5 per scatto: si assegna dalla vista Scrubber, sotto le tessere dati.</span></div><div class=\"an-fpane\" data-an-fpane=\"new\"><div class=\"an-fnew\"><div class=\"an-field\"><label>Foto</label><input type=\"file\" accept=\"image/*,.heic,.heif\" data-an-photo-file></div><div data-an-photo-preview style=\"display:none\"><img data-an-photo-img style=\"max-width:160px;border-radius:8px;display:block;margin-bottom:6px\"><span class=\"an-note\" data-an-photo-status></span></div><div class=\"an-field\"><label>Data</label><input type=\"date\" data-an-photo=\"date\"></div><div class=\"an-field\"><label>Luogo</label><input type=\"text\" data-an-photo=\"luogo\"></div><div class=\"an-field\"><label>Peso manuale (kg)</label><input type=\"text\" inputmode=\"decimal\" data-an-photo=\"peso\"></div><div class=\"an-field\"><label>Valutazione 1–5</label><input type=\"number\" min=\"1\" max=\"5\" data-an-photo=\"rating\"></div><div class=\"an-field\"><label>Nota</label><textarea data-an-photo=\"note\"></textarea></div><button type=\"button\" class=\"an-btn\" data-an-photo-submit disabled>Registra scatto</button><span class=\"an-note\">Seleziona un file: data e GPS letti dall’EXIF quando presenti. La foto viene compressa (max 1200px, JPEG 85%) prima del caricamento.</span></div></div></section></div>\n  </div>\n</div>";
-return { html: function(){ return AN_HTML; }, mount: AN_mount };
+/* PORTING 29/09: la Clinica (fuori da questa closure) ha bisogno di AN_loadV1 (dati V1
+   condivisi: lab_wk8/dexa_t1/photo_log), di AN_lazyPhoto/AN_photoUrl (stessa pipeline
+   di caricamento foto di Foto in Andamento) e di leggere PHOTO_LOG -- tutti privati a
+   questa closure finora. Esposti qui, nessun comportamento esistente cambia. */
+return { html: function(){ return AN_HTML; }, mount: AN_mount, loadV1: AN_loadV1, lazyPhoto: AN_lazyPhoto, photoUrl: AN_photoUrl, getPhotoLog: function(){ return PHOTO_LOG; } };
 })();
+
+var CLIN_DATA = {"series":{"wbc":{"key":"wbc","label":"Globuli bianchi","better":"neutral","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":9.33,"cens":null,"unit":"×10⁹/L","ref":"4.10–12.10","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":7.2,"cens":null,"unit":"×10⁹/L","ref":"4.10–12.10","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":8.3,"cens":null,"unit":"×10⁹/L","ref":"4.10–12.10","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":9.41,"cens":null,"unit":"×10⁹/L","ref":"4.00–10.00","ok":true,"note":"","unitMismatch":false,"panel":"p0_sant"}],"unit":"×10⁹/L","ref":"4.00–10.00"},"rbc":{"key":"rbc","label":"Globuli rossi","better":"up","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":4.79,"cens":null,"unit":"×10¹²/L","ref":"4.18–6.25","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":4.54,"cens":null,"unit":"×10¹²/L","ref":"4.18–6.25","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":3.97,"cens":null,"unit":"×10¹²/L","ref":"4.18–6.25","ok":false,"note":"Lievemente sotto range","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":4.01,"cens":null,"unit":"×10¹²/L","ref":"4.20–6.00","ok":false,"note":"↓ Basso — confermato cronico","unitMismatch":false,"panel":"p0_sant"}],"unit":"×10¹²/L","ref":"4.20–6.00"},"hb":{"key":"hb","label":"Emoglobina","better":"up","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":141,"cens":null,"unit":"g/L","ref":"13.3–17.9","ok":true,"note":"convertito da 14,1 g/dL","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":129,"cens":null,"unit":"g/L","ref":"133–179","ok":false,"note":"⚠️ Bassa","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":119,"cens":null,"unit":"g/L","ref":"133–179","ok":false,"note":"🔴 Bassa — peggiorata vs apr 2026 (129→119)","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":118,"cens":null,"unit":"g/L","ref":"140–180","ok":false,"note":"🔴 Bassa — stabile bassa (119→118)","unitMismatch":false,"panel":"p0_sant"}],"unit":"g/L","ref":"140–180"},"hct":{"key":"hct","label":"Ematocrito","better":"up","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":41.7,"cens":null,"unit":"%","ref":"35.4–52.1","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":40.6,"cens":null,"unit":"%","ref":"35.4–52.1","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":37.2,"cens":null,"unit":"%","ref":"35.4–52.1","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":37.1,"cens":null,"unit":"%","ref":"37.0–54.0","ok":true,"note":"","unitMismatch":false,"panel":"p0_sant"}],"unit":"%","ref":"37.0–54.0"},"mcv":{"key":"mcv","label":"MCV","better":"neutral","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":87.1,"cens":null,"unit":"fL","ref":"78–101","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":93.7,"cens":null,"unit":"fL","ref":"78.0–101.0","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":92.5,"cens":null,"unit":"fL","ref":"80–95","ok":true,"note":"","unitMismatch":false,"panel":"p0_sant"}],"unit":"fL","ref":"80–95"},"mchc":{"key":"mchc","label":"MCHC","better":"up","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":338,"cens":null,"unit":"g/L","ref":"31.9–36.9","ok":true,"note":"convertito da 33,8 g/dL","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":318,"cens":null,"unit":"g/L","ref":"319–369","ok":false,"note":"Borderline","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":320,"cens":null,"unit":"g/L","ref":"319–369","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":318,"cens":null,"unit":"g/L","ref":"320–380","ok":false,"note":"Lievemente bassa","unitMismatch":false,"panel":"p0_sant"}],"unit":"g/L","ref":"320–380"},"plt":{"key":"plt","label":"Piastrine","better":"neutral","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":260,"cens":null,"unit":"×10⁹/L","ref":"150–450","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":223,"cens":null,"unit":"×10⁹/L","ref":"150–450","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":235,"cens":null,"unit":"×10⁹/L","ref":"150–450","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":237,"cens":null,"unit":"×10⁹/L","ref":"150–450","ok":true,"note":"","unitMismatch":false,"panel":"p0_sant"}],"unit":"×10⁹/L","ref":"150–450"},"gluc":{"key":"gluc","label":"Glucosio","better":"down","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":89,"cens":null,"unit":"mg/dL","ref":"60–100","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2022-11-15","date":"Novembre 2022","src":"Panel CDI Bicocca — asse ormonale","v":74,"cens":null,"unit":"mg/dL","ref":"60–100","ok":true,"note":"","unitMismatch":false,"panel":"p_nov2022"},{"iso":"2024-01-15","date":"Gennaio 2024","src":"Panel CDI Bicocca","v":84,"cens":null,"unit":"mg/dL","ref":"60–100","ok":true,"note":"","unitMismatch":false,"panel":"p_jan2024"},{"iso":"2025-02-15","date":"Febbraio 2025","src":"Panel CDI Bicocca","v":84,"cens":null,"unit":"mg/dL","ref":"60–100","ok":true,"note":"","unitMismatch":false,"panel":"p_feb2025"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":88,"cens":null,"unit":"mg/dL","ref":"60–100","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":87,"cens":null,"unit":"mg/dL","ref":"60–100","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-06-09","date":"9 giugno 2026","src":"Panel Bionics CDI — Laboratorio clinico","v":81,"cens":null,"unit":"mg/dL","ref":"60–100","ok":true,"note":"","unitMismatch":false,"panel":"p_bionics_jun2026"},{"iso":"2026-07-03","date":"3 luglio 2026","src":"Panel ormonale + renale · CDI Bicocca","v":92,"cens":null,"unit":"mg/dL","ref":"60–100","ok":true,"note":"","unitMismatch":false,"panel":"p_jul2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":82,"cens":null,"unit":"mg/dL","ref":"70–100","ok":true,"note":"","unitMismatch":false,"panel":"p0_sant"}],"unit":"mg/dL","ref":"70–100"},"insulina":{"key":"insulina","label":"Insulina","better":"down","points":[{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":3.6,"cens":null,"unit":"mU/L","ref":"3.0–25.0","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":5.3,"cens":null,"unit":"mU/L","ref":"3.0–25.0","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":3.6,"cens":null,"unit":"mU/L","ref":"2.6–24.0","ok":true,"note":"µU/mL = mU/L","unitMismatch":false,"panel":"p0_sant"}],"unit":"mU/L","ref":"2.6–24.0"},"homa":{"key":"homa","label":"HOMA","better":"down","points":[{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":0.8,"cens":null,"unit":"","ref":"≤2.5","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":1.1,"cens":null,"unit":"","ref":"≤2.5","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":0.73,"cens":null,"unit":"","ref":"<2.5","ok":true,"note":"Calcolato da gluc × insul / 405","unitMismatch":false,"panel":"p0_sant"}],"unit":"","ref":"<2.5"},"creat":{"key":"creat","label":"Creatinina","better":"down","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":0.99,"cens":null,"unit":"mg/dL","ref":"0.73–1.20","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":1.13,"cens":null,"unit":"mg/dL","ref":"0.73–1.20","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":1.29,"cens":null,"unit":"mg/dL","ref":"0.73–1.20","ok":false,"note":"⚠️ Sopra range — confermata anche il 21/05 (clearance 109mL/min nella norma)","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-05-21","date":"21 maggio 2026","src":"Clearance Creatinina · CDI Bicocca","v":1.29,"cens":null,"unit":"mg/dL","ref":"0.73–1.20","ok":false,"note":"⚠️ Confermata elevata (stesso valore del 20/05)","unitMismatch":false,"panel":"p_may21_2026"},{"iso":"2026-07-03","date":"3 luglio 2026","src":"Panel ormonale + renale · CDI Bicocca","v":1.32,"cens":null,"unit":"mg/dL","ref":"0.73–1.20","ok":false,"note":"🔴 Trend in peggioramento: 1.13(10/4)→1.29(20-21/5)→1.32(3/7)","unitMismatch":false,"panel":"p_jul2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":1.28,"cens":null,"unit":"mg/dL","ref":"0.73–1.18","ok":false,"note":"⚠️ Sopra range (trend 1.13→1.29→1.32→1.28)","unitMismatch":false,"panel":"p0_sant"}],"unit":"mg/dL","ref":"0.73–1.18"},"tg":{"key":"tg","label":"Trigliceridi","better":"down","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":69,"cens":null,"unit":"mg/dL","ref":"≤150","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2022-11-15","date":"Novembre 2022","src":"Panel CDI Bicocca — asse ormonale","v":83,"cens":null,"unit":"mg/dL","ref":"≤150","ok":true,"note":"","unitMismatch":false,"panel":"p_nov2022"},{"iso":"2024-01-15","date":"Gennaio 2024","src":"Panel CDI Bicocca","v":64,"cens":null,"unit":"mg/dL","ref":"≤150","ok":true,"note":"","unitMismatch":false,"panel":"p_jan2024"},{"iso":"2025-02-15","date":"Febbraio 2025","src":"Panel CDI Bicocca","v":67,"cens":null,"unit":"mg/dL","ref":"≤150","ok":true,"note":"","unitMismatch":false,"panel":"p_feb2025"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":65,"cens":null,"unit":"mg/dL","ref":"≤150","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":77,"cens":null,"unit":"mg/dL","ref":"≤150","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-06-09","date":"9 giugno 2026","src":"Panel Bionics CDI — Laboratorio clinico","v":108,"cens":null,"unit":"mg/dL","ref":"≤150","ok":true,"note":"In rialzo vs 77 (mag) — possibile pasto serale pre-prelievo","unitMismatch":false,"panel":"p_bionics_jun2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":50,"cens":null,"unit":"mg/dL","ref":"≤170","ok":true,"note":"","unitMismatch":false,"panel":"p0_sant"}],"unit":"mg/dL","ref":"≤170"},"hdl":{"key":"hdl","label":"HDL","better":"up","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":33,"cens":null,"unit":"mg/dL","ref":"≥40 (M)","ok":false,"note":"⚠️ Basso — cronico","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2022-11-15","date":"Novembre 2022","src":"Panel CDI Bicocca — asse ormonale","v":37,"cens":null,"unit":"mg/dL","ref":"≥40 (M)","ok":false,"note":"⚠️ Basso","unitMismatch":false,"panel":"p_nov2022"},{"iso":"2024-01-15","date":"Gennaio 2024","src":"Panel CDI Bicocca","v":24,"cens":null,"unit":"mg/dL","ref":"≥40 (M)","ok":false,"note":"🔴 Molto basso","unitMismatch":false,"panel":"p_jan2024"},{"iso":"2025-02-15","date":"Febbraio 2025","src":"Panel CDI Bicocca","v":27,"cens":null,"unit":"mg/dL","ref":"≥40 (M)","ok":false,"note":"⚠️ Persistentemente basso","unitMismatch":false,"panel":"p_feb2025"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":28,"cens":null,"unit":"mg/dL","ref":"≥40 (M)","ok":false,"note":"⚠️ Basso — cronico","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":35,"cens":null,"unit":"mg/dL","ref":"≥40 (M)","ok":false,"note":"⚠️ Basso ma in leggero rialzo vs apr 2026 (28→35)","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-06-09","date":"9 giugno 2026","src":"Panel Bionics CDI — Laboratorio clinico","v":32,"cens":null,"unit":"mg/dL","ref":"≥40 (M)","ok":false,"note":"⚠️ Basso — persistente nonostante Omega-3 · attesa risposta Tesamorelin","unitMismatch":false,"panel":"p_bionics_jun2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":32,"cens":null,"unit":"mg/dL","ref":"≥40","ok":false,"note":"↓ Basso — persistente","unitMismatch":false,"panel":"p0_sant"}],"unit":"mg/dL","ref":"≥40"},"ldl":{"key":"ldl","label":"LDL","better":"down","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":62,"cens":null,"unit":"mg/dL","ref":"≤115","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2022-11-15","date":"Novembre 2022","src":"Panel CDI Bicocca — asse ormonale","v":66,"cens":null,"unit":"mg/dL","ref":"≤115","ok":true,"note":"","unitMismatch":false,"panel":"p_nov2022"},{"iso":"2024-01-15","date":"Gennaio 2024","src":"Panel CDI Bicocca","v":52,"cens":null,"unit":"mg/dL","ref":"≤115","ok":true,"note":"","unitMismatch":false,"panel":"p_jan2024"},{"iso":"2025-02-15","date":"Febbraio 2025","src":"Panel CDI Bicocca","v":62,"cens":null,"unit":"mg/dL","ref":"≤115","ok":true,"note":"","unitMismatch":false,"panel":"p_feb2025"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":60,"cens":null,"unit":"mg/dL","ref":"≤115","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":57,"cens":null,"unit":"mg/dL","ref":"≤115","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-06-09","date":"9 giugno 2026","src":"Panel Bionics CDI — Laboratorio clinico","v":64,"cens":null,"unit":"mg/dL","ref":"≤115","ok":true,"note":"","unitMismatch":false,"panel":"p_bionics_jun2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":49,"cens":null,"unit":"mg/dL","ref":"<115","ok":true,"note":"","unitMismatch":false,"panel":"p0_sant"}],"unit":"mg/dL","ref":"<115"},"crp":{"key":"crp","label":"PCR","better":"down","points":[{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":2.7,"cens":null,"unit":"mg/L","ref":"≤3.3","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":2.7,"cens":null,"unit":"mg/L","ref":"≤3.3","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":0.4,"cens":null,"unit":"mg/L","ref":"≤5.00","ok":true,"note":"Bassa — buon controllo infiammazione","unitMismatch":false,"panel":"p0_sant"}],"unit":"mg/L","ref":"≤5.00"},"lh":{"key":"lh","label":"LH","better":"down","points":[{"iso":"2022-11-15","date":"Novembre 2022","src":"Panel CDI Bicocca — asse ormonale","v":6.9,"cens":null,"unit":"UI/L","ref":"1.5–9.3","ok":true,"note":"mU/mL = UI/L","unitMismatch":false,"panel":"p_nov2022"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":13.8,"cens":null,"unit":"UI/L","ref":"1.5–9.3 (M 20-70a)","ok":false,"note":"⚠️ Elevato","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-03","date":"3 luglio 2026","src":"Panel ormonale + renale · CDI Bicocca","v":10.9,"cens":null,"unit":"UI/L","ref":"1.5–9.3","ok":false,"note":"⚠️ Elevato ma in miglioramento (era 13.8 il 20/5)","unitMismatch":false,"panel":"p_jul2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":14.24,"cens":null,"unit":"UI/L","ref":"0.57–12.7 (uomo)","ok":false,"note":"🔴 PEGGIORATO — +30% vs 03/07 (10.9→14.24) ↑↑ · mUI/mL = UI/L","unitMismatch":false,"panel":"p0_sant"}],"unit":"UI/L","ref":"0.57–12.7 (uomo)"},"fsh":{"key":"fsh","label":"FSH","better":"down","points":[{"iso":"2022-11-15","date":"Novembre 2022","src":"Panel CDI Bicocca — asse ormonale","v":12.6,"cens":null,"unit":"mU/L","ref":"1.4–18.1","ok":true,"note":"Nella norma (range CDI uomo 14-70a) · mU/mL = mU/L","unitMismatch":false,"panel":"p_nov2022"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":25.7,"cens":null,"unit":"mU/L","ref":"1.4–18.1 (M 14-70a)","ok":false,"note":"⚠️ Compatibile ipogonadismo ipergonadotropo","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-03","date":"3 luglio 2026","src":"Panel ormonale + renale · CDI Bicocca","v":21.2,"cens":null,"unit":"mU/L","ref":"1.4–18.1","ok":false,"note":"⚠️ Elevato ma in miglioramento (era 25.7 il 20/5)","unitMismatch":false,"panel":"p_jul2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":24.27,"cens":null,"unit":"mU/L","ref":"0.95–11.95 (uomo)","ok":false,"note":"🔴 PEGGIORATO — +14% vs 03/07 (21.2→24.27) ↑ · mIU/mL = mU/L","unitMismatch":false,"panel":"p0_sant"}],"unit":"mU/L","ref":"0.95–11.95 (uomo)"},"t_tot":{"key":"t_tot","label":"Testosterone totale","better":"up","points":[{"iso":"2022-11-15","date":"Novembre 2022","src":"Panel CDI Bicocca — asse ormonale","v":173,"cens":null,"unit":"ng/dL","ref":"8.64–29.0","ok":false,"note":"convertito da 5,99 nmol/L · ⚠️ Basso range (conv. ~1.73 ng/mL)","unitMismatch":false,"panel":"p_nov2022"},{"iso":"2026-07-03","date":"3 luglio 2026","src":"Panel ormonale + renale · CDI Bicocca","v":6.85,"cens":null,"unit":"µg/L","ref":"1.87–6.84","ok":false,"note":"⚠️ Lievemente sopra range — primo dato disponibile, nessuno storico","unitMismatch":true,"panel":"p_jul2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":526.2,"cens":null,"unit":"ng/dL","ref":"127.18–1020.36 (uomo)","ok":true,"note":"Nel range medio-basso · CDI 03/07 era 6.85 — unità da confermare (µg/L→685ng/dL oppure nmol/L→~198ng/dL: risultati molto diversi, verificare referto originale)","unitMismatch":false,"panel":"p0_sant"}],"unit":"ng/dL","ref":"127.18–1020.36 (uomo)"},"t_lib":{"key":"t_lib","label":"Testosterone libero","better":"up","points":[{"iso":"2024-01-15","date":"Gennaio 2024","src":"Panel CDI Bicocca","v":16.53,"cens":null,"unit":"ng/L","ref":"9.57–40.60","ok":true,"note":"Basso range","unitMismatch":false,"panel":"p_jan2024"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":15.6,"cens":null,"unit":"ng/L","ref":"9.57–40.60","ok":true,"note":"Basso range — compresso da SHBG alto","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":18.8,"cens":null,"unit":"ng/L","ref":"9.57–40.60","ok":true,"note":"Nella parte bassa del range · pg/mL = ng/L","unitMismatch":false,"panel":"p0_sant"}],"unit":"ng/L","ref":"9.57–40.60"},"shbg":{"key":"shbg","label":"SHBG","better":"down","points":[{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":75.1,"cens":null,"unit":"nmol/L","ref":"16–80.50","ok":false,"note":"Alta-normale","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":75.1,"cens":null,"unit":"nmol/L","ref":"16.00–80.50","ok":false,"note":"Alta-normale — riduce T libero efficace","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-03","date":"3 luglio 2026","src":"Panel ormonale + renale · CDI Bicocca","v":72.8,"cens":null,"unit":"nmol/L","ref":"16.00–80.50","ok":true,"note":"Stabile (era 75.10 il 10/4)","unitMismatch":false,"panel":"p_jul2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":54.1,"cens":null,"unit":"nmol/L","ref":"11.20–78.10","ok":true,"note":"🔴 CALO SIGNIFICATIVO — -26% vs 03/07 (72.80→54.10) ↓↓","unitMismatch":false,"panel":"p0_sant"}],"unit":"nmol/L","ref":"11.20–78.10"},"e2":{"key":"e2","label":"Estradiolo","better":"neutral","points":[{"iso":"2022-11-15","date":"Novembre 2022","src":"Panel CDI Bicocca — asse ormonale","v":24.5,"cens":null,"unit":"pg/mL","ref":"—","ok":true,"note":"","unitMismatch":false,"panel":"p_nov2022"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":30.68,"cens":null,"unit":"pg/mL","ref":"11.8–39.8 (M >14a)","ok":true,"note":"ng/L = pg/mL","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":24,"cens":"<","unit":"pg/mL","ref":"<44 (uomo)","ok":true,"note":"Sotto limite rilevabilità","unitMismatch":false,"panel":"p0_sant"}],"unit":"pg/mL","ref":"<44 (uomo)"},"igf1":{"key":"igf1","label":"IGF-1","better":"up","points":[{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":94.01,"cens":null,"unit":"µg/L","ref":"~115–300 (adulto)","ok":false,"note":"🔴 Basso — principale target Tesamorelin","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-07-13","date":"13 luglio 2026","src":"Panel T0 Santagostino (pre-v2)","v":86,"cens":null,"unit":"µg/L","ref":"55–248","ok":false,"note":"🔴 CALATO — -8.5% vs 20/05 (94→86) ↓ · Target Tesamorelin 115–150+","unitMismatch":false,"panel":"p0_sant"}],"unit":"µg/L","ref":"55–248"},"egfr":{"key":"egfr","label":"eGFR","better":"up","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":91,"cens":null,"unit":"mL/min/1.73mq","ref":"≥90","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":75,"cens":null,"unit":"mL/min/1.73mq","ref":"≥90","ok":false,"note":"Lievemente diminuita","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-07-03","date":"3 luglio 2026","src":"Panel ormonale + renale · CDI Bicocca","v":62,"cens":null,"unit":"mL/min/1.73mq","ref":"≥90","ok":false,"note":"⚠️ In calo da 75 (10/4) — coerente coi follow-up già attivi (eco-doppler 13/07)","unitMismatch":false,"panel":"p_jul2026"}],"unit":"mL/min/1.73mq","ref":"≥90"},"urea":{"key":"urea","label":"Azotemia","better":"down","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":39,"cens":null,"unit":"mg/dL","ref":"20–50","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":50,"cens":null,"unit":"mg/dL","ref":"20.0–50.0","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":59,"cens":null,"unit":"mg/dL","ref":"20.0–50.0","ok":false,"note":"⚠️ Sopra range","unitMismatch":false,"panel":"p_may2026"}],"unit":"mg/dL","ref":"20.0–50.0"},"ast":{"key":"ast","label":"AST","better":"down","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":22,"cens":null,"unit":"U/L","ref":"8–34","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"}],"unit":"U/L","ref":"8–34"},"alt":{"key":"alt","label":"ALT","better":"down","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":21,"cens":null,"unit":"U/L","ref":"9–59","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"}],"unit":"U/L","ref":"9–59"},"ggt":{"key":"ggt","label":"GGT","better":"down","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":14,"cens":null,"unit":"U/L","ref":"12–67","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":12,"cens":null,"unit":"U/L","ref":"12–67","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":13,"cens":null,"unit":"U/L","ref":"12–67","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"}],"unit":"U/L","ref":"11.1–18.8"},"col_tot":{"key":"col_tot","label":"Colesterolo totale","better":"down","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":109,"cens":null,"unit":"mg/dL","ref":"≤190","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2022-11-15","date":"Novembre 2022","src":"Panel CDI Bicocca — asse ormonale","v":120,"cens":null,"unit":"mg/dL","ref":"≤190","ok":true,"note":"","unitMismatch":false,"panel":"p_nov2022"},{"iso":"2024-01-15","date":"Gennaio 2024","src":"Panel CDI Bicocca","v":89,"cens":null,"unit":"mg/dL","ref":"≤190","ok":true,"note":"","unitMismatch":false,"panel":"p_jan2024"},{"iso":"2025-02-15","date":"Febbraio 2025","src":"Panel CDI Bicocca","v":102,"cens":null,"unit":"mg/dL","ref":"≤190","ok":true,"note":"","unitMismatch":false,"panel":"p_feb2025"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":101,"cens":null,"unit":"mg/dL","ref":"≤190","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":107,"cens":null,"unit":"mg/dL","ref":"≤190","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-06-09","date":"9 giugno 2026","src":"Panel Bionics CDI — Laboratorio clinico","v":118,"cens":null,"unit":"mg/dL","ref":"≤190","ok":true,"note":"","unitMismatch":false,"panel":"p_bionics_jun2026"}],"unit":"mg/dL","ref":"≤190"},"ferro":{"key":"ferro","label":"Ferro","better":"neutral","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":103,"cens":null,"unit":"µg/dL","ref":"65–175","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":62,"cens":null,"unit":"µg/dL","ref":"65–175","ok":false,"note":"Borderline basso","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":113,"cens":null,"unit":"µg/dL","ref":"65–175","ok":true,"note":"Migliorato vs apr 2026 (62→113)","unitMismatch":false,"panel":"p_may2026"}],"unit":"µg/dL","ref":"65–175"},"ferritina":{"key":"ferritina","label":"Ferritina","better":"neutral","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":79,"cens":null,"unit":"µg/L","ref":"22–322","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":142,"cens":null,"unit":"µg/L","ref":"22–322","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":161,"cens":null,"unit":"µg/L","ref":"22–322","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"}],"unit":"µg/L","ref":"22–322"},"urico":{"key":"urico","label":"Acido urico","better":"down","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":3.6,"cens":null,"unit":"mg/dL","ref":"≤7.00","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":4.5,"cens":null,"unit":"mg/dL","ref":"≤7.00","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":4.5,"cens":null,"unit":"mg/dL","ref":"≤7.00","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"}],"unit":"mg/dL","ref":"≤7.00"},"folato":{"key":"folato","label":"Folato","better":"up","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":2,"cens":null,"unit":"µg/L","ref":"≥5.38","ok":false,"note":"⚠️ Basso","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":3,"cens":null,"unit":"µg/L","ref":"≥5.38","ok":false,"note":"⚠️ Basso → B12+methylfolato avviato","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":23.7,"cens":null,"unit":"µg/L","ref":"≥5.38","ok":true,"note":"✅ Normalizzato vs apr 2026 (3.00→23.70) con supplementazione","unitMismatch":false,"panel":"p_may2026"}],"unit":"µg/L","ref":"≥5.38"},"tsh":{"key":"tsh","label":"TSH","better":"neutral","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":2.13,"cens":null,"unit":"mU/L","ref":"0.55–4.80","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":2.13,"cens":null,"unit":"mU/L","ref":"0.55–4.80","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":1.91,"cens":null,"unit":"mU/L","ref":"0.55–4.80","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"}],"unit":"mU/L","ref":"0.55–4.80"},"psa":{"key":"psa","label":"PSA totale","better":"down","points":[{"iso":"2020-10-15","date":"Ottobre 2020","src":"Panel CDI Bicocca","v":0.54,"cens":null,"unit":"µg/L","ref":"≤4.00","ok":true,"note":"","unitMismatch":false,"panel":"p_oct2020"},{"iso":"2022-11-15","date":"Novembre 2022","src":"Panel CDI Bicocca — asse ormonale","v":0.54,"cens":null,"unit":"µg/L","ref":"≤4.00","ok":true,"note":"","unitMismatch":false,"panel":"p_nov2022"},{"iso":"2024-01-15","date":"Gennaio 2024","src":"Panel CDI Bicocca","v":0.5,"cens":null,"unit":"µg/L","ref":"≤4.00","ok":true,"note":"","unitMismatch":false,"panel":"p_jan2024"},{"iso":"2025-02-15","date":"Febbraio 2025","src":"Panel CDI Bicocca","v":0.54,"cens":null,"unit":"µg/L","ref":"≤4.00","ok":true,"note":"","unitMismatch":false,"panel":"p_feb2025"},{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":0.48,"cens":null,"unit":"µg/L","ref":"≤4.00","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-06-09","date":"9 giugno 2026","src":"Panel Bionics CDI — Laboratorio clinico","v":0.49,"cens":null,"unit":"µg/L","ref":"≤4.00","ok":true,"note":"","unitMismatch":false,"panel":"p_bionics_jun2026"}],"unit":"µg/L","ref":"≤4.00"},"prl":{"key":"prl","label":"Prolattina","better":"neutral","points":[{"iso":"2022-11-15","date":"Novembre 2022","src":"Panel CDI Bicocca — asse ormonale","v":10.1,"cens":null,"unit":"ng/mL","ref":"4.0–15.2","ok":true,"note":"","unitMismatch":false,"panel":"p_nov2022"},{"iso":"2026-07-03","date":"3 luglio 2026","src":"Panel ormonale + renale · CDI Bicocca","v":9.5,"cens":null,"unit":"ng/mL","ref":"2.1–17.7 (M >22a)","ok":true,"note":"µg/L = ng/mL","unitMismatch":false,"panel":"p_jul2026"}],"unit":"ng/mL","ref":"2.1–17.7 (M >22a)"},"transf":{"key":"transf","label":"Transferrina","better":"neutral","points":[{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":2.36,"cens":null,"unit":"g/L","ref":"2.15–3.65","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":2.8,"cens":null,"unit":"g/L","ref":"2.15–3.65","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"}],"unit":"g/L","ref":"2.15–3.65"},"vitd":{"key":"vitd","label":"Vitamina D","better":"up","points":[{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":9.5,"cens":null,"unit":"µg/L","ref":"31–100 ottimale","ok":false,"note":"🔴 Insufficienza grave → D3 4000UI avviato dopo questo referto","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":22,"cens":null,"unit":"µg/L","ref":"31–100 ottimale","ok":false,"note":"⚠️ Insufficiente ma in netto miglioramento (9.5→22) — D3 4000UI già avviato","unitMismatch":false,"panel":"p_may2026"},{"iso":"2026-06-09","date":"9 giugno 2026","src":"Check-up CDI Bicocca — Baseline CV pre-ciclo","v":22,"cens":null,"unit":"µg/L","ref":"31–100","ok":false,"note":"⚠️ Ancora insufficiente ma in netto miglioramento (9.5 → 22 dal 10/04/2026)","unitMismatch":false,"panel":"p_checkup_jun2026"}],"unit":"µg/L","ref":"31–100"},"b12":{"key":"b12","label":"Vitamina B12","better":"up","points":[{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":278,"cens":null,"unit":"ng/L","ref":"211–911","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":410,"cens":null,"unit":"ng/L","ref":"211–911","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"}],"unit":"ng/L","ref":"211–911"},"zinco":{"key":"zinco","label":"Zinco","better":"up","points":[{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":53.3,"cens":null,"unit":"µg/dL","ref":"60–106","ok":false,"note":"⚠️ Basso → zinc bisglicin. 15mg avviato 21/05","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":50.3,"cens":null,"unit":"µg/dL","ref":"60–106","ok":false,"note":"⚠️ Basso — zinc bisglicin. 15mg avviato 21/05","unitMismatch":false,"panel":"p_may2026"}],"unit":"µg/dL","ref":"60–106"},"cortisolo":{"key":"cortisolo","label":"Cortisolo","better":"neutral","points":[{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":12.8,"cens":null,"unit":"µg/dL","ref":"5.27–22.40","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":14.6,"cens":null,"unit":"µg/dL","ref":"5.27–22.40","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"}],"unit":"µg/dL","ref":"5.27–22.40"},"ves":{"key":"ves","label":"VES","better":"down","points":[{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":17,"cens":null,"unit":"mm/h","ref":"1–15","ok":false,"note":"Lievemente elevata","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":25,"cens":null,"unit":"mm/h","ref":"1–15","ok":false,"note":"⚠️ Elevata — correlata varicocele gr.3","unitMismatch":false,"panel":"p_may2026"}],"unit":"mm/h","ref":"1–15"},"hba1c":{"key":"hba1c","label":"HbA1c","better":"down","points":[{"iso":"2026-04-10","date":"10 aprile 2026","src":"Panel CDI Bicocca","v":30,"cens":null,"unit":"mmol/mol","ref":"20–42","ok":true,"note":"","unitMismatch":false,"panel":"p_apr2026"},{"iso":"2026-05-20","date":"20 maggio 2026","src":"Panel CDI Bicocca — quadro pre-protocollo","v":20,"cens":null,"unit":"mmol/mol","ref":"20–42","ok":true,"note":"","unitMismatch":false,"panel":"p_may2026"}],"unit":"mmol/mol","ref":"20–42"},"clcr":{"key":"clcr","label":"Clearance creatinina","better":"up","points":[{"iso":"2026-05-21","date":"21 maggio 2026","src":"Clearance Creatinina · CDI Bicocca","v":109,"cens":null,"unit":"mL/min","ref":"70–180","ok":true,"note":"✅ Nella norma — buona filtrazione nonostante creatinina sierica alta","unitMismatch":false,"panel":"p_may21_2026"}],"unit":"mL/min","ref":"70–180"},"potassio":{"key":"potassio","label":"Potassio","better":"neutral","points":[{"iso":"2026-09-01","date":"1 settembre 2026","src":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","v":4.3,"cens":null,"unit":"mmol/L","ref":"3.6–5.0","ok":true,"note":"","unitMismatch":false,"panel":"p_sep2026_nefro"}],"unit":"mmol/L","ref":"3.6–5.0"},"calcio":{"key":"calcio","label":"Calcio","better":"neutral","points":[{"iso":"2026-09-01","date":"1 settembre 2026","src":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","v":9.8,"cens":null,"unit":"mg/dL","ref":"8.6–10.5","ok":true,"note":"","unitMismatch":false,"panel":"p_sep2026_nefro"}],"unit":"mg/dL","ref":"8.6–10.5"}},"instr":[{"panel":"p_oct2020","date":"Ottobre 2020","iso":"2020-10-15","label":"Panel CDI Bicocca","cat":"Chimica clinica","name":"Fosfatasi alcalina","val":"97 U/L","ref":"35–105","ok":true,"note":""},{"panel":"p_oct2020","date":"Ottobre 2020","iso":"2020-10-15","label":"Panel CDI Bicocca","cat":"Chimica clinica","name":"Bilirubina tot.","val":"0.60 mg/dL","ref":"0.30–1.20","ok":true,"note":""},{"panel":"p_oct2020","date":"Ottobre 2020","iso":"2020-10-15","label":"Panel CDI Bicocca","cat":"Chimica clinica","name":"Proteine totali","val":"7.4 g/dL","ref":"6.4–8.3","ok":true,"note":""},{"panel":"p_oct2020","date":"Ottobre 2020","iso":"2020-10-15","label":"Panel CDI Bicocca","cat":"Emocromo","name":"Eosinofili %","val":"11.60%","ref":"1–6%","ok":false,"note":"⚠️ Elevati (allergico/parassiti?)"},{"panel":"p_oct2020","date":"Ottobre 2020","iso":"2020-10-15","label":"Panel CDI Bicocca","cat":"Emocromo","name":"Eosinofili #","val":"1.08 ×10⁹/L","ref":"0.0–0.53","ok":false,"note":"⚠️ Elevati"},{"panel":"p_oct2020","date":"Ottobre 2020","iso":"2020-10-15","label":"Panel CDI Bicocca","cat":"Elettroforesi proteica","name":"Albumina","val":"52.4%","ref":"55–70%","ok":false,"note":"Borderline bassa"},{"panel":"p_oct2020","date":"Ottobre 2020","iso":"2020-10-15","label":"Panel CDI Bicocca","cat":"Elettroforesi proteica","name":"Beta 2","val":"7.9%","ref":"3–7%","ok":false,"note":"Lievemente elevata"},{"panel":"p_oct2020","date":"Ottobre 2020","iso":"2020-10-15","label":"Panel CDI Bicocca","cat":"Elettroforesi proteica","name":"Rapporto Alb/Glob","val":"1.1","ref":"1.2–2.2","ok":false,"note":"Basso"},{"panel":"p_nov2022","date":"Novembre 2022","iso":"2022-11-15","label":"Panel CDI Bicocca — asse ormonale","cat":"Asse ormonale","name":"Testosterone libero","val":"—","ref":"—","ok":true,"note":""},{"panel":"p_nov2022","date":"Novembre 2022","iso":"2022-11-15","label":"Panel CDI Bicocca — asse ormonale","cat":"Asse ormonale","name":"PAP (Fosf. acida)","val":"0.96","ref":"—","ok":true,"note":""},{"panel":"p_jan2024","date":"Gennaio 2024","iso":"2024-01-15","label":"Panel CDI Bicocca","cat":"Lipidi","name":"Non-HDL","val":"65 mg/dL","ref":"≤145","ok":true,"note":""},{"panel":"p_jan2024","date":"Gennaio 2024","iso":"2024-01-15","label":"Panel CDI Bicocca","cat":"Asse ormonale","name":"PAP (Fosf. acida)","val":"1.25","ref":"—","ok":true,"note":""},{"panel":"p_feb2025","date":"Febbraio 2025","iso":"2025-02-15","label":"Panel CDI Bicocca","cat":"Lipidi","name":"Non-HDL","val":"75 mg/dL","ref":"≤145","ok":true,"note":""},{"panel":"p_feb2025","date":"Febbraio 2025","iso":"2025-02-15","label":"Panel CDI Bicocca","cat":"Asse ormonale","name":"PSA free","val":"0.45 µg/L","ref":"—","ok":true,"note":""},{"panel":"p_feb2025","date":"Febbraio 2025","iso":"2025-02-15","label":"Panel CDI Bicocca","cat":"Asse ormonale","name":"PSA ratio","val":"0.83","ref":"—","ok":true,"note":""},{"panel":"p_feb2025","date":"Febbraio 2025","iso":"2025-02-15","label":"Panel CDI Bicocca","cat":"Asse ormonale","name":"PAP (Fosf. acida)","val":"2.85","ref":"—","ok":false,"note":"⚠️ Elevata vs storico"},{"panel":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","cat":"Funzionalità renale","name":"Magnesio","val":"2.03 mg/dL","ref":"1.58–2.60","ok":true,"note":""},{"panel":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","cat":"Funzionalità epatica","name":"AST/GOT","val":"28 U/L","ref":"8–34","ok":true,"note":""},{"panel":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","cat":"Funzionalità epatica","name":"ALT/GPT","val":"27 U/L","ref":"9–59","ok":true,"note":""},{"panel":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","cat":"Funzionalità epatica","name":"Bilirubina tot.","val":"1.02 mg/dL","ref":"0.30–1.20","ok":true,"note":""},{"panel":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","cat":"Funzionalità epatica","name":"Bilirubina diretta","val":"0.45 mg/dL","ref":"≤0.30","ok":false,"note":"Lievemente sopra range"},{"panel":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","cat":"Lipidi","name":"Non-HDL","val":"72 mg/dL","ref":"≤145","ok":true,"note":""},{"panel":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","cat":"Infiammazione & metaboliti","name":"Omocisteina","val":"17.5 µmol/L","ref":"3.0–18.0","ok":true,"note":"✅ Migliorata vs apr 2026 (21.9→17.5) con supplementazione"},{"panel":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","cat":"Asse ormonale","name":"DHEA-S","val":"78 µg/dL","ref":"49–351","ok":true,"note":""},{"panel":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","cat":"Asse ormonale","name":"ACTH","val":"44.20 ng/L","ref":"7.20–63.50","ok":true,"note":""},{"panel":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","cat":"Asse ormonale","name":"PSA (reflex)","val":"0.63 µg/L","ref":"≤4.00","ok":true,"note":""},{"panel":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","cat":"Emocromo","name":"MCH","val":"30.0 pg","ref":"24.9–35.3","ok":true,"note":""},{"panel":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","cat":"Emocromo","name":"Fibrinogeno","val":"3.0 g/L","ref":"2.0–4.0","ok":true,"note":""},{"panel":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","cat":"Nota clinica T0","name":"Quadro complessivo","val":"Ipogonadismo ipergonadotropo","ref":"—","ok":false,"note":"FSH/LH elevati + IGF-1 basso + SHBG alto + varicocele gr.3 sx · Chirurgia varicocele non raccomandata (Dr.ssa Maccagnano)"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Biometria & vitali","name":"Peso","val":"72 kg","ref":"—","ok":true,"note":"Incremento +0.9 kg vs DEXA T0 (09/05/2026 · 71.1kg)"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Biometria & vitali","name":"Altezza","val":"170 cm","ref":"—","ok":true,"note":""},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Biometria & vitali","name":"BMI","val":"24.91","ref":"20–24 (M)","ok":false,"note":"Lievemente sopra range normale"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Biometria & vitali","name":"Frequenza cardiaca","val":"66 bpm","ref":"60–100","ok":true,"note":"Ottimale — a riposo"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Biometria & vitali","name":"PA Sistolica","val":"120 mmHg","ref":"<130","ok":true,"note":""},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Biometria & vitali","name":"PA Diastolica","val":"80 mmHg","ref":"<85","ok":true,"note":""},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Biometria & vitali","name":"Scala VAS dolore","val":"0","ref":"Assente","ok":true,"note":""},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Anamnesi patologica attuale","name":"Sintomo principale","val":"Astenia","ref":"—","ok":false,"note":"Stanchezza non ristoratore"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Anamnesi patologica attuale","name":"Sonno","val":"Non ristoratore","ref":"—","ok":false,"note":"⚠️ Qualità sub-ottimale"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Anamnesi patologica attuale","name":"Alvo","val":"Tendenzialmente diarroico","ref":"Normale","ok":false,"note":"Gestibile con alimentazione"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Anamnesi patologica attuale","name":"Fumo","val":"Non fumatore","ref":"—","ok":true,"note":""},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Anamnesi patologica attuale","name":"Potus","val":"Occasionale","ref":"—","ok":true,"note":""},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Anamnesi patologica attuale","name":"Idratazione","val":"~3 L/die","ref":"—","ok":true,"note":"Acqua prevalente, caffè, coca zero"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Attività & fattori di rischio","name":"Lavorativa","val":"Sedentaria · stress++","ref":"—","ok":false,"note":"Elevata pressione psicologica"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Attività & fattori di rischio","name":"Fisica","val":"Palestra regolare","ref":"—","ok":true,"note":"Pratica costante, allenamento strutturato"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Attività & fattori di rischio","name":"Allergie/Intolleranze","val":"Ambrosia (oculorinite) · Pollini","ref":"—","ok":false,"note":"Stagionali, controllate"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Esame obiettivo & reperti","name":"Obbiettività generale","val":"Non reperti sospetti","ref":"—","ok":true,"note":""},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Esame obiettivo & reperti","name":"Testicolo sinistro","val":"Ipotrofia confermata","ref":"—","ok":false,"note":"🔴 Dimensioni ridotte · Aspetto ipoecogeno lieve · Varicocele sin gr.3"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Esame obiettivo & reperti","name":"Idrocele bilaterale","val":"Presente (mag. sin)","ref":"—","ok":false,"note":"Confermato eco 27/05"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Diagnosi clinica","name":"Diagnosi principale","val":"Ipotrofia testicolare sinistra","ref":"—","ok":false,"note":"🔴 Correlata a varicocele gr.3 · Possibile ridotta produzione steroidea locale"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Diagnosi clinica","name":"Asse ipofisario","val":"Ipergonadotropo (FSH ↑ LH ↑)","ref":"—","ok":false,"note":"FSH 21.2→24.27 · LH 10.9→14.24 (trend in peggioramento)"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Diagnosi clinica","name":"SHBG","val":"72.80→54.10 nmol/L","ref":"11.20–78.10","ok":true,"note":"Calo rapido anomalo in 10gg (−26%)"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Diagnosi clinica","name":"Testosterone totale","val":"526.20 ng/dL","ref":"127.18–1020.36","ok":true,"note":"Basso-normale · Frazione biodisponibile calata per SHBG ridotto"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Terapia consigliata & follow-up","name":"Monitoraggio","val":"6–8 mesi","ref":"—","ok":true,"note":"Testosterone totale + SHBG · Rivalutazione funzione testicolare"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Terapia consigliata & follow-up","name":"Approfondimenti","val":"Nessuno suggerito","ref":"—","ok":true,"note":"Chirurgia varicocele non raccomandata (Dr.ssa Maccagnano 29/06)"},{"panel":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","cat":"Terapia consigliata & follow-up","name":"Autorizzazione protocollo","val":"✅ APPROVATO","ref":"—","ok":true,"note":"🟢 \"Protocollo sperimentale peptidico sotto controllo medico di base\""},{"panel":"p_apr2026","date":"10 aprile 2026","iso":"2026-04-10","label":"Panel CDI Bicocca","cat":"Funzionalità renale","name":"Magnesio","val":"2.01 mg/dL","ref":"1.58–2.60","ok":true,"note":""},{"panel":"p_apr2026","date":"10 aprile 2026","iso":"2026-04-10","label":"Panel CDI Bicocca","cat":"Funzionalità epatica","name":"AST/GOT","val":"24 U/L","ref":"8–34","ok":true,"note":""},{"panel":"p_apr2026","date":"10 aprile 2026","iso":"2026-04-10","label":"Panel CDI Bicocca","cat":"Funzionalità epatica","name":"ALT/GPT","val":"25 U/L","ref":"9–59","ok":true,"note":""},{"panel":"p_apr2026","date":"10 aprile 2026","iso":"2026-04-10","label":"Panel CDI Bicocca","cat":"Funzionalità epatica","name":"Bilirubina tot.","val":"0.62 mg/dL","ref":"0.30–1.20","ok":true,"note":""},{"panel":"p_apr2026","date":"10 aprile 2026","iso":"2026-04-10","label":"Panel CDI Bicocca","cat":"Lipidi","name":"Non-HDL","val":"73 mg/dL","ref":"≤145","ok":true,"note":""},{"panel":"p_apr2026","date":"10 aprile 2026","iso":"2026-04-10","label":"Panel CDI Bicocca","cat":"Infiammazione & metaboliti","name":"Omocisteina","val":"21.9 µmol/L","ref":"3.0–18.0","ok":false,"note":"⚠️ Elevata (poi scende a 17.5 a mag con supplementazione)"},{"panel":"p_apr2026","date":"10 aprile 2026","iso":"2026-04-10","label":"Panel CDI Bicocca","cat":"Infiammazione & metaboliti","name":"Fibrinogeno","val":"3.2 g/L","ref":"2.0–4.0","ok":true,"note":""},{"panel":"p_apr2026","date":"10 aprile 2026","iso":"2026-04-10","label":"Panel CDI Bicocca","cat":"Ferro & vitamine","name":"Magnesio","val":"2.01 mg/dL","ref":"1.58–2.60","ok":true,"note":""},{"panel":"p_bionics_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Panel Bionics CDI — Laboratorio clinico","cat":"Chimica Clinica","name":"Non-HDL","val":"86 mg/dL","ref":"≤145","ok":true,"note":""},{"panel":"p_bionics_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Panel Bionics CDI — Laboratorio clinico","cat":"Immunometria (PSA)","name":"PSA free","val":"0.29 µg/L","ref":"—","ok":true,"note":""},{"panel":"p_bionics_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Panel Bionics CDI — Laboratorio clinico","cat":"Immunometria (PSA)","name":"PSA ratio","val":"0.59","ref":"≥0.20","ok":true,"note":""},{"panel":"p_bionics_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Panel Bionics CDI — Laboratorio clinico","cat":"Immunometria (PSA)","name":"PAP (Fosf. acida prostatica)","val":"1.43 µg/L","ref":"≤2.10","ok":true,"note":"Normalizzata vs 2.85 (feb 2025) ✅"},{"panel":"p_bionics_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Panel Bionics CDI — Laboratorio clinico","cat":"Nota clinica","name":"Quadro lipidico","val":"LDL/TG/ColTot stabili","ref":"—","ok":true,"note":"HDL ancora basso (32) — unico marker lipidico fuori target"},{"panel":"p_bionics_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Panel Bionics CDI — Laboratorio clinico","cat":"Nota clinica","name":"PSA","val":"Stabile ✅","ref":"—","ok":true,"note":"Follow-up annuale concordato con Dr. Sciorio"},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Ecocardiogramma color Doppler","name":"FE (Frazione di eiezione)","val":"63%","ref":"≥55%","ok":true,"note":""},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Ecocardiogramma color Doppler","name":"Insufficienza mitralica","val":"Grado 1","ref":"—","ok":true,"note":"Stabile vs 2025"},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Ecocardiogramma color Doppler","name":"Insufficienza aortica","val":"Grado 1","ref":"—","ok":true,"note":"Stabile vs 2025"},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Ecocardiogramma color Doppler","name":"Insufficienza tricuspidalica","val":"Grado 1","ref":"—","ok":true,"note":"Stabile vs 2025"},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Ecocardiogramma color Doppler","name":"PAPs","val":"19 mmHg","ref":"<35 mmHg","ok":true,"note":""},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"ECG a riposo & da sforzo","name":"ECG riposo","val":"Nella norma","ref":"—","ok":true,"note":""},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"ECG a riposo & da sforzo","name":"ECG da sforzo massimale","val":"NEGATIVO per ischemia","ref":"—","ok":true,"note":"✅ Nessun segno ischemico"},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"ECG a riposo & da sforzo","name":"FC massima raggiunta","val":"91% FCmax","ref":"≥85%","ok":true,"note":""},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"ECG a riposo & da sforzo","name":"MET raggiunti","val":"6.9 MET","ref":"—","ok":true,"note":"Buona capacità funzionale"},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Visita cardiologica","name":"Compenso cardiaco","val":"Normale","ref":"—","ok":true,"note":""},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Ecografia addome & visita urologica","name":"Ecografia addome","val":"Normale","ref":"—","ok":true,"note":""},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Ecografia addome & visita urologica","name":"Prostata","val":"20 ml","ref":"≤25 ml","ok":true,"note":""},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Ecografia addome & visita urologica","name":"PSA follow-up","val":"1 anno","ref":"—","ok":true,"note":""},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Ecografia addome & visita urologica","name":"Valutazione urologica","val":"Normale","ref":"—","ok":true,"note":""},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Conclusione clinica","name":"Idoneità protocollo","val":"✅ ZERO controindicazioni","ref":"—","ok":true,"note":"Baseline CV ottimo — via libera Tesamorelin"},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Referto cardiologico firmato (23/06/2026 · Dr.ssa Bokor)","name":"Cardiopatia","val":"Esclusa","ref":"—","ok":true,"note":"Raccolta anamnestica + ECG: nessun reperto patologico"},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Referto cardiologico firmato (23/06/2026 · Dr.ssa Bokor)","name":"Compenso cardiocircolatorio","val":"Buono ✅","ref":"—","ok":true,"note":""},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Referto cardiologico firmato (23/06/2026 · Dr.ssa Bokor)","name":"HDL","val":"Basso ma in miglioramento","ref":"≥40 (M)","ok":false,"note":"⚠️ Persistente — trend positivo vs passato"},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Referto cardiologico firmato (23/06/2026 · Dr.ssa Bokor)","name":"Creatinina","val":"Lievemente elevata","ref":"—","ok":false,"note":"⚠️ Invariata rispetto ai controlli precedenti"},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Referto cardiologico firmato (23/06/2026 · Dr.ssa Bokor)","name":"Anemia normocitica","val":"Lieve — persistente","ref":"—","ok":false,"note":"⚠️ Invariata rispetto al passato"},{"panel":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","cat":"Referto cardiologico firmato (23/06/2026 · Dr.ssa Bokor)","name":"Terapia consigliata","val":"Continuare integratori","ref":"—","ok":true,"note":"Nessuna modifica alla terapia attuale"},{"panel":"p_may21_2026","date":"21 maggio 2026","iso":"2026-05-21","label":"Clearance Creatinina · CDI Bicocca","cat":"Funzionalità renale","name":"Creatinina urine","val":"71 mg/dL","ref":"—","ok":true,"note":""},{"panel":"p_may21_2026","date":"21 maggio 2026","iso":"2026-05-21","label":"Clearance Creatinina · CDI Bicocca","cat":"Nota clinica","name":"Interpretazione","val":"Clearance normale","ref":"—","ok":true,"note":"Supporta ipotesi non-renale per creatinina alta (massa muscolare/dieta) più che danno da filtrazione"},{"panel":"p_jul2026","date":"3 luglio 2026","iso":"2026-07-03","label":"Panel ormonale + renale · CDI Bicocca","cat":"Altri marker","name":"ACTH","val":"32.80 ng/L","ref":"7.20–63.50","ok":true,"note":"In calo da 44.20 (20/5)"},{"panel":"p_jul2026","date":"3 luglio 2026","iso":"2026-07-03","label":"Panel ormonale + renale · CDI Bicocca","cat":"Nota clinica","name":"Quadro renale","val":"Da monitorare","ref":"—","ok":false,"note":"Creatinina/eGFR in trend negativo — ACR urinario (6/7) normale esclude danno glomerulare · attenzione a eco-doppler 13/07"},{"panel":"p_jul2026","date":"3 luglio 2026","iso":"2026-07-03","label":"Panel ormonale + renale · CDI Bicocca","cat":"Nota clinica","name":"Quadro gonadico","val":"In miglioramento","ref":"—","ok":true,"note":"FSH e LH entrambi in calo rispetto al 20/5, ancora prima del via ufficiale a v2"},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Chimica Clinica","name":"Proteine totali","val":"75.6 g/L","ref":"57.0–82.0","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Chimica Clinica","name":"Magnesio totale","val":"1.89 mg/dL","ref":"1.58–2.60","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Chimica Clinica","name":"Creatinina urine spot","val":"73 mg/dL","ref":"—","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Chimica Clinica","name":"Microalbumina (ACR)","val":"4 mg/g cre","ref":"<30 (normoalbuminuria)","ok":true,"note":"✅ Ben al di sotto soglia — nessun segno di danno glomerulare"},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Immunometria","name":"Paratormone Intatto (PTH)","val":"44.0 ng/L","ref":"18.5–88.0","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Elettroforesi proteica","name":"Albumina","val":"56.9%","ref":"55.8–66.1","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Elettroforesi proteica","name":"Alfa-1","val":"2.6%","ref":"2.9–4.9","ok":false,"note":"↓ Lievemente sotto range"},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Elettroforesi proteica","name":"Alfa-2","val":"7.0%","ref":"7.1–11.8","ok":false,"note":"↓ Di poco sotto range"},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Elettroforesi proteica","name":"Beta-1","val":"6.1%","ref":"4.7–7.2","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Elettroforesi proteica","name":"Beta-2","val":"6.5%","ref":"3.2–6.5","ok":true,"note":"Al limite superiore"},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Elettroforesi proteica","name":"Rapporto Albumina/Globulina","val":"1.3","ref":"1.1–2.4","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Urine — chimico-fisico e microscopico","name":"pH","val":"5.5","ref":"5.0–7.0","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Urine — chimico-fisico e microscopico","name":"Densità relativa","val":"1024 g/L","ref":"1004–1030","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Urine — chimico-fisico e microscopico","name":"Glucosio","val":"0 mg/L","ref":"≤0","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Urine — chimico-fisico e microscopico","name":"Emoglobina","val":"0.0 mg/L","ref":"0.0–0.3","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Urine — chimico-fisico e microscopico","name":"Albumina","val":"0 mg/L","ref":"0–150","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Urine — chimico-fisico e microscopico","name":"Nitriti","val":"Assenti","ref":"—","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Urine — chimico-fisico e microscopico","name":"Esterasi leucocitaria","val":"70 cellule/µL","ref":"0–15","ok":false,"note":"🔴 Elevata"},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Urine — chimico-fisico e microscopico","name":"Eritrociti","val":"4.0 n./µL","ref":"0.0–16.0","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Urine — chimico-fisico e microscopico","name":"Leucociti","val":"36.30 n./µL","ref":"0.00–25.00","ok":false,"note":"🔴 Elevati"},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Urine — chimico-fisico e microscopico","name":"Cellule epiteliali squamose","val":"8.6 n./µL","ref":"0–45","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Urine — chimico-fisico e microscopico","name":"Batteri","val":"87.1 n./µL","ref":"0.0–400.0","ok":true,"note":""},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Microbiologia","name":"Urinocoltura da mitto intermedio","val":"Negativo","ref":"—","ok":true,"note":"Nessuna crescita di batteri o lieviti patogeni"},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Nota clinica","name":"Piuria con coltura negativa","val":"Da valutare col nefrologo","ref":"—","ok":false,"note":"Leucociti ed esterasi leucocitaria elevati nelle urine ma urinocoltura negativa — pattern di \"piuria sterile\", da interpretare nel contesto clinico completo dal nefrologo che ha richiesto l\\"},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Nota clinica","name":"Ipergammaglobulinemia","val":"Da valutare col nefrologo","ref":"—","ok":false,"note":"Gamma globuline elevate (20.9% vs 11.1–18.8) con alfa-1 e alfa-2 lievemente basse — segnalato dal laboratorio stesso, da discutere nel quadro renale in accertamento"},{"panel":"p_jul6_2026","date":"6 luglio 2026","iso":"2026-07-06","label":"Esame urine — ACR + Cortisolo 24h · CDI Bicocca","cat":"Chimica Clinica (urine)","name":"Rapporto Albumina/Creatinina (ACR)","val":"5 mg/g cre","ref":"<30 (normoalbuminuria)","ok":true,"note":"✅ Ben al di sotto soglia — nessun segno di danno glomerulare"},{"panel":"p_jul6_2026","date":"6 luglio 2026","iso":"2026-07-06","label":"Esame urine — ACR + Cortisolo 24h · CDI Bicocca","cat":"Chimica Clinica (urine)","name":"Creatinina urine spot","val":"55 mg/dL","ref":"—","ok":true,"note":""},{"panel":"p_jul6_2026","date":"6 luglio 2026","iso":"2026-07-06","label":"Esame urine — ACR + Cortisolo 24h · CDI Bicocca","cat":"Immunometria (urine 24h)","name":"Cortisolo libero urinario (dU)","val":"58.45 µg/24h","ref":"4.2–60.0","ok":true,"note":"⚠️ Vicino al limite superiore ma ancora in range · volume diuresi 3500 mL"},{"panel":"p_jul6_2026","date":"6 luglio 2026","iso":"2026-07-06","label":"Esame urine — ACR + Cortisolo 24h · CDI Bicocca","cat":"Nota clinica","name":"Interpretazione","val":"Funzionalità glomerulare nella norma","ref":"—","ok":true,"note":"Rassicurante nel contesto della creatinina sierica elevata — pattern compatibile con causa extra-renale piuttosto che danno strutturale · complementare (non sostitutivo) a eco-doppler 13/07"},{"panel":"p_jul6_2026","date":"6 luglio 2026","iso":"2026-07-06","label":"Esame urine — ACR + Cortisolo 24h · CDI Bicocca","cat":"Nota clinica","name":"Cortisolo borderline-alto","val":"Da monitorare","ref":"—","ok":false,"note":"Cortisolo sierico mattutino era nella norma (14.60 il 20/5) — il libero urinario 24h riflette l\\"},{"panel":"p_oct2020","date":"Ottobre 2020","iso":"2020-10-15","label":"Panel CDI Bicocca","cat":"Elettroforesi proteica","name":"Gamma globuline","val":"23 %","ref":"11–22%","ok":false,"note":"Lievemente elevata"},{"panel":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","cat":"Elettroforesi proteica","name":"Gamma globuline","val":"20.9 %","ref":"11.1–18.8","ok":false,"note":"🔴 Elevata — segnalata dal laboratorio come \"Ipergammaglobulinemia\""}],"panels":[{"id":"p0_sant","date":"13 luglio 2026","iso":"2026-07-13","label":"Panel T0 Santagostino (pre-v2)","note":"Codice 00K24KC2 · Prelievo ore 08:32 · Risultati 14/07/2026"},{"id":"p_oct2020","date":"Ottobre 2020","iso":"2020-10-15","label":"Panel CDI Bicocca","note":"⚠️ Basso — cronico"},{"id":"p_nov2022","date":"Novembre 2022","iso":"2022-11-15","label":"Panel CDI Bicocca — asse ormonale","note":"Prima misurazione asse ormonale completo"},{"id":"p_jan2024","date":"Gennaio 2024","iso":"2024-01-15","label":"Panel CDI Bicocca","note":"🔴 Molto basso"},{"id":"p_feb2025","date":"Febbraio 2025","iso":"2025-02-15","label":"Panel CDI Bicocca","note":"⚠️ Persistentemente basso"},{"id":"p_may2026","date":"20 maggio 2026","iso":"2026-05-20","label":"Panel CDI Bicocca — quadro pre-protocollo","note":"Prelievo ore 08:09 · 19 giorni prima dell\\"},{"id":"p_visita_seregni","date":"14 luglio 2026","iso":"2026-07-14","label":"Visita endocrinologica · Dr. Seregni CDI","note":"Rif. Amministrativo 2-400216-26 · Ore 09:23:22"},{"id":"p_apr2026","date":"10 aprile 2026","iso":"2026-04-10","label":"Panel CDI Bicocca","note":"Prelievo ore 08:22 · 59 giorni prima dell\\"},{"id":"p_bionics_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Panel Bionics CDI — Laboratorio clinico","note":"Prelievo ore 08:32 · Stesso giorno check-up cardiologico/urologico · Giorno 2 protocollo"},{"id":"p_checkup_jun2026","date":"9 giugno 2026","iso":"2026-06-09","label":"Check-up CDI Bicocca — Baseline CV pre-ciclo","note":"Giorno 2 protocollo · Dr.ssa Bokor (cardiologia) · Dr. Sciorio (urologia)"},{"id":"p_may21_2026","date":"21 maggio 2026","iso":"2026-05-21","label":"Clearance Creatinina · CDI Bicocca","note":"Prelievo ore 08:53 · Test dedicato su urine 24h + sangue"},{"id":"p_jul2026","date":"3 luglio 2026","iso":"2026-07-03","label":"Panel ormonale + renale · CDI Bicocca","note":"Prelievo ore 08:32 · Referto firmato 07/07/2026"},{"id":"p_sep2026_nefro","date":"1 settembre 2026","iso":"2026-09-01","label":"Approfondimento nefrologico — Elettroliti, PTH, elettroforesi, urine · CDI Bicocca","note":"Prelievo ore 08:35 · Referti firmati 02/09/2026 (Patologia Clinica ep. 175069184, Microbiologia ep. 175069185)"},{"id":"p_jul6_2026","date":"6 luglio 2026","iso":"2026-07-06","label":"Esame urine — ACR + Cortisolo 24h · CDI Bicocca","note":"Prelievo ore 08:17 · Referti firmati 06/07 (ACR) e 10/07/2026 (Cortisolo)"}]};
+
+/* ============================================================
+   CLINICA — dati e logica (porting dal mockup Claude Design,
+   SPEC_CLINICA.md fa fede in caso di divergenza col mockup).
+   CLIN_DATA sopra = storico normalizzato (45 marker, 127 voci di
+   referto, 14 pannelli), invariato dal 2020 salvo i nuovi pannelli
+   che V1 aggiungera' in futuro (fuori scope di questa migrazione).
+   ============================================================ */
+
+/* 16 marker del template Santagostino (LAB_SANTAGOSTINO di V1), con la
+   direzione "migliore" (LAB_CDI_QUADRO[].better) e il target clinico
+   dove esiste (decisione di Giorgio, 29/09: campo vero, non dedotto
+   dalle note). Oggi solo IGF-1 ha un target oltre al range di laboratorio. */
+var CLIN_MARKERS = {
+  igf1:     { label: 'IGF-1', unit: '\u00b5g/L', ref: '55.00\u2013248.00', better: 'up', target_lo: 115, target_hi: null, t0: '86.00' },
+  gluc:     { label: 'Glucosio', unit: 'mg/dL', ref: '70\u2013100', better: 'down', t0: '82' },
+  insulina: { label: 'Insulina', unit: '\u00b5U/mL', ref: '2.6\u201324.0', better: 'down', t0: '3.6' },
+  homa:     { label: 'HOMA Index', unit: '', ref: '<2.5', better: 'down', t0: '0.73' },
+  hb:       { label: 'Emoglobina', unit: 'g/L', ref: '140.0\u2013180.0', better: 'up', t0: '118.0' },
+  t_tot:    { label: 'T Totale', unit: 'ng/dL', ref: '127.18\u20131020.36', better: 'up', t0: '526.20' },
+  t_lib:    { label: 'T Libero', unit: 'pg/mL', ref: '9.57\u201340.60', better: 'up', t0: '18.80' },
+  shbg:     { label: 'SHBG', unit: 'nmol/L', ref: '11.20\u201378.10', better: 'down', t0: '54.10' },
+  hdl:      { label: 'HDL', unit: 'mg/dL', ref: '\u226540', better: 'up', t0: '32' },
+  ldl:      { label: 'LDL', unit: 'mg/dL', ref: '\u2264115', better: 'down', t0: '49' },
+  tg:       { label: 'Trigliceridi', unit: 'mg/dL', ref: '\u2264170', better: 'down', t0: '50' },
+  e2:       { label: 'Estradiolo E2', unit: 'pg/mL', ref: '<44', better: 'neutral', t0: '<24' },
+  creat:    { label: 'Creatinina', unit: 'mg/dL', ref: '0.73\u20131.18', better: 'down', t0: '1.28' },
+  crp:      { label: 'PCR', unit: 'mg/L', ref: '\u22645.00', better: 'down', t0: '<0.40' },
+  lh:       { label: 'LH', unit: 'mUI/mL', ref: '0.57\u201312.7', better: 'down', t0: '14.24' },
+  fsh:      { label: 'FSH', unit: 'mIU/mL', ref: '0.95\u201311.95', better: 'down', t0: '24.27' }
+};
+var CLIN_GROUPS = [
+  { key: 'gh',  it: 'Asse somatotropo', keys: ['igf1'], span: 4 },
+  { key: 'met', it: 'Metabolico', keys: ['gluc', 'insulina', 'homa'], span: 4 },
+  { key: 'lip', it: 'Lipidi', keys: ['hdl', 'ldl', 'tg'], span: 4 },
+  { key: 'orm', it: 'Asse ormonale', keys: ['t_tot', 't_lib', 'shbg', 'e2', 'lh', 'fsh'], span: 8 },
+  { key: 'saf', it: 'Sicurezza', keys: ['hb', 'creat', 'crp'], span: 4 }
+];
+var CLIN_DEXA_META = [
+  { key: 'peso', label: 'Peso (DEXA)', unit: 'kg', better: 'neutral', dec: 1, t0: 71.1 },
+  { key: 'lean_kg', label: 'Massa magra', unit: 'kg', better: 'up', dec: 1, t0: 55.4 },
+  { key: 'fat_kg', label: 'Massa grassa', unit: 'kg', better: 'down', dec: 1, t0: 12.9 },
+  { key: 'bf_pct', label: 'Grasso %', unit: '%', better: 'down', dec: 1, t0: 18.2 },
+  { key: 'lean_pct', label: 'Magra %', unit: '%', better: 'up', dec: 1, t0: 77.8 },
+  { key: 'vat_cm2', label: 'Grasso viscerale', unit: 'cm\u00b2', better: 'down', dec: 0, t0: 72 },
+  { key: 'vat_g', label: 'Viscerale (g)', unit: 'g', better: 'down', dec: 0, t0: 299 },
+  { key: 'bmd', label: 'Densit\u00e0 ossea', unit: 'g/cm\u00b2', better: 'up', dec: 3, t0: 1.314 }
+];
+/* i 5 sentinel usati come "forza ai checkpoint": stessi id di SESSION_SENTINELS/
+   MOTRA_SENTINEL_MAP di V1 -- non nomi inventati. */
+var CLIN_LIFTS_META = [
+  { id: 'bench', label: 'Panca piana', muscle: 'Petto' },
+  { id: 'lat', label: 'Lat machine', muscle: 'Dorso' },
+  { id: 'bbohp', label: 'Military press', muscle: 'Spalle' },
+  { id: 'dbcurl', label: 'Curl manubri', muscle: 'Braccia' },
+  { id: 'legpress', label: 'Leg press', muscle: 'Gambe' }
+];
+var CLIN_CK = { t0: '2026-07-13', t1: '2026-09-12', t2: '2026-11-07' };
+var CLIN_WINDOW = 7;
+var CLIN_V1_DAY0 = '2026-06-08';
+
+function CLIN_dayDiff(a, b) {
+  var x = a.split('-').map(Number), y = b.split('-').map(Number);
+  return Math.round((Date.UTC(y[0], y[1] - 1, y[2]) - Date.UTC(x[0], x[1] - 1, x[2])) / 86400000);
+}
+function CLIN_v1DayIdx(iso) { return CLIN_dayDiff(CLIN_V1_DAY0, iso); }
+
+function CLIN_numIt(v) { return String(v).replace('.', ','); }
+function CLIN_parseVal(s) {
+  if (s == null || s === '' || s === '\u2014') return null;
+  var str = String(s).trim();
+  var cens = (str[0] === '<' || str[0] === '>') ? str[0] : null;
+  var v = parseFloat(str.replace(/[<>\u2264\u2265~]/g, '').replace(',', '.'));
+  return isNaN(v) ? null : { v: v, cens: cens, raw: str };
+}
+function CLIN_parseRef(r) {
+  var s = String(r).replace(/~/g, '').replace(',', '.');
+  var m = s.match(/([\d.]+)\s*[\u2013-]\s*([\d.]+)/);
+  if (m) return { lo: +m[1], hi: +m[2] };
+  m = s.match(/[<\u2264]\s*([\d.]+)/); if (m) return { lo: null, hi: +m[1] };
+  m = s.match(/[>\u2265]\s*([\d.]+)/); if (m) return { lo: +m[1], hi: null };
+  return { lo: null, hi: null };
+}
+/* Stato a 3 livelli (SPEC sez. 1 + addendum target): fuori range di laboratorio -> out;
+   dentro il range ma sotto/sopra il target clinico (solo se il marker ne ha uno) -> target;
+   altrimenti -> ok. Il testo delle note di V1 NON entra nel calcolo. */
+function CLIN_statusOf(p, ref, marker) {
+  if (!p) return null;
+  if (ref.lo != null && p.v < ref.lo && p.cens !== '>') return 'out';
+  if (ref.hi != null && p.v > ref.hi && p.cens !== '<') return 'out';
+  if (marker) {
+    if (marker.target_lo != null && p.v < marker.target_lo) return 'target';
+    if (marker.target_hi != null && p.v > marker.target_hi) return 'target';
+  }
+  return 'ok';
+}
+function CLIN_decOf(v) { return Math.abs(v) < 10 ? 2 : (Math.abs(v) < 100 ? 1 : 0); }
+function CLIN_fmtNum(v, dec) {
+  var s = (dec === undefined ? String(v) : v.toFixed(dec)).replace(/\.?0+$/, function (m) { return m.indexOf('.') === 0 && m.length > 1 ? '' : m; });
+  return CLIN_numIt(s);
+}
+function CLIN_fmtP(p) { return p == null ? '\u2014' : (p.cens ? p.cens + CLIN_fmtNum(p.v, CLIN_decOf(p.v)) : CLIN_fmtNum(p.v, CLIN_decOf(p.v))); }
+
+/* record grezzo del giorno (V1 day_N se prima del v2, altrimenti p2_day_N):
+   store.blob e' gia' in memoria (fetch completa all'avvio dell'app); i giorni
+   V1 pre-v2 servono solo qui e arrivano da CLIN_EXTRA.v1days (fetch mirata). */
+function CLIN_recordFor(iso) {
+  var v2start = new Date(CFG.CYCLE_START + 'T00:00:00');
+  var d = new Date(iso + 'T00:00:00');
+  if (d >= v2start) {
+    var idx = Math.round((d - v2start) / 86400000);
+    return (store.blob && store.blob['p2_day_' + idx]) || null;
+  }
+  return (CLIN_EXTRA.v1days && CLIN_EXTRA.v1days['day_' + CLIN_v1DayIdx(iso)]) || null;
+}
+/* seduta con sl_{id}_kg piu' vicina al checkpoint, entro CLIN_WINDOW giorni (decisione
+   di Giorgio, 29/09). Oltre la finestra: "non disponibile", mai un dato piu' lontano. */
+function CLIN_sentinelAt(liftId, ckISO) {
+  var ck = new Date(ckISO + 'T00:00:00'), best = null;
+  for (var k = -CLIN_WINDOW; k <= CLIN_WINDOW; k++) {
+    var dt = new Date(ck); dt.setDate(dt.getDate() + k);
+    var iso = isoLocal(dt), rec = CLIN_recordFor(iso);
+    if (!rec) continue;
+    var raw = rec['sl_' + liftId + '_kg'];
+    if (raw === undefined || raw === null || raw === '') continue;
+    var kg = parseFloat(String(raw).replace(',', '.'));
+    if (isNaN(kg)) continue;
+    if (!best || Math.abs(k) < Math.abs(best.d)) best = { iso: iso, kg: kg, d: k };
+  }
+  return best;
+}
+function CLIN_shortDate(iso) {
+  var MS = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+  var a = iso.split('-'); return (+a[2]) + ' ' + MS[+a[1] - 1];
+}
+function CLIN_when(b) {
+  if (!b) return 'nessuna seduta entro \u00b1' + CLIN_WINDOW + ' giorni';
+  if (b.d === 0) return 'seduta del ' + CLIN_shortDate(b.iso) + ', il giorno del checkpoint';
+  var n = Math.abs(b.d);
+  return 'seduta del ' + CLIN_shortDate(b.iso) + ', ' + n + (n === 1 ? ' giorno' : ' giorni') + (b.d < 0 ? ' prima' : ' dopo');
+}
+
+/* dati vivi: T1/T2 di laboratorio e DEXA, e la finestra di giorni V1 attorno al T0
+   (il T0 clinico, 13/07, cade prima dell'inizio del v2 -- serve una riga V1 per i
+   sentinel). Un'unica fetch, in aggiunta a AN_loadV1() che gia' carica lab_wk8/dexa_t1
+   per l'Andamento: qui si leggono anche lab_final, dexa_t2 e i giorni V1 del T0. */
+var CLIN_EXTRA = { status: 'idle', lab_wk8: {}, lab_final: {}, dexa_t1: {}, dexa_t2: {}, v1days: {} };
+function CLIN_loadExtra() {
+  if (CLIN_EXTRA.status !== 'idle') return;
+  CLIN_EXTRA.status = 'loading';
+  var t0Idx = CLIN_v1DayIdx(CLIN_CK.t0);
+  var keys = [];
+  for (var i = t0Idx - CLIN_WINDOW; i <= t0Idx + CLIN_WINDOW; i++) if (i >= 0) keys.push('day_' + i);
+  var sel = 'data-%3Elab_wk8,data-%3Elab_final,data-%3Edexa_t1,data-%3Edexa_t2,' + keys.map(function (k) { return 'data-%3E' + k; }).join(',');
+  fetch(CFG.PROXY_URL + '?user_id=eq.giorgio_protocollo_2026&select=' + sel, { headers: { apikey: CFG.PROXY_KEY, Authorization: 'Bearer ' + CFG.PROXY_KEY } })
+    .then(function (r) { if (!r.ok) throw new Error('clin ' + r.status); return r.json(); })
+    .then(function (j) {
+      var r0 = (j && j[0]) || {};
+      CLIN_EXTRA.lab_wk8 = r0.lab_wk8 || {};
+      CLIN_EXTRA.lab_final = r0.lab_final || {};
+      CLIN_EXTRA.dexa_t1 = r0.dexa_t1 || {};
+      CLIN_EXTRA.dexa_t2 = r0.dexa_t2 || {};
+      keys.forEach(function (k) { if (r0[k] && typeof r0[k] === 'object') CLIN_EXTRA.v1days[k] = r0[k]; });
+      CLIN_EXTRA.status = 'ok';
+    })
+    .catch(function () { CLIN_EXTRA.status = 'err'; })
+    .then(function () { if (document.querySelector('[data-clin-view]')) CLIN_renderAll(); });
+}
+/* T1/T2 di un marker Santagostino: stringa grezza o null (nessun valore inventato). */
+function CLIN_labT(key, which) {
+  var src = which === 't2' ? CLIN_EXTRA.lab_final : CLIN_EXTRA.lab_wk8;
+  var v = src && src['lab_' + key];
+  return (v != null && String(v).trim() !== '') ? String(v).trim() : null;
+}
+function CLIN_dexaT(key, which) {
+  var src = which === 't2' ? CLIN_EXTRA.dexa_t2 : CLIN_EXTRA.dexa_t1;
+  var v = src && src['dexa_' + key];
+  var n = parseFloat(String(v).replace(',', '.'));
+  return (v != null && String(v).trim() !== '' && !isNaN(n)) ? n : null;
+}
+
+/* ============================================================
+   CLINICA — rendering. Stesso pattern di GST_*: barra chip in
+   .an-subnav, una .an-view per sotto-tab, ciascuna popolata da
+   una funzione CLIN_render<Nome>(host) al mount o al cambio tab.
+   ============================================================ */
+var CLIN = { sub: 'ck', selKey: 'hdl', refView: 'watch', openArea: null, selPanel: null };
+
+function CLIN_HTML() {
+  return '<div class="an-root">' +
+    '<div class="an-subnav"><div class="an-chips">' +
+      ['ck:Checkpoint', 'body:Corpo e forza', 'foto:Foto', 'prog:Progressione', 'ref:Referti'].map(function (s) {
+        var p = s.split(':'); return '<button type="button" class="an-chip' + (p[0] === CLIN.sub ? ' is-active' : '') + '" data-clin-tab="' + p[0] + '">' + p[1] + '</button>';
+      }).join('') +
+    '</div><span class="an-sub" data-clin-cycle style="align-self:center;margin-left:auto;padding-right:4px"></span></div>' +
+    '<div class="an-main">' +
+      ['ck', 'body', 'foto', 'prog', 'ref'].map(function (s) {
+        return '<div class="an-view' + (s === CLIN.sub ? ' is-active' : '') + '" data-clin-view="' + s + '"></div>';
+      }).join('') +
+    '</div></div>';
+}
+
+function CLIN_cycleText() {
+  var d = dayIdxFromISO(today);
+  return 'Ciclo 1 \u00b7 giorno ' + Math.max(1, Math.min(112, d + 1)) + ' di 112';
+}
+
+function CLIN_renderAll() {
+  var el = document.querySelector('[data-clin-cycle]'); if (el) el.textContent = CLIN_cycleText();
+  var fns = { ck: CLIN_renderCheckpoint, body: CLIN_renderBody, foto: CLIN_renderFoto, prog: CLIN_renderProg, ref: CLIN_renderRef };
+  Object.keys(fns).forEach(function (s) {
+    var host = document.querySelector('[data-clin-view="' + s + '"]');
+    if (host && (s === CLIN.sub || host.dataset.built)) { fns[s](host); host.dataset.built = '1'; }
+  });
+}
+
+function CLIN_mount() {
+  var root = document.querySelector('.an-root[data-clin]') || document.querySelector('[data-clin-view]');
+  if (!root) return;
+  CLIN_loadExtra();
+  CLIN_renderAll();
+  CLIN_bind();
+}
+function CLIN_bind() {
+  document.querySelectorAll('[data-clin-tab]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      CLIN.sub = b.getAttribute('data-clin-tab');
+      document.querySelectorAll('[data-clin-tab]').forEach(function (x) { x.classList.toggle('is-active', x === b); });
+      document.querySelectorAll('[data-clin-view]').forEach(function (v) { v.classList.toggle('is-active', v.getAttribute('data-clin-view') === CLIN.sub); });
+      CLIN_renderAll();
+      CLIN_bindView();
+    });
+  });
+  CLIN_bindView();
+}
+function CLIN_bindView() {
+  var host = document.querySelector('[data-clin-view].is-active'); if (!host) return;
+  host.querySelectorAll('[data-clin-marker]').forEach(function (b) {
+    b.addEventListener('click', function () { CLIN.selKey = b.getAttribute('data-clin-marker'); CLIN_renderProg(document.querySelector('[data-clin-view="prog"]')); CLIN_bindView(); });
+  });
+  host.querySelectorAll('[data-clin-refview]').forEach(function (b) {
+    b.addEventListener('click', function () { CLIN.refView = b.getAttribute('data-clin-refview'); CLIN_renderRef(document.querySelector('[data-clin-view="ref"]')); CLIN_bindView(); });
+  });
+  host.querySelectorAll('[data-clin-area]').forEach(function (b) {
+    b.addEventListener('click', function () { var k = b.getAttribute('data-clin-area'); CLIN.openArea = CLIN.openArea === k ? null : k; CLIN_renderRef(document.querySelector('[data-clin-view="ref"]')); CLIN_bindView(); });
+  });
+  host.querySelectorAll('[data-clin-panel]').forEach(function (b) {
+    b.addEventListener('click', function () { CLIN.selPanel = b.getAttribute('data-clin-panel'); CLIN_renderRef(document.querySelector('[data-clin-view="ref"]')); CLIN_bindView(); });
+  });
+  host.querySelectorAll('[data-clin-goto]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      CLIN.sub = 'prog'; CLIN.selKey = b.getAttribute('data-clin-goto');
+      document.querySelectorAll('[data-clin-tab]').forEach(function (x) { x.classList.toggle('is-active', x.getAttribute('data-clin-tab') === 'prog'); });
+      document.querySelectorAll('[data-clin-view]').forEach(function (v) { v.classList.toggle('is-active', v.getAttribute('data-clin-view') === 'prog'); });
+      CLIN_renderAll(); CLIN_bindView();
+    });
+  });
+}
+
+function CLIN_bar(p0, p1, ref, status1) {
+  var vals = [p0 ? p0.v : null, p1 ? p1.v : null, ref.lo, ref.hi].filter(function (v) { return v != null; });
+  var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals), span = (mx - mn) || mx || 1;
+  mn -= span * 0.25; mx += span * 0.25; if (mn > 0 && ref.lo == null) mn = Math.min(mn, 0);
+  var pos = function (v) { return Math.max(0, Math.min(100, (v - mn) / (mx - mn) * 100)); };
+  var bL = ref.lo != null ? pos(ref.lo) : 0, bR = ref.hi != null ? pos(ref.hi) : 100;
+  var a = p0 ? pos(p0.v) : null, b = p1 ? pos(p1.v) : null;
+  var dotCol = status1 === 'out' ? 'var(--bad)' : (status1 === 'target' ? 'var(--warn-ink)' : 'var(--accent)');
+  return '<div style="position:relative;height:16px;margin:2px 0">' +
+    '<div style="position:absolute;left:0;right:0;top:6px;height:4px;background:var(--line2);border-radius:2px"></div>' +
+    '<div style="position:absolute;left:' + bL + '%;width:' + (bR - bL) + '%;top:6px;height:4px;background:var(--ok);opacity:.28;border-radius:2px"></div>' +
+    (a != null && b != null ? '<div style="position:absolute;left:' + Math.min(a, b) + '%;width:' + Math.abs(b - a) + '%;top:6px;height:4px;background:' + dotCol + ';border-radius:2px"></div>' : '') +
+    (a != null ? '<div style="position:absolute;left:' + a + '%;top:2px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--surf);border:2px solid var(--ink3)"></div>' : '') +
+    (b != null ? '<div style="position:absolute;left:' + b + '%;top:2px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:' + dotCol + ';border:2px solid ' + dotCol + '"></div>' : '') +
+  '</div>';
+}
+function CLIN_tessera(key) {
+  var m = CLIN_MARKERS[key], ref = CLIN_parseRef(m.ref);
+  var p0 = CLIN_parseVal(m.t0), p1 = CLIN_parseVal(CLIN_labT(key, 't1')), p2 = CLIN_parseVal(CLIN_labT(key, 't2'));
+  var s0 = CLIN_statusOf(p0, ref, m), s1 = CLIN_statusOf(p1, ref, m);
+  var cur = p1 || p0, curS = p1 ? s1 : s0;
+  var badge = curS === 'out' ? '<span class="t-badge bad">Fuori range</span>' : (curS === 'target' ? '<span class="t-badge warn">Sotto target</span>' : '');
+  var borderCol = curS === 'out' ? 'var(--bad)' : (curS === 'target' ? 'var(--warn)' : 'transparent');
+  var bg = curS === 'out' ? 'rgba(216,30,5,.04)' : (curS === 'target' ? 'rgba(245,196,0,.06)' : 'transparent');
+  var delta = '', tag = '';
+  if (p1) {
+    var d = p1.v - p0.v, pct = p0.v !== 0 ? d / Math.abs(p0.v) * 100 : 0, stable = Math.abs(pct) < 2;
+    var good = m.better === 'neutral' ? null : (m.better === 'up' ? d > 0 : d < 0);
+    var col = (m.better === 'neutral' || stable) ? 'var(--ink3)' : (good ? 'var(--ok)' : 'var(--bad)');
+    var dStr = Math.abs(d) < 0.005 ? '0' : CLIN_fmtNum(d, CLIN_decOf(p0.v));
+    delta = '<span style="font-size:11px;font-weight:700;color:' + col + ';font-variant-numeric:tabular-nums">' + (d > 0 ? '+' : '') + dStr + ' (' + (pct > 0 ? '+' : '') + CLIN_fmtNum(pct.toFixed(1)) + '%)</span>';
+    var out0 = s0 === 'out', out1 = s1 === 'out';
+    tag = out0 && !out1 ? 'rientra' : (!out0 && out1 ? 'esce' : (out0 && out1 ? 'ancora fuori' : ''));
+  } else {
+    delta = '<span style="font-size:10.5px;color:var(--ink3)">T1 non ancora inserito</span>';
+  }
+  return '<div style="display:flex;flex-direction:column;gap:5px;padding:8px 0;border-top:1px solid var(--line2);border-left:2px solid ' + borderCol + ';background:' + bg + ';padding-left:8px;margin-left:-8px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px">' +
+      '<span style="font-size:12px;font-weight:700;color:var(--ink)">' + esc(m.label) + '</span>' + badge +
+    '</div>' +
+    '<span style="font-size:10px;color:var(--ink3)">Rif: ' + esc(m.ref) + esc(m.unit ? ' ' + m.unit : '') + (m.target_lo != null ? ' \u00b7 target ' + m.target_lo + (m.target_hi != null ? '\u2013' + m.target_hi : '+') : '') + '</span>' +
+    CLIN_bar(p0, p1, ref, s1) +
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px">' +
+      '<span style="font-size:11px;color:var(--ink2);font-variant-numeric:tabular-nums">T0 <strong style="color:var(--ink)">' + CLIN_fmtP(p0) + '</strong>' + (p1 ? '  \u2192  T1 <strong style="color:' + (s1 === 'out' ? 'var(--bad)' : 'var(--ink)') + '">' + CLIN_fmtP(p1) + '</strong>' : '') + '</span>' +
+      delta +
+    '</div>' +
+    (tag ? '<span style="font-size:10px;font-weight:600;color:' + (tag === 'ancora fuori' ? 'var(--bad)' : tag === 'esce' ? 'var(--bad)' : 'var(--ok)') + '">' + tag + '</span>' : '') +
+  '</div>';
+}
+function CLIN_renderCheckpoint(host) {
+  var keys = Object.keys(CLIN_MARKERS);
+  var haveT1 = keys.some(function (k) { return CLIN_labT(k, 't1') != null; });
+  var mig = 0, peg = 0, nel = 0, fuori = 0;
+  keys.forEach(function (k) {
+    var m = CLIN_MARKERS[k], ref = CLIN_parseRef(m.ref);
+    var p0 = CLIN_parseVal(m.t0), p1 = CLIN_parseVal(CLIN_labT(k, 't1'));
+    var s0 = CLIN_statusOf(p0, ref, m);
+    var cur = p1 || p0, curS = p1 ? CLIN_statusOf(p1, ref, m) : s0;
+    if (curS === 'ok') nel++; else fuori++;
+    if (p1) {
+      var d = p1.v - p0.v, pct = p0.v !== 0 ? Math.abs(d / p0.v) * 100 : 0;
+      if (m.better !== 'neutral' && pct >= 2) { var good = (m.better === 'up' && d > 0) || (m.better === 'down' && d < 0); if (good) mig++; else peg++; }
+    }
+  });
+  var d = dayIdxFromISO(today), E = Math.max(0, Math.min(111, d));
+  var phases = [[0, 13, 'Adattamento'], [14, 41, 'Costruzione'], [42, 55, 'Peak'], [56, 83, 'Mantenimento'], [84, 111, 'Fine ciclo']];
+  var pct = function (x) { return (x / 111 * 100).toFixed(2) + '%'; };
+  var html = '<section class="an-card" style="grid-column:1/-1;background:var(--hero);color:#fff;gap:10px">' +
+    '<span style="font-size:10.5px;font-weight:600;color:#ffffffb0;text-transform:uppercase;letter-spacing:.03em">Confronto ai checkpoint \u00b7 T0 13 lug \u2192 T1 12 set</span>' +
+    '<span style="font-size:19px;font-weight:700;line-height:1.3">' + (haveT1 ? (mig + ' marker su ' + keys.length + ' migliorano dal T0, ' + peg + ' peggiorano.') : 'T0 registrato, T1 in attesa di inserimento.') + '</span>' +
+    '<div style="display:flex;gap:26px;margin-top:2px;flex-wrap:wrap">' +
+      [[mig, 'migliorati', 'var(--ok)'], [peg, 'peggiorati', 'var(--bad)'], [nel, 'nel range', '#fff'], [fuori, 'fuori', 'var(--warn)']].map(function (s) {
+        return '<div style="display:flex;flex-direction:column"><span style="font-size:22px;font-weight:700;color:' + s[2] + '">' + s[0] + '</span><span style="font-size:9.5px;color:#ffffffa0;text-transform:uppercase">' + s[1] + '</span></div>';
+      }).join('') +
+    '</div>' +
+    '<div style="position:relative;height:32px;margin-top:8px">' +
+      '<div style="position:absolute;left:0;right:0;top:18px;height:4px;background:#ffffff26;border-radius:2px"></div>' +
+      phases.map(function (ph) { return '<span class="clin-phase-lbl" style="position:absolute;left:' + pct(ph[0]) + ';font-size:9px;color:#ffffff80;top:0;line-height:13px;white-space:nowrap">' + ph[2] + '</span>'; }).join('') +
+      '<div style="position:absolute;left:' + pct(18) + ';width:' + (pct(32 - 18)) + ';top:18px;height:4px;background:var(--warn);opacity:.55"></div>' +
+      '<div style="position:absolute;left:' + pct(92) + ';width:' + (pct(94 - 92)) + ';top:18px;height:4px;background:#7a4fc9;opacity:.6"></div>' +
+      '<div style="position:absolute;left:0;top:18px;height:4px;background:var(--accent);width:' + pct(E) + '"></div>' +
+      '<div style="position:absolute;left:' + pct(E) + ';top:14px;width:2px;height:12px;background:#fff"></div>' +
+    '</div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:9.5px;color:#ffffff80"><span>T0 \u00b7 13 lug</span><span>T1 \u00b7 12 set</span><span>T2 \u00b7 7 nov</span></div>' +
+  '</section>';
+  CLIN_GROUPS.forEach(function (g) {
+    html += '<section class="an-card" style="grid-column:span ' + g.span + '">' +
+      '<div class="an-head"><span class="an-title">' + esc(g.it) + '</span><span class="an-sub">' + g.keys.length + ' marker</span></div>' +
+      g.keys.map(CLIN_tessera).join('') +
+    '</section>';
+  });
+  host.innerHTML = html;
+}
+
+function CLIN_renderBody(host) {
+  var dexa = CLIN_DEXA_META.map(function (d) {
+    var t1 = CLIN_dexaT(d.key, 't1'), t2 = CLIN_dexaT(d.key, 't2');
+    var v = t2 != null ? t2 : (t1 != null ? t1 : null);
+    var dd = v != null ? v - d.t0 : null;
+    var good = dd == null || d.better === 'neutral' ? null : (d.better === 'up' ? dd > 0 : dd < 0);
+    var col = dd == null ? 'var(--ink3)' : (d.better === 'neutral' ? 'var(--ink2)' : (good ? 'var(--ok)' : 'var(--bad)'));
+    return { d: d, v: v, dd: dd, col: col };
+  });
+  var lean = dexa[1], fat = dexa[2], peso = dexa[0];
+  var haveT1 = peso.v != null;
+  var hero = '<section class="an-card" style="grid-column:1/-1;background:var(--hero);color:#fff;gap:8px">' +
+    '<span style="font-size:10.5px;font-weight:600;color:#ffffffb0;text-transform:uppercase">Composizione \u00b7 DEXA 9 mag \u2192 12 set</span>' +
+    (haveT1
+      ? '<span style="font-size:19px;font-weight:700">' + (lean.dd >= 0 ? '+' : '') + CLIN_fmtNum(lean.dd.toFixed(1)) + ' kg di massa magra, ' + (fat.dd >= 0 ? '+' : '') + CLIN_fmtNum(fat.dd.toFixed(1)) + ' kg di grasso.</span>'
+      : '<span style="font-size:15px;font-weight:600;color:#ffffffc0">T1 non ancora inserito.</span>') +
+  '</section>';
+  var tessere = '<section class="an-card" style="grid-column:span 8">' +
+    '<div class="an-head"><span class="an-title">DEXA \u00b7 T0 \u2192 T1 \u2192 T2</span></div>' +
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px 16px">' +
+    dexa.map(function (x) {
+      return '<div style="display:flex;flex-direction:column;gap:3px">' +
+        '<span style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase">' + esc(x.d.label) + '</span>' +
+        '<span style="font-size:20px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">' + (x.v != null ? CLIN_fmtNum(x.v.toFixed(x.d.dec)) : '\u2014') + ' <span style="font-size:11px;font-weight:500;color:var(--ink3)">' + x.d.unit + '</span></span>' +
+        '<span style="font-size:10.5px;color:var(--ink3)">T0 ' + CLIN_fmtNum(x.d.t0.toFixed(x.d.dec)) + (x.dd != null ? '  <span style="color:' + x.col + ';font-weight:700">' + (x.dd >= 0 ? '+' : '') + CLIN_fmtNum(x.dd.toFixed(x.d.dec)) + '</span>' : '') + '</span>' +
+      '</div>';
+    }).join('') +
+    '</div></section>';
+  var lifts = CLIN_LIFTS_META.map(function (l) {
+    var b0 = CLIN_sentinelAt(l.id, CLIN_CK.t0), b1 = CLIN_sentinelAt(l.id, CLIN_CK.t1);
+    var leanT0 = CLIN_DEXA_META[1].t0, leanT1 = lean.v;
+    var r0 = b0 ? (b0.kg / leanT0).toFixed(2) : null, r1 = (b1 && leanT1 != null) ? (b1.kg / leanT1).toFixed(2) : null;
+    var dd = (b0 && b1) ? b1.kg - b0.kg : null;
+    return { l: l, b0: b0, b1: b1, r0: r0, r1: r1, dd: dd };
+  });
+  var sentN = lifts.filter(function (x) { return x.b0 && x.b1; }).length;
+  /* SPEC: la data reale della seduta usata va SEMPRE sotto il valore, per T0 e per T1
+     separatamente (prima mostravo solo quella di T0 -- corretto il 29/09). */
+  function CLIN_cell(b) {
+    return '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px">' +
+      '<span class="an-num">' + (b ? CLIN_fmtNum(b.kg) + ' kg' : '<span style="color:var(--ink3)">non disp.</span>') + '</span>' +
+      '<span style="font-size:9px;color:var(--ink3);text-align:right">' + esc(CLIN_when(b)) + '</span>' +
+    '</div>';
+  }
+  var forzaRows;
+  if (isDesktop) {
+    forzaRows = '<div class="an-thead" style="grid-template-columns:1.3fr 108px 108px 60px 90px"><span></span><span class="an-num">T0</span><span class="an-num">T1</span><span class="an-num">\u0394</span><span class="an-num">kg/kg magra</span></div>' +
+      lifts.map(function (x) {
+        return '<div class="an-trow" style="grid-template-columns:1.3fr 108px 108px 60px 90px;align-items:start">' +
+          '<div style="display:flex;flex-direction:column;padding-top:2px"><span style="font-weight:600;color:var(--ink)">' + esc(x.l.label) + '</span><span style="font-size:10px;color:var(--ink3)">' + esc(x.l.muscle) + '</span></div>' +
+          CLIN_cell(x.b0) + CLIN_cell(x.b1) +
+          '<span class="an-num" style="padding-top:2px;color:' + (x.dd > 0 ? 'var(--ok)' : x.dd < 0 ? 'var(--bad)' : 'var(--ink3)') + '">' + (x.dd != null ? (x.dd >= 0 ? '+' : '') + CLIN_fmtNum(x.dd) : '\u2014') + '</span>' +
+          '<span class="an-num" style="padding-top:2px">' + (x.r0 || '\u2014') + (x.r1 ? ' \u2192 ' + x.r1 : '') + '</span>' +
+        '</div>';
+      }).join('');
+  } else {
+    /* su mobile la griglia a 5 colonne non entra: ogni sentinel diventa un blocco
+       impilato (regola SPEC sez. 7 -- mai colonne che scorrono di lato). */
+    forzaRows = lifts.map(function (x) {
+      return '<div style="display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid var(--line2)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-weight:700;color:var(--ink)">' + esc(x.l.label) + '</span><span style="font-size:10px;color:var(--ink3)">' + esc(x.l.muscle) + '</span></div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+          '<div style="display:flex;flex-direction:column;gap:1px"><span style="font-size:9.5px;color:var(--ink3);text-transform:uppercase">T0</span><span style="font-size:15px;font-weight:700;color:var(--ink)">' + (x.b0 ? CLIN_fmtNum(x.b0.kg) + ' kg' : '\u2014') + '</span><span style="font-size:9.5px;color:var(--ink3)">' + esc(CLIN_when(x.b0)) + '</span></div>' +
+          '<div style="display:flex;flex-direction:column;gap:1px"><span style="font-size:9.5px;color:var(--ink3);text-transform:uppercase">T1</span><span style="font-size:15px;font-weight:700;color:var(--ink)">' + (x.b1 ? CLIN_fmtNum(x.b1.kg) + ' kg' : '\u2014') + '</span><span style="font-size:9.5px;color:var(--ink3)">' + esc(CLIN_when(x.b1)) + '</span></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:' + (x.dd > 0 ? 'var(--ok)' : x.dd < 0 ? 'var(--bad)' : 'var(--ink3)') + ';font-weight:700">\u0394 ' + (x.dd != null ? (x.dd >= 0 ? '+' : '') + CLIN_fmtNum(x.dd) + ' kg' : 'non disponibile') + '</span><span style="color:var(--ink2)">' + (x.r0 || '\u2014') + (x.r1 ? ' \u2192 ' + x.r1 : '') + ' kg/kg magra</span></div>' +
+      '</div>';
+    }).join('');
+  }
+  var forza = '<section class="an-card" style="grid-column:span 7">' +
+    '<div class="an-head"><span class="an-title">Forza ai checkpoint</span><span class="an-sub">seduta pi\u00f9 vicina, entro \u00b1' + CLIN_WINDOW + ' gg</span></div>' +
+    forzaRows +
+    '<span class="an-sub" style="margin-top:4px">Il rapporto carico/massa magra dice se la forza cresce pi\u00f9 del muscolo.</span>' +
+  '</section>';
+  var sentPct = lifts.filter(function (x) { return x.b0 && x.b1; }).reduce(function (s, x) { return s + (x.b1.kg - x.b0.kg) / x.b0.kg; }, 0) / (sentN || 1) * 100;
+  var igf0 = CLIN_parseVal(CLIN_MARKERS.igf1.t0), igf1 = CLIN_parseVal(CLIN_labT('igf1', 't1'));
+  var tlib0 = CLIN_parseVal(CLIN_MARKERS.t_lib.t0), tlib1 = CLIN_parseVal(CLIN_labT('t_lib', 't1'));
+  function pctRow(label, v0, v1, bar) {
+    if (v0 == null || v1 == null) return { label: label, txt: 'non disponibile', pct: null, bar: bar };
+    var p = (v1 - v0) / Math.abs(v0) * 100;
+    return { label: label, txt: (p >= 0 ? '+' : '') + CLIN_fmtNum(p.toFixed(0)) + '%', pct: p, bar: bar, detail: CLIN_fmtNum(v0) + ' \u2192 ' + CLIN_fmtNum(v1) };
+  }
+  var rows = [
+    pctRow('IGF-1', igf0 && igf0.v, igf1 && igf1.v, 'var(--accent)'),
+    pctRow('Massa magra', peso.d.t0 && lean.d.t0, lean.v, 'var(--ok)'),
+    { label: 'Forza sentinel (media)', txt: sentN ? ((sentPct >= 0 ? '+' : '') + CLIN_fmtNum(sentPct.toFixed(0)) + '%') : 'non disponibile', bar: 'var(--warn)', detail: sentN + ' sentinel su 5 con seduta entro \u00b1' + CLIN_WINDOW + ' giorni a entrambi i checkpoint' },
+    pctRow('T Libero', tlib0 && tlib0.v, tlib1 && tlib1.v, 'var(--ink3)')
+  ];
+  var link = '<section class="an-card" style="grid-column:span 5">' +
+    '<div class="an-head"><span class="an-title">Sangue e muscolo, stessa finestra</span></div>' +
+    rows.map(function (r) {
+      var w = r.pct != null ? Math.min(100, Math.abs(r.pct)) : 0;
+      return '<div style="display:flex;flex-direction:column;gap:4px;padding:6px 0;border-top:1px solid var(--line2)">' +
+        '<div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600;color:var(--ink)">' + r.label + '</span><span style="font-size:13px;font-weight:700;color:' + (r.pct == null ? 'var(--ink3)' : r.pct >= 0 ? 'var(--ok)' : 'var(--bad)') + '">' + r.txt + '</span></div>' +
+        '<div style="height:5px;border-radius:999px;background:var(--line2);overflow:hidden"><div style="height:100%;width:' + w + '%;background:' + r.bar + ';border-radius:999px"></div></div>' +
+        '<span style="font-size:10px;color:var(--ink3)">' + (r.detail || '') + '</span>' +
+      '</div>';
+    }).join('') +
+  '</section>';
+  host.innerHTML = hero + tessere + forza + link;
+}
+
+function CLIN_photoNear(iso, winDays) {
+  var PL = ANV2.getPhotoLog();
+  if (!iso || !PL || !PL.length) return null;
+  var t = new Date(iso + 'T00:00:00'), best = null;
+  PL.forEach(function (p) {
+    if (!p.date) return;
+    var d = Math.round((new Date(p.date + 'T00:00:00') - t) / 86400000);
+    if (Math.abs(d) <= winDays && (!best || Math.abs(d) < Math.abs(best.d))) best = { p: p, d: d };
+  });
+  return best;
+}
+function CLIN_renderFoto(host) {
+  var cps = [
+    { key: 't0', label: 'T0', iso: CLIN_CK.t0, weight: CLIN_DEXA_META[0].t0, igf: CLIN_parseVal(CLIN_MARKERS.igf1.t0), lean: CLIN_DEXA_META[1].t0, bf: CLIN_DEXA_META[3].t0, sentBench: CLIN_sentinelAt('bench', CLIN_CK.t0) },
+    { key: 't1', label: 'T1', iso: CLIN_CK.t1, weight: CLIN_dexaT('peso', 't1'), igf: CLIN_parseVal(CLIN_labT('igf1', 't1')), lean: CLIN_dexaT('lean_kg', 't1'), bf: CLIN_dexaT('bf_pct', 't1'), sentBench: CLIN_sentinelAt('bench', CLIN_CK.t1) },
+    { key: 't2', label: 'T2', iso: CLIN_CK.t2, weight: CLIN_dexaT('peso', 't2'), igf: CLIN_parseVal(CLIN_labT('igf1', 't2')), lean: CLIN_dexaT('lean_kg', 't2'), bf: CLIN_dexaT('bf_pct', 't2'), sentBench: CLIN_sentinelAt('bench', CLIN_CK.t2) }
+  ];
+  var futureNoData = function (c) { return c.weight == null && new Date(c.iso + 'T00:00:00') > new Date(today + 'T00:00:00'); };
+  var html = '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Foto ai checkpoint \u00b7 T0 \u2192 T1 \u2192 T2</span><span class="an-sub">foto pi\u00f9 vicina alla data, entro \u00b13 giorni</span></div>' +
+    '<div class="clin-foto-grid">' +
+    cps.map(function (c) {
+      var near = CLIN_photoNear(c.iso, 3);
+      var slotId = 'clinphoto-' + c.key;
+      var body = near
+        ? '<div class="clin-photo is-empty" data-clin-photoslot="' + esc(near.p.filename) + '" id="' + slotId + '"><span class="an-fslot">Foto del ' + CLIN_shortDate(c.iso) + '</span></div>'
+        : '<div class="clin-photo" style="display:flex;align-items:center;justify-content:center;background:var(--surf2)"><span style="font-size:11px;color:var(--ink3);text-align:center;padding:0 10px">' +
+            (futureNoData(c) ? 'Da scattare il ' + CLIN_shortDate(c.iso) : 'Nessuna foto entro 3 giorni') + '</span></div>';
+      return '<div style="display:flex;flex-direction:column;gap:8px">' +
+        '<div style="position:relative">' + body +
+          '<span style="position:absolute;top:8px;left:8px;padding:2px 8px;border-radius:6px;background:#0009;color:#fff;font-size:10.5px;font-weight:700">' + c.label + '</span>' +
+          '<span style="position:absolute;top:8px;right:8px;padding:2px 8px;border-radius:6px;background:#0009;color:#fff;font-size:10.5px;font-weight:700">' + CLIN_shortDate(c.iso) + '</span>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:2px">' +
+          [['Peso DEXA', c.weight != null ? CLIN_fmtNum(c.weight.toFixed(1)) + ' kg' : '\u2014'],
+           ['Grasso', c.bf != null ? CLIN_fmtNum(c.bf.toFixed(1)) + ' %' : '\u2014'],
+           ['Massa magra', c.lean != null ? CLIN_fmtNum(c.lean.toFixed(1)) + ' kg' : '\u2014'],
+           ['IGF-1', c.igf ? CLIN_fmtP(c.igf) + ' \u00b5g/L' : '\u2014'],
+           ['Panca piana', c.sentBench ? CLIN_fmtNum(c.sentBench.kg) + ' kg' : '\u2014']
+          ].map(function (r) { return '<div class="an-trow" style="grid-template-columns:1fr auto"><span>' + r[0] + '</span><span class="an-num" style="font-weight:700;color:var(--ink)">' + r[1] + '</span></div>'; }).join('') +
+        '</div>' +
+      '</div>';
+    }).join('') +
+    '</div></section>';
+  host.innerHTML = html;
+  cps.forEach(function (c) {
+    var near = CLIN_photoNear(c.iso, 3);
+    if (near) { var el = document.getElementById('clinphoto-' + c.key); if (el) ANV2.lazyPhoto(el, near.p.filename); }
+  });
+}
+
+var CLIN_APPARATI = [
+  { label: 'Metabolico', keys: ['gluc', 'insulina', 'homa', 'hba1c'] },
+  { label: 'Asse GH', keys: ['igf1'] },
+  { label: 'Asse gonadico', keys: ['t_tot', 't_lib', 'shbg', 'e2', 'lh', 'fsh', 'prl'] },
+  { label: 'Lipidi', keys: ['col_tot', 'hdl', 'ldl', 'tg'] },
+  { label: 'Rene', keys: ['creat', 'egfr', 'clcr', 'urea', 'urico', 'potassio', 'calcio'] },
+  { label: 'Fegato', keys: ['ast', 'alt', 'ggt'] },
+  { label: 'Sangue', keys: ['hb', 'rbc', 'hct', 'mcv', 'mchc', 'wbc', 'plt'] },
+  { label: 'Ferro e vitamine', keys: ['ferro', 'ferritina', 'transf', 'vitd', 'b12', 'folato', 'zinco'] },
+  { label: 'Infiammazione', keys: ['crp', 've s'.replace(' ', '')] },
+  { label: 'Altro', keys: ['tsh', 'psa', 'cortisolo'] }
+];
+function CLIN_seriesPoints(key) {
+  var s = CLIN_DATA.series[key]; if (!s) return [];
+  var pts = s.points.slice();
+  if (CLIN_MARKERS[key]) {
+    ['t1', 't2'].forEach(function (w) {
+      var raw = CLIN_labT(key, w); if (raw == null) return;
+      var iso = w === 't1' ? CLIN_CK.t1 : CLIN_CK.t2;
+      if (pts.some(function (p) { return p.iso === iso; })) return;
+      var pv = CLIN_parseVal(raw);
+      pts.push({ iso: iso, date: CLIN_shortDate(iso), src: w === 't1' ? 'Panel T1 \u00b7 Santagostino' : 'Panel T2 \u00b7 Santagostino', v: pv.v, cens: pv.cens, unit: s.unit, ref: CLIN_MARKERS[key].ref, ok: null, note: '', unitMismatch: false, panel: null, checkpoint: w });
+    });
+  }
+  return pts.filter(function (p) { return !p.unitMismatch; }).sort(function (a, b) { return a.iso < b.iso ? -1 : 1; });
+}
+function CLIN_kindOf(p, key) {
+  var ref = CLIN_parseRef(p.ref);
+  return CLIN_statusOf({ v: p.v, cens: p.cens }, ref, CLIN_MARKERS[key]);
+}
+function CLIN_esitoTxt(kind, p) {
+  if (kind === 'out') return (p.cens === '<' || (CLIN_parseRef(p.ref).lo != null && p.v < CLIN_parseRef(p.ref).lo)) ? 'sotto il range' : 'sopra il range';
+  if (kind === 'target') return 'sotto target clinico';
+  return 'nel range';
+}
+function CLIN_renderProg(host) {
+  var sel = CLIN.selKey, s = CLIN_DATA.series[sel] || { label: sel, unit: '', better: 'neutral' };
+  var pts = CLIN_seriesPoints(sel);
+  var last = pts[pts.length - 1], prevPt = pts[pts.length - 2];
+  var vals = pts.map(function (p) { return p.v; });
+  var minP = pts.reduce(function (a, b) { return (!a || b.v < a.v) ? b : a; }, null);
+  var maxP = pts.reduce(function (a, b) { return (!a || b.v > a.v) ? b : a; }, null);
+  var lastKind = last ? CLIN_kindOf(last, sel) : null;
+  var CYCLE0 = '2026-07-20', CYCLE1 = '2026-11-08';
+
+  var selector = '<section class="an-card" style="grid-column:span 3;max-height:900px;overflow-y:auto">' +
+    '<div class="an-head"><span class="an-title">Scegli il parametro</span></div>' +
+    CLIN_APPARATI.map(function (ap) {
+      var ks = ap.keys.filter(function (k) { return CLIN_DATA.series[k]; });
+      if (!ks.length) return '';
+      return '<span style="display:block;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;margin:8px 0 2px">' + ap.label + '</span>' +
+        ks.map(function (k) {
+          var sk = CLIN_DATA.series[k], pk = CLIN_seriesPoints(k), lk = pk[pk.length - 1];
+          var kind = lk ? CLIN_kindOf(lk, k) : null;
+          var dot = kind === 'out' ? 'var(--bad)' : kind === 'target' ? 'var(--warn-ink)' : 'var(--ok)';
+          return '<button type="button" data-clin-marker="' + k + '" class="an-trow" style="width:100%;text-align:left;cursor:pointer;background:' + (k === sel ? 'var(--accent-soft)' : 'transparent') + ';border-radius:8px;padding:5px 8px;grid-template-columns:10px 1fr auto;border-top:none">' +
+            '<span style="width:7px;height:7px;border-radius:50%;background:' + dot + '"></span>' +
+            '<span style="font-weight:' + (k === sel ? 700 : 500) + ';color:var(--ink)">' + esc(sk.label) + '</span>' +
+            '<span class="an-num" style="font-size:10px">' + (lk ? CLIN_fmtNum(lk.v) : '') + '</span></button>';
+        }).join('');
+    }).join('') +
+  '</section>';
+
+  var realN = pts.filter(function (p) { return !p.checkpoint || CLIN_labT(sel, p.checkpoint); }).length;
+  var head = '<section class="an-card" style="grid-column:span 9">' +
+    '<span class="an-sub">' + (CLIN_APPARATI.find(function (a) { return a.keys.indexOf(sel) >= 0; }) || { label: '' }).label + '</span>' +
+    '<div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:22px;font-weight:700;color:var(--ink)">' + esc(s.label) + '</span><span style="font-size:12px;color:var(--ink3)">' + esc(s.unit) + '</span></div>' +
+    (last ? '<span style="font-size:12.5px;font-weight:600;color:' + (lastKind === 'ok' ? 'var(--ok)' : lastKind === 'target' ? 'var(--warn-ink)' : 'var(--bad)') + '">Ultima misura ' + CLIN_fmtNum(last.v) + ' ' + s.unit + ' il ' + last.date + ' \u00b7 ' + CLIN_esitoTxt(lastKind, last) + '</span>' : '') +
+    (last && last.ref ? '<span class="an-sub">Riferimento di laboratorio ' + esc(last.ref) + (s.unit ? ' ' + s.unit : '') + '</span>' : '') +
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:8px">' +
+      [['Ultima', last], ['Precedente', prevPt], ['Minima', minP], ['Massima', maxP]].map(function (r) {
+        return '<div style="background:var(--surf2);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px"><span style="font-size:9.5px;color:var(--ink3);text-transform:uppercase">' + r[0] + '</span><span style="font-size:15px;font-weight:700;color:var(--ink)">' + (r[1] ? CLIN_fmtNum(r[1].v) : '\u2014') + '</span><span style="font-size:9.5px;color:var(--ink3)">' + (r[1] ? r[1].date : '') + '</span></div>';
+      }).join('') +
+      '<div style="background:var(--surf2);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px"><span style="font-size:9.5px;color:var(--ink3);text-transform:uppercase">Misure reali</span><span style="font-size:15px;font-weight:700;color:var(--ink)">' + realN + '</span><span style="font-size:9.5px;color:var(--ink3)">' + (pts[0] ? pts[0].date : '') + ' \u2192 ' + (last ? last.date : '') + '</span></div>' +
+    '</div></section>';
+
+  // ── grafico SVG, un punto per prelievo (asse per misura, non per tempo) ──
+  var W = Math.max(560, pts.length * 50), H = 220, padL = 34, padR = 16, top = 20, bottom = 34;
+  var plotW = W - padL - padR, plotH = H - top - bottom;
+  var vmin = Math.min.apply(null, vals), vmax = Math.max.apply(null, vals), vspan = (vmax - vmin) || vmax || 1;
+  var ylo = vmin - vspan * 0.18, yhi = vmax + vspan * 0.18;
+  var X = function (i) { return padL + (pts.length > 1 ? i / (pts.length - 1) * plotW : plotW / 2); };
+  var Y = function (v) { return top + plotH - (v - ylo) / (yhi - ylo) * plotH; };
+  var ref0 = pts[0] ? CLIN_parseRef(pts[0].ref) : { lo: null, hi: null };
+  var bandY1 = ref0.hi != null ? Y(Math.min(ref0.hi, yhi)) : top, bandY2 = ref0.lo != null ? Y(Math.max(ref0.lo, ylo)) : top + plotH;
+  var path = pts.map(function (p, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p.v).toFixed(1); }).join(' ');
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:' + H + 'px;display:block;font-family:inherit">' +
+    (ref0.lo != null || ref0.hi != null ? '<rect x="' + padL + '" y="' + Math.min(bandY1, bandY2) + '" width="' + plotW + '" height="' + Math.abs(bandY2 - bandY1) + '" fill="var(--ok)" opacity=".1"></rect>' : '') +
+    (function () { var x0 = X(pts.findIndex(function (p) { return p.iso >= CYCLE0; })), x1 = X(pts.length - 1 - pts.slice().reverse().findIndex(function (p) { return p.iso <= CYCLE1; }));
+      return pts.some(function (p) { return p.iso >= CYCLE0 && p.iso <= CYCLE1; }) ? '<rect x="' + Math.max(padL, x0) + '" y="' + top + '" width="' + Math.max(0, (isFinite(x1) ? x1 : W - padR) - Math.max(padL, x0)) + '" height="' + plotH + '" fill="var(--accent)" opacity=".06"></rect>' : ''; })() +
+    '<text x="' + padL + '" y="12" font-size="10" font-weight="700" fill="var(--ink2)">' + esc(s.unit) + '</text>' +
+    '<path d="' + path + '" fill="none" stroke="var(--accent)" stroke-width="2"></path>' +
+    pts.map(function (p, i) {
+      var gap = i > 0 ? CLIN_dayDiff(pts[i - 1].iso, p.iso) : 0;
+      var kind = CLIN_kindOf(p, sel);
+      var col = p.unit && s.unit && p.unit !== s.unit ? 'none' : (kind === 'out' ? 'var(--bad)' : kind === 'target' ? 'var(--warn)' : 'var(--accent)');
+      var isCk = p.checkpoint;
+      return (gap > 182 ? '<line x1="' + ((X(i - 1) + X(i)) / 2) + '" y1="' + top + '" x2="' + ((X(i - 1) + X(i)) / 2) + '" y2="' + (top + plotH) + '" stroke="var(--line)" stroke-dasharray="3,3"></line>' +
+        '<text x="' + ((X(i - 1) + X(i)) / 2) + '" y="' + (top + plotH + 12) + '" font-size="9" fill="var(--ink3)" text-anchor="middle">+' + (gap > 500 ? Math.round(gap / 365) + (Math.round(gap / 365) === 1 ? ' anno' : ' anni') : Math.round(gap / 30) + ' mesi') + '</text>' : '') +
+        '<circle cx="' + X(i) + '" cy="' + Y(p.v) + '" r="' + (isCk ? 5 : 4) + '" fill="' + (col === 'none' ? 'var(--surf)' : col) + '" stroke="' + (isCk ? 'var(--ink)' : col === 'none' ? 'var(--ink3)' : col) + '" stroke-width="' + (col === 'none' || isCk ? 2 : 0) + '"></circle>' +
+        '<text x="' + X(i) + '" y="' + (Y(p.v) - 9) + '" font-size="10" font-weight="700" fill="var(--ink)" text-anchor="middle">' + CLIN_fmtNum(p.v) + '</text>' +
+        (isCk ? '<text x="' + X(i) + '" y="' + (top - 6) + '" font-size="9.5" font-weight="700" fill="var(--accent)" text-anchor="middle">' + p.checkpoint.toUpperCase() + '</text>' : '') +
+        '<text x="' + X(i) + '" y="' + (top + plotH + 24) + '" font-size="9.5" fill="var(--ink3)" text-anchor="middle">' + esc(p.date && p.date.length <= 8 ? p.date : CLIN_shortDate(p.iso)) + '</text>';
+    }).join('') +
+  '</svg>';
+  var chart = '<section class="an-card" style="grid-column:1/-1;overflow-x:auto">' +
+    '<div class="an-head"><span class="an-title">' + esc(s.label) + ' nel tempo</span><span class="an-sub">un punto per prelievo, la data \u00e8 sotto</span></div>' +
+    '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--ink2);margin-bottom:4px">' +
+      '<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:4px"></span>nel range</span>' +
+      '<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--bad);margin-right:4px"></span>fuori range</span>' +
+      (CLIN_MARKERS[sel] && CLIN_MARKERS[sel].target_lo != null ? '<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warn);margin-right:4px"></span>sotto target clinico</span>' : '') +
+      '<span style="background:var(--accent);opacity:.15;width:14px;height:8px;display:inline-block;margin-right:4px"></span>prelievi durante il ciclo' +
+    '</div>' + svg +
+  '</section>';
+
+  var tableRows;
+  if (isDesktop) {
+    tableRows = '<div class="an-thead" style="grid-template-columns:110px 90px 100px 1.3fr 1fr"><span>Data</span><span class="an-num">Valore</span><span>Esito</span><span>Laboratorio</span><span>Nota</span></div>' +
+      pts.slice().reverse().map(function (p) {
+        var kind = CLIN_kindOf(p, sel);
+        var col = kind === 'out' ? 'var(--bad)' : kind === 'target' ? 'var(--warn-ink)' : 'var(--ok)';
+        return '<div class="an-trow" style="grid-template-columns:110px 90px 100px 1.3fr 1fr;align-items:start">' +
+          '<span>' + p.date + (p.checkpoint ? ' <span class="t-badge" style="background:var(--accent-soft);color:var(--accent-ink)">' + p.checkpoint.toUpperCase() + '</span>' : '') + '</span>' +
+          '<span class="an-num" style="font-weight:700;color:var(--ink)">' + CLIN_fmtNum(p.v) + ' ' + esc(p.unit) + '</span>' +
+          '<span style="color:' + col + ';font-weight:600">' + CLIN_esitoTxt(kind, p) + '</span>' +
+          '<span style="color:var(--ink2)">' + esc(p.src || '') + '</span>' +
+          '<span style="color:var(--ink2)">' + esc((p.note || '').replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, '').trim()) + '</span>' +
+        '</div>';
+      }).join('');
+  } else {
+    tableRows = pts.slice().reverse().map(function (p) {
+      var kind = CLIN_kindOf(p, sel);
+      var col = kind === 'out' ? 'var(--bad)' : kind === 'target' ? 'var(--warn-ink)' : 'var(--ok)';
+      var note = (p.note || '').replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, '').trim();
+      return '<div style="display:flex;flex-direction:column;gap:3px;padding:9px 0;border-top:1px solid var(--line2)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
+          '<span style="font-weight:600;color:var(--ink)">' + p.date + (p.checkpoint ? ' <span class="t-badge" style="background:var(--accent-soft);color:var(--accent-ink)">' + p.checkpoint.toUpperCase() + '</span>' : '') + '</span>' +
+          '<span style="font-weight:700;color:var(--ink)">' + CLIN_fmtNum(p.v) + ' ' + esc(p.unit) + '</span>' +
+        '</div>' +
+        '<span style="font-size:11px;color:' + col + ';font-weight:600">' + CLIN_esitoTxt(kind, p) + '</span>' +
+        '<span style="font-size:10.5px;color:var(--ink3)">' + esc(p.src || '') + (note ? ' \u00b7 ' + esc(note) : '') + '</span>' +
+      '</div>';
+    }).join('');
+  }
+  var table = '<section class="an-card" style="grid-column:1/-1">' +
+    '<div class="an-head"><span class="an-title">Tutte le misure, dalla pi\u00f9 recente</span></div>' +
+    tableRows +
+  '</section>';
+
+  host.innerHTML = selector + head + chart + table;
+}
+
+function CLIN_stripNote(t) { return (t || '').replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, '').replace(/^[-\u2014\s]+/, '').trim(); }
+var CLIN_BY_NAME = [
+  ['prostata', /PSA|PAP|Prostata|urolog|Testicol|Idrocele/i],
+  ['rene', /Creatinin|Clearance|Albumin|Beta|Proteine|Magnesio|Urea|Azot|ACR|urin|Sodio|Potassio|Calcio|PTH|Peso specifico|\bpH\b|Leucocit|Emazie|Cilindri|Batteri|Nitriti|Chetoni|Urobilin|Epitel|Muco|Cristalli/i],
+  ['sangue', /Anemia|Emoglobin|Eosinofil|\bMCH|Fibrinogeno|Ferro|Folat|Globul|Piastrin|Vitamina/i],
+  ['fegato', /Bilirubin|Fosfatasi|Omocisteina|HDL|LDL|Colesterolo|Glic|Insulin|Trigliceridi/i],
+  ['cuore', /\bECG\b|^FE\b|Insufficienza|PAPs|\bMET\b|FC mass|Cardiopatia|Compenso|Ecocardio/i],
+  ['endo', /DHEA|ACTH|Cortisolo|^Peso$|Altezza|BMI|Frequenza cardiaca|PA (Sisto|Diasto)|VAS|Obbiettivit|Obiettivit|Ipogonad|Testosteron|IGF/i]
+];
+var CLIN_BY_CAT = [
+  ['cuore', /Ecocardio|ECG|cardiolog/i], ['prostata', /urolog|PSA/i], ['rene', /renal|urine|nefro|Elettroforesi|Microbiolog/i],
+  ['endo', /endocrin|Biometria|obiettivo|Diagnosi|Terapia|Anamnesi|Attivit\u00e0|ormonal|gonadico/i],
+  ['fegato', /epatica|glucidico|Infiammazione|metaboliti|Lipidi/i], ['sangue', /Emocromo|Ematologia|Ferro|vitamine/i]
+];
+var CLIN_AREAS = [['cuore', 'Cuore'], ['prostata', 'Prostata e urologia'], ['rene', 'Rene e urine'], ['sangue', 'Sangue e vitamine'], ['fegato', 'Fegato, metabolismo e lipidi'], ['endo', 'Ormoni e visita endocrinologica']];
+var CLIN_SERIES_AREA = {
+  prostata: ['psa'], rene: ['creat', 'egfr', 'clcr', 'urea', 'urico', 'potassio', 'calcio', 'pth'],
+  sangue: ['hb', 'rbc', 'hct', 'mcv', 'mchc', 'wbc', 'plt', 'ferro', 'ferritina', 'transf', 'vitd', 'b12', 'folato', 'zinco', 'crp', 'ves'],
+  fegato: ['ast', 'alt', 'ggt', 'gluc', 'insulina', 'homa', 'hba1c', 'col_tot', 'hdl', 'ldl', 'tg'],
+  endo: ['igf1', 't_tot', 't_lib', 'shbg', 'e2', 'lh', 'fsh', 'prl', 'tsh', 'cortisolo']
+};
+var CLIN_TEXTCAT = /Nota|Diagnosi|Anamnesi|Terapia|Attivit\u00e0|Conclusione/i;
+var CLIN_STRUM = [['ECG a riposo', /ECG riposo/i], ['ECG da sforzo', /ECG da sforzo/i], ['Frazione di eiezione', /^FE\b/i], ['Cardiopatia', /Cardiopatia/i],
+  ['Ecografia addome', /Ecografia addome/i], ['Volume prostata', /^Prostata/i], ['Valutazione urologica', /Valutazione urologica/i], ['Esame obiettivo', /Obbiettivit\u00e0|Obiettivit\u00e0/i]];
+function CLIN_areaOfItem(x) { var f = CLIN_BY_NAME.find(function (r) { return r[1].test(x.name); }) || CLIN_BY_CAT.find(function (r) { return r[1].test(x.cat); }); return f ? f[0] : 'altro'; }
+
+function CLIN_renderRef(host) {
+  var INS = CLIN_DATA.instr.filter(function (x) { return x.val && x.val !== '\u2014'; });
+  var SER = CLIN_DATA.series;
+  var seg = '<div style="display:flex;gap:4px;background:var(--surf2);border-radius:8px;padding:3px;grid-column:1/-1;width:fit-content">' +
+    [['watch', 'Da seguire'], ['area', 'Per apparato'], ['date', 'Per data']].map(function (v) {
+      return '<button type="button" data-clin-refview="' + v[0] + '" class="an-chip' + (CLIN.refView === v[0] ? ' is-active' : '') + '" style="border-radius:6px">' + v[1] + '</button>';
+    }).join('') + '</div>';
+  var body = '';
+  if (CLIN.refView === 'watch') {
+    var watch = Object.keys(SER).map(function (k) {
+      var pts = CLIN_seriesPoints(k).filter(function (p) { return !(p.checkpoint && !CLIN_labT(k, p.checkpoint)); });
+      var last = pts[pts.length - 1]; if (!last) return null;
+      var kind = CLIN_kindOf(last, k); if (kind === 'ok') return null;
+      var outN = pts.filter(function (p) { return CLIN_kindOf(p, k) !== 'ok'; }).length;
+      var persist = kind === 'target' ? 'sotto target clinico' : (outN === pts.length ? 'sempre fuori' : 'fuori ' + outN + (outN === 1 ? ' volta' : ' volte') + ' su ' + pts.length);
+      return { key: k, label: SER[k].label, value: CLIN_fmtNum(last.v) + ' ' + SER[k].unit, kind: kind, persist: persist, date: last.date };
+    }).filter(Boolean);
+    var seenName = {};
+    var watchOther = INS.filter(function (x) { return x.iso >= '2026-01-01' && x.ok === false && !CLIN_TEXTCAT.test(x.cat); })
+      .sort(function (a, b) { return a.iso < b.iso ? 1 : -1; })
+      .filter(function (x) { if (seenName[x.name]) return false; seenName[x.name] = 1; return true; })
+      .map(function (x) { return { name: x.name, val: CLIN_stripNote(x.val), date: x.date, src: CLIN_stripNote(x.label) }; });
+    var strum = CLIN_STRUM.map(function (s) {
+      var x = INS.filter(function (i) { return s[1].test(i.name); }).sort(function (a, b) { return a.iso < b.iso ? 1 : -1; })[0];
+      return x ? { label: s[0], val: CLIN_stripNote(x.val), date: x.date, ok: x.ok } : null;
+    }).filter(Boolean);
+    var dx = INS.filter(function (x) { return /Diagnosi|Terapia|Conclusione/i.test(x.cat); }).sort(function (a, b) { return a.iso < b.iso ? 1 : -1; });
+    body = '<section class="an-card" style="grid-column:span 7">' +
+      '<div class="an-head"><span class="an-title">Fuori range all\'ultima misura</span><span class="an-sub">' + watch.length + ' marker</span></div>' +
+      watch.map(function (w) {
+        var col = w.kind === 'target' ? 'var(--warn-ink)' : 'var(--bad)';
+        return '<button type="button" data-clin-goto="' + w.key + '" class="an-trow" style="width:100%;text-align:left;cursor:pointer;grid-template-columns:1fr auto auto;background:none;border-top:1px solid var(--line2)">' +
+          '<span><strong style="color:var(--ink)">' + esc(w.label) + '</strong><br><span style="font-size:10px;color:var(--ink3)">' + w.persist + '</span></span>' +
+          '<span class="an-num" style="font-weight:700;color:' + col + '">' + w.value + '</span><span></span></button>';
+      }).join('') +
+      (watchOther.length ? '<span class="an-sub" style="margin-top:8px;display:block">Altri valori segnalati nel 2026</span>' +
+        watchOther.map(function (x) { return '<div class="an-trow" style="grid-template-columns:1fr auto"><span>' + esc(x.name) + '<br><span style="font-size:10px;color:var(--ink3)">' + esc(x.date) + ' \u00b7 ' + esc(x.src) + '</span></span><span class="an-num" style="color:var(--bad);font-weight:600">' + esc(x.val) + '</span></div>'; }).join('') : '') +
+    '</section>' +
+    '<section class="an-card" style="grid-column:span 5">' +
+      '<div class="an-head"><span class="an-title">Esami strumentali</span><span class="an-sub">ultimo esito</span></div>' +
+      strum.map(function (s) { return '<div class="an-trow" style="grid-template-columns:10px 1fr"><span style="width:7px;height:7px;border-radius:50%;background:' + (s.ok ? 'var(--ok)' : 'var(--bad)') + ';margin-top:4px"></span><span><strong style="color:var(--ink)">' + esc(s.val) + '</strong><br><span style="font-size:10px;color:var(--ink3)">' + esc(s.label) + ' \u00b7 ' + esc(s.date) + '</span></span></div>'; }).join('') +
+      (dx.length ? '<div style="margin-top:8px;padding:10px;border-radius:10px;background:var(--hero);color:#fff;display:flex;flex-direction:column;gap:6px">' +
+        dx.map(function (x) { return '<div><span style="font-size:10px;color:#ffffff90;text-transform:uppercase">' + esc(x.cat) + '</span><br><strong>' + esc(x.name) + '</strong> ' + esc(CLIN_stripNote(x.val)) + '</div>'; }).join('') + '</div>' : '') +
+    '</section>';
+  } else if (CLIN.refView === 'area') {
+    body = CLIN_AREAS.map(function (a) {
+      var key = a[0], name = a[1];
+      var seriesRows = (CLIN_SERIES_AREA[key] || []).filter(function (k) { return SER[k]; }).map(function (k) {
+        var pts = CLIN_seriesPoints(k).filter(function (p) { return !p.checkpoint || CLIN_labT(k, p.checkpoint); }).sort(function (x, y) { return x.iso < y.iso ? 1 : -1; });
+        if (!pts.length) return null;
+        var x = pts[0], prev = pts[1], ok = CLIN_kindOf(x, k) === 'ok';
+        return { name: SER[k].label, val: CLIN_fmtNum(x.v) + ' ' + SER[k].unit, prev: prev ? 'era ' + CLIN_fmtNum(prev.v) + ' \u00b7 ' + prev.date : '', ok: ok, iso: x.iso };
+      }).filter(Boolean);
+      var taken = {}; seriesRows.forEach(function (r) { taken[r.name.toLowerCase()] = 1; });
+      var its = INS.filter(function (x) { return CLIN_areaOfItem(x) === key; }).sort(function (a2, b2) { return a2.iso < b2.iso ? 1 : -1; });
+      var byName = {}; its.forEach(function (x) { if (taken[x.name.toLowerCase()]) return; (byName[x.name] = byName[x.name] || []).push(x); });
+      var instrRows = Object.keys(byName).map(function (n) { var h = byName[n], x = h[0], prev = h[1]; return { name: n, val: CLIN_stripNote(x.val), prev: prev ? 'era ' + CLIN_stripNote(prev.val) : '', ok: x.ok, iso: x.iso }; });
+      var rows = seriesRows.concat(instrRows).sort(function (a2, b2) { return (a2.ok === b2.ok) ? (a2.iso < b2.iso ? 1 : -1) : (a2.ok ? 1 : -1); });
+      var open = CLIN.openArea === key, flags = rows.filter(function (r) { return !r.ok; }).length;
+      var lastIso = rows.slice().sort(function (a2, b2) { return a2.iso < b2.iso ? 1 : -1; })[0];
+      var shown = open ? rows : rows.slice(0, 4);
+      return '<section class="an-card" style="grid-column:span 4">' +
+        '<button type="button" data-clin-area="' + key + '" style="all:unset;cursor:pointer;display:flex;flex-direction:column;width:100%">' +
+          '<div class="an-head"><span class="an-title">' + esc(name) + '</span>' + (flags ? '<span class="an-sub" style="color:var(--bad);font-weight:700">' + flags + ' da seguire</span>' : '<span class="an-sub" style="color:var(--ok)">tutto nella norma</span>') + '</div>' +
+          '<span class="an-sub">' + rows.length + ' esami \u00b7 ultimo ' + (lastIso ? lastIso.iso.split('-').reverse().join('/') : '') + '</span>' +
+        '</button>' +
+        shown.map(function (r) { return '<div class="an-trow" style="grid-template-columns:8px 1fr auto"><span style="width:6px;height:6px;border-radius:50%;background:' + (r.ok ? 'var(--ok)' : 'var(--bad)') + ';margin-top:5px"></span><span>' + esc(r.name) + (r.prev ? '<br><span style="font-size:10px;color:var(--ink3)">' + esc(r.prev) + '</span>' : '') + '</span><span class="an-num" style="font-weight:700;color:var(--ink)">' + esc(r.val) + '</span></div>'; }).join('') +
+        (!open && rows.length > 4 ? '<button type="button" data-clin-area="' + key + '" class="an-btn" style="align-self:flex-start;margin-top:6px">Altri ' + (rows.length - 4) + '</button>' : '') +
+      '</section>';
+    }).join('');
+  } else {
+    var panels = CLIN_DATA.panels.slice().sort(function (a, b) { return a.iso < b.iso ? 1 : -1; });
+    var selP = CLIN.selPanel || panels[0].id;
+    var pnl = panels.find(function (p) { return p.id === selP; }) || panels[0];
+    var rowsForPanel = INS.filter(function (x) { return x.panel === pnl.id; });
+    /* il pannello T0 Santagostino non ha voci in CLIN_DATA.instr (i suoi 16 valori sono
+       gia' il T0 di CLIN_MARKERS, promossi a serie): senza questa eccezione risulterebbe
+       vuoto anche se i dati esistono davvero, solo altrove. */
+    if (pnl.id === 'p0_sant' && !rowsForPanel.length) {
+      rowsForPanel = Object.keys(CLIN_MARKERS).map(function (k) {
+        var m = CLIN_MARKERS[k], p = CLIN_parseVal(m.t0), ok = p ? CLIN_statusOf(p, CLIN_parseRef(m.ref), m) === 'ok' : null;
+        return { cat: 'Panel Santagostino (16 marker)', name: m.label, val: CLIN_fmtP(p) + (m.unit ? ' ' + m.unit : ''), ref: m.ref, ok: ok, sev: ok === false ? 'warn' : null, note: '' };
+      });
+    }
+    var outN = rowsForPanel.filter(function (x) { return x.ok === false; }).length;
+    body = '<section class="an-card" style="grid-column:span 4;max-height:820px;overflow-y:auto">' +
+      '<div class="an-head"><span class="an-title">Archivio pannelli</span></div>' +
+      panels.map(function (p) {
+        var rs = INS.filter(function (x) { return x.panel === p.id; });
+        if (p.id === 'p0_sant' && !rs.length) rs = Object.keys(CLIN_MARKERS).map(function () { return { ok: true }; });
+        var out = rs.filter(function (x) { return x.ok === false; }).length;
+        /* niente .an-trow qui: le sue regole di altezza/line-height sono tarate per 1-2 righe,
+           con 3 righe impilate tagliavano il testo (verificato su mobile, 29/09). */
+        return '<button type="button" data-clin-panel="' + p.id + '" style="all:unset;display:block;width:100%;box-sizing:border-box;text-align:left;cursor:pointer;background:' + (p.id === selP ? 'var(--accent-soft)' : 'none') + ';border-top:1px solid var(--line2);padding:8px 6px;line-height:1.4">' +
+          '<strong style="color:var(--ink);font-size:12px">' + esc(p.date) + '</strong><br><span style="font-size:10.5px;color:var(--ink2)">' + esc(p.label) + '</span><br><span style="font-size:10px;color:' + (out ? 'var(--bad)' : 'var(--ink3)') + '">' + rs.length + ' voci \u00b7 ' + (out ? out + ' fuori range' : 'nessun valore fuori') + '</span></button>';
+      }).join('') +
+    '</section>' +
+    '<section class="an-card" style="grid-column:span 8">' +
+      '<span style="font-size:11px;color:var(--ink3)">' + esc(pnl.date) + '</span>' +
+      '<span style="font-size:16px;font-weight:700;color:var(--ink)">' + esc(pnl.label) + '</span>' +
+      (pnl.note ? '<span class="an-sub">' + esc(pnl.note) + '</span>' : '') +
+      (function () {
+        var byCat = {}; rowsForPanel.forEach(function (x) { (byCat[x.cat] = byCat[x.cat] || []).push(x); });
+        return Object.keys(byCat).map(function (cat) {
+          return '<span style="display:block;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;margin:10px 0 2px">' + esc(cat) + '</span>' +
+            byCat[cat].map(function (x) {
+              return '<div class="an-trow" style="grid-template-columns:8px 1fr auto"><span style="width:6px;height:6px;border-radius:50%;margin-top:5px;background:' + (x.ok ? 'var(--ok)' : (x.sev === 'alert' ? 'var(--bad)' : x.sev === 'warn' ? 'var(--warn)' : 'var(--bad)')) + '"></span>' +
+                '<span>' + esc(x.name) + (x.ref ? '<br><span style="font-size:10px;color:var(--ink3)">Rif: ' + esc(x.ref) + '</span>' : '') + (x.note ? '<br><span style="font-size:10.5px;color:var(--ink2)">' + esc(CLIN_stripNote(x.note)) + '</span>' : '') + '</span>' +
+                '<span class="an-num" style="font-weight:700;color:var(--ink)">' + esc(x.val) + '</span></div>';
+            }).join('');
+        }).join('');
+      })() +
+    '</section>';
+  }
+  host.innerHTML = seg + body;
+}
 
 /* ============================================================
    6 · SHELL — quattro tab. Solo Oggi è ricostruito: gli altri
    tre rimandano alla versione attuale, che resta intatta.
    ============================================================ */
-const MIGRATED = { oggi: true, andamento: true, clinica: false, gestione: true };
+const MIGRATED = { oggi: true, andamento: true, clinica: true, gestione: true };
 const TAB_KEYS = ['oggi', 'andamento', 'clinica', 'gestione'];
 const OLD_ANCHORS = { andamento: 'dashboard', clinica: 'referti', gestione: 'stock' };
 
@@ -3902,7 +4716,7 @@ function render() {
     </header>
 
     <main class="page-wrap" style="padding:12px;">
-      ${!store.loaded ? '<p style="padding:24px;color:var(--ink2)">Caricamento…</p>' : (MIGRATED[tab] ? (tab === 'andamento' ? ANV2.html() : (tab === 'gestione' ? GST_HTML() : (tab === 'oggi' && oggiViewMode === 'week' ? renderWeekFull() : renderOggiFull()))) : renderNotMigrated(tab))}
+      ${!store.loaded ? '<p style="padding:24px;color:var(--ink2)">Caricamento…</p>' : (MIGRATED[tab] ? (tab === 'andamento' ? ANV2.html() : (tab === 'gestione' ? GST_HTML() : (tab === 'clinica' ? CLIN_HTML() : (tab === 'oggi' && oggiViewMode === 'week' ? renderWeekFull() : renderOggiFull())))) : renderNotMigrated(tab))}
     </main>
   `;
 
@@ -3934,6 +4748,7 @@ function render() {
   bindOggi(app);
   if (tab === 'andamento' && store.loaded) ANV2.mount();
   if (tab === 'gestione' && store.loaded) GST_mount();
+  if (tab === 'clinica' && store.loaded) { ANV2.loadV1(); CLIN_mount(); }
 
   if (focusInfo) {
     const restored = app.querySelector(`input[data-f="${focusInfo.f}"]`);
