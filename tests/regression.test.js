@@ -42,6 +42,15 @@ const INDEX_PATH = path.join(__dirname, '..', 'index.html');
 const source = fs.readFileSync(INDEX_PATH, 'utf-8');
 
 let passed = 0, failed = 0;
+// Guardia (30/09/2026): la suite era rotta in silenzio (R1 il 28/07, di nuovo dopo la migrazione HRV del 21/09: "hrvMeanN is not defined"
+// in getSessionsAll) e girava solo il primo blocco. Ora si contano i blocchi eseguiti e un crash e' un fallimento esplicito.
+let blocksRun = 0;
+const EXPECTED_BLOCKS = 9;   // aggiornare quando si aggiunge un blocco
+process.on('uncaughtException', (e) => {
+  console.log(`\n  ❌ ERRORE NON GESTITO nel blocco ${blocksRun}: ${e && e.message}`);
+  console.log(`Risultato: ${passed} passati, ${failed + 1} falliti -- SUITE INTERROTTA: i blocchi dopo il ${blocksRun} NON sono stati eseguiti`);
+  process.exit(1);
+});
 function assertEqual(actual, expected, label) {
   const ok = JSON.stringify(actual) === JSON.stringify(expected);
   if (ok) { passed++; console.log(`  ✅ ${label}`); }
@@ -91,7 +100,7 @@ function extractConst(src, name) {
   return 'var ' + src.slice(start + 'const '.length, end);
 }
 
-console.log('═══ 1. Split settimanale (getWorkout / getWorkout2) ═══');
+blocksRun++; console.log('═══ 1. Split settimanale (getWorkout / getWorkout2) ═══');
 {
   const ctx = { console };
   vm.createContext(ctx);
@@ -117,7 +126,7 @@ console.log('═══ 1. Split settimanale (getWorkout / getWorkout2) ═══
   assertEqual(ctx.getWorkout2(-1).type, 'Upper Dom', 'dayIdx -1 (19/7 via indici negativi) = Upper Dom');
 }
 
-console.log('\n═══ 2. Buco Test Protocollo in getSessionsAll ═══');
+blocksRun++; console.log('\n═══ 2. Buco Test Protocollo in getSessionsAll ═══');
 {
   const ctx = { console, document: { querySelector: () => null } };
   vm.createContext(ctx);
@@ -143,6 +152,13 @@ console.log('\n═══ 2. Buco Test Protocollo in getSessionsAll ═══');
     ${extractFunction(source, 'getWorkout2')}
     ${extractFunction(source, 'resolveDay')}
     ${extractFunction(source, 'getWorkoutVolume2')}
+    ${extractFunction(source, 'hrvNum')}
+    ${extractFunction(source, 'hrvRange')}
+    ${extractFunction(source, 'hrvMean')}
+    ${extractFunction(source, 'hrvMeanN')}
+    ${extractFunction(source, 'hrvMid')}
+    ${extractFunction(source, 'hrvLine')}
+    ${extractFunction(source, 'hrvHead')}
     ${extractFunction(source, 'getSessionsAll')}
   `, ctx);
 
@@ -169,7 +185,7 @@ console.log('\n═══ 2. Buco Test Protocollo in getSessionsAll ═══');
   assertTrue(testProtoSessions.every(s => s.volume !== null), 'entrambi i giorni Test Protocollo hanno un volume valorizzato (non null)');
 }
 
-console.log('\n═══ 3. Mappatura sentinel lift ═══');
+blocksRun++; console.log('\n═══ 3. Mappatura sentinel lift ═══');
 {
   const ctx = { console };
   vm.createContext(ctx);
@@ -198,7 +214,7 @@ console.log('\n═══ 3. Mappatura sentinel lift ═══');
   }
 }
 
-console.log('\n═══ 4. resolveDay() coerente con getWorkout/getWorkout2 (D1) ═══');
+blocksRun++; console.log('\n═══ 4. resolveDay() coerente con getWorkout/getWorkout2 (D1) ═══');
 {
   const ctx = { console };
   vm.createContext(ctx);
@@ -224,7 +240,7 @@ console.log('\n═══ 4. resolveDay() coerente con getWorkout/getWorkout2 (D1
   assertEqual(ctx.resolveDay('2026-06-08').id, 'day_0', "resolveDay('8/6') = day_0");
 }
 
-console.log('\n═══ 5. Fix "ricostruzione dopo Sync" presente nel sorgente ═══');
+blocksRun++; console.log('\n═══ 5. Fix "ricostruzione dopo Sync" presente nel sorgente ═══');
 {
   assertTrue(
     source.includes('_proto2Built = false; c2.innerHTML') || source.includes("_proto2Built = false;"),
@@ -243,7 +259,7 @@ console.log('\n═══ 5. Fix "ricostruzione dopo Sync" presente nel sorgente 
 // del blocco 2 sopra) nella stessa sessione di manutenzione.
 // ═══════════════════════════════════════════════════════════════
 
-console.log('\n═══ 6. MOTRA_SENTINEL_MAP — esclusioni equipaggiamento (R3, 13/08/2026) ═══');
+blocksRun++; console.log('\n═══ 6. MOTRA_SENTINEL_MAP — esclusioni equipaggiamento (R3, 13/08/2026) ═══');
 {
   const ctx = { console };
   vm.createContext(ctx);
@@ -290,7 +306,7 @@ console.log('\n═══ 6. MOTRA_SENTINEL_MAP — esclusioni equipaggiamento (R
   assertTrue(!matches('cablefly', 'Machine Fly (Pec Dec)'), "cablefly NON matcha Machine Fly (ora separato)");
 }
 
-console.log('\n═══ 7. getWorkout2 durante BKK (07/08/2026) ═══');
+blocksRun++; console.log('\n═══ 7. getWorkout2 durante BKK (07/08/2026) ═══');
 {
   const ctx = { console };
   vm.createContext(ctx);
@@ -319,7 +335,7 @@ console.log('\n═══ 7. getWorkout2 durante BKK (07/08/2026) ═══');
   assertEqual(ctx.getWorkout2(4).type, 'Legs', "p2_day_4 (24 lug, fuori BKK) = split normale (Legs)");
 }
 
-console.log('\n═══ 8. getWorkoutVolume2 — fallback su motra_log (09-10/08/2026) ═══');
+blocksRun++; console.log('\n═══ 8. getWorkoutVolume2 — fallback su motra_log (09-10/08/2026) ═══');
 {
   const ctx = { console };
   vm.createContext(ctx);
@@ -345,7 +361,7 @@ console.log('\n═══ 8. getWorkoutVolume2 — fallback su motra_log (09-10/0
   );
 }
 
-console.log('\n═══ 9. Formattazione date foto — fotoFormatDate/Short (07/08/2026) ═══');
+blocksRun++; console.log('\n═══ 9. Formattazione date foto — fotoFormatDate/Short (07/08/2026) ═══');
 {
   const ctx = { console };
   vm.createContext(ctx);
@@ -363,5 +379,6 @@ console.log('\n═══ 9. Formattazione date foto — fotoFormatDate/Short (07
 }
 
 console.log(`\n═══════════════════════════════════`);
-console.log(`Risultato: ${passed} passati, ${failed} falliti`);
+if (blocksRun !== EXPECTED_BLOCKS) { failed++; console.log(`  ❌ Eseguiti ${blocksRun} blocchi su ${EXPECTED_BLOCKS} attesi`); }
+console.log(`Risultato: ${passed} passati, ${failed} falliti (${blocksRun}/${EXPECTED_BLOCKS} blocchi eseguiti)`);
 process.exit(failed > 0 ? 1 : 0);
