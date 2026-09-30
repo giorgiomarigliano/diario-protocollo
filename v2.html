@@ -4547,6 +4547,14 @@ function CLIN_renderCheckpoint(host) {
   host.innerHTML = html;
 }
 
+/* BMD T1 (MOC 12/09/2026): T-score e Z-score e nota letti da dexa_t1 (record V1), sola lettura. */
+function CLIN_bmdNote() {
+  var dx = CLIN_EXTRA.dexa_t1 || {};
+  var t = parseFloat(String(dx.dexa_bmd_tscore).replace(',', '.')), z = parseFloat(String(dx.dexa_bmd_zscore).replace(',', '.'));
+  if (isNaN(t) && isNaN(z)) return '';
+  var txt = (isNaN(t) ? '' : 'T-score ' + t.toFixed(1).replace('.', ',')) + ((isNaN(t) || isNaN(z)) ? '' : ' \u00b7 ') + (isNaN(z) ? '' : 'Z-score ' + z.toFixed(1).replace('.', ','));
+  return '<span style="font-size:10.5px;color:var(--ink3)" title="' + esc(dx.dexa_bmd_note || '') + '">' + txt + ' \u00b7 MOC</span>';
+}
 function CLIN_renderBody(host) {
   var dexa = CLIN_DEXA_META.map(function (d) {
     var t1 = CLIN_dexaT(d.key, 't1'), t2 = CLIN_dexaT(d.key, 't2');
@@ -4572,6 +4580,7 @@ function CLIN_renderBody(host) {
         '<span style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase' + (isDesktop ? '' : ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis') + '">' + esc(x.d.label) + '</span>' +
         '<span style="font-size:20px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">' + (x.v != null ? CLIN_fmtNum(x.v.toFixed(x.d.dec)) : '\u2014') + ' <span style="font-size:11px;font-weight:500;color:var(--ink3)">' + x.d.unit + '</span></span>' +
         '<span style="font-size:10.5px;color:var(--ink3)">T0 ' + CLIN_fmtNum(x.d.t0.toFixed(x.d.dec)) + (x.dd != null ? '  <span style="color:' + x.col + ';font-weight:700">' + (x.dd >= 0 ? '+' : '') + CLIN_fmtNum(x.dd.toFixed(x.d.dec)) + '</span>' : '') + '</span>' +
+        (x.d.key === 'bmd' && x.v != null ? CLIN_bmdNote() : '') +
       '</div>';
     }).join('') +
     '</div></section>';
@@ -9453,6 +9462,9 @@ async function exportPDF(statusEl, btn) {
     const dRows = CLIN_DEXA_META.map(d => { const v1 = CLIN_dexaT(d.key, 't1'), dd = v1 != null ? v1 - d.t0 : null; return [d.label + ((d.label.indexOf('(') >= 0 || (d.unit === '%' && d.label.indexOf('%') >= 0)) ? '' : ' (' + pdfTxt(d.unit) + ')'), pdfN(d.t0, d.dec), v1 != null ? pdfN(v1, d.dec) : 'n/d', dd != null ? (dd >= 0 ? '+' : '') + pdfN(dd, d.dec) : '\u2014']; });
     tbl2({ startY: y, head: [['Parametro', 'T0 (9 mag)', 'T1 (12 set)', 'Differenza']], body: dRows, columnStyles: { 0: { fontStyle: 'bold' } } });
     y = tblY() + 8;
+    { const dx1 = CLIN_EXTRA.dexa_t1 || {}, ts = parseFloat(String(dx1.dexa_bmd_tscore).replace(',', '.')), zs = parseFloat(String(dx1.dexa_bmd_zscore).replace(',', '.'));
+      if (!isNaN(ts) || !isNaN(zs)) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7.5); doc.setTextColor(134, 134, 139);
+        doc.text(pdfTxt('BMD T1: MOC total body del 12/09/2026' + (isNaN(ts) ? '' : ', T-score ' + pdfN(ts, 1)) + (isNaN(zs) ? '' : ', Z-score ' + pdfN(zs, 1)) + ', normale secondo OMS. Stesso apparecchio della DEXA T0.'), mL, y - 4); } }
     y = sectionTitle(y, 'Pannello ematico Santagostino');
     const mRows = [];
     Object.keys(CLIN_MARKERS).forEach(k => {
