@@ -119,6 +119,36 @@
      invece di allargarsi bordo a bordo. Sotto i 1024px resta tutto come
      prima (verificato, non toccato). ══ */
   .page-wrap{max-width:1320px;margin:0 auto;}
+  /* Intestazione (30/09): prima .header-actions/.sync-status/.sync-dot esistevano solo da 1024px in su, quindi su
+     mobile "Sincronizzato" usciva senza stile, grande come il menu, e spingeva Clinica/Gestione fuori schermo. */
+  .hdr-inner{display:flex;align-items:center;gap:16px;padding:0 16px;}
+  .hdr-nav{flex:1 1 auto;display:flex;gap:18px;overflow-x:auto;min-width:0;}
+  .hdr-tab{flex:0 0 auto;background:none;border:none;cursor:pointer;padding:13px 2px;font-size:13.5px;font-weight:500;color:var(--ink2);border-bottom:2px solid transparent;}
+  .hdr-tab.on{font-weight:600;color:var(--ink);border-bottom-color:var(--accent);}
+  .hdr-lang{flex:0 0 auto;display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;}
+  .hdr-lang button{border:none;cursor:pointer;padding:4px 9px;border-radius:6px;font-size:10.5px;font-weight:600;text-transform:uppercase;background:transparent;color:var(--ink2);}
+  .hdr-lang button.on{background:var(--accent);color:#fff;}
+  .sync-dot.dirty{background:var(--warn);}
+  @media (max-width:1023px){
+    .hdr-inner{gap:6px;padding:0 8px 0 12px;}
+    .hdr-nav{gap:0;scrollbar-width:none;}
+    .hdr-nav::-webkit-scrollbar{display:none;}
+    .hdr-tab{flex:1 1 auto;min-height:48px;padding:0 6px;font-size:13px;white-space:nowrap;}
+    .hdr-lang{padding:2px;border-radius:9px;}
+    .hdr-lang button{min-width:38px;min-height:36px;padding:0 6px;font-size:11px;border-radius:7px;}
+    .header-actions{display:flex;align-items:center;}
+    .sync-status{display:flex;align-items:center;justify-content:center;width:22px;height:36px;}
+    .sync-status #sync-text{display:none;}
+    .sync-dot{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:0 0 auto;}
+    .sync-dot.saving,.sync-dot.dirty{background:var(--warn);}
+    .sync-dot.error{background:var(--bad);}
+  }
+  @media (max-width:380px){
+    .hdr-inner{padding:0 6px 0 8px;gap:4px;}
+    .hdr-tab{padding:0 3px;font-size:12.5px;}
+    .hdr-lang button{min-width:34px;padding:0 4px;}
+    .sync-status{width:16px;}
+  }
   @media (min-width:1024px){
     .week-row-desktop{display:flex;align-items:center;gap:14px;}
     .cycle-label{flex:0 0 auto;font-size:12.5px;font-weight:600;color:var(--ink2);white-space:nowrap;}
@@ -1015,6 +1045,7 @@ function patchKey(key, field, value) {
   store.pending[key][field] = value;
   store.dirty[key] = true;
   persistPending();
+  updateSaveUI(); // aggiorna subito il pallino di stato (ambra = modifiche in sospeso)
   queueSave();
 }
 function patchSilent(dateISO, field, value) {
@@ -1071,13 +1102,14 @@ function updateSaveUI() {
   const isDirty = Object.keys(store.dirty).length > 0;
   const dot = document.getElementById('sync-dot');
   const text = document.getElementById('sync-text');
-  if (dot) dot.className = 'sync-dot' + (store.saving ? ' saving' : (store.saveError ? ' error' : ''));
+  if (dot) dot.className = 'sync-dot' + (store.saving ? ' saving' : (store.saveError ? ' error' : (isDirty ? ' dirty' : '')));
   if (text) text.textContent = store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…')
     : store.saveError ? (LANG === 'it' ? 'Errore, ritento…' : 'Error, retrying…')
     : store.justSaved ? (LANG === 'it' ? 'Sincronizzato' : 'Synced')
     : isDirty ? (LANG === 'it' ? 'Modifiche in sospeso' : 'Unsaved changes')
     : (LANG === 'it' ? 'Sincronizzato' : 'Synced');
 
+  const stEl = document.querySelector('.sync-status'); if (stEl && text) stEl.title = text.textContent;
   const btn = document.getElementById('save-now-btn');
   if (btn) {
     btn.disabled = !!store.saving;
@@ -5059,16 +5091,9 @@ function render() {
   const isDirty = Object.keys(store.dirty).length > 0;
   app.innerHTML = `
     <header style="position:sticky;top:0;z-index:40;background:var(--surf);border-bottom:1px solid var(--line);">
-      <div class="page-wrap" style="display:flex;align-items:center;gap:16px;padding:0 16px;">
-        <nav style="flex:1 1 auto;display:flex;gap:18px;overflow-x:auto;">
-          ${TAB_KEYS.map((k, n) => `
-            <button data-tab="${k}" style="
-              flex:0 0 auto;background:none;border:none;cursor:pointer;
-              padding:13px 2px;font-size:13.5px;
-              font-weight:${k === tab ? 600 : 500};
-              color:${k === tab ? 'var(--ink)' : 'var(--ink2)'};
-              border-bottom:2px solid ${k === tab ? 'var(--accent)' : 'transparent'};
-            ">${L.tabs[n]}</button>`).join('')}
+      <div class="page-wrap hdr-inner">
+        <nav class="hdr-nav">
+          ${TAB_KEYS.map((k, n) => `<button data-tab="${k}" class="hdr-tab${k === tab ? ' on' : ''}">${L.tabs[n]}</button>`).join('')}
         </nav>
         ${tab === 'oggi' ? `
         <div class="header-actions">
@@ -5077,17 +5102,11 @@ function render() {
             <button data-view="day" class="${oggiViewMode === 'day' ? 'active' : ''}">${LANG === 'it' ? 'Giorno' : 'Day'}</button>
             <button data-view="week" class="${oggiViewMode === 'week' ? 'active' : ''}">${LANG === 'it' ? 'Settimana' : 'Week'}</button>
           </div>` : ''}
-          <span class="sync-status"><span id="sync-dot" class="sync-dot ${store.saving ? 'saving' : (store.saveError ? 'error' : '')}"></span><span id="sync-text">${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : (store.saveError ? (LANG === 'it' ? 'Errore, ritento…' : 'Error, retrying…') : (isDirty ? (LANG === 'it' ? 'Modifiche in sospeso' : 'Unsaved changes') : (LANG === 'it' ? 'Sincronizzato' : 'Synced')))}</span></span>
+          <span class="sync-status" title="${LANG === 'it' ? 'Stato sincronizzazione' : 'Sync status'}"><span id="sync-dot" class="sync-dot ${store.saving ? 'saving' : (store.saveError ? 'error' : (isDirty ? 'dirty' : ''))}"></span><span id="sync-text">${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : (store.saveError ? (LANG === 'it' ? 'Errore, ritento…' : 'Error, retrying…') : (isDirty ? (LANG === 'it' ? 'Modifiche in sospeso' : 'Unsaved changes') : (LANG === 'it' ? 'Sincronizzato' : 'Synced')))}</span></span>
           ${isDesktop ? `<button id="save-now-btn" class="save-btn ${store.saving ? 'saving' : ''}" ${store.saving ? 'disabled' : ''}>${store.saving ? (LANG === 'it' ? 'Salvataggio…' : 'Saving…') : store.justSaved ? (LANG === 'it' ? '✓ Sincronizzato' : '✓ Synced') : (LANG === 'it' ? 'Salva' : 'Save')}</button>` : ''}
         </div>` : ''}
-        <div style="flex:0 0 auto;display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;">
-          ${['it', 'en'].map(l => `
-            <button data-lang="${l}" style="
-              border:none;cursor:pointer;padding:4px 9px;border-radius:6px;
-              font-size:10.5px;font-weight:600;text-transform:uppercase;
-              background:${l === LANG ? 'var(--accent)' : 'transparent'};
-              color:${l === LANG ? '#fff' : 'var(--ink2)'};
-            ">${l}</button>`).join('')}
+        <div class="hdr-lang">
+          ${['it', 'en'].map(l => `<button data-lang="${l}" class="${l === LANG ? 'on' : ''}">${l}</button>`).join('')}
         </div>
       </div>
     </header>
