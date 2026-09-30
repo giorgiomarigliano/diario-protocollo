@@ -572,7 +572,8 @@
 .an-ftile-l{font-size:10px;}
 .an-chip{padding:10px 15px;min-height:44px;display:flex;align-items:center;}
 .an-range button{padding:9px 12px;min-height:40px;font-size:12px;}
-.an-fmodes button{padding:10px 13px;min-height:44px;font-size:12px;}
+.an-fmodes{gap:2px;padding:2px;}
+.an-fmodes button{flex:1 1 auto;padding:6px 8px;min-height:40px;font-size:12px;white-space:nowrap;}
 .an-grp-head{min-height:48px;}
 .an-lang button{padding:8px 11px;min-height:36px;}
 .an-themebtn{min-height:36px;}
@@ -1359,7 +1360,7 @@ var AN_I18N = {
     sessions:"Riepilogo sedute", byPhase:"Medie per fase", typicalWeek:"Settimana tipo",
     sentinels:"Sentinel lift", muscleVol:"Volume per gruppo muscolare",
     photos:"Foto", fList:"Lista", fGrid:"Griglia", fWeek:"Per settimana", fScrub:"Scrubber",
-    fSide:"Affiancato", fOver:"Sovrapposto", fRatings:"Andamento valutazioni", fNew:"Nuovo scatto",
+    fSide:"Affiancato", fOver:"Sovrapposto", fRatings:"Andamento valutazioni", fRatingsShort:"Valutazioni", fNew:"Nuovo scatto",
     peso:"Peso", hrv:"HRV", rhr:"Freq. a riposo", pressure:"Pressione", sonno:"Sonno",
     leanMass:"Massa magra", waist:"Girovita", injections:"Iniezioni", supplements:"Integratori",
     workouts:"Allenamenti", min:"min", max:"max", avg:"media", target:"obiettivo",
@@ -1390,7 +1391,7 @@ var AN_I18N = {
     sessions:"Session summary", byPhase:"Averages by phase", typicalWeek:"Typical week",
     sentinels:"Sentinel lifts", muscleVol:"Volume by muscle group",
     photos:"Photos", fList:"List", fGrid:"Grid", fWeek:"By week", fScrub:"Scrubber",
-    fSide:"Side by side", fOver:"Overlay", fRatings:"Rating trend", fNew:"New shot",
+    fSide:"Side by side", fOver:"Overlay", fRatings:"Rating trend", fRatingsShort:"Ratings", fNew:"New shot",
     peso:"Weight", hrv:"HRV", rhr:"Resting HR", pressure:"Blood pressure", sonno:"Sleep",
     leanMass:"Lean mass", waist:"Waist", injections:"Injections", supplements:"Supplements",
     workouts:"Workouts", min:"min", max:"max", avg:"avg", target:"target",
@@ -3649,6 +3650,7 @@ function applyI18N(root){
   root.querySelectorAll("[data-i18n-tab]").forEach(function(e){
     e.textContent = t.tabs[e.getAttribute("data-i18n-tab")];
   });
+  var rb=root.querySelector('.an-fmodes button[data-an-fmode="ratings"]'); if (rb && window.innerWidth < 1024) rb.textContent = t.fRatingsShort;
   var rl=root.querySelector(".an-globalrange-l"); if (rl) rl.textContent=t.range;
   var cb=root.querySelector('.an-range button[data-days="0"]'); if (cb) cb.textContent=t.cycle;
   var tb=root.querySelector(".an-themebtn"); if (tb) tb.textContent = AN.theme==="dark"?t.themeLight:t.theme;
