@@ -5892,7 +5892,7 @@ function renderWeekFull() {
 
   const bioTile = (label, arr, unit, fmtFn, invert) => {
     const cur = arr[arr.length - 1] != null && !isNaN(arr[arr.length - 1]) ? arr[arr.length - 1] : wk.avg(arr);
-    const prevArr = prevWkForChart ? (label === 'HRV' ? prevWkForChart.hrvArr : label === (LANG === 'it' ? 'Riposo' : 'Resting') ? prevWkForChart.rhrArr : label === 'Sonno' ? prevWkForChart.sonnoArr : label === 'REM' ? prevWkForChart.remArr : label === 'Profondo' ? prevWkForChart.profArr : prevWkForChart.risvArr) : null;
+    const prevArr = prevWkForChart ? (label === 'HRV' ? prevWkForChart.hrvArr : label === (LANG === 'it' ? 'Riposo' : 'Resting HR') ? prevWkForChart.rhrArr : label === 'Sonno' ? prevWkForChart.sonnoArr : label === 'REM' ? prevWkForChart.remArr : label === 'Profondo' ? prevWkForChart.profArr : prevWkForChart.risvArr) : null;
     const prevVal = prevArr ? wk.avg(prevArr) : null;
     const dt = deltaTxt(cur, prevVal, unit, invert);
     const sp = svgPath(arr, 100, 18, 3);
@@ -5946,7 +5946,7 @@ function renderWeekFull() {
       </div>
       <div style="flex:0 0 auto;display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:3px;padding-top:12px;border-top:1px solid var(--line);">
         ${bioTile('HRV', wk.hrvArr, 'int', v => v == null ? '—' : Math.round(v))}
-        ${bioTile(LANG === 'it' ? 'Riposo' : 'Resting', wk.rhrArr, 'int', v => v == null ? '—' : Math.round(v), true)}
+        ${bioTile(LANG === 'it' ? 'Riposo' : 'Resting HR', wk.rhrArr, 'int', v => v == null ? '—' : Math.round(v), true)}
         ${bioTile(LANG === 'it' ? 'Sonno' : 'Sleep', wk.sonnoArr, '', sonnoFmt)}
         ${bioTile('REM', wk.remArr, 'int', v => v == null ? '—' : Math.round(v) + '′')}
         ${bioTile(LANG === 'it' ? 'Profondo' : 'Deep', wk.profArr, 'int', v => v == null ? '—' : Math.round(v) + '′')}
@@ -6258,7 +6258,7 @@ function renderWeekFull() {
 
   const bioTileM = (label, arr, unit, fmtFn, invert) => {
     const cur = wk.avg(arr);
-    const prevArr2 = prevWkForChart ? (label === 'HRV' ? prevWkForChart.hrvArr : label === (LANG === 'it' ? 'Riposo' : 'Resting') ? prevWkForChart.rhrArr : label === (LANG === 'it' ? 'Sonno' : 'Sleep') ? prevWkForChart.sonnoArr : label === 'REM' ? prevWkForChart.remArr : label === (LANG === 'it' ? 'Profondo' : 'Deep') ? prevWkForChart.profArr : prevWkForChart.risvArr) : null;
+    const prevArr2 = prevWkForChart ? (label === 'HRV' ? prevWkForChart.hrvArr : label === (LANG === 'it' ? 'Riposo' : 'Resting HR') ? prevWkForChart.rhrArr : label === (LANG === 'it' ? 'Sonno' : 'Sleep') ? prevWkForChart.sonnoArr : label === 'REM' ? prevWkForChart.remArr : label === (LANG === 'it' ? 'Profondo' : 'Deep') ? prevWkForChart.profArr : prevWkForChart.risvArr) : null;
     const prevVal = prevArr2 ? wk.avg(prevArr2) : null;
     const dt = deltaTxt(cur, prevVal, unit, invert);
     const sp = svgPath(arr, 100, 18, 3);
@@ -6281,7 +6281,7 @@ function renderWeekFull() {
       <span style="font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Biometria · media della settimana' : 'Biometrics · week average'}</span>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:11px 12px;">
         ${bioTileM('HRV', wk.hrvArr, 'int', v => v == null ? '—' : Math.round(v))}
-        ${bioTileM(LANG === 'it' ? 'Riposo' : 'Resting', wk.rhrArr, 'int', v => v == null ? '—' : Math.round(v), true)}
+        ${bioTileM(LANG === 'it' ? 'Riposo' : 'Resting HR', wk.rhrArr, 'int', v => v == null ? '—' : Math.round(v), true)}
         ${bioTileM(LANG === 'it' ? 'Sonno' : 'Sleep', wk.sonnoArr, '', sonnoFmt)}
         ${bioTileM('REM', wk.remArr, 'int', v => v == null ? '—' : Math.round(v) + '′')}
         ${bioTileM(LANG === 'it' ? 'Profondo' : 'Deep', wk.profArr, 'int', v => v == null ? '—' : Math.round(v) + '′')}
@@ -8671,5 +8671,309 @@ render();
 loadBlob().then(() => { restorePending(); render(); }).catch(e => console.error('Errore caricamento dati', e));
 </script>
 
+<script>
+/* ==== EN LAYER (30/09/2026) ====
+   Traduzione inglese dell'interfaccia dei moduli Andamento / Clinica / Gestione (+ residui di Oggi).
+   I moduli scrivono le stringhe italiane direttamente nei template; questo strato le traduce nel DOM
+   quando LANG === 'en' e le ripristina in italiano al cambio lingua. Traduce SOLO testo di interfaccia
+   (etichette, unita', frasi con numeri, date, nomi di esami e categorie). NON traduce i contenuti
+   clinici e personali scritti in italiano (note dei referti, diagnosi, nomi dei pannelli, database
+   alimenti e testi degli orari): restano nella lingua del documento originale. */
+const EN_DICT = {
+/* --- navigazione / comuni --- */
+'Corpo':'Body','Corpo e forza':'Body & strength','Foto':'Photos','Progressione':'Progression','Referti':'Reports',
+'Da seguire':'To watch','Per apparato':'By system','Per data':'By date','Cambia':'Change','Cambia ▾':'Change ▾','Chiudi':'Close',
+'Scegli il parametro':'Choose parameter','Scegli il pannello':'Choose panel','Archivio pannelli':'Panel archive',
+'Mostra meno':'Show less','Mostra meno ▴':'Show less ▴','Caricamento…':'Loading…','Riposo':'Rest','Oggi':'Today','oggi':'today',
+'Fuori range':'Out of range','fuori range':'out of range','nel range':'in range','Nel range':'In range','Fuori':'Out','FUORI':'OUT',
+'sotto il range':'below range','sopra il range':'above range','sotto target clinico':'below clinical target','nella norma':'normal','Nella norma':'Normal',
+'tutto nella norma':'all normal','sempre fuori':'always out','ancora fuori':'still out','rientra':'back in range','range di riferimento':'reference range',
+'non disponibile':'n/a','n/d':'n/a','Ultima':'Latest','Precedente':'Previous','Minima':'Min','Massima':'Max','Media':'Average','media':'average',
+'Valore':'Value','Esito':'Result','Laboratorio':'Lab','Sicurezza':'Safety','Metabolico':'Metabolic','Lipidi':'Lipids','Altro':'Other',
+'Asse somatotropo':'Somatotropic axis','Asse ormonale':'Hormonal axis','Asse GH':'GH axis','Asse gonadico':'Gonadal axis',
+'Rene':'Kidney','Fegato':'Liver','Sangue':'Blood','Ferro e vitamine':'Iron & vitamins','Infiammazione':'Inflammation',
+'Migliorati':'Improved','Peggiorati':'Worsened','Miglioramento':'Improvement',
+/* --- analiti / esami --- */
+'Glucosio':'Glucose','Insulina':'Insulin','Trigliceridi':'Triglycerides','Colesterolo totale':'Total cholesterol','T Libero':'Free T','T Totale':'Total T',
+'Testosterone totale':'Total testosterone','Testosterone libero':'Free testosterone','Estradiolo':'Estradiol','Estradiolo E2':'Estradiol (E2)','Prolattina':'Prolactin',
+'Creatinina':'Creatinine','Emoglobina':'Hemoglobin','Globuli rossi':'Red blood cells','Globuli bianchi':'White blood cells','Ematocrito':'Hematocrit','Piastrine':'Platelets',
+'Clearance creatinina':'Creatinine clearance','Azotemia':'Blood urea','Acido urico':'Uric acid','Potassio':'Potassium','Calcio':'Calcium','Ferro':'Iron','Ferritina':'Ferritin',
+'Transferrina':'Transferrin','Vitamina D':'Vitamin D','Vitamina B12':'Vitamin B12','Folato':'Folate','VES':'ESR','PCR':'CRP','Cortisolo':'Cortisol','PSA totale':'Total PSA','PSA free':'Free PSA',
+'Zinco':'Zinc','Gamma globuline':'Gamma globulins','Leucociti':'Leukocytes','Esterasi leucocitaria':'Leukocyte esterase','Eritrociti':'Erythrocytes','Batteri':'Bacteria',
+'Cellule epiteliali squamose':'Squamous epithelial cells','Nitriti':'Nitrites','Densità relativa':'Specific gravity','Proteine totali':'Total protein','Magnesio totale':'Total magnesium',
+'Creatinina urine spot':'Spot urine creatinine','Microalbumina (ACR)':'Microalbumin (ACR)','Paratormone Intatto (PTH)':'Intact parathyroid hormone (PTH)','Albumina':'Albumin',
+'Rapporto Albumina/Globulina':'Albumin/globulin ratio','Omocisteina':'Homocysteine','Bilirubina diretta':'Direct bilirubin','HOMA (calc.)':'HOMA (calc.)','Marker':'Marker','RIF.':'REF.',
+'Anemia normocitica':'Normocytic anemia','Idrocele bilaterale':'Bilateral hydrocele','Testicolo sinistro':'Left testis','Ipotrofia confermata':'Hypotrophy confirmed','Presente (mag. sin)':'Present (L>R)',
+'Lievemente elevata':'Slightly elevated','Lieve — persistente':'Mild — persistent','Basso ma in miglioramento':'Low but improving','Ipergammaglobulinemia':'Hypergammaglobulinemia',
+'Da valutare col nefrologo':'To review with nephrologist','Basso':'Low','Alto':'High','Molto basso':'Very low','Basso — persistente':'Low — persistent','Basso — cronico':'Low — chronic','Persistentemente basso':'Persistently low',
+'Normale':'Normal','Negativo':'Negative','Assenti':'Absent','Elevata':'Elevated','Elevati':'Elevated','Presente':'Present','Lieve':'Mild','Moderata':'Moderate','moderata':'moderate','debole':'weak','forte':'strong',
+'Esclusa':'Excluded','Al limite superiore':'At upper limit','↓ Lievemente sotto range':'↓ Slightly below range','↓ Di poco sotto range':'↓ Just below range',
+/* --- referti: strumentali, terapia, diagnosi --- */
+'Esami strumentali':'Diagnostic tests','ultimo esito':'latest result','ECG a riposo':'Resting ECG','ECG da sforzo':'Stress ECG','NEGATIVO per ischemia':'NEGATIVE for ischemia',
+'Frazione di eiezione':'Ejection fraction','Cardiopatia':'Heart disease','Ecografia addome':'Abdominal ultrasound','Volume prostata':'Prostate volume','Valutazione urologica':'Urological assessment',
+'Non reperti sospetti':'No suspicious findings','Esame obiettivo':'Physical exam','Terapia consigliata & follow-up':'Recommended therapy & follow-up','Autorizzazione protocollo':'Protocol authorization','APPROVATO':'APPROVED',
+'Approfondimenti':'Further tests','Nessuno suggerito':'None suggested','Monitoraggio':'Monitoring','Diagnosi clinica':'Clinical diagnosis','Asse ipofisario':'Pituitary axis','Ipergonadotropo (FSH ↑ LH ↑)':'Hypergonadotropic (FSH ↑ LH ↑)',
+'Diagnosi principale':'Primary diagnosis','Ipotrofia testicolare sinistra':'Left testicular hypotrophy','Conclusione clinica':'Clinical conclusion','Idoneità protocollo':'Protocol eligibility','ZERO controindicazioni':'ZERO contraindications',
+'Altri valori segnalati nel 2026':'Other flagged values in 2026','Fuori range all\'ultima misura':'Out of range at latest measurement',
+/* --- referti per apparato / per data --- */
+'Cuore':'Heart','Prostata e urologia':'Prostate & urology','Rene e urine':'Kidney & urine','Sangue e vitamine':'Blood & vitamins','Fegato, metabolismo e lipidi':'Liver, metabolism & lipids',
+'Ormoni e visita endocrinologica':'Hormones & endocrinology visit','FE (Frazione di eiezione)':'EF (ejection fraction)','Insufficienza mitralica':'Mitral regurgitation','Insufficienza aortica':'Aortic regurgitation',
+'Insufficienza tricuspidalica':'Tricuspid regurgitation','PAP (Fosf. acida)':'PAP (acid phosphatase)','Sintomo principale':'Main symptom','Astenia':'Asthenia','Non ristoratore':'Non-restorative','Esami':'Tests','ESAMI':'TESTS','Voci':'Items',
+'Chimica clinica':'Clinical chemistry','Immunometria':'Immunometry','Elettroforesi proteica':'Protein electrophoresis','Urine — chimico-fisico e microscopico':'Urine — chemical-physical & microscopic','Microbiologia':'Microbiology','Nota clinica':'Clinical note',
+'Urinocoltura da mitto intermedio':'Midstream urine culture','Nessuna crescita di batteri o lieviti patogeni':'No growth of pathogenic bacteria or yeasts','Visita endocrinologica':'Endocrinology visit',
+/* --- corpo / foto / progressione --- */
+'Composizione':'Composition','Peso (DEXA)':'Weight (DEXA)','Massa magra':'Lean mass','Massa grassa':'Fat mass','Grasso %':'Fat %','Magra %':'Lean %','Grasso viscerale':'Visceral fat','Viscerale (g)':'Visceral (g)','Densità ossea':'Bone density',
+'Grasso':'Fat','Massa magra kg':'Lean mass kg','Peso DEXA':'DEXA weight','Forza ai checkpoint':'Strength at checkpoints','seduta più vicina, entro ±7 gg':'closest session, within ±7 d','Panca piana':'Flat bench press','Petto':'Chest','Dorso':'Back',
+'Spalle':'Shoulders','Braccia':'Arms','Gambe':'Legs','Bicipiti':'Biceps','Tricipiti':'Triceps','Curl manubri':'Dumbbell curl','Il rapporto carico/massa magra dice se la forza cresce più del muscolo.':'The load / lean-mass ratio shows whether strength grows faster than muscle.',
+'Sangue e muscolo, stessa finestra':'Blood & muscle, same window','Forza sentinel (media)':'Sentinel strength (avg)','Foto ai checkpoint':'Photos at checkpoints','Foto (±3 gg)':'Photos (±3 d)','tocca per ingrandire':'tap to enlarge',
+'Nessuna foto entro 3 giorni':'No photo within 3 days','Dati ai checkpoint':'Checkpoint data','Foto e dati ai checkpoint':'Photos & data at checkpoints','foto più vicina alla data, entro ±3 giorni':'closest photo to the date, within ±3 days',
+'IGF-1 in µg/L. Foto: la più vicina alla data del checkpoint, entro ±3 giorni.':'IGF-1 in µg/L. Photo: closest to the checkpoint date, within ±3 days.','T1 non ancora inserito.':'T1 not entered yet.',
+'un punto per prelievo, la data è sotto':'one point per sample, date below','prelievi durante il ciclo':'samples during the cycle','Scegli il parametro':'Choose parameter',
+/* --- checkpoint --- */
+'T0 = basale':'T0 = baseline','T1 = attuale':'T1 = current','T2 = fine ciclo':'T2 = end of cycle','T1 nel range':'T1 in range','T1 fuori range':'T1 out of range','T1 sotto target clinico':'T1 below clinical target',
+/* --- andamento --- */
+'Adattamento':'Adaptation','Costruzione':'Build','Mantenimento':'Maintenance','Fine ciclo':'End of cycle','peso':'weight','viaggio':'travel','Dettaglio per settimana':'Weekly detail','volume settimanale':'weekly volume','soglia 90%':'90% threshold',
+'Backup dati':'Data backup','Backup regolare':'Backup on schedule','Backup in ritardo':'Backup late','Backup fermo da troppo tempo':'Backup stalled for too long','Nessuno stato ricevuto ancora dal repo di backup.':'No status received yet from the backup repo.',
+'Il peso è giornaliero. DEXA e girovita esistono solo in pochi punti: restano marcatori. Con meno di due misure non si traccia nulla.':'Weight is daily. DEXA and waist exist only at a few points: they stay as markers. With fewer than two measurements nothing is plotted.',
+'Regola: volume ±5% e HRV ±3% fra le ultime due settimane piene. Sotto soglia la frase resta neutra. La linea HRV ha scala propria (min–max del periodo).':'Rule: volume ±5% and HRV ±3% between the last two full weeks. Below the threshold the sentence stays neutral. The HRV line has its own scale (period min–max).',
+'Rosso se la scorta non arriva a fine ciclo, ambra entro 14 giorni di margine, verde oltre.':'Red if the supply does not last to the end of the cycle, amber within a 14-day margin, green beyond.',
+'Energia':'Energy','Recupero':'Recovery','Umore':'Mood','Appetito':'Appetite','Sonno perc.':'Perceived sleep','Chiarezza':'Clarity','Ritenzione':'Retention','Formicolio':'Tingling','Pienezza add.':'Abdominal fullness',
+'Asse fisso 1–10: un asse auto-scalato ingrandirebbe il rumore.':'Fixed 1–10 axis: an auto-scaled axis would magnify noise.','Categorie ordinali, non linee. Casella vuota = non registrata.':'Ordinal categories, not lines. Empty box = not recorded.',
+'fasi, minuti':'stages, minutes','profondo':'deep','principale':'core','veglia':'awake','risvegli':'awakenings','Sonno in ore e minuti; uno 0 vale non registrato.':'Sleep in hours and minutes; a 0 means not recorded.',
+'MISURA':'METRIC','PRIMA':'BEFORE','ORA':'NOW','Il delta di peso è neutro: salire o scendere non è di per sé meglio.':'The weight delta is neutral: going up or down is not better in itself.',
+'Pre-ciclo':'Pre-cycle','pre':'pre','Milano, Italia':'Milan, Italy','Bangkok, Thailandia':'Bangkok, Thailand','Milano':'Milan','✓ fatto':'✓ done','fatto':'done',
+'Valutazione':'Rating','Valutazione 1–5 per scatto: si assegna dalla vista Scrubber, sotto le tessere dati.':'Rating 1–5 per shot: assigned from the Scrubber view, below the data tiles.',
+'Scegli o scatta una foto':'Choose or take a photo','Data e luogo dall’EXIF, se presenti':'Date and place from EXIF, if present','Data':'Date','Peso (kg)':'Weight (kg)','Luogo':'Place','Nota':'Note','Registra scatto':'Save shot',
+'Tipo':'Type','Fatte / previste':'Done / planned','Sedute fatte su previste dal piano settimanale. Fatta = calorie, volume o RPE presenti; il giorno in corso non conta come saltato.':'Sessions done out of those planned in the weekly plan. Done = calories, volume or RPE present; the current day does not count as skipped.',
+'Aderenza allenamenti':'Workout adherence','su tutti i giorni':'over all days','streak attuale':'current streak','streak record':'record streak','media/sett.':'avg/wk','allenato':'trained','non allenato':'not trained','riposo pianificato':'planned rest',
+'Durata':'Duration','Fase':'Phase','Sedute':'Sessions','Lun':'Mon','Mar':'Tue','Mer':'Wed','Gio':'Thu','Ven':'Fri','Sab':'Sat','Dom':'Sun','Upper Dom':'Upper Sun','Upper Sab':'Upper Sat',
+'Volume medio per giorno della settimana, in tonnellate. n sempre visibile.':'Average volume per weekday, in tonnes. n always shown.','20 esercizi sentinella in 6 gruppi. Δ = ultimo carico meno il primo registrato.':'20 sentinel exercises in 6 groups. Δ = latest load minus the first recorded.',
+'Muscolo':'Muscle','Quota':'Share','Dorso (lat)':'Back (lats)','Quadricipiti':'Quadriceps','Glutei':'Glutes','Trapezi':'Traps','Femorali':'Hamstrings','Polpacci':'Calves','Lombari':'Lower back',
+'Volume cumulativo per muscolo, dal riepilogo del diario V1: non dipende dall\'intervallo.':'Cumulative volume per muscle, from the V1 diary summary: independent of the range.','Progressione esercizi':'Exercise progression','soglia 2 sessioni':'2-session threshold',
+'Per esercizio esatto (non per macchina generica), da history_sessions: segue da sola le sostituzioni in palestra.':'Per exact exercise (not generic machine), from history_sessions: it follows gym substitutions on its own.',
+'Frequenza per gruppo muscolare':'Frequency per muscle group','ultime 4 settimane':'last 4 weeks','Sessioni':'Sessions','Ultima volta':'Last time','Completa il volume cumulativo: dice se un gruppo è trascurato di recente.':'Complements cumulative volume: shows whether a group has been neglected recently.',
+'Coppia':'Pair','Forza':'Strength','Giorno':'Day','Mostra tutte le 12 settimane':'Show all 12 weeks','WO sett.':'WO wk',
+/* --- gestione --- */
+'Stock':'Stock','Orari':'Schedule','Alimenti':'Foods','Convertitore · U-100':'Converter · U-100','Personalizzato':'Custom','Vial · mg':'Vial · mg','BAC · mL':'BAC · mL','Dose · mcg':'Dose · mcg','Da prelevare':'To draw',
+'dose intera, un’iniezione':'full dose, one injection','dose intera, un\'iniezione':'full dose, one injection','Ricostituzione e vial in uso':'Reconstitution & vials in use',
+'Modifica mg o BAC: le unità si ricalcolano · IGF-1 DES è bilaterale, metà per lato':'Edit mg or BAC: units are recalculated · IGF-1 DES is bilateral, half per side',
+'Dosi su questo vial':'Doses on this vial','Vita residua':'Remaining life','+ Ricostituisci nuovo vial':'+ Reconstitute new vial','Scorte':'Supplies','Materiali di consumo':'Consumables','Siringhe SC':'SC syringes','Siringhe IM':'IM syringes',
+'flaconi · Limitless + Bachem · frigo':'vials · Limitless + Bachem · fridge','La scorta la aggiorni tu · flacone BAC da 10 mL: ipotesi da confermare.':'You update the stock yourself · 10 mL BAC vial: assumption to be confirmed.',
+'Flacone BAC da 10 mL: ipotesi da confermare.':'10 mL BAC vial: assumption to be confirmed.','Fuori protocollo':'Off protocol','liofilizzati · frigo':'lyophilized · fridge','Allenamento':'Workout','Weekend':'Weekend','Rest Day':'Rest Day',
+'Iniezione':'Injection','Integratori':'Supplements','Pasto':'Meal','Colazione':'Breakfast','Pranzo':'Lunch','Cena':'Dinner','Spuntino':'Snack','digiuno':'fasted','orario flessibile':'flexible time','con colazione':'with breakfast','pre-sleep':'pre-sleep',
+'Tutti':'All','Carne':'Meat','Pesce':'Fish','Uova & albumi':'Eggs & whites','Latticini':'Dairy','Snack':'Snacks','Carboidrati':'Carbs','Frutta':'Fruit','Verdure':'Vegetables','CARNE':'MEAT','PESCE':'FISH','UOVA & ALBUMI':'EGGS & WHITES','LATTICINI':'DAIRY',
+'INTEGRATORI':'SUPPLEMENTS','SNACK':'SNACKS','CARBOIDRATI':'CARBS','FRUTTA':'FRUIT','VERDURE':'VEGETABLES','Cerca un alimento…':'Search a food…',
+'Tocca + sull\'alimento · Regola la quantità con − e + · Il totale si aggiorna in alto':'Tap + on a food · Adjust the quantity with − and + · The total updates at the top',
+'Tocca + sull\'alimento · Regola la quantità con − e + · Il totale si aggiorna a destra':'Tap + on a food · Adjust the quantity with − and + · The total updates on the right',
+'Il pasto è vuoto. Tocca + su un alimento: compare qui con la sua porzione tipica.':'The meal is empty. Tap + on a food: it appears here with its typical portion.',
+'Convertitore unità':'Unit converter','siringa da insulina U-100':'U-100 insulin syringe','Peptide':'Peptide','Vial':'Vial','Bac':'BAC','Dose':'Dose','Concentrazione':'Concentration','Dosi per vial':'Doses per vial','Tabella ricostituzione':'Reconstitution table',
+'modifica mg o BAC: le unità si ricalcolano':'edit mg or BAC: units are recalculated','Composto':'Compound','Vial mg':'Vial mg','BAC ml':'BAC mL','Concentr.':'Concentr.','Ricostituito':'Reconstituted','Scade':'Expires',
+'UI = dose ÷ concentrazione × 100 · IGF-1 DES è bilaterale: metà per lato':'UI = dose ÷ concentration × 100 · IGF-1 DES is bilateral: half per side','Vial in uso · dosi e vita residua':'Vials in use · doses and remaining life',
+'dosi contate dalle iniezioni registrate dal giorno di ricostituzione':'doses counted from injections logged since the day of reconstitution','Scorte per composto':'Supplies per compound','Intatti':'Intact','Finiti':'Finished','Persi':'Lost','Copre fino al':'Covers until',
+'scorta · aggiornala a mano':'stock · update by hand','Intatti':'Intact','Oggi è Allenamento · Mer':'Today is Workout · Wed','Allenamento (mattina)':'Workout (morning)',
+/* --- oggi (residui) --- */
+'sera':'evening','mattina':'morning','pomeriggio':'afternoon','con caffè':'with coffee','con shaker':'with shaker','dopo colazione':'after breakfast','in ufficio':'at the office','immediato post-WO':'immediately post-WO','fino alle 21:00':'until 21:00',
+'A più riprese':'Intermittent','Tutte le misure, dalla più recente':'All measurements, newest first','Alfa-1':'Alpha-1','Alfa-2':'Alpha-2','Sottotitolo':'Subtitle',
+'Magnesio':'Magnesium','Glicina':'Glycine','Melatonina':'Melatonin','Creatina':'Creatine','Calorie':'Calories','Peso':'Weight','Sonno':'Sleep'
+};
+
+/* ---- mesi / data / numeri ---- */
+const EN_MS = {gen:'Jan',feb:'Feb',mar:'Mar',apr:'Apr',mag:'May',giu:'Jun',lug:'Jul',ago:'Aug',set:'Sep',ott:'Oct',nov:'Nov',dic:'Dec'};
+const EN_ML = {gennaio:'January',febbraio:'February',marzo:'March',aprile:'April',maggio:'May',giugno:'June',luglio:'July',agosto:'August',settembre:'September',ottobre:'October',novembre:'November',dicembre:'December'};
+const EN_ML_RE = 'gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre';
+const EN_MS_RE = 'gen|feb|mar|apr|mag|giu|lug|ago|set|ott|nov|dic';
+function enCase(mapped, src) { return (src === src.toUpperCase() && src !== src.toLowerCase()) ? mapped.toUpperCase() : mapped; }
+function enPlural(n, one, many) { return (+String(n).replace(',', '.') === 1) ? one : many; }
+function enPost(t) {
+  t = t.replace(new RegExp('\\b(\\d{1,2})°? (' + EN_ML_RE + ')\\b', 'gi'), (m, d, mo) => d + ' ' + enCase(EN_ML[mo.toLowerCase()], mo));
+  t = t.replace(new RegExp('\\b(' + EN_ML_RE + ')(?= \\d{4}\\b)', 'gi'), (m) => enCase(EN_ML[m.toLowerCase()], m));
+  t = t.replace(new RegExp('\\b(\\d{1,2}) (' + EN_MS_RE + ')\\b', 'gi'), (m, d, mo) => d + ' ' + enCase(EN_MS[mo.toLowerCase()], mo));
+  t = t.replace(/(\d),(\d)/g, '$1.$2').replace(/(\d)\.(000)\b/g, '$1,$2');
+  t = t.replace(/\((\s*[+\-−±]\d+) g\)/g, '($1 d)');
+  return t;
+}
+/* ---- regole per frasi con numeri (prima che vinca: la prima che combacia) ---- */
+const EN_RULES = [
+ [/^fuori (\d+) volt[ae] su (\d+)$/i, (m, a, b) => 'out ' + a + ' of ' + b + ' times'],
+ [/^(\d+) marker fuori range, (\d+) in tutte le misure\.$/i, (m, a, b) => a + enPlural(a, ' marker', ' markers') + ' out of range, ' + b + ' in every measurement.'],
+ [/^Integr (\d+)%$/i, (m, n) => 'Suppl ' + n + '%'],
+ [/^(T\d) ✓ fatto$/i, (m, t) => t + ' ✓ done'],
+ [/^(T\d) Oggi$/i, (m, t) => t + ' Today'],
+ [/^(T\d) (\d+)gg$/i, (m, t, n) => t + ' ' + n + 'd'],
+ [/^(.+) · (\d+) punture al giorno$/i, (m, a, n) => a + ' · ' + n + ' injections per day'],
+ [/^(\d+) intatti$/i, (m, n) => n + ' intact'],
+ [/^Ciclo (\d+) · giorno (\d+) di (\d+)(?: · (\d+) giorni alla fine)?$/i, (m, a, b, c, d) => 'Cycle ' + a + ' · day ' + b + ' of ' + c + (d ? ' · ' + d + ' days left' : '')],
+ [/^(\d+) marker su (\d+) migliorano dal T0, (\d+) peggiorano\.$/i, (m, a, b, c) => a + ' of ' + b + ' markers improved since T0, ' + c + ' got worse.'],
+ [/^CONFRONTO AI CHECKPOINT(.*)$/i, (m, r) => 'COMPARISON AT CHECKPOINTS' + r],
+ [/^(\d+) marker$/i, (m, n) => n + enPlural(n, ' marker', ' markers')],
+ [/^Rif: (.+)$/i, (m, r) => 'Ref: ' + r],
+ [/^era (.+)$/i, (m, r) => 'was ' + r],
+ [/^(\d+) da seguire$/i, (m, n) => n + ' to watch'],
+ [/^(\d+) voc[ei] da seguire in (\d+) apparat[oi] su (\d+)\.$/i, (m, a, b, c) => a + enPlural(a, ' item', ' items') + ' to watch in ' + b + enPlural(b, ' system', ' systems') + ' out of ' + c + '.'],
+ [/^(\d+) esami · ultimo (\d{2})\/(\d{2})\/(\d{4})$/i, (m, n, d, mo, y) => n + ' tests · latest ' + d + ' ' + Object.values(EN_MS)[+mo - 1] + ' ' + y],
+ [/^(\d+) voci · (\d+) fuori range$/i, (m, a, b) => a + ' items · ' + b + ' out of range'],
+ [/^(\d+) voci · nessun valore fuori$/i, (m, a) => a + ' items · no values out of range'],
+ [/^(\d+) pannelli · dal più recente$/i, (m, n) => n + ' panels · newest first'],
+ [/^(.*) · PANNELLO (\d+) DI (\d+)$/i, (m, d, a, b) => d + ' · PANEL ' + a + ' OF ' + b],
+ [/^Mostra gli altri (\d+)( marker)? ?(▾)?$/i, (m, n, mk, ar) => 'Show ' + n + ' more' + (mk ? ' markers' : '') + (ar ? ' ▾' : '')],
+ [/^Mostra le altre (\d+) misure ?(▾)?$/i, (m, n, ar) => 'Show ' + n + ' more measurements' + (ar ? ' ▾' : '')],
+ [/^Mostra tutte le (\d+) settimane$/i, (m, n) => 'Show all ' + n + ' weeks'],
+ [/^(\d+) pannelli$/i, (m, n) => n + ' panels'],
+ [/^(.+) · (\d+) parametri$/i, (m, a, n) => a + ' · ' + n + ' parameters'],
+ [/^(\d+) misur[ae]$/i, (m, n) => n + enPlural(n, ' measurement', ' measurements')],
+ [/^Ultima misura (.+?), (sotto il range|sopra il range|nel range|sotto target clinico)(?: \(rif\. (.+)\))?\.$/i, (m, v, st, r) => 'Latest reading ' + v + ', ' + ({'sotto il range':'below range','sopra il range':'above range','nel range':'in range','sotto target clinico':'below clinical target'})[st.toLowerCase()] + (r ? ' (ref. ' + r + ')' : '') + '.'],
+ [/^Da T0 \((.+)\)$/i, (m, v) => 'Since T0 (' + v + ')'],
+ [/^Precedente \((.+)\)$/i, (m, v) => 'Previous (' + v + ')'],
+ [/^(.+) NEL TEMPO$/i, (m, n) => n + ' OVER TIME'],
+ [/^(\+?\d+) anni?$/i, (m, n) => n + enPlural(n, ' year', ' years')],
+ [/^(\+?\d+) mesi?$/i, (m, n) => n + enPlural(n, ' month', ' months')],
+ [/^(\d+)[–-](\d+) mesi$/i, (m, a, b) => a + '–' + b + ' months'],
+ [/^Da T0 a T1: grasso (.+) punti, massa magra (.+) kg\.$/i, (m, a, b) => 'T0 to T1: fat ' + a + ' points, lean mass ' + b + ' kg.'],
+ [/^Da scattare il (.+)$/i, (m, d) => 'To be taken ' + d],
+ [/^\+?(-?[\d.,]+) kg di massa magra, ([+\-−]?[\d.,]+) kg di grasso\.$/i, (m, a, b) => a + ' kg lean mass, ' + b + ' kg fat.'],
+ [/^(\d+) sentinel su (\d+) con seduta entro ±7 giorni a entrambi i checkpoint$/i, (m, a, b) => a + ' of ' + b + ' sentinel lifts with a session within ±7 days at both checkpoints'],
+ [/^(T[012]): seduta del (.+), (\d+) giorn[oi] (dopo|prima)$/i, (m, t, d, n, w) => t + ': session on ' + d + ', ' + n + enPlural(n, ' day ', ' days ') + (w === 'dopo' ? 'after' : 'before')],
+ [/^(T[012]): seduta del (.+), il giorno del checkpoint$/i, (m, t, d) => t + ': session on ' + d + ', on checkpoint day'],
+ [/^(T[012]): nessuna seduta entro ±7 giorni$/i, (m, t) => t + ': no session within ±7 days'],
+ [/^(T[012]) nessuna seduta$/i, (m, t) => t + ' no session'],
+ [/^(.+) kg\/kg magra$/i, (m, a) => a + ' kg/kg lean mass'],
+ [/^(\d+)% verso (.+)$/i, (m, a, b) => a + '% toward ' + b],
+ [/^(.+) vs inizio ciclo$/i, (m, a) => a + ' vs cycle start'],
+ [/^(\d+)\/(\d+) esercizi in salita$/i, (m, a, b) => a + '/' + b + ' exercises trending up'],
+ [/^(.+) vs (\d+) sett\. prima$/i, (m, a, n) => a + ' vs ' + n + ' wk earlier'],
+ [/^Ultimo backup: (.+)$/i, (m, r) => 'Last backup: ' + r.replace(/\bfa\b/, 'ago').replace(/^(.+?) ago$/, '$1 ago')],
+ [/^(\d+) snapshot conservati$/i, (m, n) => n + ' snapshots kept'],
+ [/^(\d+)% affidabilità (\d+)gg$/i, (m, a, b) => a + '% reliability ' + b + 'd'],
+ [/^Grado (\d)$/i, (m, n) => 'Grade ' + n],
+ [/^Prelievo ore (.+)$/i, (m, r) => 'Sample taken at ' + r],
+ [/^Giorno (\d+)\/(\d+) · Settimana (\d+)(.*)$/i, (m, a, b, c, r) => 'Day ' + a + '/' + b + ' · Week ' + c + r],
+ [/^G(\d+)\/(\d+) · Sett (\d+)(.*)$/i, (m, a, b, c, r) => 'D' + a + '/' + b + ' · Wk ' + c + r],
+ [/^Sett (\d+)$/i, (m, n) => 'Wk ' + n],
+ [/^(\d+) sett\.$/i, (m, n) => n + ' wk'],
+ [/^(\d+)gg$/i, (m, n) => n + 'd'],
+ [/^(\d+) gg$/i, (m, n) => n + ' d'],
+ [/^(\d+) giorni$/i, (m, n) => n + enPlural(n, ' day', ' days')],
+ [/^(\d+) giorni alla fine$/i, (m, n) => n + ' days left'],
+ [/^mancano (\d+) gg$/i, (m, n) => n + ' d to go'],
+ [/^\+(\d+) gg oltre fine ciclo$/i, (m, n) => '+' + n + ' d past cycle end'],
+ [/^Servono (\d+) (?:fino all[’']|fino al )(.+)$/i, (m, n, d) => n + ' needed until ' + d],
+ [/^Servono (\d+) in (\d+) allenamenti$/i, (m, a, b) => a + ' needed for ' + b + ' workouts'],
+ [/^Servono (\d+) mL per (\d+) vial da aprire$/i, (m, a, b) => a + ' mL needed for ' + b + ' vials to open'],
+ [/^\+(\d+) · copre fino al (.+)$/i, (m, n, d) => '+' + n + ' · covers until ' + d],
+ [/^(\d+) intatti · (\d+) finiti · (\d+) persi$/i, (m, a, b, c) => a + ' intact · ' + b + ' finished · ' + c + ' lost'],
+ [/^(.+) (\d+) intatti$/i, (m, n, k) => n + ' ' + k + ' intact'],
+ [/^SCORTE · FINE CICLO (.+)$/i, (m, d) => 'SUPPLIES · CYCLE END ' + d],
+ [/^fine ciclo (.+)$/i, (m, d) => 'cycle end ' + d],
+ [/^(\d+) fatte · (\d+) rimaste \/ (\d+)$/i, (m, a, b, c) => a + ' done · ' + b + ' left / ' + c],
+ [/^Finisce per dosi il (.+)$/i, (m, d) => 'Runs out of doses on ' + d],
+ [/^Scade il (.+) con (\d+) dosi non usate$/i, (m, d, n) => 'Expires ' + d + ' with ' + n + ' unused doses'],
+ [/^Vial (\d+) · Ricostituito (.+?) · scade (.+)$/i, (m, n, a, b) => 'Vial ' + n + ' · Reconstituted ' + a + ' · expires ' + b],
+ [/^Ricostituito (.+?) · (.+)$/i, (m, a, r) => 'Reconstituted ' + a + ' · ' + r.replace(/ in /, ' in ')],
+ [/^vial (\d+) · in uso$/i, (m, n) => 'vial ' + n + ' · in use'],
+ [/^Dose 1 su (\d+)$/i, (m, n) => 'Dose 1 of ' + n],
+ [/^(\d+) gg\.? · (\d+) mL$/i, (m, a, b) => a + ' d · ' + b + ' mL'],
+ [/^Oggi è (.+) · (.+)$/i, (m, a, b) => 'Today is ' + a + ' · ' + ({Lun:'Mon',Mar:'Tue',Mer:'Wed',Gio:'Thu',Ven:'Fri',Sab:'Sat',Dom:'Sun'})[b] ],
+ [/^(\d+) porz\.$/i, (m, n) => n + ' serv.'],
+ [/^TOTALE PASTO · (\d+) ALIMENT[OI]$/i, (m, n) => 'MEAL TOTAL · ' + n + (n === '1' ? ' FOOD' : ' FOODS')],
+ [/^Sett (\d+) · (.+)$/i, (m, n, r) => 'Wk ' + n + ' · ' + r],
+ [/^r = (.+) · (debole|moderata|forte|molto debole|molto forte) · n=(\d+)$/i, (m, r, s, n) => 'r = ' + r + ' · ' + ({debole:'weak',moderata:'moderate',forte:'strong','molto debole':'very weak','molto forte':'very strong'})[s.toLowerCase()] + ' · n=' + n],
+ [/^(.+) · (debole|moderata|forte)$/i, (m, r, s) => r + ' · ' + ({debole:'weak',moderata:'moderate',forte:'strong'})[s.toLowerCase()]],
+ [/^(\d+) mesi?$/i, (m, n) => n + enPlural(n, ' month', ' months')],
+ [/^Recupero ↔ (.+)$/i, (m, r) => 'Recovery ↔ ' + r],
+ [/^(.+) ↔ Sonno$/i, (m, r) => r + ' ↔ Sleep'],
+ [/^Sonno → HRV del giorno dopo$/i, () => 'Sleep → next-day HRV'],
+ [/^Ultimi 14 giorni contro i 14 precedenti$/i, () => 'Last 14 days vs previous 14'],
+ [/^Categorie: (.+)$/i, (m, r) => 'Categories: ' + r],
+ [/^(\d+) esercizi$/i, (m, n) => n + enPlural(n, ' exercise', ' exercises')],
+ [/^(\d+) sessioni$/i, (m, n) => n + enPlural(n, ' session', ' sessions')],
+ [/^(\d+) scatti$/i, (m, n) => n + enPlural(n, ' shot', ' shots')],
+ [/^(\d+) mcg (dx|sx)$/i, (m, n, s) => n + ' mcg ' + (s.toLowerCase() === 'dx' ? 'R' : 'L')],
+ [/^(.*) (dx|sx)$/i, (m, r, s) => r + ' ' + (s.toLowerCase() === 'dx' ? 'R' : 'L')]
+];
+/* ---- sostituzioni di frammenti (unita', suffissi) applicate dopo ---- */
+const EN_SUB = [[/snapshot conservati/g, 'snapshots kept'], [/affidabilità (\d+)gg/g, 'reliability $1d'], [/su gg\. previsti/g, 'on planned days'],
+  [/\bcellule\/µL/g, 'cells/µL'], [/mg\/g cre\b/g, 'mg/g creat'], [/\bkg\/kg magra\b/g, 'kg/kg lean mass']];
+/* ---- motore ---- */
+const EN_LOW = {};
+Object.keys(EN_DICT).forEach(k => { EN_LOW[k.toLowerCase().replace(/\s+/g, ' ').trim()] = EN_DICT[k]; });
+function enShape(out, src) {
+  if (src === src.toUpperCase() && src !== src.toLowerCase()) return out.toUpperCase();
+  const a = src.charAt(0), b = out.charAt(0);
+  if (a === a.toLowerCase() && a !== a.toUpperCase() && out.charAt(1) === out.charAt(1).toLowerCase()) return b.toLowerCase() + out.slice(1);
+  if (a === a.toUpperCase() && a !== a.toLowerCase()) return b.toUpperCase() + out.slice(1);
+  return out;
+}
+function enPiece(core) {
+  const key = core.toLowerCase().replace(/\s+/g, ' ').trim();
+  if (Object.prototype.hasOwnProperty.call(EN_LOW, key)) return enShape(EN_LOW[key], core);
+  for (const [re, fn] of EN_RULES) { const m = core.match(re); if (m) return fn.apply(null, m); }
+  const pre = core.match(/^([^A-Za-zÀ-ú0-9]+)(.*[A-Za-zÀ-ú].*)$/);   // freccia / emoji iniziale
+  if (pre) { const r = enPiece(pre[2]); if (r != null) return pre[1] + r; }
+  return null;
+}
+function enTranslate(text) {
+  const mLead = text.match(/^\s*/)[0], mTrail = text.match(/\s*$/)[0];
+  const core = text.trim();
+  if (!core || !/[A-Za-zÀ-ú]/.test(core)) return enPost(text);
+  let out = enPiece(core);
+  if (out == null && core.indexOf(' · ') >= 0) {
+    out = core.split(' · ').map(p => { const r = enPiece(p.trim()); return r == null ? p : r; }).join(' · ');
+  }
+  if (out == null && core.indexOf(' — ') >= 0 && core.length < 70) {
+    out = core.split(' — ').map(p => { const r = enPiece(p.trim()); return r == null ? p : r; }).join(' — ');
+  }
+  if (out == null) out = core;
+  EN_SUB.forEach(([re, rep]) => { out = out.replace(re, rep); });
+  return mLead + enPost(out) + mTrail;
+}
+/* ---- applicazione al DOM ---- */
+const EN_STATE = new WeakMap();   // nodo di testo -> { src, out }
+const EN_ATTR = ['placeholder', 'title', 'aria-label'];
+let _enBusy = false, _enRaf = 0, _enObs = null;
+function enWalk(root) {
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(n) {
+      const p = n.parentNode && n.parentNode.nodeName;
+      return (p === 'SCRIPT' || p === 'STYLE' || p === 'TEXTAREA') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+    }
+  });
+  let n; const list = [];
+  while ((n = w.nextNode())) list.push(n);
+  list.forEach(node => {
+    const st = EN_STATE.get(node), cur = node.data;
+    if (st && st.out === cur) return;            // gia' tradotto
+    if (!/[A-Za-zÀ-ú0-9]/.test(cur)) return;
+    const out = enTranslate(cur);
+    if (out !== cur) { EN_STATE.set(node, { src: cur, out }); node.data = out; }
+  });
+  root.querySelectorAll('[placeholder],[title],[aria-label]').forEach(el => {
+    EN_ATTR.forEach(a => {
+      const v = el.getAttribute(a); if (!v) return;
+      const k = '_en_' + a; if (el[k] === v) return;
+      const out = enTranslate(v);
+      if (out !== v) { el[k] = out; el.setAttribute(a, out); }
+    });
+  });
+}
+function enApply() {
+  if (typeof LANG === 'undefined' || LANG !== 'en') return;
+  const root = document.getElementById('app'); if (!root) return;
+  _enBusy = true;
+  try { enWalk(root); } finally { _enBusy = false; if (_enObs) _enObs.takeRecords(); }
+}
+function enSchedule() { if (_enRaf) return; _enRaf = requestAnimationFrame(() => { _enRaf = 0; enApply(); }); }
+function enRevert() {
+  const root = document.getElementById('app'); if (!root) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n;
+  while ((n = w.nextNode())) { const st = EN_STATE.get(n); if (st && st.out === n.data) { n.data = st.src; EN_STATE.delete(n); } }
+}
+(function enInit() {
+  const root = document.getElementById('app'); if (!root) return;
+  _enObs = new MutationObserver(() => { if (!_enBusy && typeof LANG !== 'undefined' && LANG === 'en') enSchedule(); });
+  _enObs.observe(root, { childList: true, subtree: true, characterData: true });
+  enApply();
+})();
+
+</script>
 </body>
 </html>
