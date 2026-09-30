@@ -4340,10 +4340,10 @@ function CLIN_renderBody(host) {
   '</section>';
   var tessere = '<section class="an-card" style="grid-column:span 8">' +
     '<div class="an-head"><span class="an-title">DEXA \u00b7 T0 \u2192 T1 \u2192 T2</span></div>' +
-    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px 16px">' +
+    '<div style="display:grid;grid-template-columns:' + (isDesktop ? 'repeat(4,1fr)' : 'repeat(2,minmax(0,1fr))') + ';gap:' + (isDesktop ? '10px 16px' : '8px') + '">' +
     dexa.map(function (x) {
-      return '<div style="display:flex;flex-direction:column;gap:3px">' +
-        '<span style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase">' + esc(x.d.label) + '</span>' +
+      return '<div style="display:flex;flex-direction:column;gap:3px;min-width:0' + (isDesktop ? '' : ';background:var(--surf2);border-radius:10px;padding:10px 12px') + '">' +
+        '<span style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase' + (isDesktop ? '' : ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis') + '">' + esc(x.d.label) + '</span>' +
         '<span style="font-size:20px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">' + (x.v != null ? CLIN_fmtNum(x.v.toFixed(x.d.dec)) : '\u2014') + ' <span style="font-size:11px;font-weight:500;color:var(--ink3)">' + x.d.unit + '</span></span>' +
         '<span style="font-size:10.5px;color:var(--ink3)">T0 ' + CLIN_fmtNum(x.d.t0.toFixed(x.d.dec)) + (x.dd != null ? '  <span style="color:' + x.col + ';font-weight:700">' + (x.dd >= 0 ? '+' : '') + CLIN_fmtNum(x.dd.toFixed(x.d.dec)) + '</span>' : '') + '</span>' +
       '</div>';
@@ -4375,6 +4375,25 @@ function CLIN_renderBody(host) {
     var deltaCol = x.dd > 0 ? 'var(--ok)' : x.dd < 0 ? 'var(--bad)' : 'var(--ink3)';
     var valTxt = (x.b0 ? CLIN_fmtNum(x.b0.kg) + ' kg' : '\u2014') + '  \u2192  ' + (x.b1 ? CLIN_fmtNum(x.b1.kg) + ' kg' : '\u2014');
     var ratioTxt = (x.r0 || '\u2014') + (x.r1 ? ' \u2192 ' + x.r1 : '') + ' kg/kg magra';
+    if (!isDesktop) {
+      /* mobile: 3 righe fisse, niente wrap -- nome | carichi, rapporto | delta, date compatte */
+      var dshort = function (b) {
+        if (!b) return 'nessuna seduta';
+        var sg = b.d > 0 ? '+' : (b.d < 0 ? '\u2212' : '\u00b1');
+        return CLIN_shortDate(b.iso) + ' (' + sg + Math.abs(b.d) + ' g)';
+      };
+      return '<div style="display:flex;flex-direction:column;gap:3px;padding:10px 0;border-top:1px solid var(--line2)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
+          '<span style="min-width:0"><strong style="color:var(--ink);font-size:14px">' + esc(x.l.label) + '</strong> <span style="font-size:10px;color:var(--ink3)">' + esc(x.l.muscle) + '</span></span>' +
+          '<span style="font-weight:700;color:var(--ink);font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap">' + valTxt + '</span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
+          '<span style="font-size:10.5px;color:var(--ink3);font-variant-numeric:tabular-nums">' + ratioTxt + '</span>' +
+          '<span style="font-size:11px;font-weight:700;color:' + deltaCol + ';white-space:nowrap">' + (x.dd != null ? deltaTxt : 'n/d') + '</span>' +
+        '</div>' +
+        '<span style="font-size:10px;color:var(--ink3)">T0 ' + dshort(x.b0) + ' \u00b7 T1 ' + dshort(x.b1) + '</span>' +
+      '</div>';
+    }
     return '<div style="display:flex;flex-direction:column;gap:4px;padding:9px 0;border-top:1px solid var(--line2)">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">' +
         '<span><strong style="color:var(--ink)">' + esc(x.l.label) + '</strong> <span style="font-size:10px;color:var(--ink3)">' + esc(x.l.muscle) + '</span></span>' +
