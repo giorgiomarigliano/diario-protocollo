@@ -990,15 +990,52 @@ function getDay(dateISO) {
    fonte che flush() usa davvero per il merge fetch-modify-write). */
 store.pending = {}; // { 'p2_day_44': { peso: '73.2', ... } }
 
-function patchSilent(dateISO, field, value) {
-  const key = dayKeyFromISO(dateISO);
+/* FIX 30/09/2026 -- dati "salvati" che poi non risultavano nel database.
+   Causa (riprodotta con un server finto a rete lenta): flush() faceva la foto delle chiavi
+   sporche PRIMA di attendere la rete e, a PATCH riuscito, cancellava da pending TUTTI i campi
+   di quelle chiavi -- compresi quelli compilati mentre il PATCH era in volo, che nel corpo
+   inviato non c'erano. Risultato: campo perso e indicatore "Sincronizzato". Con la rete lenta
+   del telefono la finestra dura 1-3 secondi, ed e' proprio quella in cui si compilano a raffica
+   energia, recupero, umore, chiarezza... Ora si conferma SOLO cio' che e' stato davvero inviato.
+   In piu': salvataggio immediato quando l'app va in secondo piano, e copia locale delle
+   modifiche in coda (ripristinate al prossimo avvio se l'app viene chiusa prima del salvataggio). */
+const PENDING_LS = 'dp2.pending';
+function pendingKeys() { return Object.keys(store.pending).filter(k => Object.keys(store.pending[k] || {}).length); }
+function persistPending() {
+  try {
+    if (pendingKeys().length) localStorage.setItem(PENDING_LS, JSON.stringify({ at: Date.now(), pending: store.pending }));
+    else localStorage.removeItem(PENDING_LS);
+  } catch (e) { /* storage pieno o non disponibile: il salvataggio in rete resta comunque */ }
+}
+function patchKey(key, field, value) {
   if (!store.blob) return; // non scrivere mai prima del fetch iniziale
   if (!store.blob[key]) store.blob[key] = {};
   store.blob[key][field] = value;
   if (!store.pending[key]) store.pending[key] = {};
   store.pending[key][field] = value;
   store.dirty[key] = true;
+  persistPending();
   queueSave();
+}
+function patchSilent(dateISO, field, value) {
+  patchKey(dayKeyFromISO(dateISO), field, value);
+}
+function restorePending() {
+  try {
+    const raw = localStorage.getItem(PENDING_LS); if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (!saved || !saved.pending || Date.now() - (saved.at || 0) > 72 * 3600 * 1000) { localStorage.removeItem(PENDING_LS); return; }
+    let n = 0;
+    Object.keys(saved.pending).forEach(key => {
+      const f = saved.pending[key];
+      if (!f || !/^p2_day_\d+$/.test(key)) return;
+      Object.keys(f).forEach(k => {
+        if (JSON.stringify((store.blob[key] || {})[k]) !== JSON.stringify(f[k])) { patchKey(key, k, f[k]); n++; }
+      });
+    });
+    if (!n) localStorage.removeItem(PENDING_LS);
+    else console.info('ripristinate ' + n + ' modifiche non ancora sincronizzate');
+  } catch (e) { console.warn('ripristino modifiche in coda non riuscito', e); }
 }
 
 function patch(dateISO, field, value) {
@@ -1061,8 +1098,7 @@ function updateSaveUI() {
 }
 
 async function flush() {
-  const dirtyKeys = Object.keys(store.dirty);
-  if (!dirtyKeys.length || store.saving) return;
+  if (!pendingKeys().length || store.saving) return;
   store.saving = true;
   store.saveError = false;
   updateSaveUI(); // MAI render() qui: un salvataggio in background non
@@ -1070,8 +1106,13 @@ async function flush() {
                    // campo che l'utente sta ancora scrivendo.
   try {
     const fresh = await loadBlob();
-    dirtyKeys.forEach(key => {
-      fresh[key] = Object.assign({}, fresh[key] || {}, store.pending[key] || {});
+    /* La foto di cio' che viene inviato si fa DOPO l'attesa di rete e riguarda tutte le
+       chiavi in coda (anche quelle nate mentre si aspettava il fetch). */
+    const sent = {};
+    pendingKeys().forEach(key => {
+      const fields = Object.assign({}, store.pending[key]);
+      sent[key] = fields;
+      fresh[key] = Object.assign({}, fresh[key] || {}, fields);
     });
     store.blob = fresh;
     const res = await fetch(`${CFG.PROXY_URL}?user_id=eq.${CFG.USER_ID}`, {
@@ -1082,18 +1123,35 @@ async function flush() {
         'Content-Type': 'application/json',
         Prefer: 'return=minimal'
       },
-      body: JSON.stringify({ data: store.blob })
+      body: JSON.stringify({ data: fresh })
     });
     if (!res.ok) throw new Error(`save ${res.status}`);
-    dirtyKeys.forEach(key => { delete store.dirty[key]; delete store.pending[key]; });
+    /* Conferma SOLO cio' che e' stato davvero inviato: un campo compilato o cambiato mentre il
+       PATCH era in volo resta in coda e parte col prossimo salvataggio. */
+    Object.keys(sent).forEach(key => {
+      const p = store.pending[key] || {};
+      Object.keys(sent[key]).forEach(f => {
+        if (JSON.stringify(p[f]) === JSON.stringify(sent[key][f])) delete p[f];
+      });
+      if (Object.keys(p).length) { store.pending[key] = p; store.dirty[key] = true; }
+      else { delete store.pending[key]; delete store.dirty[key]; }
+    });
   } catch (e) {
     console.warn('salvataggio rimandato, verrà ritentato', e);
     store.saveError = true; // prima solo in console, invisibile a Giorgio
   }
   store.saving = false;
+  persistPending();
   updateSaveUI();
-  if (Object.keys(store.dirty).length) queueSave();
+  if (pendingKeys().length) queueSave();
 }
+
+/* Salvataggio immediato quando l'app va in secondo piano o si chiude: il timer da 700 ms non
+   fa in tempo a scattare se si passa subito a un'altra app (su iPhone la pagina viene sospesa). */
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && pendingKeys().length) { clearTimeout(saveTimer); flush(); }
+});
+window.addEventListener('pagehide', () => { if (pendingKeys().length) { clearTimeout(saveTimer); flush(); } });
 
 /* ============================================================
    5 · MIRROR — copie VERBATIM delle funzioni di index.html, non
@@ -8591,7 +8649,7 @@ function GST_updateMealHero(){ /* il ridisegno completo di GST_renderAlimenti gi
 
 document.documentElement.lang = LANG;
 render();
-loadBlob().then(render).catch(e => console.error('Errore caricamento dati', e));
+loadBlob().then(() => { restorePending(); render(); }).catch(e => console.error('Errore caricamento dati', e));
 </script>
 
 </body>
