@@ -4270,8 +4270,11 @@ function CLIN_renderCheckpoint(host) {
       }).join('') +
     '</div>' +
   '</div>';
+  /* PORTING 30/09: stesso principio del fix in Corpo e forza -- i gruppi con 1 marker
+     (Asse somatotropo) non devono stirarsi all'altezza di quelli con 3-6 marker nella
+     stessa riga. */
   CLIN_GROUPS.forEach(function (g) {
-    html += '<section class="an-card" style="grid-column:span ' + g.span + '">' +
+    html += '<section class="an-card" style="grid-column:span ' + g.span + ';align-self:start">' +
       '<div class="an-head"><span class="an-title">' + esc(g.it) + '</span><span class="an-sub">' + g.keys.length + ' marker</span></div>' +
       g.keys.map(CLIN_tessera).join('') +
     '</section>';
@@ -4364,7 +4367,10 @@ function CLIN_renderBody(host) {
     { label: 'Forza sentinel (media)', txt: sentN ? ((sentPct >= 0 ? '+' : '') + CLIN_fmtNum(sentPct.toFixed(0)) + '%') : 'non disponibile', bar: 'var(--warn)', detail: sentN + ' sentinel su 5 con seduta entro \u00b1' + CLIN_WINDOW + ' giorni a entrambi i checkpoint' },
     pctRow('T Libero', tlib0 && tlib0.v, tlib1 && tlib1.v, 'var(--ink3)')
   ];
-  var link = '<section class="an-card" style="grid-column:span 5">' +
+  /* PORTING 30/09: la card si stirava (CSS grid stretch di default) all'altezza di "Forza
+     ai checkpoint" (5 esercizi su 3 righe ciascuno), molto piu' alta dei suoi 4 contenuti --
+     restava un grande vuoto bianco in fondo. align-self:start la tiene alla sua altezza reale. */
+  var link = '<section class="an-card" style="grid-column:span 5;align-self:start">' +
     '<div class="an-head"><span class="an-title">Sangue e muscolo, stessa finestra</span></div>' +
     rows.map(function (r) {
       var w = r.pct != null ? Math.min(100, Math.abs(r.pct)) : 0;
@@ -4497,11 +4503,15 @@ function CLIN_renderProg(host) {
     '<div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:22px;font-weight:700;color:var(--ink)">' + esc(s.label) + '</span><span style="font-size:12px;color:var(--ink3)">' + esc(s.unit) + '</span></div>' +
     (last ? '<span style="font-size:12.5px;font-weight:600;color:' + (lastKind === 'ok' ? 'var(--ok)' : lastKind === 'target' ? 'var(--warn-ink)' : 'var(--bad)') + '">Ultima misura ' + CLIN_fmtNum(last.v) + ' ' + s.unit + ' il ' + last.date + ' \u00b7 ' + CLIN_esitoTxt(lastKind, last) + '</span>' : '') +
     (last && last.ref ? '<span class="an-sub">Riferimento di laboratorio ' + esc(last.ref) + (s.unit ? ' ' + s.unit : '') + '</span>' : '') +
-    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:8px">' +
+    /* PORTING 30/09: le 4-5 pillole grigie (sfondo var(--surf2), raggio 10) erano un
+       linguaggio grafico a se stante, mai usato altrove in V2 -- ne' in Checkpoint ne' in
+       Corpo e forza, dove uno statistico e' sempre: etichetta piccola maiuscola, numero
+       grande, dettaglio piccolo sotto, SENZA riquadro. Allineato allo stesso stile. */
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line2)">' +
       [['Ultima', last], ['Precedente', prevPt], ['Minima', minP], ['Massima', maxP]].map(function (r) {
-        return '<div style="background:var(--surf2);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px"><span style="font-size:9.5px;color:var(--ink3);text-transform:uppercase">' + r[0] + '</span><span style="font-size:15px;font-weight:700;color:var(--ink)">' + (r[1] ? CLIN_fmtNum(r[1].v) : '\u2014') + '</span><span style="font-size:9.5px;color:var(--ink3)">' + (r[1] ? r[1].date : '') + '</span></div>';
+        return '<div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase">' + r[0] + '</span><span style="font-size:18px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">' + (r[1] ? CLIN_fmtNum(r[1].v) : '\u2014') + '</span><span style="font-size:10px;color:var(--ink3)">' + (r[1] ? r[1].date : '') + '</span></div>';
       }).join('') +
-      '<div style="background:var(--surf2);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px"><span style="font-size:9.5px;color:var(--ink3);text-transform:uppercase">Misure reali</span><span style="font-size:15px;font-weight:700;color:var(--ink)">' + realN + '</span><span style="font-size:9.5px;color:var(--ink3)">' + (pts[0] ? pts[0].date : '') + ' \u2192 ' + (last ? last.date : '') + '</span></div>' +
+      '<div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase">Misure reali</span><span style="font-size:18px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">' + realN + '</span><span style="font-size:10px;color:var(--ink3)">' + (pts[0] ? pts[0].date : '') + ' \u2192 ' + (last ? last.date : '') + '</span></div>' +
     '</div></section>';
 
   // ── grafico SVG, un punto per prelievo (asse per misura, non per tempo) ──
@@ -4647,8 +4657,19 @@ function CLIN_renderRef(host) {
     '<section class="an-card" style="grid-column:span 5">' +
       '<div class="an-head"><span class="an-title">Esami strumentali</span><span class="an-sub">ultimo esito</span></div>' +
       strum.map(function (s) { return '<div class="an-trow" style="grid-template-columns:10px 1fr"><span style="width:7px;height:7px;border-radius:50%;background:' + (s.ok ? 'var(--ok)' : 'var(--bad)') + ';margin-top:4px"></span><span><strong style="color:var(--ink)">' + esc(s.val) + '</strong><br><span style="font-size:10px;color:var(--ink3)">' + esc(s.label) + ' \u00b7 ' + esc(s.date) + '</span></span></div>'; }).join('') +
-      (dx.length ? '<div style="margin-top:8px;padding:10px;border-radius:10px;background:var(--hero);color:#fff;display:flex;flex-direction:column;gap:6px">' +
-        dx.map(function (x) { return '<div><span style="font-size:10px;color:#ffffff90;text-transform:uppercase">' + esc(x.cat) + '</span><br><strong>' + esc(x.name) + '</strong> ' + esc(CLIN_stripNote(x.val)) + '</div>'; }).join('') + '</div>' : '') +
+      /* PORTING 30/09: l'etichetta di categoria (es. "TERAPIA CONSIGLIATA & FOLLOW-UP")
+         si ripeteva identica su ogni singola riga -- ridondante, e diverso da come Checkpoint
+         intitola un gruppo una volta sola. Raggruppato per categoria, intestazione una volta. */
+      (dx.length ? (function () {
+        var byCat = {}; dx.forEach(function (x) { (byCat[x.cat] = byCat[x.cat] || []).push(x); });
+        return '<div style="margin-top:8px;padding:10px;border-radius:10px;background:var(--hero);color:#fff;display:flex;flex-direction:column;gap:8px">' +
+          Object.keys(byCat).map(function (cat) {
+            return '<div><span style="font-size:9.5px;font-weight:700;color:#ffffff80;text-transform:uppercase">' + esc(cat) + '</span>' +
+              byCat[cat].map(function (x) { return '<div style="font-size:11.5px;margin-top:3px"><strong>' + esc(x.name) + '</strong> ' + esc(CLIN_stripNote(x.val)) + '</div>'; }).join('') +
+            '</div>';
+          }).join('') +
+        '</div>';
+      })() : '') +
     '</section>';
   } else if (CLIN.refView === 'area') {
     body = CLIN_AREAS.map(function (a) {
