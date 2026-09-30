@@ -614,6 +614,62 @@
 .c-sess .an-thead{min-width:330px;}
 }
 
+
+/* ===== ERGONOMIA MOBILE (30/09/2026) -- punto 3 della due diligence =====
+   Solo sotto i 1024 px; il desktop non cambia. Testo: pavimento a 11 px (anche per gli stili inline, tramite
+   selettori sull'attributo style). Tocco: 44 px di altezza per chip, tab e pulsanti; per gli elementi che
+   restano piccoli (pallini, icone) si allarga solo l'area sensibile con un pseudo-elemento trasparente. */
+@media (max-width:1023px){
+  /* testo: classi (prefisso #app per battere le regole piu' specifiche dei moduli) */
+  #app .an-fsub,#app .an-ftag,#app .an-ftile-l,#app .an-chart-n,#app .an-num,#app .gst-cap,#app .an-caret,#app .an-fslot,#app .an-pill-t,#app .an-pill-l,#app .an-pill-v,#app .an-pband-l,#app .an-pmark-l,#app .an-frange-l,#app .t-badge,#app .an-thead,#app .an-thead span,#app .an-fdate{font-size:11px;}
+  /* testo: stili inline (7,5 -> 10,5 px) */
+  #app [style*="font-size:7.5px"],#app [style*="font-size:8px"],#app [style*="font-size:8.5px"],#app [style*="font-size:9px"],
+  #app [style*="font-size:9.5px"],#app [style*="font-size:10px"],#app [style*="font-size:10.5px"],
+  #app [style*="font-size: 7.5px"],#app [style*="font-size: 8px"],#app [style*="font-size: 8.5px"],#app [style*="font-size: 9px"],
+  #app [style*="font-size: 9.5px"],#app [style*="font-size: 10px"],#app [style*="font-size: 10.5px"]{font-size:11px !important;}
+  #app svg text{font-size:11.5px;}
+  #app svg[style*="height:auto"] text{font-size:12.5px;}
+  #app .an-pill-v span,#app .an-fpick,#app .an-fpick label,#app .an-fdiff-i,#app .an-fdiff-i span{font-size:11px;}
+  #app .an-pill-v>span{font-size:11px;}
+  /* tocco: navigazione e chip (#app batte i min-height:0 dei moduli) */
+  #app .an-chip,#app .an-root .an-chip,#app .clin-seg .an-chip,#app .an-fmodes button,#app .an-range button,#app [data-gst-food-cat],#app [data-gst-food-add]{min-height:44px;}
+  #app .an-chip{display:inline-flex;align-items:center;justify-content:center;}
+  #app .an-range button,#app [data-gst-food-add]{min-width:44px;}
+  .hdr-lang button{min-height:44px;min-width:40px;}
+  #app .an-fdel{width:44px;height:44px;background:transparent;}
+  #app .an-fdel::before{content:'';width:26px;height:26px;border-radius:50%;background:rgba(10,10,14,.55);position:absolute;z-index:-1;}
+  #app .an-fdel:hover::before{background:var(--bad);}
+  #app .an-frange{min-height:44px;}
+  #app a[href]{min-height:44px;display:inline-flex;align-items:center;}
+  /* tocco: area sensibile allargata senza cambiare il layout */
+  #app [data-subjpip]{position:relative;}
+  #app [data-subjpip]::after{content:'';position:absolute;left:0;right:0;top:-10px;bottom:-10px;}
+  #app [data-injdose],#app [data-injmenu],#app [data-subjmenu],#app [data-range]{position:relative;}
+  #app [data-injdose]::after,#app [data-injmenu]::after,#app [data-subjmenu]::after,#app [data-range]::after{content:'';position:absolute;left:-6px;right:-6px;top:-8px;bottom:-8px;}
+  /* campi di inserimento: 16 px evita lo zoom automatico di Safari; riquadri alti 44 */
+  #app input[data-f],#app select[data-f]{font-size:16px !important;}
+  #app span:has(> input[data-f]){height:auto !important;min-height:44px;}
+  #app span:has(> input[data-f]) > input[data-f]{align-self:stretch;min-height:44px;}
+  #app input[data-f]{min-height:44px;}
+  /* residui: categorie alimenti, modalita' confronto, "mostra tutte", select date, righe giorno della settimana */
+  /* viste Foto: con il testo a 11 px le tessere dati e le righe non devono sforare la card */
+  #app .an-ftiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
+  #app .an-ftile{padding:9px 8px;min-width:0;}
+  #app .an-ftile-l{overflow-wrap:anywhere;}
+  #app .an-fsub{white-space:normal;overflow:visible;text-overflow:clip;}
+  /* Lista foto: foto + intestazione in alto, tessere dati e prelievi a tutta larghezza sotto */
+  #app .an-flcard2{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto 1fr auto auto auto;column-gap:14px;row-gap:0;align-items:start;}
+  #app .an-flcard2 .an-flbody2{display:contents;}
+  #app .an-flcard2 .an-flphoto2{grid-column:1;grid-row:1 / span 2;}
+  #app .an-flcard2 .an-flbody2>div:first-child{grid-column:2;grid-row:1;padding-right:44px;}
+  #app .an-flcard2 .an-flbody2>div[style*="margin-top: 6px"]:not([style*="font-size"]){grid-column:2;grid-row:2;align-self:start;}
+  #app .an-flcard2 .an-flbody2>div[style*="grid-template-columns"]{grid-column:1 / -1;grid-row:3;grid-template-columns:repeat(3,minmax(0,1fr)) !important;}
+  #app .an-flcard2 .an-flbody2>div[style*="display: flex"][style*="gap: 6px"]{grid-column:1 / -1;grid-row:4;}
+  #app .an-flcard2 .an-flbody2>div[style*="font-size: 10.5px"]{grid-column:1 / -1;grid-row:5;}
+  #app [data-gst-food-cat],#app .an-fmode2,#app [data-an-cmpmode],#app button[data-an],#app select{min-height:44px !important;}
+  #app .an-fmode2,#app [data-an-cmpmode]{display:inline-flex;align-items:center;justify-content:center;}
+  #app [onclick*="oggiViewMode='day'"][style*="border-top"]{min-height:44px;box-sizing:border-box;}
+}
 </style>
 </head>
 <body>
@@ -3462,7 +3518,7 @@ function buildFoto(root){
       for (var rv=1; rv<=5; rv++){
         (function(v){
           var b=document.createElement("button"); b.type="button"; b.textContent="★";
-          b.style.cssText="border:none;background:none;cursor:pointer;font-size:16px;line-height:1;padding:2px;color:"+(curRating>=v?"var(--warn)":"var(--line2)");
+          b.style.cssText="border:none;background:none;cursor:pointer;font-size:20px;line-height:1;padding:2px;min-width:40px;min-height:40px;color:"+(curRating>=v?"var(--warn)":"var(--line2)");
           b.addEventListener("click", function(){ AN_savePhotoRating(p.filename, v); });
           rt.appendChild(b);
         })(rv);
@@ -5494,7 +5550,7 @@ function renderDayNav() {
     : `${dowFullEn[selD.getDay()]} ${monthsEn[selD.getMonth()]} ${selD.getDate()}`;
 
   const weekTabsM = Array.from({ length: totalWeeks }, (_, w) => w).map(w => `
-    <span onclick="jumpToWeek(${w})" style="flex:0 0 auto;padding:6px 11px;border-radius:999px;font-size:11.5px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;
+    <span onclick="jumpToWeek(${w})" style="flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;box-sizing:border-box;padding:0 13px;border-radius:999px;font-size:11.5px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;
       background:${w === selWeek ? 'var(--accent)' : 'var(--surf2)'};color:${w === selWeek ? '#fff' : 'var(--ink2)'};border:1px solid ${w === selWeek ? 'var(--accent)' : 'var(--line)'};">W${w + 1}</span>
   `).join('');
 
@@ -5541,8 +5597,8 @@ function renderDayNav() {
     <div style="flex:0 0 auto;padding:10px 18px 8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
       ${titleBlockM}
       <div style="flex:0 0 auto;display:flex;gap:3px;background:var(--surf2);border-radius:8px;padding:3px;">
-        <span onclick="oggiViewMode='day'; render();" style="padding:6px 11px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;background:${oggiViewMode === 'day' ? 'var(--accent)' : 'transparent'};color:${oggiViewMode === 'day' ? '#fff' : 'var(--ink2)'};">${L.day}</span>
-        <span onclick="oggiViewMode='week'; render();" style="padding:6px 11px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;background:${oggiViewMode === 'week' ? 'var(--accent)' : 'transparent'};color:${oggiViewMode === 'week' ? '#fff' : 'var(--ink2)'};">${LANG === 'it' ? 'Settimana' : 'Week'}</span>
+        <span onclick="oggiViewMode='day'; render();" style="display:inline-flex;align-items:center;min-height:40px;box-sizing:border-box;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;background:${oggiViewMode === 'day' ? 'var(--accent)' : 'transparent'};color:${oggiViewMode === 'day' ? '#fff' : 'var(--ink2)'};">${L.day}</span>
+        <span onclick="oggiViewMode='week'; render();" style="display:inline-flex;align-items:center;min-height:40px;box-sizing:border-box;padding:0 13px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;background:${oggiViewMode === 'week' ? 'var(--accent)' : 'transparent'};color:${oggiViewMode === 'week' ? '#fff' : 'var(--ink2)'};">${LANG === 'it' ? 'Settimana' : 'Week'}</span>
       </div>
     </div>
     <div style="flex:0 0 auto;padding:0 18px 7px;display:flex;gap:5px;overflow-x:auto;">${weekTabsM}</div>
