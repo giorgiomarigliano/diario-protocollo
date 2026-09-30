@@ -9359,7 +9359,8 @@ async function exportPDF(statusEl, btn) {
       const px = iso => cx + 12 + (cw - 20) * ((new Date(iso + 'T00:00:00') - t0d) / 86400000) / span, py = v => cy + 6 + (ch - 10) * (1 - (v - vMin) / (vMax - vMin));
       doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor(134, 134, 139); doc.setDrawColor(225, 225, 230); doc.setLineWidth(0.2);
       [vMin, (vMin + vMax) / 2, vMax].forEach(v => { doc.line(cx + 11, py(v), cx + cw - 5, py(v)); doc.text(pdfN(v, 1), cx + 9, py(v) + 1, { align: 'right' }); });
-      [[CLIN_CK.t0, 'T0'], [CLIN_CK.t1, 'T1']].forEach(([iso, lb]) => { if (iso >= wser[0].iso && iso <= wser[wser.length - 1].iso) { doc.setDrawColor(255, 149, 0); doc.setLineDashPattern([1, 1], 0); doc.line(px(iso), cy + 4, px(iso), cy + ch - 4); doc.setLineDashPattern([], 0); doc.setTextColor(255, 149, 0); doc.text(lb, px(iso), cy + 3.2, { align: 'center' }); } });
+      const drawnCk = [];
+      [[CLIN_CK.t0, 'T0'], [CLIN_CK.t1, 'T1']].forEach(([iso, lb]) => { if (iso >= wser[0].iso && iso <= wser[wser.length - 1].iso) { drawnCk.push(lb); doc.setDrawColor(255, 149, 0); doc.setLineDashPattern([1, 1], 0); doc.line(px(iso), cy + 4, px(iso), cy + ch - 4); doc.setLineDashPattern([], 0); doc.setTextColor(255, 149, 0); doc.text(lb, px(iso), cy + 3.2, { align: 'center' }); } });
       doc.setDrawColor(0, 113, 227); doc.setLineWidth(0.5);
       let gaps = 0;
       for (let i = 0; i < wser.length - 1; i++) {
@@ -9370,7 +9371,7 @@ async function exportPDF(statusEl, btn) {
       doc.setFillColor(0, 113, 227); wser.forEach(p => doc.circle(px(p.iso), py(p.v), 0.6, 'F'));
       doc.setTextColor(134, 134, 139); doc.setFontSize(6.5);
       [wser[0], wser[Math.floor(wser.length / 2)], wser[wser.length - 1]].forEach((p, i) => doc.text(pdfDM(p.iso), px(p.iso), cy + ch + 5, { align: i === 0 ? 'left' : (i === 2 ? 'right' : 'center') }));
-      doc.text('Peso giornaliero (kg). Verticali arancio: checkpoint. Tratto grigio puntinato: piu di 3 giorni senza pesata, andamento non noto.', cx + 3, cy + ch + 9.5);
+      doc.text('Peso giornaliero (kg). ' + (drawnCk.length ? 'Verticale arancio: checkpoint ' + drawnCk.join(' e ') + (drawnCk.length < 2 ? ' (il T0 del ' + pdfDMY(CLIN_CK.t0) + ' precede la prima pesata del grafico)' : '') + '. ' : '') + 'Tratto puntinato: piu di 3 giorni senza pesata, andamento non noto.', cx + 3, cy + ch + 9.5);
       y = cy + ch + 18;
     } else y = bodyText(y, 'Dati insufficienti per il grafico.');
     y = sectionTitle(y, 'Confronto visivo: checkpoint T0 e T1');
@@ -9426,7 +9427,7 @@ async function exportPDF(statusEl, btn) {
     y = startPart('Parte 3 di 3', 'Laboratorio T0 -> T1');
     y = bodyText(y, 'T0: DEXA 9 maggio 2026 e pannello ematico 13 luglio 2026. T1: 12 settembre 2026. Valori come registrati nel diario; i range sono quelli del laboratorio.');
     y = sectionTitle(y, 'DEXA');
-    const dRows = CLIN_DEXA_META.map(d => { const v1 = CLIN_dexaT(d.key, 't1'), dd = v1 != null ? v1 - d.t0 : null; return [d.label + (d.label.indexOf('(') >= 0 ? '' : ' (' + pdfTxt(d.unit) + ')'), pdfN(d.t0, d.dec), v1 != null ? pdfN(v1, d.dec) : 'n/d', dd != null ? (dd >= 0 ? '+' : '') + pdfN(dd, d.dec) : '\u2014']; });
+    const dRows = CLIN_DEXA_META.map(d => { const v1 = CLIN_dexaT(d.key, 't1'), dd = v1 != null ? v1 - d.t0 : null; return [d.label + ((d.label.indexOf('(') >= 0 || (d.unit === '%' && d.label.indexOf('%') >= 0)) ? '' : ' (' + pdfTxt(d.unit) + ')'), pdfN(d.t0, d.dec), v1 != null ? pdfN(v1, d.dec) : 'n/d', dd != null ? (dd >= 0 ? '+' : '') + pdfN(dd, d.dec) : '\u2014']; });
     tbl2({ startY: y, head: [['Parametro', 'T0 (9 mag)', 'T1 (12 set)', 'Differenza']], body: dRows, columnStyles: { 0: { fontStyle: 'bold' } } });
     y = tblY() + 8;
     y = sectionTitle(y, 'Pannello ematico Santagostino');
@@ -9449,7 +9450,7 @@ async function exportPDF(statusEl, btn) {
       const pts = CLIN_seriesPoints(k).filter(p => !(p.checkpoint && !CLIN_labT(k, p.checkpoint))), last = pts[pts.length - 1]; if (!last) return null;
       const kind = CLIN_kindOf(last, k); if (kind === 'ok') return null;
       const outN = pts.filter(p => CLIN_kindOf(p, k) !== 'ok').length;
-      return [SER[k].label, CLIN_fmtNum(last.v) + ' ' + SER[k].unit, last.ref || '\u2014', (last.date || '') + (last.src ? ' \u00b7 ' + last.src : ''), kind === 'target' ? 'sotto target clinico' : (outN === pts.length ? 'sempre fuori' : 'fuori ' + outN + ' volte su ' + pts.length)];
+      return [SER[k].label, CLIN_fmtNum(last.v) + ' ' + SER[k].unit, last.ref || '\u2014', (last.date || '') + (last.src ? ' \u00b7 ' + last.src : ''), kind === 'target' ? 'sotto target clinico' : (outN === pts.length ? 'sempre fuori' : 'fuori ' + outN + (outN === 1 ? ' volta' : ' volte') + ' su ' + pts.length)];
     }).filter(Boolean);
     tbl2({ startY: y, head: [['Marker', 'Ultima misura', 'Riferimento', 'Data e fonte', 'Frequenza']], body: watch.length ? watch : [['Nessun marker fuori range', '', '', '', '']], styles: { fontSize: 7.8, cellPadding: 2, textColor: [58, 58, 60] }, columnStyles: { 0: { fontStyle: 'bold' } } });
     y = tblY() + 6; bodyText(y, 'Frequenza: su quante misure storiche (dal 2020) il marker risulta fuori range. Report generato dai dati del diario personale: non sostituisce i referti originali.', 7.5);
