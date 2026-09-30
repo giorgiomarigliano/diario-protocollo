@@ -721,6 +721,16 @@
   .gst-m .an-subnav{padding-bottom:2px;}
 }
 
+/* CLINICA (30/09): Progressione e Referti allineati a Checkpoint / Corpo e forza -- sotto-tab su una riga,
+   selettore a segmenti dei Referti, foglio di scelta del parametro. */
+.clin-seg{display:flex;gap:3px;background:var(--surf2);border:1px solid var(--line);border-radius:12px;padding:3px;grid-column:1/-1;width:100%;box-sizing:border-box;}
+.clin-seg .an-chip{flex:1 1 0;white-space:nowrap;justify-content:center;text-align:center;border:none;background:transparent !important;border-radius:9px;min-height:40px;padding:0 6px;color:var(--ink2);}
+.clin-seg .an-chip.is-active{background:var(--surf) !important;color:var(--ink);box-shadow:0 1px 2px rgba(10,10,14,.10);}
+@media (min-width:1024px){ .clin-seg{width:fit-content;} .clin-seg .an-chip{flex:0 0 auto;min-height:32px;padding:0 18px;} }
+@media (max-width:1023px){
+  .an-root .an-chip[data-clin-tab]{flex:1 1 auto;justify-content:center;text-align:center;min-height:40px;padding:0 8px;}
+  .an-root .an-chips:has(.an-chip[data-clin-tab]){gap:5px;}
+}
 /* CLINICA (29/09): griglia foto a 3 colonne desktop, impilata su mobile -- MAI a
    carosello che scorre di lato (regola ferma di questo progetto). */
 .clin-foto-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
@@ -4128,12 +4138,12 @@ function CLIN_dexaT(key, which) {
    .an-subnav, una .an-view per sotto-tab, ciascuna popolata da
    una funzione CLIN_render<Nome>(host) al mount o al cambio tab.
    ============================================================ */
-var CLIN = { sub: 'ck', selKey: 'hdl', refView: 'watch', openArea: null, selPanel: null };
+var CLIN = { sub: 'ck', selKey: 'hdl', refView: 'watch', openArea: null, selPanel: null, selOpen: false, progAll: false, watchAll: false };
 
 function CLIN_HTML() {
   return '<div class="an-root">' +
     '<div class="an-subnav"><div class="an-chips">' +
-      ['ck:Checkpoint', 'body:Corpo e forza', 'foto:Foto', 'prog:Progressione', 'ref:Referti'].map(function (s) {
+      ['ck:Checkpoint', 'body:' + (window.innerWidth < 1024 ? 'Corpo' : 'Corpo e forza'), 'foto:Foto', 'prog:Progressione', 'ref:Referti'].map(function (s) {
         var p = s.split(':'); return '<button type="button" class="an-chip' + (p[0] === CLIN.sub ? ' is-active' : '') + '" data-clin-tab="' + p[0] + '">' + p[1] + '</button>';
       }).join('') +
     '</div><span class="an-sub" data-clin-cycle style="align-self:center;margin-left:auto;padding-right:4px"></span></div>' +
@@ -4179,8 +4189,18 @@ function CLIN_bind() {
 }
 function CLIN_bindView() {
   var host = document.querySelector('[data-clin-view].is-active'); if (!host) return;
+  host.querySelectorAll('[data-clin-chooser]').forEach(function (b) {
+    b.addEventListener('click', function () { CLIN.selOpen = b.getAttribute('data-clin-chooser') === 'open'; CLIN_renderProg(document.querySelector('[data-clin-view="prog"]')); CLIN_bindView(); });
+  });
+  host.querySelectorAll('[data-clin-more]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (b.getAttribute('data-clin-more') === 'prog') { CLIN.progAll = !CLIN.progAll; CLIN_renderProg(document.querySelector('[data-clin-view="prog"]')); }
+      else { CLIN.watchAll = !CLIN.watchAll; CLIN_renderRef(document.querySelector('[data-clin-view="ref"]')); }
+      CLIN_bindView();
+    });
+  });
   host.querySelectorAll('[data-clin-marker]').forEach(function (b) {
-    b.addEventListener('click', function () { CLIN.selKey = b.getAttribute('data-clin-marker'); CLIN_renderProg(document.querySelector('[data-clin-view="prog"]')); CLIN_bindView(); });
+    b.addEventListener('click', function () { CLIN.selKey = b.getAttribute('data-clin-marker'); CLIN.selOpen = false; CLIN_renderProg(document.querySelector('[data-clin-view="prog"]')); CLIN_bindView(); });
   });
   host.querySelectorAll('[data-clin-refview]').forEach(function (b) {
     b.addEventListener('click', function () { CLIN.refView = b.getAttribute('data-clin-refview'); CLIN_renderRef(document.querySelector('[data-clin-view="ref"]')); CLIN_bindView(); });
@@ -4527,6 +4547,23 @@ function CLIN_esitoTxt(kind, p) {
   if (kind === 'target') return 'sotto target clinico';
   return 'nel range';
 }
+function CLIN_hero(label, sentence, stats) {
+  return '<section class="an-card" style="grid-column:1/-1;background:var(--hero);color:#fff;gap:10px">' +
+    '<span style="font-size:10.5px;font-weight:600;color:#ffffffb0;text-transform:uppercase">' + label + '</span>' +
+    '<span style="font-size:19px;font-weight:700;line-height:1.25">' + sentence + '</span>' +
+    '<div style="display:flex;gap:10px;margin-top:4px">' + stats.map(function (t) {
+      return '<div style="flex:1 1 0;min-width:0"><div style="font-size:24px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:' + (t.c || '#fff') + '">' + t.v + '</div>' +
+        '<div style="font-size:10px;font-weight:600;color:#ffffffb0;text-transform:uppercase;margin-top:2px">' + t.l + '</div></div>';
+    }).join('') + '</div></section>';
+}
+function CLIN_heroWatch(watch) {
+  var n = watch.length, always = watch.filter(function (w) { return w.persist === 'sempre fuori'; }).length;
+  var tgt = watch.filter(function (w) { return w.kind === 'target'; }).length;
+  var rip = n - always - tgt;
+  var stats = [{ v: n, l: 'Da seguire' }, { v: always, l: 'Sempre fuori', c: '#ff7a6b' }, { v: rip, l: 'A pi\u00f9 riprese', c: '#ffd23f' }];
+  if (tgt) stats.push({ v: tgt, l: 'Sotto target', c: '#ffd23f' });
+  return CLIN_hero('Referti \u00b7 ultima misura di ogni marker', n + (n === 1 ? ' marker fuori range' : ' marker fuori range') + ', ' + always + (always === 1 ? ' in tutte le misure.' : ' in tutte le misure.'), stats);
+}
 function CLIN_renderProg(host) {
   var sel = CLIN.selKey, s = CLIN_DATA.series[sel] || { label: sel, unit: '', better: 'neutral' };
   var pts = CLIN_seriesPoints(sel);
@@ -4537,7 +4574,7 @@ function CLIN_renderProg(host) {
   var lastKind = last ? CLIN_kindOf(last, sel) : null;
   var CYCLE0 = '2026-07-20', CYCLE1 = '2026-11-08';
 
-  var selector = '<section class="an-card" style="grid-column:span 3;max-height:900px;overflow-y:auto">' +
+  var selectorDesk = '<section class="an-card" style="grid-column:span 3;align-self:start;max-height:900px;overflow-y:auto">' +
     '<div class="an-head"><span class="an-title">Scegli il parametro</span></div>' +
     CLIN_APPARATI.map(function (ap) {
       var ks = ap.keys.filter(function (k) { return CLIN_DATA.series[k]; });
@@ -4555,25 +4592,51 @@ function CLIN_renderProg(host) {
     }).join('') +
   '</section>';
 
+
   var realN = pts.filter(function (p) { return !p.checkpoint || CLIN_labT(sel, p.checkpoint); }).length;
-  var head = '<section class="an-card" style="grid-column:span 9">' +
-    '<span class="an-sub">' + (CLIN_APPARATI.find(function (a) { return a.keys.indexOf(sel) >= 0; }) || { label: '' }).label + '</span>' +
-    '<div style="display:flex;align-items:baseline;gap:10px"><span style="font-size:22px;font-weight:700;color:var(--ink)">' + esc(s.label) + '</span><span style="font-size:12px;color:var(--ink3)">' + esc(s.unit) + '</span></div>' +
-    (last ? '<span style="font-size:12.5px;font-weight:600;color:' + (lastKind === 'ok' ? 'var(--ok)' : lastKind === 'target' ? 'var(--warn-ink)' : 'var(--bad)') + '">Ultima misura ' + CLIN_fmtNum(last.v) + ' ' + s.unit + ' il ' + last.date + ' \u00b7 ' + CLIN_esitoTxt(lastKind, last) + '</span>' : '') +
-    (last && last.ref ? '<span class="an-sub">Riferimento di laboratorio ' + esc(last.ref) + (s.unit ? ' ' + s.unit : '') + '</span>' : '') +
-    /* PORTING 30/09: le 4-5 pillole grigie (sfondo var(--surf2), raggio 10) erano un
-       linguaggio grafico a se stante, mai usato altrove in V2 -- ne' in Checkpoint ne' in
-       Corpo e forza, dove uno statistico e' sempre: etichetta piccola maiuscola, numero
-       grande, dettaglio piccolo sotto, SENZA riquadro. Allineato allo stesso stile. */
-    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line2)">' +
-      [['Ultima', last], ['Precedente', prevPt], ['Minima', minP], ['Massima', maxP]].map(function (r) {
-        return '<div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase">' + r[0] + '</span><span style="font-size:18px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">' + (r[1] ? CLIN_fmtNum(r[1].v) : '\u2014') + '</span><span style="font-size:10px;color:var(--ink3)">' + (r[1] ? r[1].date : '') + '</span></div>';
-      }).join('') +
-      '<div style="display:flex;flex-direction:column;gap:3px"><span style="font-size:9.5px;font-weight:600;color:var(--ink3);text-transform:uppercase">Misure reali</span><span style="font-size:18px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums">' + realN + '</span><span style="font-size:10px;color:var(--ink3)">' + (pts[0] ? pts[0].date : '') + ' \u2192 ' + (last ? last.date : '') + '</span></div>' +
-    '</div></section>';
+  var apObj = CLIN_APPARATI.find(function (a) { return a.keys.indexOf(sel) >= 0; }) || { label: '' };
+  var nApp = CLIN_APPARATI.reduce(function (n, a) { return n + a.keys.filter(function (k) { return CLIN_DATA.series[k]; }).length; }, 0);
+  var t0P = pts.find(function (p) { return p.iso === CLIN_CK.t0; });
+  var cmpP = (t0P && t0P !== last) ? t0P : prevPt, cmpL = (t0P && t0P !== last) ? 'Da T0' : 'Precedente';
+  var dTxt = '\u2014', dCol = '#fff';
+  if (last && cmpP) {
+    var dv = last.v - cmpP.v;
+    dTxt = (dv > 0 ? '+' : '') + (Math.abs(dv) < 0.005 ? '0' : CLIN_fmtNum(dv, CLIN_decOf(cmpP.v)));
+    var goodD = s.better === 'neutral' || Math.abs(dv) < 0.005 ? null : (s.better === 'up' ? dv > 0 : dv < 0);
+    dCol = goodD == null ? '#fff' : (goodD ? '#5fd07f' : '#ff7a6b');
+  }
+  var heroP = CLIN_hero(esc(s.label) + ' \u00b7 ' + esc(apObj.label) + ' \u00b7 ' + realN + (realN === 1 ? ' misura' : ' misure'),
+    last ? 'Ultima misura ' + CLIN_fmtNum(last.v) + ' ' + esc(s.unit) + ', ' + CLIN_esitoTxt(lastKind, last) + (last.ref ? ' (rif. ' + esc(last.ref) + ')' : '') + '.' : 'Nessuna misura.',
+    [{ v: last ? CLIN_fmtNum(last.v) : '\u2014', l: 'Ultima' + (last ? ' \u00b7 ' + esc(last.date) : '') },
+     { v: dTxt, l: cmpL + (cmpP ? ' (' + CLIN_fmtNum(cmpP.v) + ')' : ''), c: dCol },
+     { v: minP ? CLIN_fmtNum(minP.v) : '\u2014', l: 'Minima' }, { v: maxP ? CLIN_fmtNum(maxP.v) : '\u2014', l: 'Massima' }]);
+  var dotOf = function (k) { var pk = CLIN_seriesPoints(k), lk = pk[pk.length - 1], kd = lk ? CLIN_kindOf(lk, k) : null; return kd === 'out' ? 'var(--bad)' : kd === 'target' ? 'var(--warn-ink)' : 'var(--ok)'; };
+  var chooser = '<button type="button" data-clin-chooser="open" style="grid-column:1/-1;display:flex;align-items:center;gap:12px;width:100%;height:56px;box-sizing:border-box;padding:0 16px;background:var(--surf);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);cursor:pointer;text-align:left;font:inherit;color:inherit">' +
+    '<span style="width:10px;height:10px;border-radius:50%;background:' + dotOf(sel) + ';flex-shrink:0"></span>' +
+    '<span style="display:flex;flex-direction:column;flex-grow:1;min-width:0"><span style="font-size:16px;font-weight:700;color:var(--ink)">' + esc(s.label) + '</span><span style="font-size:11.5px;color:var(--ink3)">' + esc(apObj.label) + ' \u00b7 ' + nApp + ' parametri</span></span>' +
+    '<span style="font-size:13px;font-weight:700;color:var(--accent)">Cambia \u25be</span></button>';
+  var sheet = '';
+  if (!isDesktop && CLIN.selOpen) {
+    sheet = '<div data-clin-chooser="close" style="position:fixed;inset:0;z-index:60;background:rgba(10,10,12,.45)"></div>' +
+      '<div style="position:fixed;left:0;right:0;bottom:0;top:40px;z-index:61;background:var(--surf);border-radius:22px 22px 0 0;padding:10px 16px calc(18px + env(safe-area-inset-bottom,0px));overflow-y:auto;-webkit-overflow-scrolling:touch;box-sizing:border-box">' +
+      '<div style="width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px"></div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:18px;font-weight:700;color:var(--ink)">Scegli il parametro</span><button type="button" data-clin-chooser="close" style="border:none;background:none;color:var(--accent);font-size:13px;font-weight:700;padding:10px 4px;cursor:pointer">Chiudi</button></div>' +
+      CLIN_APPARATI.map(function (ap) {
+        var ks = ap.keys.filter(function (k) { return CLIN_DATA.series[k]; });
+        if (!ks.length) return '';
+        return '<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.02em;margin:14px 0 8px 2px">' + esc(ap.label) + '</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">' + ks.map(function (k) {
+            var pk = CLIN_seriesPoints(k), lk = pk[pk.length - 1], on = k === sel;
+            return '<button type="button" data-clin-marker="' + k + '" style="display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:58px;box-sizing:border-box;padding:6px 14px;border-radius:12px;cursor:pointer;text-align:left;font:inherit;color:inherit;background:' + (on ? 'var(--accent-soft)' : 'var(--surf2)') + ';border:1.5px solid ' + (on ? 'var(--accent)' : 'transparent') + '">' +
+              '<span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:13.5px;line-height:1.2;font-weight:' + (on ? 700 : 600) + ';color:var(--ink)">' + esc(CLIN_DATA.series[k].label) + '</span>' +
+              '<span style="font-size:12px;color:var(--ink3);font-variant-numeric:tabular-nums">' + (lk ? CLIN_fmtNum(lk.v) : '') + '</span></span>' +
+              '<span style="width:10px;height:10px;border-radius:50%;background:' + dotOf(k) + ';flex-shrink:0"></span></button>';
+          }).join('') + '</div>';
+      }).join('') + '</div>';
+  }
 
   // ── grafico SVG, un punto per prelievo (asse per misura, non per tempo) ──
-  var W = Math.max(560, pts.length * 50), H = 220, padL = 34, padR = 16, top = 20, bottom = 34;
+  var W = isDesktop ? Math.max(560, pts.length * 50) : 340, H = isDesktop ? 220 : 210, padL = isDesktop ? 34 : 30, padR = isDesktop ? 16 : 14, top = 20, bottom = 34;
   var plotW = W - padL - padR, plotH = H - top - bottom;
   var vmin = Math.min.apply(null, vals), vmax = Math.max.apply(null, vals), vspan = (vmax - vmin) || vmax || 1;
   var ylo = vmin - vspan * 0.18, yhi = vmax + vspan * 0.18;
@@ -4582,7 +4645,7 @@ function CLIN_renderProg(host) {
   var ref0 = pts[0] ? CLIN_parseRef(pts[0].ref) : { lo: null, hi: null };
   var bandY1 = ref0.hi != null ? Y(Math.min(ref0.hi, yhi)) : top, bandY2 = ref0.lo != null ? Y(Math.max(ref0.lo, ylo)) : top + plotH;
   var path = pts.map(function (p, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p.v).toFixed(1); }).join(' ');
-  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:' + H + 'px;display:block;font-family:inherit">' +
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;font-family:inherit">' +
     (ref0.lo != null || ref0.hi != null ? '<rect x="' + padL + '" y="' + Math.min(bandY1, bandY2) + '" width="' + plotW + '" height="' + Math.abs(bandY2 - bandY1) + '" fill="var(--ok)" opacity=".1"></rect>' : '') +
     (function () { var x0 = X(pts.findIndex(function (p) { return p.iso >= CYCLE0; })), x1 = X(pts.length - 1 - pts.slice().reverse().findIndex(function (p) { return p.iso <= CYCLE1; }));
       return pts.some(function (p) { return p.iso >= CYCLE0 && p.iso <= CYCLE1; }) ? '<rect x="' + Math.max(padL, x0) + '" y="' + top + '" width="' + Math.max(0, (isFinite(x1) ? x1 : W - padR) - Math.max(padL, x0)) + '" height="' + plotH + '" fill="var(--accent)" opacity=".06"></rect>' : ''; })() +
@@ -4594,14 +4657,14 @@ function CLIN_renderProg(host) {
       var col = p.unit && s.unit && p.unit !== s.unit ? 'none' : (kind === 'out' ? 'var(--bad)' : kind === 'target' ? 'var(--warn)' : 'var(--accent)');
       var isCk = p.checkpoint;
       return (gap > 182 ? '<line x1="' + ((X(i - 1) + X(i)) / 2) + '" y1="' + top + '" x2="' + ((X(i - 1) + X(i)) / 2) + '" y2="' + (top + plotH) + '" stroke="var(--line)" stroke-dasharray="3,3"></line>' +
-        '<text x="' + ((X(i - 1) + X(i)) / 2) + '" y="' + (top + plotH + 12) + '" font-size="9" fill="var(--ink3)" text-anchor="middle">+' + (gap > 500 ? Math.round(gap / 365) + (Math.round(gap / 365) === 1 ? ' anno' : ' anni') : Math.round(gap / 30) + ' mesi') + '</text>' : '') +
+        '<text x="' + ((X(i - 1) + X(i)) / 2) + '" y="' + (top + plotH + 12) + '" font-size="9" fill="var(--ink3)" text-anchor="middle"' + (isDesktop ? '' : ' display="none"') + '>+' + (gap > 500 ? Math.round(gap / 365) + (Math.round(gap / 365) === 1 ? ' anno' : ' anni') : Math.round(gap / 30) + ' mesi') + '</text>' : '') +
         '<circle cx="' + X(i) + '" cy="' + Y(p.v) + '" r="' + (isCk ? 5 : 4) + '" fill="' + (col === 'none' ? 'var(--surf)' : col) + '" stroke="' + (isCk ? 'var(--ink)' : col === 'none' ? 'var(--ink3)' : col) + '" stroke-width="' + (col === 'none' || isCk ? 2 : 0) + '"></circle>' +
         '<text x="' + X(i) + '" y="' + (Y(p.v) - 9) + '" font-size="10" font-weight="700" fill="var(--ink)" text-anchor="middle">' + CLIN_fmtNum(p.v) + '</text>' +
         (isCk ? '<text x="' + X(i) + '" y="' + (top - 6) + '" font-size="9.5" font-weight="700" fill="var(--accent)" text-anchor="middle">' + p.checkpoint.toUpperCase() + '</text>' : '') +
-        '<text x="' + X(i) + '" y="' + (top + plotH + 24) + '" font-size="9.5" fill="var(--ink3)" text-anchor="middle">' + esc(p.date && p.date.length <= 8 ? p.date : CLIN_shortDate(p.iso)) + '</text>';
+        ((isDesktop || pts.length <= 9 || (pts.length - 1 - i) % 2 === 0) ? '<text x="' + X(i) + '" y="' + (top + plotH + 24) + '" font-size="9.5" fill="var(--ink3)" text-anchor="middle">' + esc(p.date && p.date.length <= 8 ? p.date : CLIN_shortDate(p.iso)) + '</text>' : '');
     }).join('') +
   '</svg>';
-  var chart = '<section class="an-card" style="grid-column:1/-1;overflow-x:auto">' +
+  var chart = '<section class="an-card" style="grid-column:' + (isDesktop ? 'span 9;align-self:start' : '1/-1') + ';overflow-x:auto">' +
     '<div class="an-head"><span class="an-title">' + esc(s.label) + ' nel tempo</span><span class="an-sub">un punto per prelievo, la data \u00e8 sotto</span></div>' +
     '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:10.5px;color:var(--ink2);margin-bottom:4px">' +
       '<span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:4px"></span>nel range</span>' +
@@ -4626,26 +4689,27 @@ function CLIN_renderProg(host) {
         '</div>';
       }).join('');
   } else {
-    tableRows = pts.slice().reverse().map(function (p) {
+    var revP = pts.slice().reverse(), limP = CLIN.progAll ? revP.length : 4;
+    tableRows = revP.slice(0, limP).map(function (p, ix) {
       var kind = CLIN_kindOf(p, sel);
       var col = kind === 'out' ? 'var(--bad)' : kind === 'target' ? 'var(--warn-ink)' : 'var(--ok)';
       var note = (p.note || '').replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, '').trim();
-      return '<div style="display:flex;flex-direction:column;gap:3px;padding:9px 0;border-top:1px solid var(--line2)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
-          '<span style="font-weight:600;color:var(--ink)">' + p.date + (p.checkpoint ? ' <span class="t-badge" style="background:var(--accent-soft);color:var(--accent-ink)">' + p.checkpoint.toUpperCase() + '</span>' : '') + '</span>' +
-          '<span style="font-weight:700;color:var(--ink)">' + CLIN_fmtNum(p.v) + ' ' + esc(p.unit) + '</span>' +
+      return '<div style="padding:12px 0;' + (ix ? 'border-top:1px solid var(--line2);' : '') + 'display:flex;flex-direction:column;gap:4px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+          '<span style="display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:var(--ink)">' + esc(p.date) + (p.checkpoint ? '<span class="t-badge" style="background:var(--accent-soft);color:var(--accent-ink)">' + p.checkpoint.toUpperCase() + '</span>' : '') + '</span>' +
+          '<span style="font-size:15px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap">' + CLIN_fmtNum(p.v) + ' <span style="font-size:11px;font-weight:500;color:var(--ink3)">' + esc(p.unit) + '</span></span>' +
         '</div>' +
-        '<span style="font-size:11px;color:' + col + ';font-weight:600">' + CLIN_esitoTxt(kind, p) + '</span>' +
-        '<span style="font-size:10.5px;color:var(--ink3)">' + esc(p.src || '') + (note ? ' \u00b7 ' + esc(note) : '') + '</span>' +
+        '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:' + col + '"><span style="width:8px;height:8px;border-radius:50%;background:' + col + ';display:inline-block"></span>' + CLIN_esitoTxt(kind, p) + '</span>' +
+        '<span style="font-size:11px;line-height:1.35;color:var(--ink3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(p.src || '') + (note ? ' \u00b7 ' + esc(note) : '') + '</span>' +
       '</div>';
-    }).join('');
+    }).join('') + (revP.length > 4 ? '<button type="button" data-clin-more="prog" style="border:none;border-top:1px solid var(--line2);background:none;width:100%;height:46px;font:inherit;font-size:13px;font-weight:700;color:var(--accent);cursor:pointer">' + (CLIN.progAll ? 'Mostra meno' : 'Mostra le altre ' + (revP.length - 4) + ' misure') + ' ' + (CLIN.progAll ? '\u25b4' : '\u25be') + '</button>' : '');
   }
   var table = '<section class="an-card" style="grid-column:1/-1">' +
     '<div class="an-head"><span class="an-title">Tutte le misure, dalla pi\u00f9 recente</span></div>' +
     tableRows +
   '</section>';
 
-  host.innerHTML = selector + head + chart + table;
+  host.innerHTML = heroP + (isDesktop ? selectorDesk : chooser) + chart + table + sheet;
 }
 
 function CLIN_stripNote(t) { return (t || '').replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, '').replace(/^[-\u2014\s]+/, '').trim(); }
@@ -4677,9 +4741,9 @@ function CLIN_areaOfItem(x) { var f = CLIN_BY_NAME.find(function (r) { return r[
 function CLIN_renderRef(host) {
   var INS = CLIN_DATA.instr.filter(function (x) { return x.val && x.val !== '\u2014'; });
   var SER = CLIN_DATA.series;
-  var seg = '<div style="display:flex;gap:4px;background:var(--surf2);border-radius:8px;padding:3px;grid-column:1/-1;width:fit-content">' +
+  var seg = '<div class="clin-seg">' +
     [['watch', 'Da seguire'], ['area', 'Per apparato'], ['date', 'Per data']].map(function (v) {
-      return '<button type="button" data-clin-refview="' + v[0] + '" class="an-chip' + (CLIN.refView === v[0] ? ' is-active' : '') + '" style="border-radius:6px">' + v[1] + '</button>';
+      return '<button type="button" data-clin-refview="' + v[0] + '" class="an-chip' + (CLIN.refView === v[0] ? ' is-active' : '') + '">' + v[1] + '</button>';
     }).join('') + '</div>';
   var body = '';
   if (CLIN.refView === 'watch') {
@@ -4689,7 +4753,7 @@ function CLIN_renderRef(host) {
       var kind = CLIN_kindOf(last, k); if (kind === 'ok') return null;
       var outN = pts.filter(function (p) { return CLIN_kindOf(p, k) !== 'ok'; }).length;
       var persist = kind === 'target' ? 'sotto target clinico' : (outN === pts.length ? 'sempre fuori' : 'fuori ' + outN + (outN === 1 ? ' volta' : ' volte') + ' su ' + pts.length);
-      return { key: k, label: SER[k].label, value: CLIN_fmtNum(last.v) + ' ' + SER[k].unit, kind: kind, persist: persist, date: last.date };
+      return { key: k, label: SER[k].label, value: CLIN_fmtNum(last.v) + ' ' + SER[k].unit, raw: CLIN_fmtNum(last.v), unit: SER[k].unit, ref: last.ref || '', last: last, kind: kind, persist: persist, date: last.date };
     }).filter(Boolean);
     var seenName = {};
     var watchOther = INS.filter(function (x) { return x.iso >= '2026-01-01' && x.ok === false && !CLIN_TEXTCAT.test(x.cat); })
@@ -4701,14 +4765,21 @@ function CLIN_renderRef(host) {
       return x ? { label: s[0], val: CLIN_stripNote(x.val), date: x.date, ok: x.ok } : null;
     }).filter(Boolean);
     var dx = INS.filter(function (x) { return /Diagnosi|Terapia|Conclusione/i.test(x.cat); }).sort(function (a, b) { return a.iso < b.iso ? 1 : -1; });
-    body = '<section class="an-card" style="grid-column:span 7">' +
+    body = CLIN_heroWatch(watch) + '<section class="an-card" style="grid-column:span 7;align-self:start">' +
       '<div class="an-head"><span class="an-title">Fuori range all\'ultima misura</span><span class="an-sub">' + watch.length + ' marker</span></div>' +
-      watch.map(function (w) {
+      ((!isDesktop && !CLIN.watchAll) ? watch.slice(0, 5) : watch).map(function (w, ix) {
         var col = w.kind === 'target' ? 'var(--warn-ink)' : 'var(--bad)';
-        return '<button type="button" data-clin-goto="' + w.key + '" class="an-trow" style="width:100%;text-align:left;cursor:pointer;border:none;appearance:none;grid-template-columns:1fr auto auto;background:none;border-top:1px solid var(--line2)">' +
-          '<span><strong style="color:var(--ink)">' + esc(w.label) + '</strong><br><span style="font-size:10px;color:var(--ink3)">' + w.persist + '</span></span>' +
-          '<span class="an-num" style="font-weight:700;color:' + col + '">' + w.value + '</span><span></span></button>';
+        var always = w.persist === 'sempre fuori';
+        var refO = CLIN_parseRef(w.ref || '');
+        var bar = (refO.lo != null || refO.hi != null) ? CLIN_bar(null, w.last, refO, w.kind === 'target' ? 'target' : 'out') : '';
+        return '<button type="button" data-clin-goto="' + w.key + '" style="width:100%;text-align:left;cursor:pointer;border:none;appearance:none;background:none;font:inherit;color:inherit;padding:13px 0;border-top:1px solid var(--line2);display:flex;flex-direction:column;gap:6px">' +
+          '<span style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><strong style="font-size:15px;color:var(--ink)">' + esc(w.label) + '</strong>' +
+            '<span style="font-size:16px;font-weight:700;color:' + col + ';font-variant-numeric:tabular-nums;white-space:nowrap">' + esc(w.raw) + ' <span style="font-size:11px;font-weight:500;color:var(--ink3)">' + esc(w.unit) + '</span></span></span>' +
+          '<span style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span style="font-size:11.5px;color:var(--ink3)">' + (w.ref ? 'Rif: ' + esc(w.ref) : '') + '</span>' +
+            '<span style="font-size:10.5px;font-weight:700;white-space:nowrap;border-radius:999px;padding:3px 9px;color:' + (always ? 'var(--bad)' : 'var(--ink2)') + ';background:' + (always ? 'rgba(216,30,5,.09)' : 'var(--surf2)') + '">' + w.persist + '</span></span>' +
+          bar + '</button>';
       }).join('') +
+      ((!isDesktop && watch.length > 5) ? '<button type="button" data-clin-more="watch" style="border:none;border-top:1px solid var(--line2);background:none;width:100%;height:46px;font:inherit;font-size:13px;font-weight:700;color:var(--accent);cursor:pointer">' + (CLIN.watchAll ? 'Mostra meno \u25b4' : 'Mostra gli altri ' + (watch.length - 5) + ' marker \u25be') + '</button>' : '') +
       (watchOther.length ? '<span class="an-sub" style="margin-top:8px;display:block">Altri valori segnalati nel 2026</span>' +
         watchOther.map(function (x) { return '<div class="an-trow" style="grid-template-columns:1fr auto"><span>' + esc(x.name) + '<br><span style="font-size:10px;color:var(--ink3)">' + esc(x.date) + ' \u00b7 ' + esc(x.src) + '</span></span><span class="an-num" style="color:var(--bad);font-weight:600">' + esc(x.val) + '</span></div>'; }).join('') : '') +
     '</section>' +
