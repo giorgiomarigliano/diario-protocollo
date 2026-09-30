@@ -4483,7 +4483,7 @@ function CLIN_renderFoto(host) {
     { key: 't2', label: 'T2', iso: CLIN_CK.t2, weight: CLIN_dexaT('peso', 't2'), igf: CLIN_parseVal(CLIN_labT('igf1', 't2')), lean: CLIN_dexaT('lean_kg', 't2'), bf: CLIN_dexaT('bf_pct', 't2'), sentBench: CLIN_sentinelAt('bench', CLIN_CK.t2) }
   ];
   var futureNoData = function (c) { return c.weight == null && new Date(c.iso + 'T00:00:00') > new Date(today + 'T00:00:00'); };
-  var html = '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Foto ai checkpoint \u00b7 T0 \u2192 T1 \u2192 T2</span><span class="an-sub">foto pi\u00f9 vicina alla data, entro \u00b13 giorni</span></div>' +
+  var htmlDesk = '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Foto e dati ai checkpoint</span><span class="an-sub">foto pi\u00f9 vicina alla data, entro \u00b13 giorni</span></div>' +
     '<div class="clin-foto-grid">' +
     cps.map(function (c) {
       var near = CLIN_photoNear(c.iso, 3);
@@ -4508,10 +4508,59 @@ function CLIN_renderFoto(host) {
       '</div>';
     }).join('') +
     '</div></section>';
-  host.innerHTML = html;
+  /* ---- 30/09: apertura scura + versione mobile a miniature affiancate ---- */
+  var c0 = cps[0], c1 = cps[1];
+  var nFoto = cps.filter(function (c) { return CLIN_photoNear(c.iso, 3); }).length;
+  var haveT1 = c1.weight != null && c1.bf != null && c1.lean != null;
+  var dBf = haveT1 ? c1.bf - c0.bf : null, dLean = haveT1 ? c1.lean - c0.lean : null, dW = haveT1 ? c1.weight - c0.weight : null;
+  var sg = function (v, d) { return (v > 0 ? '+' : (v < 0 ? '\u2212' : '')) + CLIN_fmtNum(Math.abs(v).toFixed(d)); };
+  var heroF = CLIN_hero('Foto ai checkpoint \u00b7 T0 \u2192 T1 \u2192 T2',
+    haveT1 ? 'Da T0 a T1: grasso ' + sg(dBf, 1) + ' punti, massa magra ' + sg(dLean, 1) + ' kg.' : 'T1 non ancora inserito.',
+    [{ v: nFoto + '/3', l: 'Foto (\u00b13 gg)' },
+     { v: haveT1 ? sg(dBf, 1) + ' %' : '\u2014', l: 'Grasso', c: haveT1 ? (dBf <= 0 ? '#5fd07f' : '#ff7a6b') : '#fff' },
+     { v: haveT1 ? sg(dLean, 1) : '\u2014', l: 'Massa magra kg', c: haveT1 ? (dLean >= 0 ? '#5fd07f' : '#ff7a6b') : '#fff' }]);
+  var htmlMob = '<section class="an-card" style="grid-column:1/-1">' +
+    '<div class="an-head"><span class="an-title">Foto</span><span class="an-sub">tocca per ingrandire</span></div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">' +
+    cps.map(function (c) {
+      var near = CLIN_photoNear(c.iso, 3);
+      var inner = near
+        ? '<div class="clin-photo is-empty" data-clin-photoslot="' + esc(near.p.filename) + '" data-clin-zoom="' + esc(c.label + ' \u00b7 ' + CLIN_shortDate(c.iso)) + '" id="clinphoto-' + c.key + '" style="border-radius:12px;cursor:zoom-in"><span class="an-fslot">\u2026</span></div>'
+        : '<div class="clin-photo" style="border-radius:12px;background:var(--surf2);border:1.5px dashed var(--line)"><span style="font-size:10.5px;line-height:1.3;color:var(--ink3);text-align:center;padding:0 8px">' + (futureNoData(c) ? 'Da scattare il ' + CLIN_shortDate(c.iso) : 'Nessuna foto entro 3 giorni') + '</span></div>';
+      return '<div style="position:relative;min-width:0">' + inner +
+        '<span style="position:absolute;top:6px;left:6px;padding:2px 7px;border-radius:6px;background:#0009;color:#fff;font-size:10.5px;font-weight:700">' + c.label + '</span>' +
+        '<span style="display:block;text-align:center;font-size:11px;color:var(--ink3);margin-top:5px">' + CLIN_shortDate(c.iso) + '</span></div>';
+    }).join('') + '</div></section>' +
+    '<section class="an-card" style="grid-column:1/-1;gap:0">' +
+    '<div class="an-head"><span class="an-title">Dati ai checkpoint</span></div>' +
+    '<div style="display:grid;grid-template-columns:1.25fr repeat(3,1fr);gap:0 6px;align-items:baseline;padding:4px 0 8px">' +
+      '<span></span>' + cps.map(function (c) { return '<span style="text-align:right;font-size:11px;font-weight:700;color:var(--ink3)">' + c.label + '</span>'; }).join('') + '</div>' +
+    [['Peso DEXA', function (c) { return c.weight != null ? CLIN_fmtNum(c.weight.toFixed(1)) + ' kg' : '\u2014'; }],
+     ['Grasso', function (c) { return c.bf != null ? CLIN_fmtNum(c.bf.toFixed(1)) + ' %' : '\u2014'; }],
+     ['Massa magra', function (c) { return c.lean != null ? CLIN_fmtNum(c.lean.toFixed(1)) + ' kg' : '\u2014'; }],
+     ['IGF-1', function (c) { return c.igf ? CLIN_fmtP(c.igf) : '\u2014'; }],
+     ['Panca piana', function (c) { return c.sentBench ? CLIN_fmtNum(c.sentBench.kg) + ' kg' : '\u2014'; }]
+    ].map(function (r) {
+      return '<div style="display:grid;grid-template-columns:1.25fr repeat(3,1fr);gap:0 6px;align-items:baseline;padding:11px 0;border-top:1px solid var(--line2)">' +
+        '<span style="font-size:13px;color:var(--ink2)">' + r[0] + '</span>' +
+        cps.map(function (c) { var v = r[1](c); return '<span style="text-align:right;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:' + (v === '\u2014' ? 'var(--ink3)' : 'var(--ink)') + '">' + v + '</span>'; }).join('') + '</div>';
+    }).join('') +
+    '<span class="an-sub" style="margin-top:8px">IGF-1 in \u00b5g/L. Foto: la pi\u00f9 vicina alla data del checkpoint, entro \u00b13 giorni.</span></section>';
+  host.innerHTML = heroF + (isDesktop ? htmlDesk : htmlMob);
   cps.forEach(function (c) {
     var near = CLIN_photoNear(c.iso, 3);
     if (near) { var el = document.getElementById('clinphoto-' + c.key); if (el) ANV2.lazyPhoto(el, near.p.filename); }
+  });
+  host.querySelectorAll('[data-clin-zoom]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var bg = el.style.backgroundImage; if (!bg) return;
+      var ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:80;background:rgba(10,10,12,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;box-sizing:border-box;cursor:zoom-out';
+      ov.innerHTML = '<div style="width:min(100%,520px);max-height:80vh;aspect-ratio:3/4;border-radius:14px;background-size:contain;background-repeat:no-repeat;background-position:center;background-image:' + bg.replace(/"/g, "'") + '"></div>' +
+        '<span style="color:#fff;font-size:13px;font-weight:600">' + el.getAttribute('data-clin-zoom') + ' \u00b7 tocca per chiudere</span>';
+      ov.addEventListener('click', function () { ov.remove(); });
+      document.body.appendChild(ov);
+    });
   });
 }
 
