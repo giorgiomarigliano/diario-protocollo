@@ -969,8 +969,8 @@ const I18N = {
     inPeriod: 'nel periodo', perWeekOver: (n) => `kg / sett. su ${n}gg`,
     slotLabels: { 'Mattino': 'Mattino', 'Pomeriggio': 'Pomeriggio', 'Sera': 'Sera', 'Post-WO': 'Post-WO' },
     vdText: {
-      onTrack:      ['Il ciclo procede in linea.', (a) => `Iniezioni al ${a.inj}%, allenamenti al ${a.wo}%, integratori all'${a.supp}%. Nessuno dei tre scende sotto la soglia.`],
-      someGaps:     ['Qualche buco, niente di strutturale.', (a) => `Iniezioni al ${a.inj}%, integratori all'${a.supp}%. Gli allenamenti restano al ${a.wo}%.`],
+      onTrack:      ['Il ciclo procede in linea.', (a) => `Iniezioni al ${a.inj}%, allenamenti al ${a.wo}%, integratori ${(a.supp === 8 || a.supp === 11 || a.supp === 18 || (a.supp >= 80 && a.supp <= 89)) ? "all'" : 'al '}${a.supp}%. Nessuno dei tre scende sotto la soglia.`],
+      someGaps:     ['Qualche buco, niente di strutturale.', (a) => `Iniezioni al ${a.inj}%, integratori ${(a.supp === 8 || a.supp === 11 || a.supp === 18 || (a.supp >= 80 && a.supp <= 89)) ? "all'" : 'al '}${a.supp}%. Gli allenamenti restano al ${a.wo}%.`],
       trainingGaps: ['Gli allenamenti sono il punto debole.', (a) => `Sedute al ${a.wo}%: ${a.woTot - a.woDone} salti su ${a.woTot} previste. Iniezioni al ${a.inj}%.`],
       noData:       ['Nessun dato ancora registrato.', () => 'Compila il primo giorno per vedere la sintesi.']
     },
@@ -6637,6 +6637,25 @@ function renderOggiFull() {
       </div>
     </div>`;
 
+  /* Card nera di Oggi (30/09): giorni alla fine del ciclo, giorni al T2 e % di completamento in evidenza.
+     Riferimento = il giorno mostrato (selDate), come "Giorno N / 112" nella stessa card; per oggi coincide con
+     i numeri di Scorte (39 gg) e Foto (38 gg al T2). Fine ciclo = giorno 112 (indice 111, 8 nov). */
+  const cycDone = Math.max(0, Math.min(100, Math.round((dayIdx + 1) / CFG.CYCLE_DAYS * 100)));
+  const cycLeft = CFG.CYCLE_DAYS - 1 - dayIdx;
+  const t2Left = Math.round((new Date(CLIN_CK.t2 + 'T00:00:00') - new Date(selDate + 'T00:00:00')) / 86400000);
+  const cycStatsHtml = (big) => {
+    const it = LANG === 'it';
+    const stat = (n, lab, sz) => `<div style="display:flex;flex-direction:column;gap:2px;min-width:0;"><span style="font-size:${sz}px;line-height:1;font-weight:700;letter-spacing:-.02em;color:#fff;font-variant-numeric:tabular-nums;">${n}</span><span style="font-size:10.5px;font-weight:600;line-height:1.25;color:rgba(255,255,255,.66);">${lab}</span></div>`;
+    const endLab = cycLeft > 0 ? (it ? (cycLeft === 1 ? 'giorno alla fine' : 'giorni alla fine') : (cycLeft === 1 ? 'day to the end' : 'days to the end')) : (it ? 'ciclo concluso' : 'cycle complete');
+    const dT2 = big ? (it ? ' · 7 nov' : ' · 7 Nov') : '';
+    const t2Lab = t2Left > 0 ? (it ? (t2Left === 1 ? 'giorno al T2' : 'giorni al T2') : (t2Left === 1 ? 'day to T2' : 'days to T2')) + dT2
+      : (t2Left === 0 ? (it ? 'T2 oggi' : 'T2 today') : (it ? 'T2 superato' : 'T2 passed')) + dT2;
+    return `<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:${big ? 22 : 16}px;align-items:start;">
+      ${stat(cycDone + '%', it ? 'del ciclo completato' : 'of the cycle done', big ? 44 : 38)}
+      ${stat(Math.max(0, cycLeft), endLab, big ? 30 : 26)}
+      ${stat(t2Left >= 0 ? t2Left : '\u2014', t2Lab, big ? 30 : 26)}
+    </div>`;
+  };
   const v = verdict(a);
   const VD = {
     good:    { dot: 'var(--ok)',   label: LANG === 'it' ? 'in linea' : 'on track' },
@@ -6694,6 +6713,9 @@ function renderOggiFull() {
         <span style="display:flex;align-items:center;gap:7px;font-size:10px;font-weight:600;color:rgba(255,255,255,.62);"><span style="width:6px;height:6px;border-radius:50%;flex:0 0 auto;background:${VD.dot};"></span>${VD.label}</span>
         <span style="font-size:18px;line-height:1.16;letter-spacing:-.02em;font-weight:600;color:#fff;text-wrap:pretty;">${esc(VD_TEXT[0])}</span>
         <span style="font-size:12.5px;line-height:1.45;color:rgba(255,255,255,.86);text-wrap:pretty;">${esc(VD_TEXT[1])}</span>
+        <div style="height:1px;background:rgba(255,255,255,.14);margin:4px 0 2px;"></div>
+        ${cycStatsHtml(false)}
+        <div style="height:7px;border-radius:999px;background:rgba(255,255,255,.16);overflow:hidden;margin-top:2px;"><div style="width:${cycDone}%;height:100%;background:#fff;border-radius:999px;"></div></div>
       </div>`;
 
     const pesoM = `
@@ -7085,7 +7107,8 @@ function renderOggiFull() {
         <span style="font-size:24px;line-height:1.13;letter-spacing:-.024em;font-weight:600;color:#fff;text-wrap:pretty;">${esc(VD_TEXT[0])}</span>
       </div>
       <span style="font-size:12.5px;line-height:1.5;color:rgba(255,255,255,.86);text-wrap:pretty;">${esc(VD_TEXT[1])}</span>
-      <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:7px;justify-content:flex-end;">
+      <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:10px;justify-content:flex-end;">
+        ${cycStatsHtml(true)}
         <div style="display:flex;gap:4px;">
           ${PHASES.map(([label, from, to]) => {
             const on = dayIdx >= from && dayIdx <= to;
@@ -7096,11 +7119,11 @@ function renderOggiFull() {
           }).join('')}
         </div>
         <div style="display:flex;flex-direction:column;gap:5px;">
-          <div style="height:5px;border-radius:999px;background:rgba(255,255,255,.16);overflow:hidden;display:flex;">
+          <div style="height:8px;border-radius:999px;background:rgba(255,255,255,.16);overflow:hidden;display:flex;">
             <div style="width:${cycPct};background:#fff;border-radius:999px;"></div>
           </div>
-          <div style="display:flex;justify-content:space-between;font-size:9.5px;font-weight:600;color:rgba(255,255,255,.7);font-variant-numeric:tabular-nums;">
-            <span>${L.phaseDates[0]}</span><span>${cycPct}</span><span>${L.phaseDates[1]}</span>
+          <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:600;color:rgba(255,255,255,.7);font-variant-numeric:tabular-nums;">
+            <span>${L.phaseDates[0]}</span><span>${L.phaseDates[1]}</span>
           </div>
         </div>
       </div>
