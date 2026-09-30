@@ -4138,7 +4138,7 @@ function CLIN_dexaT(key, which) {
    .an-subnav, una .an-view per sotto-tab, ciascuna popolata da
    una funzione CLIN_render<Nome>(host) al mount o al cambio tab.
    ============================================================ */
-var CLIN = { sub: 'ck', selKey: 'hdl', refView: 'watch', openArea: null, selPanel: null, selOpen: false, progAll: false, watchAll: false };
+var CLIN = { sub: 'ck', selKey: 'hdl', refView: 'watch', openArea: null, selPanel: null, selOpen: false, progAll: false, watchAll: false, panelOpen: false };
 
 function CLIN_HTML() {
   return '<div class="an-root">' +
@@ -4192,6 +4192,9 @@ function CLIN_bindView() {
   host.querySelectorAll('[data-clin-chooser]').forEach(function (b) {
     b.addEventListener('click', function () { CLIN.selOpen = b.getAttribute('data-clin-chooser') === 'open'; CLIN_renderProg(document.querySelector('[data-clin-view="prog"]')); CLIN_bindView(); });
   });
+  host.querySelectorAll('[data-clin-panelsheet]').forEach(function (b) {
+    b.addEventListener('click', function () { CLIN.panelOpen = b.getAttribute('data-clin-panelsheet') === 'open'; CLIN_renderRef(document.querySelector('[data-clin-view="ref"]')); CLIN_bindView(); });
+  });
   host.querySelectorAll('[data-clin-more]').forEach(function (b) {
     b.addEventListener('click', function () {
       if (b.getAttribute('data-clin-more') === 'prog') { CLIN.progAll = !CLIN.progAll; CLIN_renderProg(document.querySelector('[data-clin-view="prog"]')); }
@@ -4209,7 +4212,7 @@ function CLIN_bindView() {
     b.addEventListener('click', function () { var k = b.getAttribute('data-clin-area'); CLIN.openArea = CLIN.openArea === k ? null : k; CLIN_renderRef(document.querySelector('[data-clin-view="ref"]')); CLIN_bindView(); });
   });
   host.querySelectorAll('[data-clin-panel]').forEach(function (b) {
-    b.addEventListener('click', function () { CLIN.selPanel = b.getAttribute('data-clin-panel'); CLIN_renderRef(document.querySelector('[data-clin-view="ref"]')); CLIN_bindView(); });
+    b.addEventListener('click', function () { CLIN.selPanel = b.getAttribute('data-clin-panel'); CLIN.panelOpen = false; CLIN_renderRef(document.querySelector('[data-clin-view="ref"]')); CLIN_bindView(); });
   });
   host.querySelectorAll('[data-clin-goto]').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -4801,7 +4804,8 @@ function CLIN_renderRef(host) {
       })() : '') +
     '</section>';
   } else if (CLIN.refView === 'area') {
-    body = CLIN_AREAS.map(function (a) {
+    var AS = [];
+    var areaHtml = CLIN_AREAS.map(function (a) {
       var key = a[0], name = a[1];
       var seriesRows = (CLIN_SERIES_AREA[key] || []).filter(function (k) { return SER[k]; }).map(function (k) {
         var pts = CLIN_seriesPoints(k).filter(function (p) { return !p.checkpoint || CLIN_labT(k, p.checkpoint); }).sort(function (x, y) { return x.iso < y.iso ? 1 : -1; });
@@ -4816,16 +4820,27 @@ function CLIN_renderRef(host) {
       var rows = seriesRows.concat(instrRows).sort(function (a2, b2) { return (a2.ok === b2.ok) ? (a2.iso < b2.iso ? 1 : -1) : (a2.ok ? 1 : -1); });
       var open = CLIN.openArea === key, flags = rows.filter(function (r) { return !r.ok; }).length;
       var lastIso = rows.slice().sort(function (a2, b2) { return a2.iso < b2.iso ? 1 : -1; })[0];
+      AS.push({ n: rows.length, f: flags });
       var shown = open ? rows : rows.slice(0, 4);
-      return '<section class="an-card" style="grid-column:span 4">' +
-        '<button type="button" data-clin-area="' + key + '" style="all:unset;cursor:pointer;display:flex;flex-direction:column;width:100%">' +
-          '<div class="an-head"><span class="an-title">' + esc(name) + '</span>' + (flags ? '<span class="an-sub" style="color:var(--bad);font-weight:700">' + flags + ' da seguire</span>' : '<span class="an-sub" style="color:var(--ok)">tutto nella norma</span>') + '</div>' +
+      return '<section class="an-card" style="grid-column:span 4;align-self:start;gap:0">' +
+        '<button type="button" data-clin-area="' + key + '" style="all:unset;cursor:pointer;display:flex;flex-direction:column;gap:3px;width:100%;padding-bottom:6px">' +
+          '<span style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span class="an-title">' + esc(name) + '</span>' +
+            (flags ? '<span style="font-size:10.5px;font-weight:700;white-space:nowrap;border-radius:999px;padding:3px 9px;color:var(--bad);background:rgba(216,30,5,.09)">' + flags + ' da seguire</span>' : '<span style="font-size:10.5px;font-weight:700;white-space:nowrap;border-radius:999px;padding:3px 9px;color:var(--ok);background:rgba(46,158,79,.10)">tutto nella norma</span>') + '</span>' +
           '<span class="an-sub">' + rows.length + ' esami \u00b7 ultimo ' + (lastIso ? lastIso.iso.split('-').reverse().join('/') : '') + '</span>' +
         '</button>' +
-        shown.map(function (r) { return '<div class="an-trow" style="grid-template-columns:8px 1fr auto"><span style="width:6px;height:6px;border-radius:50%;background:' + (r.ok ? 'var(--ok)' : 'var(--bad)') + ';margin-top:5px"></span><span>' + esc(r.name) + (r.prev ? '<br><span style="font-size:10px;color:var(--ink3)">' + esc(r.prev) + '</span>' : '') + '</span><span class="an-num" style="font-weight:700;color:var(--ink)">' + esc(r.val) + '</span></div>'; }).join('') +
-        (!open && rows.length > 4 ? '<button type="button" data-clin-area="' + key + '" class="an-btn" style="align-self:flex-start;margin-top:6px">Altri ' + (rows.length - 4) + '</button>' : '') +
+        shown.map(function (r) {
+          return '<div style="display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-top:1px solid var(--line2)">' +
+            '<span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;background:' + (r.ok ? 'var(--ok)' : 'var(--bad)') + '"></span>' +
+            '<span style="flex:1 1 auto;min-width:0;font-size:13.5px;color:var(--ink);line-height:1.3">' + esc(r.name) + (r.prev ? '<br><span style="font-size:11px;color:var(--ink3)">' + esc(r.prev) + '</span>' : '') + '</span>' +
+            '<span style="flex:0 1 auto;max-width:48%;text-align:right;font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;color:' + (r.ok ? 'var(--ink)' : 'var(--bad)') + '">' + esc(r.val) + '</span></div>';
+        }).join('') +
+        (rows.length > 4 ? '<button type="button" data-clin-area="' + key + '" style="border:none;border-top:1px solid var(--line2);background:none;width:100%;height:46px;font:inherit;font-size:13px;font-weight:700;color:var(--accent);cursor:pointer">' + (open ? 'Mostra meno \u25b4' : 'Mostra gli altri ' + (rows.length - 4) + ' \u25be') + '</button>' : '') +
       '</section>';
     }).join('');
+    var totN = AS.reduce(function (n, x) { return n + x.n; }, 0), totF = AS.reduce(function (n, x) { return n + x.f; }, 0);
+    var apF = AS.filter(function (x) { return x.f > 0; }).length;
+    body = CLIN_hero('Referti \u00b7 per apparato', totF + (totF === 1 ? ' voce da seguire' : ' voci da seguire') + ' in ' + apF + (apF === 1 ? ' apparato' : ' apparati') + ' su ' + AS.length + '.',
+      [{ v: totN, l: 'Esami' }, { v: totF, l: 'Da seguire', c: '#ff7a6b' }, { v: totN - totF, l: 'Nella norma', c: '#5fd07f' }]) + areaHtml;
   } else {
     var panels = CLIN_DATA.panels.slice().sort(function (a, b) { return a.iso < b.iso ? 1 : -1; });
     var selP = CLIN.selPanel || panels[0].id;
@@ -4841,34 +4856,48 @@ function CLIN_renderRef(host) {
       });
     }
     var outN = rowsForPanel.filter(function (x) { return x.ok === false; }).length;
-    body = '<section class="an-card" style="grid-column:span 4;max-height:820px;overflow-y:auto">' +
-      '<div class="an-head"><span class="an-title">Archivio pannelli</span></div>' +
-      panels.map(function (p) {
-        var rs = INS.filter(function (x) { return x.panel === p.id; });
-        if (p.id === 'p0_sant' && !rs.length) rs = Object.keys(CLIN_MARKERS).map(function () { return { ok: true }; });
-        var out = rs.filter(function (x) { return x.ok === false; }).length;
-        /* niente .an-trow qui: le sue regole di altezza/line-height sono tarate per 1-2 righe,
-           con 3 righe impilate tagliavano il testo (verificato su mobile, 29/09). */
-        return '<button type="button" data-clin-panel="' + p.id + '" style="all:unset;display:block;width:100%;box-sizing:border-box;text-align:left;cursor:pointer;background:' + (p.id === selP ? 'var(--accent-soft)' : 'none') + ';border-top:1px solid var(--line2);padding:8px 6px;line-height:1.4">' +
-          '<strong style="color:var(--ink);font-size:12px">' + esc(p.date) + '</strong><br><span style="font-size:10.5px;color:var(--ink2)">' + esc(p.label) + '</span><br><span style="font-size:10px;color:' + (out ? 'var(--bad)' : 'var(--ink3)') + '">' + rs.length + ' voci \u00b7 ' + (out ? out + ' fuori range' : 'nessun valore fuori') + '</span></button>';
-      }).join('') +
-    '</section>' +
-    '<section class="an-card" style="grid-column:span 8">' +
-      '<span style="font-size:11px;color:var(--ink3)">' + esc(pnl.date) + '</span>' +
-      '<span style="font-size:16px;font-weight:700;color:var(--ink)">' + esc(pnl.label) + '</span>' +
-      (pnl.note ? '<span class="an-sub">' + esc(pnl.note) + '</span>' : '') +
+    var nRows = rowsForPanel.length;
+    var panelBtn = function (p) {
+      var rs = INS.filter(function (x) { return x.panel === p.id; });
+      if (p.id === 'p0_sant' && !rs.length) rs = Object.keys(CLIN_MARKERS).map(function () { return { ok: true }; });
+      var out = rs.filter(function (x) { return x.ok === false; }).length, on = p.id === selP;
+      return '<button type="button" data-clin-panel="' + p.id + '" style="display:block;width:100%;box-sizing:border-box;text-align:left;cursor:pointer;font:inherit;color:inherit;border:1.5px solid ' + (on ? 'var(--accent)' : 'transparent') + ';border-radius:12px;background:' + (on ? 'var(--accent-soft)' : 'var(--surf2)') + ';padding:10px 12px;margin-bottom:8px;line-height:1.35">' +
+        '<strong style="color:var(--ink);font-size:13.5px">' + esc(p.date) + '</strong><br><span style="font-size:12px;color:var(--ink2)">' + esc(p.label) + '</span><br>' +
+        '<span style="font-size:11px;font-weight:600;color:' + (out ? 'var(--bad)' : 'var(--ink3)') + '">' + rs.length + ' voci \u00b7 ' + (out ? out + ' fuori range' : 'nessun valore fuori') + '</span></button>';
+    };
+    var heroD = CLIN_hero(esc(pnl.date) + ' \u00b7 pannello ' + (panels.indexOf(pnl) + 1) + ' di ' + panels.length,
+      esc(pnl.label) + '.',
+      [{ v: nRows, l: 'Voci' }, { v: outN, l: 'Fuori range', c: outN ? '#ff7a6b' : '#fff' }, { v: nRows - outN, l: 'Nella norma', c: '#5fd07f' }]);
+    var chooserD = '<button type="button" data-clin-panelsheet="open" style="grid-column:1/-1;display:flex;align-items:center;gap:12px;width:100%;height:56px;box-sizing:border-box;padding:0 16px;background:var(--surf);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);cursor:pointer;text-align:left;font:inherit;color:inherit">' +
+      '<span style="display:flex;flex-direction:column;flex-grow:1;min-width:0"><span style="font-size:15px;font-weight:700;color:var(--ink)">Archivio pannelli</span><span style="font-size:11.5px;color:var(--ink3)">' + panels.length + ' pannelli \u00b7 dal pi\u00f9 recente</span></span>' +
+      '<span style="font-size:13px;font-weight:700;color:var(--accent)">Cambia \u25be</span></button>';
+    var sheetD = '';
+    if (!isDesktop && CLIN.panelOpen) {
+      sheetD = '<div data-clin-panelsheet="close" style="position:fixed;inset:0;z-index:60;background:rgba(10,10,12,.45)"></div>' +
+        '<div style="position:fixed;left:0;right:0;bottom:0;top:40px;z-index:61;background:var(--surf);border-radius:22px 22px 0 0;padding:10px 16px calc(18px + env(safe-area-inset-bottom,0px));overflow-y:auto;-webkit-overflow-scrolling:touch;box-sizing:border-box">' +
+        '<div style="width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px"></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span style="font-size:18px;font-weight:700;color:var(--ink)">Scegli il pannello</span><button type="button" data-clin-panelsheet="close" style="border:none;background:none;color:var(--accent);font-size:13px;font-weight:700;padding:10px 4px;cursor:pointer">Chiudi</button></div>' +
+        panels.map(panelBtn).join('') + '</div>';
+    }
+    var archD = isDesktop ? '<section class="an-card" style="grid-column:span 4;align-self:start;max-height:820px;overflow-y:auto">' +
+      '<div class="an-head"><span class="an-title">Archivio pannelli</span></div>' + panels.map(panelBtn).join('') + '</section>' : chooserD;
+    var detail = '<section class="an-card" style="grid-column:' + (isDesktop ? 'span 8;align-self:start' : '1/-1') + ';gap:0">' +
+      (pnl.note ? '<span class="an-sub" style="margin-bottom:4px">' + esc(pnl.note) + '</span>' : '') +
       (function () {
         var byCat = {}; rowsForPanel.forEach(function (x) { (byCat[x.cat] = byCat[x.cat] || []).push(x); });
-        return Object.keys(byCat).map(function (cat) {
-          return '<span style="display:block;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;margin:10px 0 2px">' + esc(cat) + '</span>' +
+        return Object.keys(byCat).map(function (cat, ci) {
+          return '<span style="display:block;font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.02em;margin:' + (ci ? '16px' : '4px') + ' 0 4px">' + esc(cat) + '</span>' +
             byCat[cat].map(function (x) {
-              return '<div class="an-trow" style="grid-template-columns:8px 1fr auto"><span style="width:6px;height:6px;border-radius:50%;margin-top:5px;background:' + (x.ok ? 'var(--ok)' : (x.sev === 'alert' ? 'var(--bad)' : x.sev === 'warn' ? 'var(--warn)' : 'var(--bad)')) + '"></span>' +
-                '<span>' + esc(x.name) + (x.ref ? '<br><span style="font-size:10px;color:var(--ink3)">Rif: ' + esc(x.ref) + '</span>' : '') + (x.note ? '<br><span style="font-size:10.5px;color:var(--ink2)">' + esc(CLIN_stripNote(x.note)) + '</span>' : '') + '</span>' +
-                '<span class="an-num" style="font-weight:700;color:var(--ink)">' + esc(x.val) + '</span></div>';
+              var dc = x.ok ? 'var(--ok)' : (x.sev === 'warn' ? 'var(--warn)' : 'var(--bad)');
+              return '<div style="display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-top:1px solid var(--line2)">' +
+                '<span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px;background:' + dc + '"></span>' +
+                '<span style="flex:1 1 auto;min-width:0;font-size:13.5px;color:var(--ink);line-height:1.3">' + esc(x.name) + ((x.ref && x.ref !== '\u2014') ? '<br><span style="font-size:11px;color:var(--ink3)">Rif: ' + esc(x.ref) + '</span>' : '') + (x.note ? '<br><span style="font-size:11px;color:var(--ink2)">' + esc(CLIN_stripNote(x.note)) + '</span>' : '') + '</span>' +
+                '<span style="flex:0 1 auto;max-width:46%;text-align:right;font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;color:' + (x.ok ? 'var(--ink)' : 'var(--bad)') + '">' + esc(x.val) + '</span></div>';
             }).join('');
         }).join('');
       })() +
     '</section>';
+    body = heroD + archD + detail + sheetD;
   }
   host.innerHTML = seg + body;
 }
