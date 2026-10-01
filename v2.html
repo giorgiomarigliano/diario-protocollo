@@ -12,7 +12,7 @@
     --ink:#0a0a0c; --ink2:#57575f; --ink3:#8a8a93;
     --accent:#1f5fbf; --accent-soft:#e7effc; --accent-ink:#1a4f9e;
     --hero:#0a0a0c;
-    --ok:#2e9e4f; --warn:#f5c400; --warn-ink:#8a6d00; --bad:#d81e05; --idle:#b6b6be;
+    --ok:#2e9e4f; --warn:#f5c400; --warn-ink:#e8590c; --bad:#d81e05; --idle:#b6b6be;
     /* PORTING 26/09: due colori dal mockup approvato, non presenti nella palette base --
        servono all'identita' per composto in Stock (IGF-1 DES, TB-500). */
     --c-igf:#7a4fc9; --c-tb:#45454e;
@@ -33,7 +33,9 @@
        Dentro ogni card nera i token semantici (--ok, --warn, --bad, --accent, --c-igf) vengono rimappati su queste varianti (regola in coda al CSS):
        la stessa cosa ha lo stesso colore in tutte le card, e per cambiarli basta modificare qui. */
     --ok-on-dark:#25b84f; --warn-on-dark:#ffb800; --bad-on-dark:#ff3b30; --accent-on-dark:#2f7bff; --violet-on-dark:#9b5cff;
-    --on-warn:#3d3100; --warn-bg:#fdf3e4; --bad-bg:#fbe9e6;
+    --on-warn:#1c1c22; --warn-bg:#fdf3e4; --bad-bg:#fbe9e6;
+    /* 01/10: NIENTE MARRONE. --warn-ink (testo/segno di attenzione) e' arancio pieno #e8590c invece dell'ocra #8a6d00; --on-warn (testo su ambra) e' quasi nero
+       invece del marrone #3d3100; --c-s3 e' ambra #f5a100. Regola: nessun colore con tinta 14-58 gradi e luminosita' <= 46% (ocra, oliva, marrone). */
     /* Soggettivi (scala 1-10): 8 colori PIENI su 8 tinte diverse, nessun marrone, un solo blu-viola; stessa assegnazione ovunque
        (card di Oggi, grafici di Insights, sparkline, legende). Non coincidono con i colori di stato (ok, warn, bad). */
     --c-subj-energia:#ff8a00;      /* arancio */
@@ -325,7 +327,7 @@
   --ink:#0a0a0c; --ink2:#57575f; --ink3:#8a8a93;
   --accent:#1f5fbf; --accent-soft:#e7effc; --accent-ink:#1a4f9e;
   --hero:#0a0a0c;
-  --ok:#2e9e4f; --warn:#f5c400; --warn-ink:#8a6d00; --bad:#d81e05; --idle:#b6b6be;
+  --ok:#2e9e4f; --warn:#f5c400; --warn-ink:#e8590c; --bad:#d81e05; --idle:#b6b6be;
   --shadow:0 1px 2px rgba(10,10,14,.05),0 8px 24px -8px rgba(10,10,14,.10);
   --shadow-lg:0 2px 4px rgba(10,10,14,.06),0 24px 60px -20px rgba(10,10,14,.22);
   --r-card:16px;
@@ -335,7 +337,7 @@
      viaggio) -- risultato una dominante azzurra che in Oggi non c'e', dove il blu resta riservato
      a pulsanti/stati attivi. Qui il blu resta SOLO dove segna "fase attuale/enfasi", il resto
      passa a grigi neutri o ai colori semantici gia' in uso (verde/ambra/rosso). */
-  --c-s1:var(--ink2); --c-s2:#2e9e4f; --c-s3:#8a6d00; --c-s4:#d81e05;
+  --c-s1:var(--ink2); --c-s2:#2e9e4f; --c-s3:#f5a100; --c-s4:#d81e05;
   --c-band:rgba(10,10,14,.07);
   --c-ph1:#e4e4e8; --c-ph2:#b6b6be; --c-ph3:var(--accent); --c-ph4:#8a8a93; --c-ph5:#eeeef1;
   /* PORTING 26/09: Bangkok/Mallorca (etichetta + fascia) non hanno un corrispettivo in Oggi -- Oggi non mostra periodi di viaggio. Tolto il marrone-oliva, allineato al grigio neutro gia' usato per la fascia "viaggio" nel grafico Ricomposizione, stesso token. */
@@ -8032,7 +8034,7 @@ var GST_COMPOUNDS = [
     ] },
   { id:"fragment", name:"Fragment 176-191", dose_mcg:250, voltePerDie:2, doseLabel:"250 mcg \u00d7 2", color:"var(--bad)",
     stabilityDays:30, defaultMg:10, defaultBac:2.0,
-    suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(6,"intatto") } ] },
+    suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(8,"intatto") } ] },   /* 01/10: +2 vial ricevuti (v7, v8) */
   { id:"ipa", name:"Ipamorelin", dose_mcg:100, voltePerDie:1, doseLabel:"100 mcg \u00b7 sera", color:"var(--ok)",
     stabilityDays:30, defaultMg:10, defaultBac:2.0,
     suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(4,"intatto") } ] },
@@ -8042,12 +8044,12 @@ var GST_COMPOUNDS = [
   { id:"bpc", name:"BPC-157", dose_mcg:250, voltePerDie:2, doseLabel:"250 mcg \u00d7 2", color:"var(--warn)",
     stabilityDays:28, defaultMg:10, defaultBac:2.0,
     suppliers:[
-      { key:"bachem", label:"Bachem", vials: mkVialsG(6,"intatto") },
+      { key:"bachem", label:"Bachem", vials: mkVialsG(8,"intatto") },   /* 01/10: +2 vial ricevuti (v7, v8) */
       { key:"limitless", label:"Limitless", vials:[{n:1,stato:"in_uso"},{n:2,stato:"intatto"}] }
     ] },
   { id:"tb500", name:"TB-500", dose_mcg:500, voltePerDie:1, doseLabel:"500 mcg \u00b7 sera", color:"var(--c-tb)",
     stabilityDays:28, defaultMg:10, defaultBac:2.0,
-    suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(6,"intatto") } ] }
+    suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(8,"intatto") } ]  }   /* 01/10: +2 vial ricevuti (v7, v8) */
 ];
 var GST_OFFPROTO = [
   { name:"MOTS-C", fornitore:"Limitless", n:5 },
@@ -8498,8 +8500,8 @@ function GST_renderStock(){
     } else {
       var pctDosi = Math.min(100, st.rimaste>=0 ? (st.fatte/st.totali*100) : 0);
       var pctVita = Math.min(100, st.etaGiorni/c.stabilityDays*100);
-      var colDosi = pctDosi>=90 ? "var(--bad)" : (pctDosi>=70?"var(--warn-ink)":"var(--ok)");
-      var colVita = pctVita>=90 ? "var(--bad)" : (pctVita>=70?"var(--warn-ink)":"var(--ok)");
+      var colDosi = pctDosi>=90 ? "var(--bad)" : (pctDosi>=70?"var(--warn)":"var(--ok)");
+      var colVita = pctVita>=90 ? "var(--bad)" : (pctVita>=70?"var(--warn)":"var(--ok)");
       h += bar("Dosi su questo vial", st.fatte.toFixed(0)+' fatte \u00b7 '+st.rimaste+' rimaste / '+st.totali, pctDosi.toFixed(0), colDosi) +
         bar("Vita residua", st.vitaResidua+' gg / '+c.stabilityDays, pctVita.toFixed(0), colVita) +
         '<span style="font-size:var(--fs-xs);line-height:1.4;font-weight:600;color:'+st.esito.col+'">'+st.esito.testo+'</span>' +
@@ -8650,7 +8652,7 @@ function GST_renderStockMobile(host){
       html += '<span style="font-size:var(--fs-xs);color:var(--ink3)">Caricamento dati scorte\u2026</span>';
     } else {
       var pctDosi = Math.min(100, st.rimaste>=0 ? (st.fatte/st.totali*100) : 0), pctVita = Math.min(100, st.etaGiorni/c.stabilityDays*100);
-      var colDosi = pctDosi>=90 ? "var(--bad)" : (pctDosi>=70?"var(--warn-ink)":"var(--ok)"), colVita = pctVita>=90 ? "var(--bad)" : (pctVita>=70?"var(--warn-ink)":"var(--ok)");
+      var colDosi = pctDosi>=90 ? "var(--bad)" : (pctDosi>=70?"var(--warn)":"var(--ok)"), colVita = pctVita>=90 ? "var(--bad)" : (pctVita>=70?"var(--warn)":"var(--ok)");
       html += bar("Dosi su questo vial", st.fatte.toFixed(0)+' fatte \u00b7 '+st.rimaste+' rimaste / '+st.totali, pctDosi.toFixed(0), colDosi) +
         bar("Vita residua", st.vitaResidua+' gg / '+c.stabilityDays, pctVita.toFixed(0), colVita) +
         '<span style="font-size:var(--fs-sm);line-height:1.4;font-weight:600;color:'+st.esito.col+'">'+st.esito.testo+'</span>';
