@@ -8034,6 +8034,11 @@ var GST_COMPOUNDS = [
     ] },
   { id:"fragment", name:"Fragment 176-191", dose_mcg:250, voltePerDie:2, doseLabel:"250 mcg \u00d7 2", color:"var(--bad)",
     stabilityDays:30, defaultMg:10, defaultBac:2.0,
+    /* 01/10: RESA OSSERVATA. I vial di Fragment finiscono prima del previsto: su 5 vial finiti l'app ha contato 32, 24, 22, 28, 28 dosi "fatto"
+       (media 26,8) invece delle 40 teoriche (10 mg / 250 mcg). BPC-157 (stesso vial, stessa dose, stesso orario) rende il 97% della teoria, quindi
+       non e' un problema di tecnica generale. Per le PREVISIONI (copertura, fabbisogno, "rimaste") si usa la resa osservata; il calcolatore di
+       ricostituzione resta teorico. Causa non nota (Giorgio, 01/10). Da rivedere quando finiscono altri vial. */
+    dosiOsservate:27, dosiOsservateNote:"media di 5 vial: 32, 24, 22, 28, 28",
     suppliers:[ { key:"bachem", label:"Bachem", vials: mkVialsG(8,"intatto") } ] },   /* 01/10: +2 vial ricevuti (v7, v8) */
   { id:"ipa", name:"Ipamorelin", dose_mcg:100, voltePerDie:1, doseLabel:"100 mcg \u00b7 sera", color:"var(--ok)",
     stabilityDays:30, defaultMg:10, defaultBac:2.0,
@@ -8109,6 +8114,13 @@ function gstDosesUsed(compoundName, compoundId, doseMcg, recoStr){
 }
 
 function gstDoseTotals(c, mg){ return Math.floor(mg*1000/c.dose_mcg); }
+/* dosi realmente ottenibili da un vial: teoria, oppure resa osservata (scalata sui mg) se il composto ne ha una e non supera la teoria */
+function gstDoseEff(c, mg){
+  var th = gstDoseTotals(c, mg);
+  if (!c.dosiOsservate) return th;
+  var base = gstDoseTotals(c, c.defaultMg);
+  return Math.min(th, Math.floor(th * c.dosiOsservate / (base || 1)));
+}
 function gstDaysBetween(a,b){ var A=new Date(a+"T00:00:00"), B=new Date(b+"T00:00:00"); return Math.round((B-A)/86400000); }
 function gstAddDays(dateStr, n){ var d=new Date(dateStr+"T00:00:00"); d.setDate(d.getDate()+Math.round(n)); return d; }
 function gstFmtDate(d){ return d.getDate()+" "+["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"][d.getMonth()]; }
@@ -8118,7 +8130,7 @@ function gstVialStatus(c, av, todayStr){
   if (!av || !av.reco) return null;
   var fatte = gstDosesUsed(c.name, c.id, c.dose_mcg, av.reco);
   if (fatte == null) fatte = 0;
-  var totali = gstDoseTotals(c, av.mg);
+  var totali = gstDoseEff(c, av.mg);
   var rimaste = Math.max(0, totali - Math.round(fatte));
   var etaGiorni = gstDaysBetween(av.reco, todayStr);
   var vitaResidua = Math.max(0, c.stabilityDays - etaGiorni);
@@ -8140,7 +8152,7 @@ function gstVialStatus(c, av, todayStr){
 }
 
 // ── copertura 1.6 (esclude congelato/attesa: decisione #5) ──
-function gstDurataVial(c){ return Math.min(gstDoseTotals(c, c.defaultMg)/c.voltePerDie, c.stabilityDays); }
+function gstDurataVial(c){ return Math.min(gstDoseEff(c, c.defaultMg)/c.voltePerDie, c.stabilityDays); }
 function gstCopertura(c, vd, todayStr){
   var av = gstActiveVial(c, vd);
   var vs = gstAllVials(c, vd);
@@ -8505,7 +8517,8 @@ function GST_renderStock(){
       h += bar("Dosi su questo vial", st.fatte.toFixed(0)+' fatte \u00b7 '+st.rimaste+' rimaste / '+st.totali, pctDosi.toFixed(0), colDosi) +
         bar("Vita residua", st.vitaResidua+' gg / '+c.stabilityDays, pctVita.toFixed(0), colVita) +
         '<span style="font-size:var(--fs-xs);line-height:1.4;font-weight:600;color:'+st.esito.col+'">'+st.esito.testo+'</span>' +
-        '<span style="font-size:var(--fs-2xs);color:var(--ink3);font-variant-numeric:tabular-nums">Ricostituito '+gstFmtDate(new Date(av.reco+"T00:00:00"))+' \u00b7 '+gstIt(av.mg,0)+' mg in '+gstIt(av.bac,1)+' mL \u00b7 '+uiForCard(c,av)+'</span>';
+        '<span style="font-size:var(--fs-2xs);color:var(--ink3);font-variant-numeric:tabular-nums">Ricostituito '+gstFmtDate(new Date(av.reco+"T00:00:00"))+' \u00b7 '+gstIt(av.mg,0)+' mg in '+gstIt(av.bac,1)+' mL \u00b7 '+uiForCard(c,av)+'</span>' +
+        (c.dosiOsservate ? '<span style="font-size:var(--fs-2xs);font-weight:600;color:var(--warn-ink);font-variant-numeric:tabular-nums">Resa osservata: '+c.dosiOsservate+' dosi per vial (teoria '+gstDoseTotals(c, av.mg)+') \u00b7 '+c.dosiOsservateNote+'</span>' : '');
     }
     html += h + GST_recoBlock(c, vd, av) + '</section>';
   });
@@ -8634,7 +8647,7 @@ function GST_renderStockMobile(host){
     var meta = "";
     if (recoDate) {
       var scadeDate = gstAddDays(recoDate, c.stabilityDays), left = gstDaysBetween(today, isoLocal(scadeDate));
-      meta = (av ? 'Vial '+av.n+' \u00b7 ' : '') + 'Ricostituito '+gstFmtDate(new Date(recoDate+"T00:00:00"))+' \u00b7 scade <span style="font-weight:700;color:'+(left<0?"var(--bad)":(left<=5?"var(--warn-ink)":"var(--ink2)"))+'">'+gstFmtDate(scadeDate)+'</span>';
+      meta = (av ? 'Vial '+av.n+' \u00b7 ' : '') + 'Ricostituito '+gstFmtDate(new Date(recoDate+"T00:00:00"))+' \u00b7 scade <span style="font-weight:700;color:'+(left<0?"var(--bad)":(left<=5?"var(--warn-ink)":"var(--ink2)"))+'">'+gstFmtDate(scadeDate)+'</span>' + (c.dosiOsservate ? ' \u00b7 resa osservata '+c.dosiOsservate+' dosi/vial' : '');
     }
     html += '<div style="'+CARD+'padding:14px 16px;display:flex;flex-direction:column;gap:10px">' +
       '<div style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span>' +
@@ -9079,6 +9092,7 @@ loadBlob().then(() => { restorePending(); render(); }).catch(e => console.error(
    clinici e personali scritti in italiano (note dei referti, diagnosi, nomi dei pannelli, database
    alimenti e testi degli orari): restano nella lingua del documento originale. */
 const EN_DICT = {
+'Resa osservata':'Observed yield',
 'Cronaca delle valutazioni quotidiane (sola lettura): ogni voce è abbinata alla foto dello stesso giorno. Le stelle per scatto si assegnano dalla vista Scrubber.':'Log of the daily evaluations (read-only): each entry is matched with the photo of the same day. Per-shot stars are assigned in the Scrubber view.','Valutazione a stelle per scatto (1–5)':'Star rating per shot (1–5)',
 'Media per notte':'Average per night','Fasi non disponibili':'Stages unavailable','Risvegli per notte':'Awakenings per night',
 'Ogni colonna è una notte: l\'altezza sono le ore di sonno (la veglia è esclusa) e i colori sono le fasi, come nell\'app Salute. Tocca o passa sopra una colonna per i dettagli. Nessuna colonna = notte non registrata.':'Each column is a night: height is hours of sleep (awake time excluded) and colours are the stages, as in the Health app. Tap or hover a column for details. No column = night not recorded.',
@@ -9205,6 +9219,8 @@ function enPost(t) {
 }
 /* ---- regole per frasi con numeri (prima che vinca: la prima che combacia) ---- */
 const EN_RULES = [
+ [/^Resa osservata: (\d+) dosi per vial \(teoria (\d+)\) · media di (\d+) vial: (.+)$/i, (m, a, t, n, l) => 'Observed yield: ' + a + ' doses per vial (theory ' + t + ') · average of ' + n + ' vials: ' + l],
+ [/^(.*) · resa osservata (\d+) dosi\/vial$/i, (m, pre, n) => pre + ' · observed yield ' + n + ' doses/vial'],
  [/^Più lunga · (.+)$/i, (m, d) => 'Longest · ' + d],
  [/^Più corta · (.+)$/i, (m, d) => 'Shortest · ' + d],
  [/^Veglia media · (.+) risvegli$/i, (m, n) => 'Avg awake · ' + n.replace(',', '.') + ' awakenings'],
