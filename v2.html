@@ -6685,11 +6685,12 @@ function renderOggiFull() {
     const dT2 = big ? (it ? ' · 7 nov' : ' · 7 Nov') : '';
     const t2Lab = t2Left > 0 ? (it ? (t2Left === 1 ? 'giorno al T2' : 'giorni al T2') : (t2Left === 1 ? 'day to T2' : 'days to T2')) + dT2
       : (t2Left === 0 ? (it ? 'T2 oggi' : 'T2 today') : (it ? 'T2 superato' : 'T2 passed')) + dT2;
-    /* desktop: tre colonne uguali -- % a sinistra, giorni alla fine al centro, giorni al T2 a destra, cosi' i due conti alla rovescia non stanno attaccati alla percentuale (richiesta di Giorgio, 01/10); mobile invariato */
-    return `<div style="display:grid;grid-template-columns:${big ? '1fr 1fr 1fr' : 'auto 1fr 1fr'};gap:${big ? 22 : 16}px;align-items:start;">
+    /* Disposizione (01/10, richiesta di Giorgio): % a sinistra; a destra PRIMA il T2 e poi i giorni alla fine del ciclo, entrambi allineati a destra
+       (la fine ciclo chiude sul bordo destro, in linea con "8 NOV" della barra). Su mobile stesso ordine, colonne piu' strette. */
+    return `<div style="display:grid;grid-template-columns:${big ? '1fr auto auto' : 'auto 1fr 1fr'};gap:${big ? 64 : 16}px;align-items:start;">
       ${stat(cycDone + '%', it ? 'del ciclo completato' : 'of the cycle done', big ? 'var(--fs-hero)' : 'var(--fs-hero-m)')}
-      ${stat(Math.max(0, cycLeft), endLab, big ? 'var(--fs-6xl)' : 'var(--fs-5xl)', big ? 'center' : '')}
       ${stat(t2Left >= 0 ? t2Left : '\u2014', t2Lab, big ? 'var(--fs-6xl)' : 'var(--fs-5xl)', big ? 'flex-end' : '')}
+      ${stat(Math.max(0, cycLeft), endLab, big ? 'var(--fs-6xl)' : 'var(--fs-5xl)', big ? 'flex-end' : '')}
     </div>`;
   };
   const v = verdict(a);
