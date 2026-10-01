@@ -29,7 +29,10 @@
     --white:#ffffff;
     --wo:#ff2d12;              /* Allenamento: rosso fuoco (regola UI 3) */
     --on-dark-1:#c8c8ce; --on-dark-2:#9d9da6;               /* testo secondario sulle card nere */
-    --ok-on-dark:#5fd07f; --warn-on-dark:#ffd426; --bad-on-dark:#ff7a6b;   /* stati sulle card nere */
+    /* CARD NERE DI APERTURA (01/10): UNA sola palette di stati, forte e piena (ne' pallida ne' fluo), con contrasto >= 5:1 sul nero.
+       Dentro ogni card nera i token semantici (--ok, --warn, --bad, --accent, --c-igf) vengono rimappati su queste varianti (regola in coda al CSS):
+       la stessa cosa ha lo stesso colore in tutte le card, e per cambiarli basta modificare qui. */
+    --ok-on-dark:#25b84f; --warn-on-dark:#ffb800; --bad-on-dark:#ff3b30; --accent-on-dark:#2f7bff; --violet-on-dark:#9b5cff;
     --on-warn:#3d3100; --warn-bg:#fdf3e4; --bad-bg:#fbe9e6;
     /* Soggettivi (scala 1-10): 8 colori PIENI su 8 tinte diverse, nessun marrone, un solo blu-viola; stessa assegnazione ovunque
        (card di Oggi, grafici di Insights, sparkline, legende). Non coincidono con i colori di stato (ok, warn, bad). */
@@ -643,6 +646,14 @@
 }
 
 
+/* ===== Card nere di apertura: palette di stati unica (01/10/2026) =====
+   Selettori: classe .an-card-hero (Cruscotto), .hero-card e ogni elemento con sfondo var(--hero) inline (Oggi, Clinica, Insights, Foto, Workout,
+   Stock, Orari, Alimenti, mini-pannelli). Dentro, i token chiari dell'interfaccia diventano le varianti forti per fondo nero. */
+.an-card-hero,.hero-card,[style*="background:var(--hero)"]{
+  --ok:var(--ok-on-dark); --warn:var(--warn-on-dark); --warn-ink:var(--warn-on-dark); --bad:var(--bad-on-dark);
+  --accent:var(--accent-on-dark); --accent-ink:var(--accent-on-dark); --c-igf:var(--violet-on-dark);
+  --c-s1:var(--on-dark-2); --c-s2:var(--ok-on-dark); --c-s3:var(--warn-on-dark); --c-s4:var(--bad-on-dark);   /* colori delle serie usati dalle barre dell'hero del Cruscotto */
+}
 /* ===== ERGONOMIA MOBILE (30/09/2026) -- punto 3 della due diligence =====
    Solo sotto i 1024 px; il desktop non cambia. Testo: pavimento a 11 px (anche per gli stili inline, tramite
    selettori sull'attributo style). Tocco: 44 px di altezza per chip, tab e pulsanti; per gli elementi che
