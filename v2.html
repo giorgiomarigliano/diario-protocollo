@@ -667,6 +667,21 @@
 .an-ev-t.is-clamped{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;}
 .an-root .an-ev-more{align-self:flex-start;border:none;background:none;color:var(--accent);font-size:var(--fs-sm);font-weight:700;cursor:pointer;padding:0 4px;min-height:44px;}
 .an-ev-f{font-size:var(--fs-2xs);color:var(--ink3);text-align:right;}
+/* ===== Clinica: griglia modulare (01/10) -- stessa logica di Andamento: righe che si chiudono a 12, card di pari altezza nella riga ===== */
+.clin-ckgrid{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr);gap:9px;align-items:stretch;}
+.clin-ckgrid > .an-card{min-width:0;}
+.clin-tess{flex:1 1 auto;justify-content:center;}
+.clin-ckgrid > [data-clin-g="gh"] .clin-tess{flex:0 0 auto;}
+.clin-spark{flex:1 1 auto;justify-content:center;}
+@media (max-width:1023px){ .clin-spark{display:none !important;} }   /* su mobile le card non devono riempire altezza: lo storico IGF-1 resta solo su desktop */   /* i blocchi marker/riga si distribuiscono nell'altezza della card invece di lasciare vuoti in fondo */
+@media (min-width:1024px){
+  .clin-ckgrid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .clin-ckgrid > [data-clin-g="orm"]{grid-column:1;grid-row:1 / span 2;}
+  .clin-ckgrid > [data-clin-g="met"]{grid-column:2;grid-row:1;}
+  .clin-ckgrid > [data-clin-g="lip"]{grid-column:3;grid-row:1;}
+  .clin-ckgrid > [data-clin-g="saf"]{grid-column:2;grid-row:2;}
+  .clin-ckgrid > [data-clin-g="gh"]{grid-column:3;grid-row:2;}
+}
 /* ===== Sonno (Insights, 01/10): riquadri riassuntivi, legenda a quadratini, confronto per durata ===== */
 .an-sstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
 .an-sstat{display:flex;flex-direction:column;gap:2px;min-width:0;padding:10px 12px;border-radius:var(--r-lg);background:var(--surf2);}
@@ -4691,7 +4706,7 @@ function CLIN_tessera(key) {
   } else {
     delta = '<span style="font-size:var(--fs-xs);color:var(--ink3)">T1 non ancora inserito</span>';
   }
-  return '<div style="display:flex;flex-direction:column;gap:5px;padding:8px 0;border-top:1px solid var(--line2);border-left:2px solid ' + borderCol + ';background:' + bg + ';padding-left:8px;margin-left:-8px">' +
+  return '<div class="clin-tess" style="display:flex;flex-direction:column;gap:5px;padding:8px 0;border-top:1px solid var(--line2);border-left:2px solid ' + borderCol + ';background:' + bg + ';padding-left:8px;margin-left:-8px">' +
     '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:6px">' +
       '<span style="font-size:var(--fs-sm);font-weight:700;color:var(--ink)">' + esc(m.label) + '</span>' + badge +
     '</div>' +
@@ -4703,6 +4718,33 @@ function CLIN_tessera(key) {
     '</div>' +
     (tag ? '<span style="font-size:var(--fs-2xs);font-weight:600;color:' + (tag === 'ancora fuori' ? 'var(--bad)' : tag === 'esce' ? 'var(--bad)' : 'var(--ok)') + '">' + tag + '</span>' : '') +
   '</div>';
+}
+/* Storico di un marker come mini-grafico (usato nella card "Asse somatotropo", che ha un solo marker, per non lasciare la card mezza vuota
+   accanto a card da 3-6 marker). Dati reali da CLIN_seriesPoints; fascia di riferimento in verde, ultimo punto pieno. */
+function CLIN_spark(key) {
+  var pts = (typeof CLIN_seriesPoints === 'function' ? CLIN_seriesPoints(key) : []).filter(function (p) { return p && p.iso && p.v != null && !isNaN(p.v); });
+  if (pts.length < 2) return '';
+  var m = CLIN_MARKERS[key], ref = m ? CLIN_parseRef(m.ref) : null;
+  var t0 = new Date(pts[0].iso + 'T00:00:00').getTime(), t1 = new Date(pts[pts.length - 1].iso + 'T00:00:00').getTime(), span = Math.max(1, t1 - t0);
+  var vals = pts.map(function (p) { return p.v; }), lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+  if (ref && ref.lo != null) lo = Math.min(lo, ref.lo); if (ref && ref.hi != null) hi = Math.max(hi, ref.hi);
+  var pad = (hi - lo) * 0.12 || 1; lo -= pad; hi += pad;
+  var W = 300, H = 120, L = 6, R = 6, T = 10, B = 10;
+  var X = function (iso) { return L + (W - L - R) * ((new Date(iso + 'T00:00:00').getTime() - t0) / span); };
+  var Y = function (v) { return T + (H - T - B) * (1 - (v - lo) / (hi - lo)); };
+  var band = '';
+  if (ref && ref.lo != null && ref.hi != null) band = '<rect x="' + L + '" y="' + Y(ref.hi).toFixed(1) + '" width="' + (W - L - R) + '" height="' + Math.max(1, Y(ref.lo) - Y(ref.hi)).toFixed(1) + '" fill="var(--ok)" opacity=".16" rx="3"/>';
+  var line = pts.map(function (p, i) { return (i ? 'L' : 'M') + X(p.iso).toFixed(1) + ' ' + Y(p.v).toFixed(1); }).join(' ');
+  var dots = pts.map(function (p, i) { var last = i === pts.length - 1;
+    return '<circle cx="' + X(p.iso).toFixed(1) + '" cy="' + Y(p.v).toFixed(1) + '" r="' + (last ? 5 : 3) + '" fill="' + (last ? 'var(--accent)' : 'var(--surf)') + '" stroke="var(--accent)" stroke-width="' + (last ? 2 : 1.6) + '"/>'; }).join('');
+  var lastP = pts[pts.length - 1], sameY = pts[0].iso.slice(0, 4) === lastP.iso.slice(0, 4);
+  var dm = function (iso) { return iso.slice(8, 10) + '/' + iso.slice(5, 7); };
+  var y0 = sameY ? dm(pts[0].iso) : pts[0].iso.slice(0, 4), y1 = sameY ? dm(lastP.iso) + '/' + lastP.iso.slice(2, 4) : lastP.iso.slice(0, 4);
+  return '<div class="clin-spark" style="display:flex;flex-direction:column;gap:4px;padding:6px 0 2px;border-top:1px solid var(--line2)">' +
+    '<span style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase">Storico ' + esc(m ? m.label : key) + ' \u00b7 ' + pts.length + ' misure \u00b7 ' + y0 + '\u2013' + y1 + '</span>' +
+    '<svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="display:block;overflow:visible;height:auto" role="img" aria-label="Storico ' + esc(m ? m.label : key) + '">' + band +
+    '<path d="' + line + '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>' + dots + '</svg>' +
+    '<span style="font-size:var(--fs-2xs);color:var(--ink3)">Fascia verde = range di riferimento; punto pieno = ultima misura</span></div>';
 }
 function CLIN_renderCheckpoint(host) {
   var keys = Object.keys(CLIN_MARKERS);
@@ -4766,12 +4808,16 @@ function CLIN_renderCheckpoint(host) {
   /* PORTING 30/09: stesso principio del fix in Corpo e forza -- i gruppi con 1 marker
      (Asse somatotropo) non devono stirarsi all'altezza di quelli con 3-6 marker nella
      stessa riga. */
-  CLIN_GROUPS.forEach(function (g) {
-    html += '<section class="an-card" style="grid-column:span ' + g.span + ';align-self:start">' +
+  /* 01/10: tre colonne uguali; Asse ormonale (6 marker) occupa due righe nella prima colonna, le altre quattro card si dispongono a coppie
+     nelle colonne 2 e 3 (collocazione in CSS: .clin-ckgrid [data-clin-g]); su mobile resta una colonna nell'ordine originale.
+     Le card si stirano alla stessa altezza e i marker si distribuiscono (prima: span 4/8 con align-self:start = altezze diverse e vuoti). */
+  html += '<div class="clin-ckgrid">' + CLIN_GROUPS.map(function (g) {
+    return '<section class="an-card" data-clin-g="' + g.key + '">' +
       '<div class="an-head"><span class="an-title">' + esc(g.it) + '</span><span class="an-sub">' + g.keys.length + ' marker</span></div>' +
       g.keys.map(CLIN_tessera).join('') +
+      (g.keys.length === 1 ? CLIN_spark(g.keys[0]) : '') +
     '</section>';
-  });
+  }).join('') + '</div>';
   host.innerHTML = html;
 }
 
@@ -4800,9 +4846,9 @@ function CLIN_renderBody(host) {
       ? '<span style="font-size:var(--fs-3xl);font-weight:700">' + (lean.dd >= 0 ? '+' : '') + CLIN_fmtNum(lean.dd.toFixed(1)) + ' kg di massa magra, ' + (fat.dd >= 0 ? '+' : '') + CLIN_fmtNum(fat.dd.toFixed(1)) + ' kg di grasso.</span>'
       : '<span style="font-size:var(--fs-lg);font-weight:600;color:#ffffffc0">T1 non ancora inserito.</span>') +
   '</section>';
-  var tessere = '<section class="an-card" style="grid-column:span 8">' +
+  var tessere = '<section class="an-card" style="grid-column:1/-1">' +
     '<div class="an-head"><span class="an-title">DEXA \u00b7 T0 \u2192 T1 \u2192 T2</span></div>' +
-    '<div style="display:grid;grid-template-columns:' + (isDesktop ? 'repeat(4,1fr)' : 'repeat(2,minmax(0,1fr))') + ';gap:' + (isDesktop ? '10px 16px' : '8px') + '">' +
+    '<div style="display:grid;grid-template-columns:' + (isDesktop ? 'repeat(8,minmax(0,1fr))' : 'repeat(2,minmax(0,1fr))') + ';gap:' + (isDesktop ? '10px 14px' : '8px') + '">' +
     dexa.map(function (x) {
       return '<div style="display:flex;flex-direction:column;gap:3px;min-width:0' + (isDesktop ? '' : ';background:var(--surf2);border-radius:var(--r-lg);padding:10px 12px') + '">' +
         '<span style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase' + (isDesktop ? '' : ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis') + '">' + esc(x.d.label) + '</span>' +
@@ -4891,11 +4937,11 @@ function CLIN_renderBody(host) {
   /* PORTING 30/09: la card si stirava (CSS grid stretch di default) all'altezza di "Forza
      ai checkpoint" (5 esercizi su 3 righe ciascuno), molto piu' alta dei suoi 4 contenuti --
      restava un grande vuoto bianco in fondo. align-self:start la tiene alla sua altezza reale. */
-  var link = '<section class="an-card" style="grid-column:span 5;align-self:start">' +
+  var link = '<section class="an-card" style="grid-column:span 5">' +
     '<div class="an-head"><span class="an-title">Sangue e muscolo, stessa finestra</span></div>' +
     rows.map(function (r) {
       var w = r.pct != null ? Math.min(100, Math.abs(r.pct)) : 0;
-      return '<div style="display:flex;flex-direction:column;gap:4px;padding:6px 0;border-top:1px solid var(--line2)">' +
+      return '<div class="clin-tess" style="display:flex;flex-direction:column;gap:4px;padding:6px 0;border-top:1px solid var(--line2)">' +
         '<div style="display:flex;justify-content:space-between"><span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink)">' + r.label + '</span><span style="font-size:var(--fs-md);font-weight:700;color:' + (r.pct == null ? 'var(--ink3)' : r.pct >= 0 ? 'var(--ok)' : 'var(--bad)') + '">' + r.txt + '</span></div>' +
         '<div style="height:5px;border-radius:var(--r-pill);background:var(--line2);overflow:hidden"><div style="height:100%;width:' + w + '%;background:' + r.bar + ';border-radius:var(--r-pill)"></div></div>' +
         '<span style="font-size:var(--fs-2xs);color:var(--ink3)">' + (r.detail || '') + '</span>' +
@@ -9092,6 +9138,7 @@ loadBlob().then(() => { restorePending(); render(); }).catch(e => console.error(
    clinici e personali scritti in italiano (note dei referti, diagnosi, nomi dei pannelli, database
    alimenti e testi degli orari): restano nella lingua del documento originale. */
 const EN_DICT = {
+'Fascia verde = range di riferimento; punto pieno = ultima misura':'Green band = reference range; filled dot = latest measurement',
 'Resa osservata':'Observed yield',
 'Cronaca delle valutazioni quotidiane (sola lettura): ogni voce è abbinata alla foto dello stesso giorno. Le stelle per scatto si assegnano dalla vista Scrubber.':'Log of the daily evaluations (read-only): each entry is matched with the photo of the same day. Per-shot stars are assigned in the Scrubber view.','Valutazione a stelle per scatto (1–5)':'Star rating per shot (1–5)',
 'Media per notte':'Average per night','Fasi non disponibili':'Stages unavailable','Risvegli per notte':'Awakenings per night',
@@ -9219,6 +9266,7 @@ function enPost(t) {
 }
 /* ---- regole per frasi con numeri (prima che vinca: la prima che combacia) ---- */
 const EN_RULES = [
+ [/^Storico (.+?) · (\d+) misure · (.+)$/i, (m, n, c, r) => n + ' history · ' + c + ' measurements · ' + r],
  [/^Resa osservata: (\d+) dosi per vial \(teoria (\d+)\) · media di (\d+) vial: (.+)$/i, (m, a, t, n, l) => 'Observed yield: ' + a + ' doses per vial (theory ' + t + ') · average of ' + n + ' vials: ' + l],
  [/^(.*) · resa osservata (\d+) dosi\/vial$/i, (m, pre, n) => pre + ' · observed yield ' + n + ' doses/vial'],
  [/^Più lunga · (.+)$/i, (m, d) => 'Longest · ' + d],
