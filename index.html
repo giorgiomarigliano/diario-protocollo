@@ -798,14 +798,14 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 
 /* Phase badge colors */
 .p1b { background: #e8f1fb; color: var(--blue); }
-.p2b { background: #fff5e6; color: #c26000; }
+.p2b { background: #fff5e6; color: #e8590c; }
 .p3b { background: var(--green-light); color: var(--green-dark); }
 .p4b { background: var(--red-light); color: var(--red-dark); }
 
 /* Workout type badges */
 .badge-push  { background: var(--red-light); color: var(--red-dark); }
 .badge-pull  { background: var(--green-light); color: var(--green-dark); }
-.badge-legs  { background: #fff5e6; color: #c26000; }
+.badge-legs  { background: #fff5e6; color: #e8590c; }
 .badge-upper     { background: #f5eeff; color: #8522c0; }
 .badge-upper-dom { background: #e8f1fb; color: #0058b0; }
 .badge-rest  { background: #f5f5f7; color: #aeaeb2; }
@@ -2870,7 +2870,7 @@ function renderWarmupAssessment(data) {
       <div style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--blue);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">2 · Aderenza & allenamento</div>
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px">
         <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px">
-          <div style="font-size: var(--fs-20);font-weight: var(--fw-bold);color:${ad.suppPct>=80?'var(--green-dark)':ad.suppPct>=60?'#b8860b':'var(--red-dark)'}">${ad.suppPct!=null?ad.suppPct+'%':'—'}</div>
+          <div style="font-size: var(--fs-20);font-weight: var(--fw-bold);color:${ad.suppPct>=80?'var(--green-dark)':ad.suppPct>=60?'#e8590c':'var(--red-dark)'}">${ad.suppPct!=null?ad.suppPct+'%':'—'}</div>
           <div style="font-size: var(--fs-xs);color:var(--muted)">Aderenza integratori<br>${ad.suppTaken}/${ad.suppPossible} dosi${ad.suppSkipped?` · ${ad.suppSkipped} skip`:''}</div>
         </div>
         <div style="background:var(--surface2,#f5f5f7);border-radius:8px;padding:9px 12px">
@@ -3150,7 +3150,7 @@ function renderBackupStatus(status) {
 
   const colors = {
     good: {bg:'var(--green-light)', bd:'var(--green-dark)', c:'var(--green-dark)'},
-    warn: {bg:'#fff6e0', bd:'#b8860b', c:'#8a6100'},
+    warn: {bg:'#fff6e0', bd:'#f5c400', c:'#e8590c'},
     bad:  {bg:'var(--red-light)', bd:'var(--red-dark)', c:'var(--red-dark)'},
   }[level];
 
@@ -10934,7 +10934,7 @@ function buildStockView2() {
   // Ogni composto ora organizza i vial per FORNITORE (sezioni separate in UI).
   // SUPPLIER_META centralizza etichetta/colore badge per fornitore.
   const SUPPLIER_META = {
-    limitless: { label:'Limitless',  badgeBg:'#fff3cd', badgeC:'#856404', badgeBorder:'#ffc107' },
+    limitless: { label:'Limitless',  badgeBg:'#fff3cd', badgeC:'#e8590c', badgeBorder:'#ffc107' },
     bachem:    { label:'Bachem',     badgeBg:'#e8f4f8', badgeC:'#0c5460', badgeBorder:'#bee5eb' },
   };
 
@@ -11148,7 +11148,7 @@ function buildStockView2() {
     const M = { intatto:{dot:'#34c759',text:'Intatto',bg:'rgba(52,199,89,.10)',c:'#1d6e32'},
       in_uso:{dot:'#0071e3',text:'In uso',bg:'rgba(0,113,227,.10)',c:'#0058b8'},
       esaurito:{dot:'#ff3b30',text:'Esaurito',bg:'rgba(255,59,48,.10)',c:'#c0392b'},
-      perso:{dot:'#ff9500',text:'Perso',bg:'rgba(255,149,0,.10)',c:'#a05a00'},
+      perso:{dot:'#ff9500',text:'Perso',bg:'rgba(255,149,0,.10)',c:'#e8590c'},
       congelato:{dot:'#5ac8fa',text:'Congelato',bg:'rgba(90,200,250,.10)',c:'#006fa6'},
       attesa:{dot:'#8e8e93',text:'In arrivo',bg:'rgba(142,142,147,.12)',c:'#636366'} };
     return M[s] || {dot:'#aeaeb2',text:s,bg:'#f5f5f7',c:'#6e6e73'};
@@ -11362,7 +11362,7 @@ function buildStockView2() {
       }).join('');
       const mgOpts = c.mgOptions.map(m => `<option value="${m}"${m===mg?' selected':''}>${m}mg</option>`).join('');
       const bacOpts = c.bacOptions.map(b => `<option value="${b}"${b===bac?' selected':''}>${b}ml</option>`).join('');
-      const expColor = exp.daysLeft===null?'var(--muted)':exp.daysLeft<0?'#c0392b':exp.daysLeft<=5?'#a05a00':'#1d6e32';
+      const expColor = exp.daysLeft===null?'var(--muted)':exp.daysLeft<0?'#c0392b':exp.daysLeft<=5?'#e8590c':'#1d6e32';
       return `
         <div style="border:1px solid var(--border,#e8e8ed);border-radius:10px;padding:10px;margin-bottom:8px;background:var(--surface,#fff)">
           <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
@@ -11454,7 +11454,7 @@ function buildStockView2() {
         </div>`;
       });
       if (c.disponibile > 0 && c.disponibile < c.mgNeeded) {
-        vialsHtml += `<div style="background:rgba(255,149,0,.08);border-radius:8px;padding:7px 10px;font-size:var(--fs-xs);color:#7a4400">⚠️ ${c.gap}</div>`;
+        vialsHtml += `<div style="background:rgba(255,149,0,.08);border-radius:8px;padding:7px 10px;font-size:var(--fs-xs);color:#e8590c">⚠️ ${c.gap}</div>`;
       }
     }
 
@@ -12500,7 +12500,7 @@ function buildFoodTab() {
             <div><span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:var(--text-primary)">${m.kcal}</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">kcal</span></div>
             <div><span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:var(--green-dark)">${m.p}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">prot</span></div>
             <div><span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:#185fa5">${m.c}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">carb</span></div>
-            <div><span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:#854f0b">${m.g}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">gras</span></div>
+            <div><span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:#e8590c">${m.g}g</span><span style="font-size: var(--fs-2xs);color:var(--text-muted);display:block">gras</span></div>
           </div>
           <div style="font-size: var(--fs-18);color:${inMeal?ci.color:'var(--border-strong)'};flex-shrink:0;width:20px;text-align:center">${inMeal?'✓':'+'}</div>
         </div>`;
@@ -12548,7 +12548,7 @@ function buildFoodTab() {
             <span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:var(--text-primary)">${m.kcal} kcal</span>
             <span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:var(--green-dark)">${m.p}g P</span>
             <span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:#185fa5">${m.c}g C</span>
-            <span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:#854f0b">${m.g}g G</span>
+            <span style="font-size: var(--fs-body);font-weight: var(--fw-bold);color:#e8590c">${m.g}g G</span>
           </div>
         </div>
       </div>`;
@@ -12606,7 +12606,7 @@ function buildFoodTab() {
             <div style="font-size: var(--fs-2xs);font-weight: var(--fw-med);text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);width:32px">kcal</div>
             <div style="font-size: var(--fs-2xs);font-weight: var(--fw-med);text-transform:uppercase;letter-spacing:.06em;color:var(--green-dark);width:32px">prot</div>
             <div style="font-size: var(--fs-2xs);font-weight: var(--fw-med);text-transform:uppercase;letter-spacing:.06em;color:#185fa5;width:32px">carb</div>
-            <div style="font-size: var(--fs-2xs);font-weight: var(--fw-med);text-transform:uppercase;letter-spacing:.06em;color:#854f0b;width:32px">gras</div>
+            <div style="font-size: var(--fs-2xs);font-weight: var(--fw-med);text-transform:uppercase;letter-spacing:.06em;color:#e8590c;width:32px">gras</div>
           </div>
           <div style="width:28px"></div>
         </div>
@@ -12628,7 +12628,7 @@ function buildFoodTab() {
               <div><div style="font-size: var(--fs-xl);font-weight: var(--fw-bold);color:var(--text-primary)" id="fd-tot-kcal">0</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">kcal</div></div>
               <div><div style="font-size: var(--fs-xl);font-weight: var(--fw-bold);color:var(--green-dark)" id="fd-tot-p">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">proteine</div></div>
               <div><div style="font-size: var(--fs-xl);font-weight: var(--fw-bold);color:#185fa5" id="fd-tot-c">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">carb</div></div>
-              <div><div style="font-size: var(--fs-xl);font-weight: var(--fw-bold);color:#854f0b" id="fd-tot-g">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">grassi</div></div>
+              <div><div style="font-size: var(--fs-xl);font-weight: var(--fw-bold);color:#e8590c" id="fd-tot-g">0g</div><div style="font-size: var(--fs-2xs);color:var(--text-muted)">grassi</div></div>
             </div>
           </div>
         </div>
