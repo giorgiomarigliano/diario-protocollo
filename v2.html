@@ -670,6 +670,9 @@
 /* ===== Clinica: griglia modulare (01/10) -- stessa logica di Andamento: righe che si chiudono a 12, card di pari altezza nella riga ===== */
 .clin-ckgrid{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr);gap:9px;align-items:stretch;}
 .clin-ckgrid > .an-card{min-width:0;}
+.an-root .clin-aln{border:1px solid var(--line);background:var(--surf2);color:var(--ink2);border-radius:var(--r-pill);padding:0 12px;min-height:32px;font-size:var(--fs-xs);font-weight:700;cursor:pointer;margin-left:auto;}
+.an-root .clin-aln:hover{background:var(--line2);}
+@media (max-width:1023px){ .an-root .clin-aln{min-height:44px;margin-left:0;} }
 .clin-ind{font-size:var(--fs-xs);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
 .clin-tess{flex:1 1 auto;justify-content:center;}
 .clin-ckgrid > [data-clin-g="gh"] .clin-tess{flex:0 0 auto;}
@@ -4585,7 +4588,7 @@ function CLIN_dexaT(key, which) {
    .an-subnav, una .an-view per sotto-tab, ciascuna popolata da
    una funzione CLIN_render<Nome>(host) al mount o al cambio tab.
    ============================================================ */
-var CLIN = { sub: 'ck', selKey: 'hdl', refView: 'watch', openArea: null, selPanel: null, selOpen: false, progAll: false, watchAll: false, panelOpen: false };
+var CLIN = { align: true, sub: 'ck', selKey: 'hdl', refView: 'watch', openArea: null, selPanel: null, selOpen: false, progAll: false, watchAll: false, panelOpen: false };
 
 function CLIN_HTML() {
   return '<div class="an-root">' +
@@ -5042,6 +5045,38 @@ function CLIN_fotoInd(m, c, c0) {
 function CLIN_fotoGroupHead(t) {
   return '<div style="margin:12px 0 2px;padding-top:8px;border-top:2px solid var(--line);font-size:var(--fs-xs);font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3)">' + esc(t) + '</div>';
 }
+/* ===== 02/10: foto T0/T1/T2 allineate sulle spalle (solo in visualizzazione: i file originali non vengono toccati) =====
+   CLIN_PHOTO_SHOULDER = altezza (px, su un'immagine 900x1200) della spalla destra (lato sinistro dell'immagine: punto piu' alto del deltoide laterale),
+   misurata a mano su griglia il 02/10/2026 (incertezza ~ +-6 px; controllo sui capezzoli: scarto 128 px contro 120 sulle spalle).
+   Con 2 o piu' foto calibrate si sceglie una finestra comune di altezza 1200-(max-min), larghezza 3/4 e centrata, spostata in verticale in modo che le
+   spalle cadano alla stessa altezza e alla stessa scala (ritaglio ~10% per foto, diverso in alto/basso). Foto non calibrate: "cover" come prima.
+   Per aggiungere il T2: misurare la spalla (px) della nuova foto e inserirla qui. Il pulsante "vedi originali" e lo zoom mostrano la foto intera. */
+var CLIN_PHOTO_SHOULDER = { '2026-07-13_1786015601510.jpg': 522, '2026-09-12_1789187830044.jpg': 402 };
+var CLIN_PHOTO_W = 900, CLIN_PHOTO_H = 1200;
+function CLIN_alignWindows(files) {
+  var cal = files.filter(function (f, i) { return f && CLIN_PHOTO_SHOULDER[f] != null && files.indexOf(f) === i; });
+  if (cal.length < 2) return {};
+  var ys = cal.map(function (f) { return CLIN_PHOTO_SHOULDER[f]; }), mx = Math.max.apply(null, ys), mn = Math.min.apply(null, ys), spread = mx - mn;
+  var h = CLIN_PHOTO_H - spread, w = h * 0.75, x0 = (CLIN_PHOTO_W - w) / 2, out = {};
+  cal.forEach(function (f) {
+    var y0 = CLIN_PHOTO_SHOULDER[f] - mn;
+    out[f] = { size: (CLIN_PHOTO_W / w * 100).toFixed(2) + '% ' + (CLIN_PHOTO_H / h * 100).toFixed(2) + '%',
+               pos: (x0 / (CLIN_PHOTO_W - w) * 100).toFixed(2) + '% ' + (spread ? (y0 / spread * 100).toFixed(2) : '0') + '%' };
+  });
+  return out;
+}
+function CLIN_setPhoto(el, fn, win) {
+  ANV2.photoUrl(fn).then(function (u) {
+    el.classList.remove('is-empty');
+    var sl = el.querySelector('.an-fslot'); if (sl) sl.remove();
+    el.style.backgroundImage = 'url("' + u + '")'; el.style.backgroundRepeat = 'no-repeat';
+    el.style.backgroundSize = win ? win.size : 'cover'; el.style.backgroundPosition = win ? win.pos : 'center';
+  }).catch(function () { var sl = el.querySelector('.an-fslot'); if (sl) sl.textContent = 'foto non disponibile'; });
+}
+function CLIN_alignBtn() {
+  return '<button type="button" class="clin-aln" data-clin-align title="Foto allineate sulle spalle (stessa altezza e scala, ritaglio ~10%). Tocca per vedere gli originali interi.">' +
+    (CLIN.align ? 'Allineate sulle spalle \u00b7 vedi originali' : 'Originali \u00b7 allinea sulle spalle') + '</button>';
+}
 function CLIN_renderFoto(host) {
   var cps = [
     { key: 't0', label: 'T0', iso: CLIN_CK.t0, weight: CLIN_DEXA_META[0].t0, igf: CLIN_parseVal(CLIN_MARKERS.igf1.t0), lean: CLIN_DEXA_META[1].t0, bf: CLIN_DEXA_META[3].t0, sentBench: CLIN_sentinelAt('bench', CLIN_CK.t0) },
@@ -5049,7 +5084,7 @@ function CLIN_renderFoto(host) {
     { key: 't2', label: 'T2', iso: CLIN_CK.t2, weight: CLIN_dexaT('peso', 't2'), igf: CLIN_parseVal(CLIN_labT('igf1', 't2')), lean: CLIN_dexaT('lean_kg', 't2'), bf: CLIN_dexaT('bf_pct', 't2'), sentBench: CLIN_sentinelAt('bench', CLIN_CK.t2) }
   ];
   var futureNoData = function (c) { return c.weight == null && new Date(c.iso + 'T00:00:00') > new Date(today + 'T00:00:00'); };
-  var htmlDesk = '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Foto e dati ai checkpoint</span><span class="an-sub">foto pi\u00f9 vicina alla data, entro \u00b13 giorni</span></div>' +
+  var htmlDesk = '<section class="an-card" style="grid-column:1/-1"><div class="an-head"><span class="an-title">Foto e dati ai checkpoint</span><span class="an-sub">foto pi\u00f9 vicina alla data, entro \u00b13 giorni</span>' + CLIN_alignBtn() + '</div>' +
     '<div class="clin-foto-grid">' +
     cps.map(function (c) {
       var near = CLIN_photoNear(c.iso, 3);
@@ -5082,6 +5117,7 @@ function CLIN_renderFoto(host) {
      { v: haveT1 ? sg(dLean, 1) : '\u2014', l: 'Massa magra kg', c: haveT1 ? (dLean >= 0 ? 'var(--ok-on-dark)' : 'var(--bad-on-dark)') : 'var(--white)' }]);
   var htmlMob = '<section class="an-card" style="grid-column:1/-1">' +
     '<div class="an-head"><span class="an-title">Foto</span><span class="an-sub">tocca per ingrandire</span></div>' +
+    '<div style="margin:-4px 0 10px">' + CLIN_alignBtn() + '</div>' +
     '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">' +
     cps.map(function (c) {
       var near = CLIN_photoNear(c.iso, 3);
@@ -5104,9 +5140,14 @@ function CLIN_renderFoto(host) {
     }).join('') +
     '<span class="an-sub" style="margin-top:8px">Foto: la pi\u00f9 vicina alla data del checkpoint, entro \u00b13 giorni. DEXA, forza e sangue come nelle schede Corpo e Checkpoint. Vitali: media dei 7 giorni che terminano nel giorno del checkpoint (almeno 4 giorni con dato); sonno senza veglia; T0 dal warm-up (7\u201313/07). HRV non incluso: dal 15/09 Salute d\u00e0 solo l\u2019intervallo. Indicatori \u25b2\u25bc: variazione rispetto al T0 (verde = migliora, rosso = peggiora, grigio = neutro, = sotto la soglia di rumore: peso 0,2 kg, pressione 2 mmHg, FC 1 bpm, sonno 10 min).</span></section>';
   host.innerHTML = heroF + (isDesktop ? htmlDesk : htmlMob);
-  cps.forEach(function (c) {
-    var near = CLIN_photoNear(c.iso, 3);
-    if (near) { var el = document.getElementById('clinphoto-' + c.key); if (el) ANV2.lazyPhoto(el, near.p.filename); }
+  var photoFiles = cps.map(function (c) { var n = CLIN_photoNear(c.iso, 3); return n ? n.p.filename : null; });
+  var photoWins = CLIN.align ? CLIN_alignWindows(photoFiles) : {};
+  cps.forEach(function (c, i) {
+    if (!photoFiles[i]) return;
+    var el = document.getElementById('clinphoto-' + c.key); if (el) CLIN_setPhoto(el, photoFiles[i], photoWins[photoFiles[i]]);
+  });
+  host.querySelectorAll('[data-clin-align]').forEach(function (b) {
+    b.addEventListener('click', function () { CLIN.align = !CLIN.align; CLIN_renderFoto(host); });
   });
   host.querySelectorAll('[data-clin-zoom]').forEach(function (el) {
     el.addEventListener('click', function () {
@@ -9209,6 +9250,7 @@ loadBlob().then(() => { restorePending(); render(); }).catch(e => console.error(
    clinici e personali scritti in italiano (note dei referti, diagnosi, nomi dei pannelli, database
    alimenti e testi degli orari): restano nella lingua del documento originale. */
 const EN_DICT = {
+'Allineate sulle spalle · vedi originali':'Aligned on shoulders · see originals','Originali · allinea sulle spalle':'Originals · align on shoulders',
 'T libero (pg/mL)':'Free T (pg/mL)',
 'DEXA':'DEXA',
 'Forza':'Strength',
