@@ -4588,17 +4588,18 @@ function CLIN_dexaT(key, which) {
    .an-subnav, una .an-view per sotto-tab, ciascuna popolata da
    una funzione CLIN_render<Nome>(host) al mount o al cambio tab.
    ============================================================ */
-var CLIN = { align: true, sub: 'ck', selKey: 'hdl', refView: 'watch', openArea: null, selPanel: null, selOpen: false, progAll: false, watchAll: false, panelOpen: false };
+var CLIN = { align: true, sub: 'foto', selKey: 'hdl', refView: 'watch', openArea: null, selPanel: null, selOpen: false, progAll: false, watchAll: false, panelOpen: false };
 
 function CLIN_HTML() {
   return '<div class="an-root">' +
     '<div class="an-subnav"><div class="an-chips">' +
-      ['ck:Checkpoint', 'body:' + (window.innerWidth < 1024 ? 'Corpo' : 'Corpo e forza'), 'foto:Foto', 'prog:Progressione', 'ref:Referti'].map(function (s) {
+      /* 02/10: sotto-tab riordinati per domanda. Chiavi interne invariate: foto = Checkpoint (riepilogo T0/T1/T2), body = Corpo, ck = Sangue (16 marker), prog = Storico (serie), ref = Referti. */
+      ['foto:Checkpoint', 'body:Corpo', 'ck:Sangue', 'prog:Storico', 'ref:Referti'].map(function (s) {
         var p = s.split(':'); return '<button type="button" class="an-chip' + (p[0] === CLIN.sub ? ' is-active' : '') + '" data-clin-tab="' + p[0] + '">' + p[1] + '</button>';
       }).join('') +
     '</div><span class="an-sub" data-clin-cycle style="align-self:center;margin-left:auto;padding-right:4px"></span></div>' +
     '<div class="an-main">' +
-      ['ck', 'body', 'foto', 'prog', 'ref'].map(function (s) {
+      ['foto', 'body', 'ck', 'prog', 'ref'].map(function (s) {
         return '<div class="an-view' + (s === CLIN.sub ? ' is-active' : '') + '" data-clin-view="' + s + '"></div>';
       }).join('') +
     '</div></div>';
@@ -4769,7 +4770,7 @@ function CLIN_renderCheckpoint(host) {
   var phases = [[0, 13, 'Adattamento'], [14, 41, 'Costruzione'], [42, 55, 'Peak'], [56, 83, 'Mantenimento'], [84, 111, 'Fine ciclo']];
   var pct = function (x) { return (x / 111 * 100).toFixed(2) + '%'; };
   var html = '<section class="an-card" style="grid-column:1/-1;background:var(--hero);color:var(--white);gap:10px">' +
-    '<span style="font-size:var(--fs-xs);font-weight:600;color:#ffffffb0;text-transform:uppercase;letter-spacing:.03em">Confronto ai checkpoint \u00b7 T0 13 lug \u2192 T1 12 set</span>' +
+    '<span style="font-size:var(--fs-xs);font-weight:600;color:#ffffffb0;text-transform:uppercase;letter-spacing:.03em">Sangue \u00b7 T0 13 lug \u2192 T1 12 set</span>' +
     '<span style="font-size:var(--fs-3xl);font-weight:700;line-height:1.3">' + (haveT1 ? (mig + ' marker su ' + keys.length + ' migliorano dal T0, ' + peg + ' peggiorano.') : 'T0 registrato, T1 in attesa di inserimento.') + '</span>' +
     '<div style="display:flex;gap:26px;margin-top:2px;flex-wrap:wrap">' +
       [[mig, 'migliorati', 'var(--ok)'], [peg, 'peggiorati', 'var(--bad)'], [nel, 'nel range', 'var(--white)'], [fuori, 'fuori', 'var(--warn)']].map(function (s) {
@@ -5103,14 +5104,14 @@ function CLIN_renderFoto(host) {
         '</div>' +
       '</div>';
     }).join('') +
-    '</div><span class="an-sub" style="margin-top:8px">'+"Foto: la pi\u00f9 vicina alla data del checkpoint, entro \u00b13 giorni. DEXA, forza e sangue come nelle schede Corpo e Checkpoint. Vitali: media dei 7 giorni che terminano nel giorno del checkpoint (almeno 4 giorni con dato); sonno senza veglia; T0 dal warm-up (7\u201313/07). HRV non incluso: dal 15/09 Salute d\u00e0 solo l\u2019intervallo. Indicatori \u25b2\u25bc: variazione rispetto al T0 (verde = migliora, rosso = peggiora, grigio = neutro, = sotto la soglia di rumore: peso 0,2 kg, pressione 2 mmHg, FC 1 bpm, sonno 10 min)."+'</span></section>';
+    '</div><span class="an-sub" style="margin-top:8px">'+"Foto: la pi\u00f9 vicina alla data del checkpoint, entro \u00b13 giorni. DEXA, forza e sangue come nelle schede Corpo e Sangue. Vitali: media dei 7 giorni che terminano nel giorno del checkpoint (almeno 4 giorni con dato); sonno senza veglia; T0 dal warm-up (7\u201313/07). HRV non incluso: dal 15/09 Salute d\u00e0 solo l\u2019intervallo. Indicatori \u25b2\u25bc: variazione rispetto al T0 (verde = migliora, rosso = peggiora, grigio = neutro, = sotto la soglia di rumore: peso 0,2 kg, pressione 2 mmHg, FC 1 bpm, sonno 10 min)."+'</span></section>';
   /* ---- 30/09: apertura scura + versione mobile a miniature affiancate ---- */
   var c0 = cps[0], c1 = cps[1];
   var nFoto = cps.filter(function (c) { return CLIN_photoNear(c.iso, 3); }).length;
   var haveT1 = c1.weight != null && c1.bf != null && c1.lean != null;
   var dBf = haveT1 ? c1.bf - c0.bf : null, dLean = haveT1 ? c1.lean - c0.lean : null, dW = haveT1 ? c1.weight - c0.weight : null;
   var sg = function (v, d) { return (v > 0 ? '+' : (v < 0 ? '\u2212' : '')) + CLIN_fmtNum(Math.abs(v).toFixed(d)); };
-  var heroF = CLIN_hero('Foto ai checkpoint \u00b7 T0 \u2192 T1 \u2192 T2',
+  var heroF = CLIN_hero('Checkpoint \u00b7 T0 \u2192 T1 \u2192 T2',
     haveT1 ? 'Da T0 a T1: grasso ' + sg(dBf, 1) + ' punti, massa magra ' + sg(dLean, 1) + ' kg.' : 'T1 non ancora inserito.',
     [{ v: nFoto + '/3', l: 'Foto (\u00b13 gg)' },
      { v: haveT1 ? sg(dBf, 1) + ' %' : '\u2014', l: 'Grasso', c: haveT1 ? (dBf <= 0 ? 'var(--ok-on-dark)' : 'var(--bad-on-dark)') : 'var(--white)' },
@@ -5138,7 +5139,7 @@ function CLIN_renderFoto(host) {
         '<span style="font-size:var(--fs-md);color:var(--ink2)">' + r[0] + '</span>' +
         cps.map(function (c) { var v = r[1](c), ind = CLIN_fotoInd(r[2], c, cps[0]); return '<span style="text-align:right;font-size:var(--fs-md);font-weight:700;font-variant-numeric:tabular-nums;color:' + (v === '\u2014' ? 'var(--ink3)' : 'var(--ink)') + '">' + v + (ind ? '<span style="display:block;margin-top:1px">' + ind + '</span>' : '') + '</span>'; }).join('') + '</div>';
     }).join('') +
-    '<span class="an-sub" style="margin-top:8px">Foto: la pi\u00f9 vicina alla data del checkpoint, entro \u00b13 giorni. DEXA, forza e sangue come nelle schede Corpo e Checkpoint. Vitali: media dei 7 giorni che terminano nel giorno del checkpoint (almeno 4 giorni con dato); sonno senza veglia; T0 dal warm-up (7\u201313/07). HRV non incluso: dal 15/09 Salute d\u00e0 solo l\u2019intervallo. Indicatori \u25b2\u25bc: variazione rispetto al T0 (verde = migliora, rosso = peggiora, grigio = neutro, = sotto la soglia di rumore: peso 0,2 kg, pressione 2 mmHg, FC 1 bpm, sonno 10 min).</span></section>';
+    '<span class="an-sub" style="margin-top:8px">Foto: la pi\u00f9 vicina alla data del checkpoint, entro \u00b13 giorni. DEXA, forza e sangue come nelle schede Corpo e Sangue. Vitali: media dei 7 giorni che terminano nel giorno del checkpoint (almeno 4 giorni con dato); sonno senza veglia; T0 dal warm-up (7\u201313/07). HRV non incluso: dal 15/09 Salute d\u00e0 solo l\u2019intervallo. Indicatori \u25b2\u25bc: variazione rispetto al T0 (verde = migliora, rosso = peggiora, grigio = neutro, = sotto la soglia di rumore: peso 0,2 kg, pressione 2 mmHg, FC 1 bpm, sonno 10 min).</span></section>';
   host.innerHTML = heroF + (isDesktop ? htmlDesk : htmlMob);
   var photoFiles = cps.map(function (c) { var n = CLIN_photoNear(c.iso, 3); return n ? n.p.filename : null; });
   var photoWins = CLIN.align ? CLIN_alignWindows(photoFiles) : {};
@@ -9250,6 +9251,7 @@ loadBlob().then(() => { restorePending(); render(); }).catch(e => console.error(
    clinici e personali scritti in italiano (note dei referti, diagnosi, nomi dei pannelli, database
    alimenti e testi degli orari): restano nella lingua del documento originale. */
 const EN_DICT = {
+'Storico':'History','Checkpoint':'Checkpoint',
 'Allineate sulle spalle · vedi originali':'Aligned on shoulders · see originals','Originali · allinea sulle spalle':'Originals · align on shoulders',
 'T libero (pg/mL)':'Free T (pg/mL)',
 'DEXA':'DEXA',
@@ -9267,7 +9269,7 @@ const EN_DICT = {
 'Pressione (mmHg)':'Blood pressure (mmHg)',
 'FC a riposo (bpm)':'Resting HR (bpm)',
 'Sonno (ore)':'Sleep (h)',
-'Foto: la più vicina alla data del checkpoint, entro ±3 giorni. DEXA, forza e sangue come nelle schede Corpo e Checkpoint. Vitali: media dei 7 giorni che terminano nel giorno del checkpoint (almeno 4 giorni con dato); sonno senza veglia; T0 dal warm-up (7–13/07). HRV non incluso: dal 15/09 Salute dà solo l’intervallo. Indicatori ▲▼: variazione rispetto al T0 (verde = migliora, rosso = peggiora, grigio = neutro, = sotto la soglia di rumore: peso 0,2 kg, pressione 2 mmHg, FC 1 bpm, sonno 10 min).':'Photo: the closest to the checkpoint date, within ±3 days. DEXA, strength and blood as in the Body and Checkpoint tabs. Vitals: average of the 7 days ending on the checkpoint day (at least 4 days with data); sleep excludes awake time; T0 from the warm-up (7–13 Jul). HRV not included: since 15 Sep Health gives only a range. Indicators ▲▼: change versus T0 (green = improving, red = worsening, grey = neutral, = below the noise threshold: weight 0.2 kg, blood pressure 2 mmHg, HR 1 bpm, sleep 10 min).',
+'Foto: la più vicina alla data del checkpoint, entro ±3 giorni. DEXA, forza e sangue come nelle schede Corpo e Sangue. Vitali: media dei 7 giorni che terminano nel giorno del checkpoint (almeno 4 giorni con dato); sonno senza veglia; T0 dal warm-up (7–13/07). HRV non incluso: dal 15/09 Salute dà solo l’intervallo. Indicatori ▲▼: variazione rispetto al T0 (verde = migliora, rosso = peggiora, grigio = neutro, = sotto la soglia di rumore: peso 0,2 kg, pressione 2 mmHg, FC 1 bpm, sonno 10 min).':'Photo: the closest to the checkpoint date, within ±3 days. DEXA, strength and blood as in the Body and Blood tabs. Vitals: average of the 7 days ending on the checkpoint day (at least 4 days with data); sleep excludes awake time; T0 from the warm-up (7–13 Jul). HRV not included: since 15 Sep Health gives only a range. Indicators ▲▼: change versus T0 (green = improving, red = worsening, grey = neutral, = below the noise threshold: weight 0.2 kg, blood pressure 2 mmHg, HR 1 bpm, sleep 10 min).',
 'Fascia verde = range di riferimento; punto pieno = ultima misura':'Green band = reference range; filled dot = latest measurement',
 'Resa osservata':'Observed yield',
 'Cronaca delle valutazioni quotidiane (sola lettura): ogni voce è abbinata alla foto dello stesso giorno. Le stelle per scatto si assegnano dalla vista Scrubber.':'Log of the daily evaluations (read-only): each entry is matched with the photo of the same day. Per-shot stars are assigned in the Scrubber view.','Valutazione a stelle per scatto (1–5)':'Star rating per shot (1–5)',
@@ -9396,6 +9398,8 @@ function enPost(t) {
 }
 /* ---- regole per frasi con numeri (prima che vinca: la prima che combacia) ---- */
 const EN_RULES = [
+ [/^Sangue · T0 (.+) → T1 (.+)$/i, (m, a, b) => 'Blood · T0 ' + a + ' → T1 ' + b],
+ [/^Checkpoint · T0 → T1 → T2$/i, () => 'Checkpoints · T0 → T1 → T2'],
  [/^Storico (.+?) · (\d+) misure · (.+)$/i, (m, n, c, r) => n + ' history · ' + c + ' measurements · ' + r],
  [/^Resa osservata: (\d+) dosi per vial \(teoria (\d+)\) · media di (\d+) vial: (.+)$/i, (m, a, t, n, l) => 'Observed yield: ' + a + ' doses per vial (theory ' + t + ') · average of ' + n + ' vials: ' + l],
  [/^(.*) · resa osservata (\d+) dosi\/vial$/i, (m, pre, n) => pre + ' · observed yield ' + n + ' doses/vial'],
