@@ -670,6 +670,7 @@
 /* ===== Clinica: griglia modulare (01/10) -- stessa logica di Andamento: righe che si chiudono a 12, card di pari altezza nella riga ===== */
 .clin-ckgrid{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr);gap:9px;align-items:stretch;}
 .clin-ckgrid > .an-card{min-width:0;}
+.clin-ind{font-size:var(--fs-xs);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
 .clin-tess{flex:1 1 auto;justify-content:center;}
 .clin-ckgrid > [data-clin-g="gh"] .clin-tess{flex:0 0 auto;}
 .clin-spark{flex:1 1 auto;justify-content:center;}
@@ -4985,36 +4986,59 @@ function CLIN_vit7(iso) {
   return out;
 }
 var CLIN_fotoDefs = (function () {
+  /* 02/10: ogni riga ha [etichetta, testo(c), meta]; meta = { n: valore numerico, b: 'up'|'down'|'neutral' (cosa e' meglio), d: decimali del delta,
+     e: soglia di rumore sotto cui la variazione si mostra come "=", n2: seconda componente (pressione) }. Indicatori sempre rispetto al T0. */
   var dash = '\u2014';
   var num = function (v, d) { return v != null ? CLIN_fmtNum(v.toFixed(d)) : dash; };
-  var dx = function (c, key) { var m = CLIN_DEXA_META.filter(function (x) { return x.key === key; })[0]; return c.key === 't0' ? m.t0 : CLIN_dexaT(key, c.key); };
-  var lab = function (c, key) { var p = c.key === 't0' ? CLIN_parseVal(CLIN_MARKERS[key].t0) : CLIN_parseVal(CLIN_labT(key, c.key)); return p ? CLIN_fmtP(p) : dash; };
+  var meta = function (key) { return CLIN_DEXA_META.filter(function (x) { return x.key === key; })[0]; };
+  var dx = function (c, key) { return c.key === 't0' ? meta(key).t0 : CLIN_dexaT(key, c.key); };
+  var labP = function (c, key) { return c.key === 't0' ? CLIN_parseVal(CLIN_MARKERS[key].t0) : CLIN_parseVal(CLIN_labT(key, c.key)); };
+  var lab = function (c, key) { var p = labP(c, key); return p ? CLIN_fmtP(p) : dash; };
+  var labN = function (c, key) { var p = labP(c, key); return (p && !p.cens) ? p.v : null; };
   var lift = function (c, id) { var b = CLIN_sentinelAt(id, c.iso); return b ? CLIN_fmtNum(b.kg) + ' kg' : dash; };
+  var liftN = function (c, id) { var b = CLIN_sentinelAt(id, c.iso); return b ? b.kg : null; };
   var vit = function (c) { if (!c._vit) c._vit = CLIN_vit7(c.iso); return c._vit; };
   var hm = function (h) { if (h == null) return dash; var H = Math.floor(h), M = Math.round((h - H) * 60); if (M === 60) { H++; M = 0; } return H + 'h' + (M < 10 ? '0' : '') + M; };
+  var bm = function (key) { return CLIN_MARKERS[key].better; };
   return [
     ['DEXA', null],
-    ['Peso DEXA', function (c) { return c.weight != null ? CLIN_fmtNum(c.weight.toFixed(1)) + ' kg' : dash; }],
-    ['Grasso', function (c) { return c.bf != null ? CLIN_fmtNum(c.bf.toFixed(1)) + ' %' : dash; }],
-    ['Massa magra', function (c) { return c.lean != null ? CLIN_fmtNum(c.lean.toFixed(1)) + ' kg' : dash; }],
-    ['Massa grassa (kg)', function (c) { return num(dx(c, 'fat_kg'), 1); }],
-    ['Grasso viscerale (cm\u00b2)', function (c) { return num(dx(c, 'vat_cm2'), 0); }],
+    ['Peso DEXA', function (c) { return c.weight != null ? CLIN_fmtNum(c.weight.toFixed(1)) + ' kg' : dash; }, { n: function (c) { return c.weight; }, b: 'neutral', d: 1 }],
+    ['Grasso', function (c) { return c.bf != null ? CLIN_fmtNum(c.bf.toFixed(1)) + ' %' : dash; }, { n: function (c) { return c.bf; }, b: 'down', d: 1 }],
+    ['Massa magra', function (c) { return c.lean != null ? CLIN_fmtNum(c.lean.toFixed(1)) + ' kg' : dash; }, { n: function (c) { return c.lean; }, b: 'up', d: 1 }],
+    ['Massa grassa (kg)', function (c) { return num(dx(c, 'fat_kg'), 1); }, { n: function (c) { return dx(c, 'fat_kg'); }, b: 'down', d: 1 }],
+    ['Grasso viscerale (cm\u00b2)', function (c) { return num(dx(c, 'vat_cm2'), 0); }, { n: function (c) { return dx(c, 'vat_cm2'); }, b: 'down', d: 0 }],
     ['Forza', null],
-    ['Panca piana', function (c) { return c.sentBench ? CLIN_fmtNum(c.sentBench.kg) + ' kg' : dash; }],
-    ['Leg press', function (c) { return lift(c, 'legpress'); }],
-    ['Curl manubri', function (c) { return lift(c, 'dbcurl'); }],
+    ['Panca piana', function (c) { return c.sentBench ? CLIN_fmtNum(c.sentBench.kg) + ' kg' : dash; }, { n: function (c) { return c.sentBench ? c.sentBench.kg : null; }, b: 'up', d: 0 }],
+    ['Leg press', function (c) { return lift(c, 'legpress'); }, { n: function (c) { return liftN(c, 'legpress'); }, b: 'up', d: 0 }],
+    ['Curl manubri', function (c) { return lift(c, 'dbcurl'); }, { n: function (c) { return liftN(c, 'dbcurl'); }, b: 'up', d: 0 }],
     ['Sangue', null],
-    ['IGF-1', function (c) { return c.igf ? CLIN_fmtP(c.igf) + ' \u00b5g/L' : dash; }],
-    ['T totale (ng/dL)', function (c) { return lab(c, 't_tot'); }],
-    ['Emoglobina (g/L)', function (c) { return lab(c, 'hb'); }],
-    ['Creatinina (mg/dL)', function (c) { return lab(c, 'creat'); }],
+    ['IGF-1', function (c) { return c.igf ? CLIN_fmtP(c.igf) + ' \u00b5g/L' : dash; }, { n: function (c) { return (c.igf && !c.igf.cens) ? c.igf.v : null; }, b: bm('igf1'), d: 0 }],
+    ['T totale (ng/dL)', function (c) { return lab(c, 't_tot'); }, { n: function (c) { return labN(c, 't_tot'); }, b: bm('t_tot'), d: 0 }],
+    ['T libero (pg/mL)', function (c) { return lab(c, 't_lib'); }, { n: function (c) { return labN(c, 't_lib'); }, b: bm('t_lib'), d: 1 }],
+    ['Emoglobina (g/L)', function (c) { return lab(c, 'hb'); }, { n: function (c) { return labN(c, 'hb'); }, b: bm('hb'), d: 0 }],
+    ['Creatinina (mg/dL)', function (c) { return lab(c, 'creat'); }, { n: function (c) { return labN(c, 'creat'); }, b: bm('creat'), d: 2 }],
     ['Vitali \u00b7 media 7 giorni', null],
-    ['Peso bilancia (kg)', function (c) { return num(vit(c).peso, 1); }],
-    ['Pressione (mmHg)', function (c) { var v = vit(c); return (v.sys != null && v.dia != null) ? Math.round(v.sys) + '/' + Math.round(v.dia) : dash; }],
-    ['FC a riposo (bpm)', function (c) { return num(vit(c).rhr, 0); }],
-    ['Sonno (ore)', function (c) { return hm(vit(c).sl); }]
+    ['Peso bilancia (kg)', function (c) { return num(vit(c).peso, 1); }, { n: function (c) { return vit(c).peso; }, b: 'neutral', d: 1, e: 0.2 }],
+    ['Pressione (mmHg)', function (c) { var v = vit(c); return (v.sys != null && v.dia != null) ? Math.round(v.sys) + '/' + Math.round(v.dia) : dash; },
+      { n: function (c) { var v = vit(c); return v.sys != null ? Math.round(v.sys) : null; }, n2: function (c) { var v = vit(c); return v.dia != null ? Math.round(v.dia) : null; }, b: 'down', d: 0, e: 2 }],
+    ['FC a riposo (bpm)', function (c) { return num(vit(c).rhr, 0); }, { n: function (c) { var v = vit(c).rhr; return v != null ? Math.round(v) : null; }, b: 'down', d: 0, e: 1 }],
+    ['Sonno (ore)', function (c) { return hm(vit(c).sl); }, { n: function (c) { return vit(c).sl; }, b: 'up', d: 2, e: 0.17, h: true }]
   ];
 })();
+/* indicatore di variazione rispetto al T0: freccia + delta; verde = migliora, rosso = peggiora, grigio = parametro neutro (o "=" se sotto la soglia di rumore) */
+function CLIN_fotoInd(m, c, c0) {
+  if (!m || !m.n || c.key === 't0') return '';
+  var v = m.n(c), v0 = m.n(c0);
+  if (v == null || v0 == null) return '';
+  var dl = v - v0, eps = m.e || 0, sg = function (x) { return (x > 0 ? '+' : (x < 0 ? '\u2212' : '')); };
+  var fm = function (x) { return m.h ? (Math.abs(Math.round(x * 60)) + '\u2032') : CLIN_fmtNum(Math.abs(x).toFixed(m.d || 0)); };
+  var arrow, col;
+  if (Math.abs(dl) <= eps + 1e-9) { arrow = '='; col = 'var(--ink3)'; }
+  else { arrow = dl > 0 ? '\u25b2' : '\u25bc'; col = m.b === 'neutral' ? 'var(--ink2)' : (((dl > 0) === (m.b === 'up')) ? 'var(--ok)' : 'var(--bad)'); }
+  var txt = arrow === '=' ? '=' : arrow + ' ' + sg(dl) + fm(dl);
+  if (m.n2 && arrow !== '=') { var d2 = m.n2(c) - m.n2(c0); if (!isNaN(d2)) txt += '/' + sg(d2) + CLIN_fmtNum(Math.abs(d2).toFixed(0)); }
+  return '<span class="clin-ind" style="color:' + col + '">' + txt + '</span>';
+}
 function CLIN_fotoGroupHead(t) {
   return '<div style="margin:12px 0 2px;padding-top:8px;border-top:2px solid var(--line);font-size:var(--fs-xs);font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3)">' + esc(t) + '</div>';
 }
@@ -5040,11 +5064,11 @@ function CLIN_renderFoto(host) {
           '<span style="position:absolute;top:8px;right:8px;padding:2px 8px;border-radius:var(--r-sm);background:#0009;color:var(--white);font-size:var(--fs-xs);font-weight:700">' + CLIN_shortDate(c.iso) + '</span>' +
         '</div>' +
         '<div style="display:flex;flex-direction:column;gap:2px">' +
-          CLIN_fotoDefs.map(function (d) { return [d[0], d[1] ? d[1](c) : null]; }).map(function (r) { if (r[1] === null) return CLIN_fotoGroupHead(r[0]); return '<div class="an-trow" style="grid-template-columns:1fr auto"><span>' + r[0] + '</span><span class="an-num" style="font-weight:700;color:var(--ink)">' + r[1] + '</span></div>'; }).join('') +
+          CLIN_fotoDefs.map(function (d) { return [d[0], d[1] ? d[1](c) : null, d[2]]; }).map(function (r) { if (r[1] === null) return CLIN_fotoGroupHead(r[0]); return '<div class="an-trow" style="grid-template-columns:1fr auto"><span>' + r[0] + '</span><span style="display:flex;gap:8px;align-items:baseline;justify-content:flex-end">' + CLIN_fotoInd(r[2], c, cps[0]) + '<span class="an-num" style="font-weight:700;color:var(--ink)">' + r[1] + '</span></span></div>'; }).join('') +
         '</div>' +
       '</div>';
     }).join('') +
-    '</div><span class="an-sub" style="margin-top:8px">'+"Foto: la pi\u00f9 vicina alla data del checkpoint, entro \u00b13 giorni. DEXA, forza e sangue come nelle schede Corpo e Checkpoint. Vitali: media dei 7 giorni che terminano nel giorno del checkpoint (almeno 4 giorni con dato); sonno senza veglia; T0 dal warm-up (7\u201313/07). HRV non incluso: dal 15/09 Salute d\u00e0 solo l\u2019intervallo."+'</span></section>';
+    '</div><span class="an-sub" style="margin-top:8px">'+"Foto: la pi\u00f9 vicina alla data del checkpoint, entro \u00b13 giorni. DEXA, forza e sangue come nelle schede Corpo e Checkpoint. Vitali: media dei 7 giorni che terminano nel giorno del checkpoint (almeno 4 giorni con dato); sonno senza veglia; T0 dal warm-up (7\u201313/07). HRV non incluso: dal 15/09 Salute d\u00e0 solo l\u2019intervallo. Indicatori \u25b2\u25bc: variazione rispetto al T0 (verde = migliora, rosso = peggiora, grigio = neutro, = sotto la soglia di rumore: peso 0,2 kg, pressione 2 mmHg, FC 1 bpm, sonno 10 min)."+'</span></section>';
   /* ---- 30/09: apertura scura + versione mobile a miniature affiancate ---- */
   var c0 = cps[0], c1 = cps[1];
   var nFoto = cps.filter(function (c) { return CLIN_photoNear(c.iso, 3); }).length;
@@ -5076,9 +5100,9 @@ function CLIN_renderFoto(host) {
       if (!r[1]) return CLIN_fotoGroupHead(r[0]);
       return '<div style="display:grid;grid-template-columns:1.25fr repeat(3,1fr);gap:0 6px;align-items:baseline;padding:11px 0;border-top:1px solid var(--line2)">' +
         '<span style="font-size:var(--fs-md);color:var(--ink2)">' + r[0] + '</span>' +
-        cps.map(function (c) { var v = r[1](c); return '<span style="text-align:right;font-size:var(--fs-md);font-weight:700;font-variant-numeric:tabular-nums;color:' + (v === '\u2014' ? 'var(--ink3)' : 'var(--ink)') + '">' + v + '</span>'; }).join('') + '</div>';
+        cps.map(function (c) { var v = r[1](c), ind = CLIN_fotoInd(r[2], c, cps[0]); return '<span style="text-align:right;font-size:var(--fs-md);font-weight:700;font-variant-numeric:tabular-nums;color:' + (v === '\u2014' ? 'var(--ink3)' : 'var(--ink)') + '">' + v + (ind ? '<span style="display:block;margin-top:1px">' + ind + '</span>' : '') + '</span>'; }).join('') + '</div>';
     }).join('') +
-    '<span class="an-sub" style="margin-top:8px">Foto: la pi\u00f9 vicina alla data del checkpoint, entro \u00b13 giorni. DEXA, forza e sangue come nelle schede Corpo e Checkpoint. Vitali: media dei 7 giorni che terminano nel giorno del checkpoint (almeno 4 giorni con dato); sonno senza veglia; T0 dal warm-up (7\u201313/07). HRV non incluso: dal 15/09 Salute d\u00e0 solo l\u2019intervallo.</span></section>';
+    '<span class="an-sub" style="margin-top:8px">Foto: la pi\u00f9 vicina alla data del checkpoint, entro \u00b13 giorni. DEXA, forza e sangue come nelle schede Corpo e Checkpoint. Vitali: media dei 7 giorni che terminano nel giorno del checkpoint (almeno 4 giorni con dato); sonno senza veglia; T0 dal warm-up (7\u201313/07). HRV non incluso: dal 15/09 Salute d\u00e0 solo l\u2019intervallo. Indicatori \u25b2\u25bc: variazione rispetto al T0 (verde = migliora, rosso = peggiora, grigio = neutro, = sotto la soglia di rumore: peso 0,2 kg, pressione 2 mmHg, FC 1 bpm, sonno 10 min).</span></section>';
   host.innerHTML = heroF + (isDesktop ? htmlDesk : htmlMob);
   cps.forEach(function (c) {
     var near = CLIN_photoNear(c.iso, 3);
@@ -9185,6 +9209,7 @@ loadBlob().then(() => { restorePending(); render(); }).catch(e => console.error(
    clinici e personali scritti in italiano (note dei referti, diagnosi, nomi dei pannelli, database
    alimenti e testi degli orari): restano nella lingua del documento originale. */
 const EN_DICT = {
+'T libero (pg/mL)':'Free T (pg/mL)',
 'DEXA':'DEXA',
 'Forza':'Strength',
 'Sangue':'Blood',
@@ -9200,7 +9225,7 @@ const EN_DICT = {
 'Pressione (mmHg)':'Blood pressure (mmHg)',
 'FC a riposo (bpm)':'Resting HR (bpm)',
 'Sonno (ore)':'Sleep (h)',
-'Foto: la più vicina alla data del checkpoint, entro ±3 giorni. DEXA, forza e sangue come nelle schede Corpo e Checkpoint. Vitali: media dei 7 giorni che terminano nel giorno del checkpoint (almeno 4 giorni con dato); sonno senza veglia; T0 dal warm-up (7–13/07). HRV non incluso: dal 15/09 Salute dà solo l’intervallo.':'Photo: the closest to the checkpoint date, within ±3 days. DEXA, strength and blood as in the Body and Checkpoint tabs. Vitals: average of the 7 days ending on the checkpoint day (at least 4 days with data); sleep excludes awake time; T0 from the warm-up (7–13 Jul). HRV not included: since 15 Sep Health gives only a range.',
+'Foto: la più vicina alla data del checkpoint, entro ±3 giorni. DEXA, forza e sangue come nelle schede Corpo e Checkpoint. Vitali: media dei 7 giorni che terminano nel giorno del checkpoint (almeno 4 giorni con dato); sonno senza veglia; T0 dal warm-up (7–13/07). HRV non incluso: dal 15/09 Salute dà solo l’intervallo. Indicatori ▲▼: variazione rispetto al T0 (verde = migliora, rosso = peggiora, grigio = neutro, = sotto la soglia di rumore: peso 0,2 kg, pressione 2 mmHg, FC 1 bpm, sonno 10 min).':'Photo: the closest to the checkpoint date, within ±3 days. DEXA, strength and blood as in the Body and Checkpoint tabs. Vitals: average of the 7 days ending on the checkpoint day (at least 4 days with data); sleep excludes awake time; T0 from the warm-up (7–13 Jul). HRV not included: since 15 Sep Health gives only a range. Indicators ▲▼: change versus T0 (green = improving, red = worsening, grey = neutral, = below the noise threshold: weight 0.2 kg, blood pressure 2 mmHg, HR 1 bpm, sleep 10 min).',
 'Fascia verde = range di riferimento; punto pieno = ultima misura':'Green band = reference range; filled dot = latest measurement',
 'Resa osservata':'Observed yield',
 'Cronaca delle valutazioni quotidiane (sola lettura): ogni voce è abbinata alla foto dello stesso giorno. Le stelle per scatto si assegnano dalla vista Scrubber.':'Log of the daily evaluations (read-only): each entry is matched with the photo of the same day. Per-shot stars are assigned in the Scrubber view.','Valutazione a stelle per scatto (1–5)':'Star rating per shot (1–5)',
