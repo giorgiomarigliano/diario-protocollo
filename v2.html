@@ -674,7 +674,8 @@
 .an-root .clin-aln:hover{background:var(--line2);}
 @media (max-width:1023px){ .an-root .clin-aln{min-height:44px;margin-left:0;} }
 .ctx-note{font-size:var(--fs-xs);line-height:1.45;color:var(--ink3);font-weight:500;margin:2px 0 10px;}
-.ctx-note.ctx-dark{color:rgba(255,255,255,.64);margin:12px 0 0;}
+.ctx-note.ctx-dark{color:rgba(255,255,255,.64);margin:10px 0 0;}
+.ctx-sub{white-space:normal;text-align:right;}
 .clin-ind{font-size:var(--fs-xs);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;}
 .clin-tess{flex:1 1 auto;justify-content:center;}
 .clin-ckgrid > [data-clin-g="gh"] .clin-tess{flex:0 0 auto;}
@@ -4426,12 +4427,12 @@ return { html: function(){ return AN_HTML; }, mount: AN_mount, loadV1: AN_loadV1
 var CTX = (function () {
   var IT = function () { return LANG !== 'en'; };
   var sc = function () {
-    try { var s = ANV2.scope(); return IT() ? ((s.cycle ? 'tutto il ciclo' : 'ultimi ' + s.days + ' giorni') + ', ' + s.from + ' \u2192 ' + s.to) : ((s.cycle ? 'whole cycle' : 'last ' + s.days + ' days') + ', ' + s.from + ' \u2192 ' + s.to); }
-    catch (e) { return IT() ? 'intervallo selezionato' : 'selected range'; }
+    try { var s = ANV2.scope(); return IT() ? ((s.cycle ? 'ciclo' : s.days + ' gg') + ' \u00b7 ' + s.from + '\u2013' + s.to) : ((s.cycle ? 'cycle' : s.days + ' d') + ' \u00b7 ' + s.from + '\u2013' + s.to); }
+    catch (e) { return IT() ? 'intervallo scelto' : 'selected range'; }
   };
   var dm = function (iso) { return iso.slice(8, 10) + '/' + iso.slice(5, 7); };
   var byClass = function (c) { return function (app) { return app.querySelector('.an-card.' + c); }; };
-  var byTitle = function (t) { return function (app) { var cs = app.querySelectorAll('.an-card'); for (var i = 0; i < cs.length; i++) { var h = cs[i].querySelector('.an-title'); if (h && h.textContent.trim().toLowerCase() === t) return cs[i]; } return null; }; };
+  var byTitle = function () { var ts = [].slice.call(arguments); return function (app) { var cs = app.querySelectorAll('.an-card'); for (var i = 0; i < cs.length; i++) { var h = cs[i].querySelector('.an-title'); if (h && ts.indexOf(h.textContent.trim().toLowerCase()) >= 0) return cs[i]; } return null; }; };
   var underHead = function (card, note) { var h = card.querySelector('.an-head'); if (h) h.insertAdjacentElement('afterend', note); else card.insertBefore(note, card.firstChild); };
   var appendEnd = function (card, note) { card.appendChild(note); };
   var leafCard = function (match) {
@@ -4454,46 +4455,58 @@ var CTX = (function () {
     }
     return found;
   };
+  /* testi BREVI (una riga, due al massimo): periodo, significato di barre/colori, niente spiegazioni gia' presenti nella card.
+     kind:'sub' = chip a destra del titolo (solo per card con intestazione senza altro sottotitolo); altrimenti riga sotto il titolo. */
   var RULES = [
     /* ---- Andamento > Cruscotto ---- */
     { id: 'hero', find: byClass('c-hero'), dark: true, place: appendEnd, txt: function () { return IT()
-      ? 'Peso e volume seguono l\u2019intervallo selezionato (' + sc() + '). Barra = percorso gi\u00e0 fatto verso l\u2019obiettivo scritto sotto il valore, dal punto di partenza (peso: primo valore dell\u2019intervallo; massa magra: prima DEXA). Massa magra = ultima DEXA. HRV = media degli ultimi 14 giorni contro i primi 14 del ciclo. Aderenza = media di iniezioni, integratori e allenamenti dal 18/07. Volume = totale dell\u2019intervallo; sotto, esercizi in salita e variazione contro le 2 settimane concluse precedenti.'
-      : 'Weight and volume follow the selected range (' + sc() + '). Bar = progress already made toward the goal written under the value, from the starting point (weight: first value of the range; lean mass: first DEXA). Lean mass = latest DEXA. HRV = average of the last 14 days vs the first 14 of the cycle. Adherence = average of injections, supplements and workouts since 18 Jul. Volume = total of the range; below, exercises trending up and change vs the previous 2 completed weeks.'; } },
-    { id: 'recomp', find: byClass('c-recomp'), place: underHead, txt: function () { return (IT() ? 'Intervallo selezionato: ' : 'Selected range: ') + sc() + '.'; } },
-    { id: 'load', find: byClass('c-load'), place: underHead, txt: function () { return IT() ? 'Per settimana, ' + sc() + ': colonne = volume di allenamento, linea = HRV (scala propria).' : 'Per week, ' + sc() + ': columns = training volume, line = HRV (own scale).'; } },
-    { id: 'adh', find: byClass('c-adh'), place: underHead, txt: function () { return IT()
-      ? 'Dal 18/07 a oggi (non segue l\u2019intervallo). Le tre barre = % fatte su previste, tacca = soglia 90%. Le colonne in basso = una per settimana del ciclo: verde \u2265 90%, ambra 75\u201389%, rosso < 75%, tratteggiata = settimana in corso, grigia = futura.'
-      : 'Since 18 Jul (ignores the range). The three bars = % done of planned, tick = 90% threshold. Columns below = one per cycle week: green \u2265 90%, amber 75\u201389%, red < 75%, dashed = current week, grey = future.'; } },
-    { id: 'clin', find: byClass('c-clin'), place: underHead, txt: function () {
-      var a = '13/07', b = '12/09'; try { a = dm(CLIN_CK.t0); b = dm(CLIN_CK.t1); } catch (e) {}
-      return IT() ? 'Marker chiave, T0 (' + a + ') \u2192 T1 (' + b + '). Pallino: verde = migliorato rispetto al T0, arancio = peggiorato, grigio = invariato o neutro (regola \u00abmeglio se\u00bb di ogni marker: non dice se \u00e8 nel range). A destra l\u2019intervallo di riferimento.'
-        : 'Key markers, T0 (' + a + ') \u2192 T1 (' + b + '). Dot: green = improved vs T0, orange = worsened, grey = unchanged or neutral (each marker\u2019s \u201cbetter if\u201d rule: it does not say whether it is in range). Reference range on the right.'; } },
+      ? 'Barra = avanzamento verso l\u2019obiettivo \u00b7 peso e volume: ' + sc() + ' \u00b7 HRV: ultimi 14 gg vs primi 14 \u00b7 aderenza: dal 18/07.'
+      : 'Bar = progress toward the goal \u00b7 weight and volume: ' + sc() + ' \u00b7 HRV: last 14 d vs first 14 \u00b7 adherence: since 18 Jul.'; } },
+    { id: 'recomp', find: byClass('c-recomp'), kind: 'sub', txt: function () { return sc(); } },
+    { id: 'load', find: byClass('c-load'), place: underHead, txt: function () { return IT() ? 'Per settimana \u00b7 colonne = volume, linea = HRV.' : 'Per week \u00b7 columns = volume, line = HRV.'; } },
+    { id: 'adh', find: byClass('c-adh'), place: underHead, txt: function () { return IT() ? 'Dal 18/07 a oggi \u00b7 colonne = settimane: \u226590% verde, 75\u201389% ambra, <75% rosso.' : 'Since 18 Jul \u00b7 columns = weeks: \u226590% green, 75\u201389% amber, <75% red.'; } },
+    { id: 'clin', find: byClass('c-clin'), place: underHead, txt: function () { return IT() ? 'T0 \u2192 T1 \u00b7 pallino: verde = migliora, arancio = peggiora, grigio = invariato (non \u00e8 il range).' : 'T0 \u2192 T1 \u00b7 dot: green = better, orange = worse, grey = unchanged (not the range).'; } },
     /* ---- Andamento > Insights ---- */
-    { id: 'subja', find: byClass('c-subja'), place: underHead, txt: function () { return (IT() ? 'Scala 1\u201310 \u00b7 ' : 'Scale 1\u201310 \u00b7 ') + sc() + '.'; } },
-    { id: 'subjb', find: byClass('c-subjb'), place: underHead, txt: function () { return (IT() ? 'Scala 1\u201310 \u00b7 ' : 'Scale 1\u201310 \u00b7 ') + sc() + '.'; } },
-    { id: 'cat', find: byClass('c-cat'), place: underHead, txt: function () { return IT() ? 'Una riga per sintomo, una casella per giorno, ' + sc() + '. Colore = gravit\u00e0: grigio = assente, azzurro = lieve, ambra = moderata, rosso = marcata o intensa (Formicolio: rosso = presente). Passa o tocca una casella per data e livello.' : 'One row per symptom, one cell per day, ' + sc() + '. Colour = severity: grey = none, light blue = mild, amber = moderate, red = marked or intense (Tingling: red = present). Hover or tap a cell for date and level.'; } },
-    { id: 'corr', find: byClass('c-corr'), place: underHead, txt: function () { return IT() ? 'Correlazione di Pearson (R, da \u22121 a +1) tra energia o recupero e ore di sonno, giorno per giorno, ' + sc() + '. n = giorni con entrambi i dati. Grigio = debole (|R| < 0,3), verde = positiva, arancio = negativa.' : 'Pearson correlation (R, \u22121 to +1) between energy or recovery and hours of sleep, day by day, ' + sc() + '. n = days with both values. Grey = weak (|R| < 0.3), green = positive, orange = negative.'; } },
-    { id: 'd14', find: byClass('c-d14'), place: underHead, txt: function () { return IT() ? 'Media degli ultimi 14 giorni contro i 14 precedenti (non segue l\u2019intervallo). Colore della differenza: verde = va nella direzione migliore, arancio = peggiora, grigio = neutro o invariato.' : 'Average of the last 14 days vs the previous 14 (ignores the range). Colour of the difference: green = moves the better way, orange = worsens, grey = neutral or unchanged.'; } },
+    { id: 'subja', find: byClass('c-subja'), kind: 'sub', txt: function () { return (IT() ? 'scala 1\u201310 \u00b7 ' : 'scale 1\u201310 \u00b7 ') + sc(); } },
+    { id: 'subjb', find: byClass('c-subjb'), kind: 'sub', txt: function () { return (IT() ? 'scala 1\u201310 \u00b7 ' : 'scale 1\u201310 \u00b7 ') + sc(); } },
+    { id: 'cat', find: byClass('c-cat'), place: underHead, txt: function () { return IT() ? sc() + ' \u00b7 una casella per giorno: grigio assente, azzurro lieve, ambra moderata, rosso marcata.' : sc() + ' \u00b7 one cell per day: grey none, light blue mild, amber moderate, red marked.'; } },
+    { id: 'corr', find: byClass('c-corr'), place: underHead, txt: function () { return IT() ? sc() + ' \u00b7 Pearson (R) energia/recupero \u2194 sonno \u00b7 n = giorni \u00b7 grigio = debole (|R| < 0,3).' : sc() + ' \u00b7 Pearson (R) energy/recovery \u2194 sleep \u00b7 n = days \u00b7 grey = weak (|R| < 0.3).'; } },
+    { id: 'd14', find: byClass('c-d14'), kind: 'sub', txt: function () { return IT() ? 'ultimi 14 gg vs 14 precedenti' : 'last 14 d vs previous 14'; } },
     /* ---- Andamento > Workout ---- */
-    { id: 'wovol', find: byClass('c-vol'), place: underHead, txt: function () { return IT() ? sc() + '. Colonne = volume di ogni seduta (t = tonnellate); sotto, linea = RPE (1\u201310). Fasce = viaggi.' : sc() + '. Columns = volume of each session (t = tonnes); below, line = RPE (1\u201310). Bands = trips.'; } },
-    { id: 'wotype', find: byClass('c-type'), place: underHead, txt: function () { return (IT() ? 'Intervallo selezionato: ' : 'Selected range: ') + sc() + '.'; } },
-    { id: 'wosess', find: byClass('c-sess'), place: underHead, txt: function () { return IT() ? sc() + ', dalla pi\u00f9 recente. Tocca una riga per il dettaglio di esercizi e serie.' : sc() + ', most recent first. Tap a row for exercises and sets.'; } },
-    { id: 'wophase', find: byClass('c-phase'), place: underHead, txt: function () { return IT() ? 'Per fase del protocollo, dal giorno 0 a oggi (non segue l\u2019intervallo); le fasi future sono opache.' : 'By protocol phase, from day 0 to today (ignores the range); future phases are faded.'; } },
-    { id: 'wosent', find: byClass('c-sent'), place: underHead, txt: function () { return IT() ? 'Dall\u2019inizio del ciclo (non segue l\u2019intervallo): ultimo carico registrato per ogni esercizio, serie \u00d7 ripetizioni e differenza in kg rispetto al primo (verde = salito, arancio = sceso, grigio = invariato; lo stacco rumeno \u00e8 vincolato).' : 'Since the start of the cycle (ignores the range): latest recorded load for each exercise, sets \u00d7 reps and the difference in kg vs the first (green = up, orange = down, grey = unchanged; the Romanian deadlift is capped).'; } },
-    { id: 'womusc', find: byClass('c-musc'), place: underHead, txt: function () { return IT() ? 'Volume cumulativo dal 9 maggio, prima seduta registrata (non segue l\u2019intervallo): kg \u00d7 ripetizioni dal riepilogo di V1. Quota = % sul totale dei gruppi.' : 'Cumulative volume since 9 May, first recorded session (ignores the range): kg \u00d7 reps from the V1 summary. Share = % of the total across groups.'; } },
-    { id: 'woprog', find: byClass('c-progress'), place: underHead, txt: function () { return IT() ? 'Tutte le sedute dal 9 maggio (non segue l\u2019intervallo): per ogni esercizio con almeno 2 sedute si prende la serie con il carico pi\u00f9 alto di ciascuna seduta; la riga mostra l\u2019ultima e la differenza in kg rispetto alla prima.' : 'All sessions since 9 May (ignores the range): for every exercise with at least 2 sessions, the heaviest set of each session is taken; the row shows the latest and the difference in kg vs the first.'; } },
-    { id: 'wofreq', find: byClass('c-freq'), place: underHead, txt: function () { return IT() ? 'n = sedute in cui il gruppo \u00e8 stato allenato negli ultimi 28 giorni; \u00abgiorni fa\u00bb = dall\u2019ultimo allenamento.' : 'n = sessions in which the group was trained in the last 28 days; \u201cdays ago\u201d = since the last workout.'; } },
+    { id: 'wovol', find: byClass('c-vol'), place: underHead, txt: function () { return sc() + (IT() ? ' \u00b7 colonne = volume (t), linea = RPE, fasce = viaggi.' : ' \u00b7 columns = volume (t), line = RPE, bands = trips.'); } },
+    { id: 'wotype', find: byClass('c-type'), kind: 'sub', txt: function () { return sc(); } },
+    { id: 'wosess', find: byClass('c-sess'), kind: 'sub', txt: function () { return sc() + (IT() ? ' \u00b7 tocca una riga' : ' \u00b7 tap a row'); } },
+    { id: 'wophase', find: byClass('c-phase'), kind: 'sub', txt: function () { return IT() ? 'tutto il ciclo' : 'whole cycle'; } },
+    { id: 'wosent', find: byClass('c-sent'), place: underHead, txt: function () { return IT() ? 'Dall\u2019inizio del ciclo \u00b7 \u0394 = ultimo \u2212 primo (verde sale, arancio scende).' : 'Since the cycle start \u00b7 \u0394 = latest \u2212 first (green up, orange down).'; } },
+    { id: 'womusc', find: byClass('c-musc'), kind: 'sub', txt: function () { return IT() ? 'cumulativo dal 9 maggio' : 'cumulative since 9 May'; } },
+    { id: 'woprog', find: byClass('c-progress'), place: underHead, txt: function () { return IT() ? 'Dal 9 maggio \u00b7 serie pi\u00f9 pesante di ogni seduta \u00b7 \u0394 = ultimo \u2212 primo (kg).' : 'Since 9 May \u00b7 heaviest set of each session \u00b7 \u0394 = latest \u2212 first (kg).'; } },
     /* ---- Clinica > Corpo ---- */
-    { id: 'blmus', find: byTitle('sangue e muscolo, stessa finestra'), place: underHead, txt: function () { return IT() ? 'Variazione T0 \u2192 T1 di IGF-1, massa magra, forza media dei sentinel e T libero; la forza usa la seduta pi\u00f9 vicina al checkpoint (\u00b17 giorni).' : 'Change T0 \u2192 T1 of IGF-1, lean mass, average sentinel strength and free T; strength uses the session closest to the checkpoint (\u00b17 days).'; } },
+    { id: 'blmus', find: byTitle('sangue e muscolo, stessa finestra', 'blood & muscle, same window'), place: underHead, txt: function () { return IT() ? 'Variazione T0 \u2192 T1 \u00b7 forza: seduta pi\u00f9 vicina al checkpoint (\u00b17 gg).' : 'Change T0 \u2192 T1 \u00b7 strength: session closest to the checkpoint (\u00b17 d).'; } },
     /* ---- Gestione > Stock ---- */
-    { id: 'vialleg', find: function (app) { var els = app.querySelectorAll('*'); for (var i = 0; i < els.length; i++) { var e = els[i]; if (!e.children.length && /^(vial in uso|vials in use)/i.test(e.textContent.trim())) return e; } return null; }, place: function (el, note) { el.insertAdjacentElement('afterend', note); }, txt: function () { return IT() ? 'Le barre mostrano quanto del vial \u00e8 gi\u00e0 consumato: verde < 70%, ambra 70\u201390%, rosso > 90%, sia per le dosi sia per la vita (stabilit\u00e0 dopo la ricostituzione). \u00abFatte\u00bb e \u00abrimaste\u00bb vengono dalle iniezioni registrate; per Fragment il totale \u00e8 la resa osservata (27 dosi).' : 'Bars show how much of the vial is used up: green < 70%, amber 70\u201390%, red > 90%, for both doses and shelf life (stability after reconstitution). \u201cDone\u201d and \u201cleft\u201d come from logged injections; for Fragment the total is the observed yield (27 doses).'; } },
-    /* ---- Oggi ---- */
-    { id: 'rings', find: ringsCard, place: function (card, note) { card.insertBefore(note, card.firstChild); }, txt: function () {
+    { id: 'vialleg', find: function (app) {
+        /* prima card di vial = antenato diretto della vista Stock (.an-view) che contiene la prima foglia 'Vita residua'/'Remaining life' */
+        var els = app.querySelectorAll('.an-view *');
+        for (var i = 0; i < els.length; i++) { var e = els[i];
+          if (!e.children.length && /^(vita residua|remaining life)$/i.test(e.textContent.trim())) {
+            var a = e; while (a.parentElement && !a.parentElement.classList.contains('an-view')) a = a.parentElement;
+            return a.parentElement ? a : null; } }
+        return null; },
+      place: function (card, note) { note.style.cssText = 'grid-column:1/-1;margin:0 0 -4px;padding:0 4px;'; card.insertAdjacentElement('beforebegin', note); },
+      txt: function () { return IT() ? 'Barre = vial consumato: verde <70%, ambra 70\u201390%, rosso >90% (dosi e vita).' : 'Bars = vial used up: green <70%, amber 70\u201390%, red >90% (doses and shelf life).'; } },
+    /* ---- Oggi: gli anelli vanno in fondo alla card a tutta larghezza; le iniezioni sotto l'intestazione con lo stesso margine del titolo ---- */
+    { id: 'rings', find: ringsCard, place: function (card, note) {
+        var cs = getComputedStyle(card);
+        if (cs.display === 'flex' && cs.flexDirection === 'row') card.style.flexWrap = 'wrap';
+        note.style.cssText = 'flex:0 0 100%;width:100%;box-sizing:border-box;margin:0;padding:8px 6px 0;';
+        card.appendChild(note); }, txt: function () {
       var wk = (typeof oggiViewMode !== 'undefined' && oggiViewMode === 'week');
-      return wk ? (IT() ? 'Aderenza della settimana mostrata: % fatte su previste nei giorni gi\u00e0 trascorsi (iniezioni, integratori, allenamenti).' : 'Adherence of the week shown: % done of planned on days already passed (injections, supplements, workouts).')
-                : (IT() ? 'Aderenza dal 18/07 a oggi: fatte su previste (iniezioni, integratori, allenamenti). La barra sotto ogni anello = il giorno mostrato.' : 'Adherence since 18 Jul: done of planned (injections, supplements, workouts). The bar under each ring = the day shown.'); } },
-    { id: 'inj', leaf: leafCard(function (t) { return /^iniezioni e distretto$/i.test(t) || /^injections and site$/i.test(t) || /^injections & site$/i.test(t); }), place: function (el, note) { (el.leaf.parentElement || el.leaf).insertAdjacentElement('afterend', note); }, txt: function () { return IT() ? 'Tocca il cerchio per cambiare stato: vuoto = da fare \u00b7 verde = fatto \u00b7 ambra = saltata (conta come mancata) \u00b7 N grigio = non applicabile (esclusa dai conteggi).' : 'Tap the circle to change state: empty = to do \u00b7 green = done \u00b7 amber = skipped (counts as missed) \u00b7 grey N = not applicable (excluded from counts).'; } },
-    { id: 'peso', leaf: leafCard(function (t) { return /^peso corporeo$/i.test(t) || /^body weight$/i.test(t); }), place: function (el, note) { (el.leaf.parentElement || el.leaf).insertAdjacentElement('afterend', note); }, txt: function () { return IT() ? 'I pulsanti 7g\u201360g scelgono l\u2019intervallo del grafico; la variazione indicata \u00e8 quella nello stesso periodo.' : 'The 7d\u201360d buttons set the chart range; the change shown is over the same period.'; } }
+      return wk ? (IT() ? 'Settimana mostrata: fatte su previste, giorni trascorsi.' : 'Week shown: done of planned, days passed.')
+                : (IT() ? 'Dal 18/07: fatte su previste \u00b7 barra sotto = giorno mostrato.' : 'Since 18 Jul: done of planned \u00b7 bar below = day shown.'); } },
+    { id: 'inj', leaf: leafCard(function (t) { return /^iniezioni e distretto$/i.test(t) || /^injections (and|&) (site|district)$/i.test(t); }), place: function (el, note) {
+        var head = el.leaf.parentElement || el.leaf; head.insertAdjacentElement('afterend', note);
+        var off = Math.max(0, Math.round(el.leaf.getBoundingClientRect().left - el.card.getBoundingClientRect().left));
+        note.style.cssText = 'margin:0;padding:0 ' + off + 'px 10px;box-sizing:border-box;'; },
+      txt: function () { return IT() ? 'Tocca il cerchio per cambiare stato \u00b7 saltata conta come mancata, N no.' : 'Tap the circle to change state \u00b7 skipped counts as missed, N does not.'; } }
   ];
   var obs = null, timer = null;
   function apply() {
@@ -4505,7 +4518,14 @@ var CTX = (function () {
         var note = app.querySelector('[data-ctx="' + r.id + '"]');
         if (!found) { if (note) note.remove(); return; }
         var txt = r.txt();
-        if (!note) { note = document.createElement('div'); note.className = 'ctx-note' + (r.dark ? ' ctx-dark' : ''); note.setAttribute('data-ctx', r.id); r.place(found, note); }
+        if (!note) {
+          if (r.kind === 'sub') {
+            var head = found.querySelector('.an-head'); if (!head) return;
+            note = document.createElement('span'); note.className = 'an-sub ctx-sub'; note.setAttribute('data-ctx', r.id); head.appendChild(note);
+          } else {
+            note = document.createElement('div'); note.className = 'ctx-note' + (r.dark ? ' ctx-dark' : ''); note.setAttribute('data-ctx', r.id); r.place(found, note);
+          }
+        }
         if (note.textContent !== txt) note.textContent = txt;
       });
     } catch (e) { /* le righe di contesto non devono mai rompere l'app */ }
