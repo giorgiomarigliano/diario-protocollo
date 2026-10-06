@@ -1384,6 +1384,41 @@ function getWorkout2(dayIdx) {
   return { type };
 }
 
+/* 06/10: PIANO ALLENAMENTI PER L'ADERENZA (previsto / fatto / recuperato). Regola di Giorgio: 5 allenamenti a settimana (Mar, Mer, Ven, Sab, Dom; Lun e Gio riposo).
+   - PREVISTO = giorno di allenamento del piano, anche se segnato "Riposo" (override Riposo = allenamento SALTATO, non riposo; prima la settimana 29/09-04/10
+     risultava 4/4 = 100% invece di 4/5 = 80%). Un override con un altro tipo (Ven = Pull) cambia il tipo, non il fatto di essere previsto.
+   - Una seduta in un giorno di riposo del piano (Lun, Gio) e' un EXTRA, non un previsto: se nella stessa settimana (Lun-Dom) c'e' un allenamento previsto gia' passato
+     e non fatto, l'extra lo RECUPERA (covered) -> la settimana con scambio (Mer saltato, Gio recuperato) resta 5/5. Un extra puo' recuperare un solo saltato.
+   - Trasferta BKK: nessun cambio (allenamento ogni giorno, riposo solo se bkk_riposo). Il giorno in corso non e' mai "saltato". getWorkout2 non cambia
+     (determina slot delle iniezioni ed etichette). Ritorna { type, covered }. */
+function woRecAt(idx) { const b = store.blob || {}; if (idx >= 0) return b['p2_day_' + idx] || {}; const t = idx + TEST_PROTO_DAYS; return t >= 0 ? (b['test_proto_' + t] || {}) : {}; }
+function woSessDone(rec) { const kcal = parseFloat(rec.wo_kcal), rpe = parseFloat(rec.rpe), vol = getWorkoutVolume2(rec); return (!isNaN(kcal) && kcal > 0) || (vol !== null && vol > 0) || !isNaN(rpe); }
+function woBase(idx) {
+  const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + idx);
+  if (idx >= 0 && isBkkDate(d)) return { type: woRecAt(idx).bkk_riposo === '1' ? 'Riposo' : 'Allenamento BKK', bkk: true, dow: d.getDay() };
+  return { type: {0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'}[d.getDay()] || 'Riposo', bkk: false, dow: d.getDay() };
+}
+function getPlannedWorkout2(idx) {
+  const rec = woRecAt(idx), base = woBase(idx), ov = rec.wo_override;
+  if (base.type === 'Riposo') return { type: 'Riposo', covered: false, coverIdx: -1 };
+  let type = base.type;
+  if (ov) { if (ov === 'Riposo') { if (base.bkk) return { type: 'Riposo', covered: false, coverIdx: -1 }; } else type = ov; }
+  let covered = false, coverIdx = -1;
+  const todayIdx = dayIdxFromISO(today);
+  if (!base.bkk && idx < todayIdx && !woSessDone(rec)) {
+    const mon = idx - ((base.dow + 6) % 7);
+    let extras = [], missed = [], bkkWeek = false;
+    for (let j = 0; j < 7; j++) {
+      const k = mon + j; if (k > todayIdx) break;
+      const b = woBase(k); if (b.bkk) { bkkWeek = true; break; }
+      const sess = woSessDone(woRecAt(k));
+      if (b.type === 'Riposo') { if (sess) extras.push(k); } else if (k < todayIdx && !sess) missed.push(k);
+    }
+    if (!bkkWeek) { const p = missed.indexOf(idx); covered = p >= 0 && p < extras.length; if (covered) coverIdx = extras[p]; }
+  }
+  return { type, covered, coverIdx };
+}
+
 // MIRROR · getInjectionSlots2 — verbatim da index.html. Attenzione:
 // nei giorni di allenamento si INSERISCE uno slot Post-WO (IGF-1 DES)
 // e lo slot Sera CAMBIA numero (da n:3 a n:4) — non è una lista fissa.
@@ -1497,11 +1532,10 @@ function dayAdherence(dateISO) {
     if (rec[sf + '_skip']) return;
     r.suppTot++; if (rec[sf] === '1') r.suppDone++;
   });
-  const wtype = getWorkout2(woIdx).type;
+  const pw = getPlannedWorkout2(woIdx), wtype = pw.type;
   if (wtype !== 'Riposo') {
     r.woPlanned = true; r.woType = wtype;
-    const kcal = parseFloat(rec.wo_kcal), rpe = parseFloat(rec.rpe), vol = getWorkoutVolume2(rec);
-    r.woDone = (!isNaN(kcal) && kcal > 0) || (vol !== null && vol > 0) || !isNaN(rpe);
+    r.woDone = woSessDone(rec) || pw.covered;
   }
   return r;
 }
@@ -1566,11 +1600,10 @@ function adherence(blob) {
       suppTot++; if (rec[sf] === '1') suppDone++;
     });
 
-    if (getWorkout2(woIdx).type !== 'Riposo') {
+    const pw = getPlannedWorkout2(woIdx);
+    if (pw.type !== 'Riposo') {
       woTot++;
-      const kcal = parseFloat(rec.wo_kcal), rpe = parseFloat(rec.rpe);
-      const vol = getWorkoutVolume2(rec);
-      if ((!isNaN(kcal) && kcal > 0) || (vol !== null && vol > 0) || !isNaN(rpe)) woDone++;
+      if (woSessDone(rec) || pw.covered) woDone++;
     }
   }
 
@@ -2985,11 +3018,11 @@ function buildWorkout(root){
   var byType={};
   w.slice.forEach(function(d, ii){
     if (!d||!d._planned) return;
-    if (w.from+ii===TODAY() && !d._done) return;   /* PORTING: giorno in corso non conta come saltato */
+    if (w.from+ii===TODAY() && !d._done && !d._cov) return;   /* PORTING: giorno in corso non conta come saltato */
     var k=d._type||"\u2014";
     if (!byType[k]) byType[k]={done:0,planned:0,vol:0};
     byType[k].planned++;
-    if (d._done){ byType[k].done++; byType[k].vol+=num(d.wo_volume)||0; }
+    if (d._done || d._cov){ byType[k].done++; byType[k].vol+=(d._done ? (num(d.wo_volume)||0) : (num(d._covVol)||0)); }
   });
   var ht=ch(root,"wo.type");
   if (ht){
@@ -4233,10 +4266,13 @@ function AN_buildDays(){
     d.wo_volume = (vol != null) ? String(vol) : "";
     var kcal = parseFloat(rec.wo_kcal), rpe = parseFloat(rec.rpe);
     var done = (!isNaN(kcal) && kcal > 0) || (vol != null && vol > 0) || !isNaN(rpe);
-    var type = getWorkout2(i).type, planned = type !== "Riposo";
+    var pw = getPlannedWorkout2(i), type = pw.type, planned = type !== "Riposo";
     d._planned = planned ? "1" : "";
     d._done = done ? "1" : "";
-    d._type = planned ? (AN_TYPE_LABEL[type] || type) : (done ? "Extra" : "");
+    d._cov = (planned && pw.covered) ? "1" : "";
+    d._covVol = (planned && pw.covered && pw.coverIdx >= 0) ? String(getWorkoutVolume2(woRecAt(pw.coverIdx)) || "") : "";   /* volume della seduta di recupero, attribuito al tipo del giorno recuperato */
+    var effT = getWorkout2(i).type;   /* etichetta effettiva (override compreso) per i giorni con seduta */
+    d._type = planned ? (AN_TYPE_LABEL[type] || type) : (done ? (effT !== "Riposo" ? (AN_TYPE_LABEL[effT] || effT) : "Extra") : "");
     out.push(d);
   }
   return out;
@@ -4251,10 +4287,10 @@ function AN_dayAdh(idx){
     r.injTot++; if (v === "fatto") r.injDone++;
   }); });
   SUPP_FIELDS.forEach(function(sf){ if (rec[sf + "_skip"]) return; r.suppTot++; if (rec[sf] === "1") r.suppDone++; });
-  if (getWorkout2(idx).type !== "Riposo") {
+  var pw = getPlannedWorkout2(idx);
+  if (pw.type !== "Riposo") {
     r.woTot++;
-    var kcal = parseFloat(rec.wo_kcal), rpe = parseFloat(rec.rpe), vol = getWorkoutVolume2(rec);
-    if ((!isNaN(kcal) && kcal > 0) || (vol != null && vol > 0) || !isNaN(rpe)) r.woDone++;
+    if (woSessDone(rec) || pw.covered) r.woDone++;
   }
   return r;
 }
@@ -4494,14 +4530,12 @@ var CTX = (function () {
       place: function (card, note) { note.style.cssText = 'grid-column:1/-1;margin:0 0 -4px;padding:0 4px;'; card.insertAdjacentElement('beforebegin', note); },
       txt: function () { return IT() ? 'Barre = vial consumato: verde <70%, ambra 70\u201390%, rosso >90% (dosi e vita).' : 'Bars = vial used up: green <70%, amber 70\u201390%, red >90% (doses and shelf life).'; } },
     /* ---- Oggi: gli anelli vanno in fondo alla card a tutta larghezza; le iniezioni sotto l'intestazione con lo stesso margine del titolo ---- */
-    { id: 'rings', find: ringsCard, place: function (card, note) {
+    { id: 'rings', find: function (app) { return (typeof oggiViewMode !== 'undefined' && oggiViewMode === 'week') ? null : ringsCard(app); }, place: function (card, note) {
         var cs = getComputedStyle(card);
         if (cs.display === 'flex' && cs.flexDirection === 'row') card.style.flexWrap = 'wrap';
         note.style.cssText = 'flex:0 0 100%;width:100%;box-sizing:border-box;margin:0;padding:8px 6px 0;';
         card.appendChild(note); }, txt: function () {
-      var wk = (typeof oggiViewMode !== 'undefined' && oggiViewMode === 'week');
-      return wk ? (IT() ? 'Settimana mostrata: fatte su previste, giorni trascorsi.' : 'Week shown: done of planned, days passed.')
-                : (IT() ? 'Dal 18/07: fatte su previste \u00b7 barra sotto = giorno mostrato.' : 'Since 18 Jul: done of planned \u00b7 bar below = day shown.'); } },
+      return IT() ? 'Dal 18/07: fatte su previste \u00b7 barra sotto = giorno mostrato.' : 'Since 18 Jul: done of planned \u00b7 bar below = day shown.'; } },
     { id: 'inj', leaf: leafCard(function (t) { return /^iniezioni e distretto$/i.test(t) || /^injections (and|&) (site|district)$/i.test(t); }), place: function (el, note) {
         var head = el.leaf.parentElement || el.leaf; head.insertAdjacentElement('afterend', note);
         var off = Math.max(0, Math.round(el.leaf.getBoundingClientRect().left - el.card.getBoundingClientRect().left));
@@ -6256,6 +6290,7 @@ function weekAggregate(weekIdx) {
       dayIdx, dateISO, date: d, rec, wo,
       isFuture: dayIdx > todayIdx,
       isRest: wo.type === 'Riposo',
+      planned: getPlannedWorkout2(dayIdx).type !== 'Riposo', covered: getPlannedWorkout2(dayIdx).covered,   /* 06/10: conteggio previsti/fatti (vedi getPlannedWorkout2) */
       dow: dowShort[i], dowIni: dowInitial[i], num: d.getDate()
     };
   });
@@ -6289,14 +6324,9 @@ function weekAggregate(weekIdx) {
   const suppApplTot = suppRows.reduce((s, r) => s + r.applicable, 0);
 
   // ---- Allenamenti della settimana ----
-  const trainingDays = days.filter(d => !d.isRest);
-  const woTot = trainingDays.length;
-  const woDone = trainingDays.filter(d => {
-    if (d.isFuture) return false;
-    const kcal = parseFloat(d.rec.wo_kcal), rpe = parseFloat(d.rec.rpe);
-    const vol = getWorkoutVolume2(d.rec);
-    return (!isNaN(kcal) && kcal > 0) || (vol !== null && vol > 0) || !isNaN(rpe);
-  }).length;
+  const trainingDays = days.filter(d => !d.isRest);   /* giorni con allenamento effettivo (per sedute e volume) */
+  const woTot = days.filter(d => d.planned).length;
+  const woDone = days.filter(d => d.planned && !d.isFuture && (woSessDone(d.rec) || d.covered)).length;
   const sessions = trainingDays.filter(d => !d.isFuture).map(d => {
     const vol = getWorkoutVolume2(d.rec) || 0;
     const dur = parseFloat(d.rec.wo_durata) || 0;
@@ -6394,10 +6424,10 @@ function weekAggregateShallow(weekIdx) {
       injTot++; if (v === 'fatto') injDone++;
     }));
     SUPP_FIELDS.forEach(sf => { if (rec[sf + '_skip']) return; suppTot++; if (rec[sf] === '1') suppDone++; });
-    if (getWorkout2(dayIdx).type !== 'Riposo') {
+    const pw = getPlannedWorkout2(dayIdx);
+    if (pw.type !== 'Riposo') {
       woTot++;
-      const kcal = parseFloat(rec.wo_kcal), rpe = parseFloat(rec.rpe), vol = getWorkoutVolume2(rec);
-      if ((!isNaN(kcal) && kcal > 0) || (vol !== null && vol > 0) || !isNaN(rpe)) woDone++;
+      if (woSessDone(rec) || pw.covered) woDone++;
     }
   }
   const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
@@ -9810,7 +9840,7 @@ function exportRows() {
     const ip = (!isToday && a && a.injTot > 0) ? Math.round(a.injDone / a.injTot * 100) : '';
     const sp = (!isToday && a && a.suppTot > 0) ? Math.round(a.suppDone / a.suppTot * 100) : '';
     proto.push([iso, label, ip, sp, a ? a.injDone : '', a ? a.injTot : '', a ? a.suppDone : '', a ? a.suppTot : '']);
-    const type = getWorkout2(woIdx).type;
+    const type = (a && a.woPlanned) ? a.woType : getWorkout2(woIdx).type;
     const vol = getWorkoutVolume2(rec);
     wo.push([iso, label, (a && a.woPlanned && a.woDone) ? 1 : 0, type === 'Riposo' ? '' : type, expNum(rec.wo_durata), vol !== null ? vol : expNum(rec.wo_volume), expNum(rec.wo_kcal)]);
   }
