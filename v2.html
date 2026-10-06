@@ -1398,7 +1398,29 @@ function woBase(idx) {
   if (idx >= 0 && isBkkDate(d)) return { type: woRecAt(idx).bkk_riposo === '1' ? 'Riposo' : 'Allenamento BKK', bkk: true, dow: d.getDay() };
   return { type: {0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'}[d.getDay()] || 'Riposo', bkk: false, dow: d.getDay() };
 }
+/* 06/10 REGOLA B per le settimane (lun-dom) che toccano la trasferta BKK (decisione di Giorgio: allenamenti irregolari per gli spostamenti e piu' di 5 a
+   settimana per il tempo a disposizione). Obiettivo della settimana = 5 meno i giorni segnati "riposo in trasferta" (bkk_riposo = giorni di viaggio escusati).
+   Le sedute fatte coprono l'obiettivo in ordine cronologico; le sedute in piu' sono EXTRA (visibili, non fanno media e non compensano altre settimane); se le sedute
+   sono meno dell'obiettivo, i giorni previsti non fatti sono i primi giorni passati non escusati. Es.: W3 3/3, W4 5/5 (+2 extra), W5 4/4 (+1 extra). */
+function woBkkWeekPlan(mon) {
+  const todayIdx = dayIdxFromISO(today);
+  let any = false, excused = 0;
+  for (let j = 0; j < 7; j++) { const b = woBase(mon + j); if (b.bkk) { any = true; if (b.type === 'Riposo') excused++; } }
+  if (!any) return null;
+  const T = Math.max(0, 5 - excused), byDay = {}, sess = [], cand = [];
+  for (let j = 0; j < 7; j++) {
+    const k = mon + j; if (k > todayIdx) break;
+    if (woSessDone(woRecAt(k))) sess.push(k); else if (k < todayIdx && woBase(k).type !== 'Riposo') cand.push(k);
+  }
+  const lab = k => { const t = getWorkout2(k).type; return t === 'Riposo' ? 'Allenamento' : t; };
+  let n = 0;
+  sess.forEach(k => { if (n < T) { byDay[k] = { type: lab(k), covered: false, coverIdx: -1 }; n++; } });
+  cand.forEach(k => { if (n < T) { byDay[k] = { type: lab(k), covered: false, coverIdx: -1 }; n++; } });
+  return byDay;
+}
 function getPlannedWorkout2(idx) {
+  const plan = woBkkWeekPlan(idx - ((woBase(idx).dow + 6) % 7));
+  if (plan) return plan[idx] || { type: 'Riposo', covered: false, coverIdx: -1 };
   const rec = woRecAt(idx), base = woBase(idx), ov = rec.wo_override;
   if (base.type === 'Riposo') return { type: 'Riposo', covered: false, coverIdx: -1 };
   let type = base.type;
@@ -3015,8 +3037,10 @@ function buildWorkout(root){
       fmtY:function(v){return String(Math.round(v));}}
   });
   /* completamento = fatte/previste dal piano */
-  var byType={};
+  var byType={}, usedExtra={};
+  D().forEach(function(d){ if (d && d._covIdx >= 0) usedExtra[d._covIdx]=1; });
   w.slice.forEach(function(d, ii){
+    if (d && d._done && !d._planned && !usedExtra[w.from+ii]) { var ke=d._type||"\u2014"; if (byType[ke]) byType[ke].vol+=(num(d.wo_volume)||0); }   /* extra: solo volume */
     if (!d||!d._planned) return;
     if (w.from+ii===TODAY() && !d._done && !d._cov) return;   /* PORTING: giorno in corso non conta come saltato */
     var k=d._type||"\u2014";
@@ -4270,6 +4294,7 @@ function AN_buildDays(){
     d._planned = planned ? "1" : "";
     d._done = done ? "1" : "";
     d._cov = (planned && pw.covered) ? "1" : "";
+    d._covIdx = (planned && pw.covered) ? pw.coverIdx : -1;
     d._covVol = (planned && pw.covered && pw.coverIdx >= 0) ? String(getWorkoutVolume2(woRecAt(pw.coverIdx)) || "") : "";   /* volume della seduta di recupero, attribuito al tipo del giorno recuperato */
     var effT = getWorkout2(i).type;   /* etichetta effettiva (override compreso) per i giorni con seduta */
     d._type = planned ? (AN_TYPE_LABEL[type] || type) : (done ? (effT !== "Riposo" ? (AN_TYPE_LABEL[effT] || effT) : "Extra") : "");
@@ -6340,6 +6365,7 @@ function weekAggregate(weekIdx) {
   // ---- Percentuali della settimana ----
   const pct = (done, tot) => tot ? Math.round(done / tot * 100) : 0;
   const injPct = pct(injDoneTot, injApplTot), suppPct = pct(suppDoneTot, suppApplTot), woPct = pct(woDone, woTot);
+  const woExtra = Math.max(0, days.filter(d => !d.isFuture && woSessDone(d.rec)).length - woDone);   /* sedute oltre il piano (extra) */
   const overall = Math.round((injPct + suppPct + woPct) / 3);
 
   // ---- Confronto con la settimana precedente (solo se non è la prima) ----
@@ -6397,7 +6423,7 @@ function weekAggregate(weekIdx) {
     weekIdx, days, elapsed, isClosed, isFutureWeek,
     injRows, injDoneTot, injApplTot, injPct,
     suppRows, suppDoneTot, suppApplTot, suppPct,
-    woTot, woDone, woPct, sessions, weekVolume, weekDurationMin, weekKcal,
+    woTot, woDone, woPct, woExtra, sessions, weekVolume, weekDurationMin, weekKcal,
     overall, prevOverall, prevInjPct,
     catRows,
     pesoArr, hrvArr, hrvIsEst, hrvLastRangeText, sonnoArr, rhrArr, remArr, profArr, risvArr, avg,
@@ -6786,7 +6812,7 @@ function renderWeekFull() {
     <div style="grid-column:5 / 9;grid-row:3 / 4;border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
       <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
         <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${L.training}</span>
-        <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${wk.woDone}/${wk.woTot} ${LANG === 'it' ? 'sedute' : 'sessions'}</span>
+        <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${wk.woDone}/${wk.woTot}${wk.woExtra ? ' +' + wk.woExtra : ''} ${LANG === 'it' ? 'sedute' : 'sessions'}</span>
       </div>
       <div style="flex:0 0 auto;display:flex;gap:16px;">
         <div style="flex:1 1 0;display:flex;flex-direction:column;gap:2px;min-width:0;">
@@ -7028,7 +7054,7 @@ function renderWeekFull() {
     <div style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
       <div style="display:flex;align-items:baseline;justify-content:space-between;">
         <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${L.training}</span>
-        <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${wk.woDone}/${wk.woTot} ${LANG === 'it' ? 'sedute' : 'sessions'}</span>
+        <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${wk.woDone}/${wk.woTot}${wk.woExtra ? ' +' + wk.woExtra : ''} ${LANG === 'it' ? 'sedute' : 'sessions'}</span>
       </div>
       <div style="display:flex;gap:14px;">
         <div style="flex:1 1 0;display:flex;flex-direction:column;gap:2px;min-width:0;">
