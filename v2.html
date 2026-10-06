@@ -1558,6 +1558,12 @@ function dayAdherence(dateISO) {
   if (wtype !== 'Riposo') {
     r.woPlanned = true; r.woType = wtype;
     r.woDone = woSessDone(rec) || pw.covered;
+  } else if (woSessDone(rec)) {
+    /* 06/10: seduta in un giorno non previsto (extra: Lun/Gio, o oltre l'obiettivo settimanale in trasferta): NON e' un riposo */
+    r.woExtra = true; const et = getWorkout2(woIdx).type; r.woType = (et && et !== 'Riposo') ? et : '';
+  } else if (woBase(woIdx).type !== 'Riposo') {
+    /* giorno di allenamento del piano non fatto e non previsto perche' l'obiettivo settimanale (regola B, settimane con trasferta) e' gia' raggiunto: NON e' un riposo */
+    r.woSkippedOk = true; r.woType = woBase(woIdx).type;
   }
   return r;
 }
@@ -1571,7 +1577,11 @@ function todayBarHtml(kind, r, wide) {
   const ink = kind === 'inj' ? 'var(--accent-ink)' : kind === 'supp' ? 'var(--ok)' : 'var(--wo)';
   let txt, sec = '', pct = null;
   if (kind === 'wo') {
-    if (!r.woPlanned) txt = lab + ': ' + (it ? 'riposo' : 'rest');
+    if (!r.woPlanned) {
+      if (r.woExtra) { txt = lab + ' \u2713'; sec = 'extra' + (r.woType ? ' \u00b7 ' + (r.woType === 'Allenamento BKK' ? 'BKK' : r.woType) : ''); pct = 100; }   /* extra: allenato oltre il piano */
+      else if (r.woSkippedOk) { txt = lab + ': ' + (it ? 'non fatto' : 'missed'); sec = it ? 'obiettivo settimana raggiunto' : 'weekly target met'; }
+      else txt = lab + ': ' + (it ? 'riposo' : 'rest');
+    }
     else if (r.woDone) { txt = lab + ' \u2713'; sec = r.woType; pct = 100; }
     else { txt = lab + ': ' + (isToday ? (it ? 'da fare' : 'to do') : (it ? 'non fatto' : 'missed')); sec = r.woType; pct = 0; }
   } else {
@@ -9868,7 +9878,7 @@ function exportRows() {
     proto.push([iso, label, ip, sp, a ? a.injDone : '', a ? a.injTot : '', a ? a.suppDone : '', a ? a.suppTot : '']);
     const type = (a && a.woPlanned) ? a.woType : getWorkout2(woIdx).type;
     const vol = getWorkoutVolume2(rec);
-    wo.push([iso, label, (a && a.woPlanned && a.woDone) ? 1 : 0, type === 'Riposo' ? '' : type, expNum(rec.wo_durata), vol !== null ? vol : expNum(rec.wo_volume), expNum(rec.wo_kcal)]);
+    wo.push([iso, label, (a && ((a.woPlanned && a.woDone) || a.woExtra)) ? 1 : 0, type === 'Riposo' ? '' : type, expNum(rec.wo_durata), vol !== null ? vol : expNum(rec.wo_volume), expNum(rec.wo_kcal)]);
   }
   const note = [['voce', 'descrizione'],
     ['Origine', 'Diario Protocollo v2 - esportato il ' + todayISO],
