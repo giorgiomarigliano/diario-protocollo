@@ -2821,6 +2821,18 @@ function buildWorkoutHero(root){
     { v:String(a.currentStreak), l:"Streak attuale" },
     { v:it(a.avgPerWeek,1), l:"Media/sett." },
     { v:q ? q.rising+"/"+q.total : "\u2014", l:"Esercizi in salita" } ]);
+  var card = host.firstElementChild;
+  if (card){
+    var det = document.createElement("div"); det.className = "ctx-note ctx-dark"; det.setAttribute("data-wo-detail","1");
+    var en = (typeof LANG !== "undefined" && LANG === "en");
+    var parts = en
+      ? ["Planned "+a.plannedTotal+": "+a.onPlanN+" done on the day"+(a.coveredL.length ? ", "+a.coveredL.length+" made up ("+a.coveredL.join(", ")+")" : "")+", "+a.missedL.length+" missed"+(a.missedL.length ? " ("+a.missedL.join(", ")+")" : "")+".",
+         "Actual sessions: "+a.sessReal+(a.extraN ? " ("+a.extraN+" outside the plan)" : "")+"."]
+      : ["Previsti "+a.plannedTotal+": "+a.onPlanN+" fatti nel giorno"+(a.coveredL.length ? ", "+a.coveredL.length+" recuperat"+(a.coveredL.length>1?"i":"o")+" ("+a.coveredL.join(", ")+")" : "")+", "+a.missedL.length+" saltat"+(a.missedL.length===1?"o":"i")+(a.missedL.length ? " ("+a.missedL.join(", ")+")" : "")+".",
+         "Sedute reali: "+a.sessReal+(a.extraN ? " ("+a.extraN+" fuori piano)" : "")+"."];
+    det.textContent = parts.join(" ");
+    card.appendChild(det);
+  }
 }
 function buildInsights(root){
   var w=W();
@@ -3050,13 +3062,17 @@ function buildWorkout(root){
   var byType={}, usedExtra={};
   D().forEach(function(d){ if (d && d._covIdx >= 0) usedExtra[d._covIdx]=1; });
   w.slice.forEach(function(d, ii){
-    if (d && d._done && !d._planned && !usedExtra[w.from+ii]) { var ke=d._type||"\u2014"; if (byType[ke]) byType[ke].vol+=(num(d.wo_volume)||0); }   /* extra: solo volume */
     if (!d||!d._planned) return;
     if (w.from+ii===TODAY() && !d._done && !d._cov) return;   /* PORTING: giorno in corso non conta come saltato */
     var k=d._type||"\u2014";
     if (!byType[k]) byType[k]={done:0,planned:0,vol:0};
     byType[k].planned++;
     if (d._done || d._cov){ byType[k].done++; byType[k].vol+=(d._done ? (num(d.wo_volume)||0) : (num(d._covVol)||0)); }
+  });
+  /* extra (sedute fuori piano non usate per recuperare un saltato): volume e conteggio "+N" sotto il loro tipo. Secondo passaggio: il tipo puo' comparire
+     nei previsti DOPO l'extra (es. Upper Dom: extra del 23/08, primo previsto in finestra il 30/08). */
+  w.slice.forEach(function(d, ii){
+    if (d && d._done && !d._planned && !usedExtra[w.from+ii]) { var ke=d._type||"\u2014"; if (byType[ke]) { byType[ke].vol+=(num(d.wo_volume)||0); byType[ke].extra=(byType[ke].extra||0)+1; } }
   });
   var ht=ch(root,"wo.type");
   if (ht){
@@ -3071,7 +3087,7 @@ function buildWorkout(root){
       el.innerHTML='<span style="display:flex;align-items:center;gap:7px;font-weight:600;color:var(--ink)"><span style="width:8px;height:8px;border-radius:var(--r-xs);background:'+col+'"></span>'+k+'</span>'+
         '<span style="height:14px;border-radius:var(--r-xs);background:var(--line2);overflow:hidden;display:block">'+
           '<span style="display:block;height:100%;width:'+pct+'%;background:'+col+';border-radius:var(--r-xs)"></span></span>'+
-        '<strong class="an-num">'+b.done+" / "+b.planned+'</strong>'+
+        '<strong class="an-num">'+b.done+" / "+b.planned+(b.extra?'<span style="font-weight:500;color:var(--ink3)"> +'+b.extra+'</span>':'')+'</strong>'+
         '<span class="an-num" style="color:'+(pct>=90?"var(--ok)":(pct>=75?"var(--warn-ink)":"var(--bad)"))+';font-weight:600">'+pct+'%</span>'+
         '<span class="an-num">'+it(Math.round(b.vol/100)/10,1)+'t</span>';
       ht.appendChild(el);
@@ -3192,7 +3208,7 @@ function woAdhCompute(){
     var iso = isoLocal(d), inside = d >= testStart, r = inside ? dayAdherence(iso) : null;
     var planned = r ? r.woPlanned : (WO_SCHED_REST_DOW.indexOf(d.getDay()) < 0);
     var active = !!dates[iso] || !!(r && r.woDone);
-    return { iso:iso, inside:inside, planned:planned, active:active, pending:(iso===today && planned && !active) };
+    return { iso:iso, inside:inside, planned:planned, active:active, real:!!dates[iso], pending:(iso===today && planned && !active) };
   };
 
   var recordStreak = 0;
@@ -3234,24 +3250,32 @@ function woAdhCompute(){
     for (var dd=0; dd<7; dd++){
       var dayDate=new Date(weekStart); dayDate.setDate(dayDate.getDate()+dd);
       var z = info(dayDate);
-      week.push({date:dayDate, active:z.active, future:dayDate>todayD, schedRest:!z.planned, outside:!z.inside, pending:z.pending});
+      week.push({date:dayDate, active:z.active, real:z.real, future:dayDate>todayD, schedRest:!z.planned, outside:!z.inside, pending:z.pending});
     }
     weeks.push(week);
   }
   var nonFuture=[]; weeks.forEach(function(week){ week.forEach(function(day){ if(!day.future) nonFuture.push(day); }); });
   var counted = nonFuture.filter(function(d){ return !d.outside && !d.pending; });
   var active = counted.filter(function(d){return d.active;});
-  var pct = counted.length ? Math.round(active.length/counted.length*100) : 0;
+  /* 07/10: la % su tutti i giorni e la media/sett. contano le SEDUTE REALI (giorni con seduta registrata); un previsto recuperato da una seduta in un altro giorno non e' un giorno allenato */
+  var realDays = counted.filter(function(d){return d.real;});
+  var pct = counted.length ? Math.round(realDays.length/counted.length*100) : 0;
   var planned = counted.filter(function(d){return !d.schedRest;});
   var plannedActive = planned.filter(function(d){return d.active;});
   var pctPlanned = planned.length ? Math.round(plannedActive.length/planned.length*100) : 0;
-  var avgPerWeek = counted.length ? (active.length/(counted.length/7)) : 0;
+  var avgPerWeek = counted.length ? (realDays.length/(counted.length/7)) : 0;
   var first = nonFuture.filter(function(d){ return !d.outside; })[0];
   var pendingToday = nonFuture.some(function(d){ return d.pending; });
+  var extraDays = counted.filter(function(d){return d.real && d.schedRest;});
+  var coveredDays = planned.filter(function(d){return d.active && !d.real;});
+  var missedDays = planned.filter(function(d){return !d.active;});
+  var dmf = function(d){ return fmtDM(d.date); };
 
   return {weeks:weeks, pct:pct, pctPlanned:pctPlanned, plannedActive:plannedActive.length, plannedTotal:planned.length,
     currentStreak:currentStreak, recordStreak:recordStreak, avgPerWeek:avgPerWeek, weeksToShow:weeksToShow,
-    fromLabel: first ? fmtDM(first.date) : "", restCounted: counted.length-planned.length, pendingToday: pendingToday};
+    fromLabel: first ? fmtDM(first.date) : "", restCounted: counted.length-planned.length, pendingToday: pendingToday,
+    sessReal: realDays.length, countedDays: counted.length, extraN: extraDays.length, coveredL: coveredDays.map(dmf), missedL: missedDays.map(dmf),
+    onPlanN: planned.filter(function(d){return d.real;}).length};
 }
 function woAdhRingSvg(value){
   var r=22, circ=2*Math.PI*r, off=circ*(1-value/100);
@@ -3268,7 +3292,7 @@ function buildWorkoutAdherence(root){
 
   var hr=ch(root,"woadh.rings");
   if (hr) hr.innerHTML =
-    '<div style="display:flex;flex-direction:column;align-items:center;gap:5px">'+woAdhRingSvg(a.pct)+'<span class="gst-cap" style="text-align:center">su tutti i giorni (anche i riposi)</span></div>'+
+    '<div style="display:flex;flex-direction:column;align-items:center;gap:5px">'+woAdhRingSvg(a.pct)+'<span class="gst-cap" style="text-align:center">su tutti i giorni (anche i riposi)</span><span class="gst-cap" style="text-align:center">'+a.sessReal+'/'+a.countedDays+'</span></div>'+
     '<div style="display:flex;flex-direction:column;align-items:center;gap:5px">'+woAdhRingSvg(a.pctPlanned)+'<span class="gst-cap" style="text-align:center">su allenamenti previsti ('+a.plannedActive+'/'+a.plannedTotal+')</span></div>';
 
   var hs=ch(root,"woadh.stats");
