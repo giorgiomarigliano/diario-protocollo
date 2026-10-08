@@ -3551,9 +3551,14 @@ function photoMetrics(p){
     [T().peso, m.peso!=null?it(m.peso,1)+" kg":(p.peso_manual?it(num(p.peso_manual),1)+" kg":(num(d.peso)!=null?it(num(d.peso),1)+" kg":null))],
     [T().hrv,  m.hrvHead!=null?m.hrvHead+" ms":null],
     [T().sonno,m.sonno!=null?fmtHours(m.sonno):null],
-    ["% "+T().injections,  m.inj!=null?m.inj+"%":null],
+    /* FIX 08/10: lo Scrubber (e l'Affiancato) leggevano m.inj (percentuale) e m.workout, due campi che
+       AN_buildPhotoMetrics non valorizza piu' dal porting del 26/09 (ora scrive injDone/injTot e usa
+       photoWorkoutWeekLabel per gli allenamenti, come la Lista): le due tessere erano sempre vuote per
+       OGNI scatto. Ora stessa fonte e stesso formato della Lista: iniezioni fatte/previste (colorate),
+       allenamenti della settimana fatti/previsti ("WO sett."). */
+    [T().injections, m.injTot!=null ? '<span style="color:'+(m.injDone===m.injTot?"var(--ok)":(m.injDone>0?"var(--warn-ink)":"var(--bad)"))+'">'+m.injDone+"/"+m.injTot+'</span>' : null],
     ["% "+T().supplements, m.supp!=null?m.supp+"%":null],
-    [T().workouts, m.workout!=null?m.workout:null]
+    ["WO sett.", photoWorkoutWeekLabel(p)]
   ];
 }
 /* PORTING 25/09: countdown T1/T2 e giorno/settimana -- stessi dati gia' mostrati altrove
@@ -3644,7 +3649,9 @@ function photoMetaLinesHTML(p, i, m){
   if (m.hrvHead!=null) sub.push("HRV "+m.hrvHead);
   if (m.injTot!=null){ var injColG=m.injDone===m.injTot?"var(--ok)":(m.injDone>0?"var(--warn-ink)":"var(--bad)"); sub.push('<span style="color:'+injColG+'">Inj '+m.injDone+"/"+m.injTot+'</span>'); }
   if (m.supp!=null) sub.push('<span style="color:'+pctColor(m.supp)+'">Integr '+m.supp+'%</span>');
-  if (m.workout) sub.push("WO "+esc(m.workout));
+  /* FIX 08/10: m.workout non esiste piu' (vedi photoMetrics): Griglia e Per settimana non mostravano mai il "WO". */
+  var woWk = photoWorkoutWeekLabel(p);
+  if (woWk) sub.push("WO "+esc(woWk));
   var html='<span class="an-fdate">'+fmtDM(dateOfDay(i))+(p.luogo?" \u00b7 "+esc(p.luogo):"")+'</span>'+
     '<span class="an-fsub">'+photoDayWeekLabel(p)+'</span>';
   sub.forEach(function(x){ html += '<span class="an-fsub">'+x+'</span>'; });
