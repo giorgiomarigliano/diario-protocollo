@@ -37,3 +37,7 @@ Questo repository è **pubblico**. Non committare mai qui dentro: dati sanitari,
 referti, valori di laboratorio, dosaggi personalizzati, o qualunque informazione
 identificativa oltre a quella già presente nel codice dell'app stessa. I backup dati
 vanno sempre nel repo privato.
+
+## Audit automatico prima del push di v2.html
+
+Prima di ogni push che tocca `v2.html` esegui `python3 tools/audit/audit.py` (vedi `tools/audit/README.md`). Deve terminare con `AUDIT OK`. Validato il 08/10/2026: passa sul codice corrente e fallisce sul codice precedente al fix dello Scrubber (segnala `inj` e `workout`).
