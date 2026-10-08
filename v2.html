@@ -3241,7 +3241,10 @@ function woAdhCompute(){
     earliestMonday = new Date(firstD); earliestMonday.setDate(earliestMonday.getDate()-dowOffsetFirst);
   }
   var weeksAvailable = Math.round((currentMonday-earliestMonday)/(7*86400000))+1;
-  var weeksToShow = Math.max(1, Math.min(12, weeksAvailable));
+  /* FIX 08/10 (audit): il tetto era 12 settimane, ma i CONTEGGI (previsti/fatti/%/saltati) sono calcolati sulle stesse settimane della griglia:
+     dal lunedi' 12/10 (settimana 13 del ciclo) la finestra a 12 settimane avrebbe scartato le prime settimane e questa scheda avrebbe mostrato
+     numeri diversi dal Cruscotto e dall'anello di Oggi (simulato: 12/10 -> 47/52 contro 54/59). Il ciclo dura 16 settimane e la griglia parte dal lunedi' della prima seduta registrata (13/07): tetto = 20, cosi' la finestra copre tutto il ciclo (T2 7/11 incluso). */
+  var weeksToShow = Math.max(1, Math.min(20, weeksAvailable));
 
   var weeks=[];
   for (var w=0; w<weeksToShow; w++){
