@@ -2317,6 +2317,8 @@ function D(){ return MOCK.days; }
 function TODAY(){ return MOCK.todayIndex; }
 function R(){ return AN.range === 0 ? CYCLE.days : AN.range; }
 function W(){ return windowDays(D(), TODAY(), R()); }
+/* 08/10: il tab Workout mostra SEMPRE tutto il protocollo (dal giorno 1, 20/07), non l'intervallo 30/60/90 del selettore globale. */
+function WW(){ return windowDays(D(), TODAY(), CYCLE.days); }
 function $(root,sel){ return root.querySelector(sel); }
 function ch(root,id){ return root.querySelector('[data-chart="'+id+'"]'); }
 function setB(root,path,v,cls){
@@ -3018,7 +3020,7 @@ function buildInsights(root){
    NON da wo_override.
    ══════════════════════════════════════════════════════════ */
 function buildWorkout(root){
-  var w=W(), ev=eventsFor(w.from,w.slice.length);
+  var w=WW(), ev=eventsFor(w.from,w.slice.length);
   buildWorkoutAdherence(root);
   renderChart(ch(root,"wo.volume"),{
     series:[{type:"bar",data:seriesOf(w.slice,"wo_volume"),color:"var(--accent-soft)"}],
@@ -4205,6 +4207,7 @@ function applyI18N(root){
 }
 function renderAll(){
   var root=document.querySelector(".an-root"); if(!root) return;
+  var gr=root.querySelector(".an-globalrange"); if (gr) gr.style.display = (AN.tab==="workout") ? "none" : "";   /* Workout: sempre tutto il protocollo, il selettore non ha effetto */
   applyI18N(root);
   buildCycle(root); buildHero(root); buildHeroNarrative(root); buildRecomp(root); buildLoad(root);
   buildAdherence(root); buildClinical(root); buildStock(root); buildBackup(root);
@@ -4485,7 +4488,7 @@ var AN_HTML = "<div class=\"an-root\">\n  <div class=\"an-subnav\">\n    <div cl
    di caricamento foto di Foto in Andamento) e di leggere PHOTO_LOG -- tutti privati a
    questa closure finora. Esposti qui, nessun comportamento esistente cambia. */
 /* 02/10: intervallo selezionato in Andamento (30/60/90/ciclo), per le righe di contesto delle card (CTX). */
-function AN_scope(){ var w=W(); return { days:R(), cycle:AN.range===0, from:fmtDM(dateOfDay(w.from)), to:fmtDM(dateOfDay(w.from+w.slice.length-1)) }; }
+function AN_scope(wo){ var w=wo?WW():W(); return { days:wo?CYCLE.days:R(), cycle:wo?true:AN.range===0, from:fmtDM(dateOfDay(w.from)), to:fmtDM(dateOfDay(w.from+w.slice.length-1)) }; }
 return { html: function(){ return AN_HTML; }, mount: AN_mount, loadV1: AN_loadV1, lazyPhoto: AN_lazyPhoto, photoUrl: AN_photoUrl, getPhotoLog: function(){ return PHOTO_LOG; }, scope: AN_scope };
 })();
 
@@ -4496,8 +4499,8 @@ return { html: function(){ return AN_HTML; }, mount: AN_mount, loadV1: AN_loadV1
    Per aggiungere una card: una voce in CTX_RULES (id, find, txt, place). */
 var CTX = (function () {
   var IT = function () { return LANG !== 'en'; };
-  var sc = function () {
-    try { var s = ANV2.scope(); return IT() ? ((s.cycle ? 'ciclo' : s.days + ' gg') + ' \u00b7 ' + s.from + '\u2013' + s.to) : ((s.cycle ? 'cycle' : s.days + ' d') + ' \u00b7 ' + s.from + '\u2013' + s.to); }
+  var sc = function (wo) {
+    try { var s = ANV2.scope(wo); return IT() ? ((s.cycle ? 'ciclo' : s.days + ' gg') + ' \u00b7 ' + s.from + '\u2013' + s.to) : ((s.cycle ? 'cycle' : s.days + ' d') + ' \u00b7 ' + s.from + '\u2013' + s.to); }
     catch (e) { return IT() ? 'intervallo scelto' : 'selected range'; }
   };
   var dm = function (iso) { return iso.slice(8, 10) + '/' + iso.slice(5, 7); };
@@ -4543,9 +4546,9 @@ var CTX = (function () {
     { id: 'corr', find: byClass('c-corr'), place: underHead, txt: function () { return IT() ? sc() + ' \u00b7 Pearson (R) energia/recupero \u2194 sonno \u00b7 n = giorni \u00b7 grigio = debole (|R| < 0,3).' : sc() + ' \u00b7 Pearson (R) energy/recovery \u2194 sleep \u00b7 n = days \u00b7 grey = weak (|R| < 0.3).'; } },
     { id: 'd14', find: byClass('c-d14'), kind: 'sub', txt: function () { return IT() ? 'ultimi 14 gg vs 14 precedenti' : 'last 14 d vs previous 14'; } },
     /* ---- Andamento > Workout ---- */
-    { id: 'wovol', find: byClass('c-vol'), place: underHead, txt: function () { return sc() + (IT() ? ' \u00b7 colonne = volume (t), linea = RPE, fasce = viaggi.' : ' \u00b7 columns = volume (t), line = RPE, bands = trips.'); } },
-    { id: 'wotype', find: byClass('c-type'), kind: 'sub', txt: function () { return sc(); } },
-    { id: 'wosess', find: byClass('c-sess'), kind: 'sub', txt: function () { return sc() + (IT() ? ' \u00b7 tocca una riga' : ' \u00b7 tap a row'); } },
+    { id: 'wovol', find: byClass('c-vol'), place: underHead, txt: function () { return sc(true) + (IT() ? ' \u00b7 colonne = volume (t), linea = RPE, fasce = viaggi.' : ' \u00b7 columns = volume (t), line = RPE, bands = trips.'); } },
+    { id: 'wotype', find: byClass('c-type'), kind: 'sub', txt: function () { return sc(true); } },
+    { id: 'wosess', find: byClass('c-sess'), kind: 'sub', txt: function () { return sc(true) + (IT() ? ' \u00b7 tocca una riga' : ' \u00b7 tap a row'); } },
     { id: 'wophase', find: byClass('c-phase'), kind: 'sub', txt: function () { return IT() ? 'tutto il ciclo' : 'whole cycle'; } },
     { id: 'wosent', find: byClass('c-sent'), place: underHead, txt: function () { return IT() ? 'Dall\u2019inizio del ciclo \u00b7 \u0394 = ultimo \u2212 primo (verde sale, arancio scende).' : 'Since the cycle start \u00b7 \u0394 = latest \u2212 first (green up, orange down).'; } },
     { id: 'womusc', find: byClass('c-musc'), kind: 'sub', txt: function () { return IT() ? 'cumulativo dal 9 maggio' : 'cumulative since 9 May'; } },
