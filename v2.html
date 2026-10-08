@@ -1134,6 +1134,9 @@ function dayIdxFromISO(dateISO) {
   const d = new Date(dateISO + 'T00:00:00');
   return Math.round((d - start) / 86400000);
 }
+/* Numero del giorno REALE del ciclo: 20/07 = giorno 1 ... 08/10 = giorno 81 (indice p2_day_N + 1). UNICA definizione: tutti i testi che
+   mostrano "Giorno N di 112" devono passare da qui (audit 08/10: Foto, intestazione di Oggi e riga Pesi mostravano l'indice, uno in meno). */
+function cycleDayNo(idx) { return idx + 1; }
 function dayKeyFromISO(dateISO) { return 'p2_day_' + dayIdxFromISO(dateISO); }
 
 // Bug reale trovato il 10/09/2026: ".toISOString().slice(0,10)" converte
@@ -1528,12 +1531,12 @@ function getWorkoutVolume2(rec) {
    Stesse identiche regole di adherence() (skip/na esclusi, saltata = dovuta mancata, Riposo senza
    allenamento previsto), applicate a UN giorno. Non modifica adherence(): i totali del ciclo restano
    quelli di prima (che gia' includono le dosi dovute oggi). */
-function dayAdherence(dateISO) {
+function dayAdherence(dateISO, blobArg) {
   const d = new Date(dateISO + 'T00:00:00');
   const testStart = new Date(TEST_PROTO_START + 'T00:00:00');
   if (d < testStart) return null;
   const testEnd = new Date(testStart); testEnd.setDate(testEnd.getDate() + TEST_PROTO_DAYS - 1);
-  const blob = store.blob || {};
+  const blob = blobArg || store.blob || {};
   let rec, woIdx;
   if (d >= testStart && d <= testEnd) {
     const t = Math.round((d - testStart) / 86400000);
@@ -1598,47 +1601,18 @@ function todayBarHtml(kind, r, wide) {
 }
 
 function adherence(blob) {
+  /* 08/10 (audit): UNICA fonte = dayAdherence(), la stessa di Oggi e di Andamento. Prima tre copie della stessa logica (adherence, AN_dayAdh,
+     dayAdherence) che oggi coincidevano ma sarebbero divergite alla prima modifica. Qui si sommano solo i giorni dal Test Protocollo a oggi. */
   blob = blob || {};
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const testStart = new Date(TEST_PROTO_START + 'T00:00:00');
   if (today < testStart) return { inj: 0, supp: 0, wo: 0, injDone: 0, injTot: 0, suppDone: 0, suppTot: 0, woDone: 0, woTot: 0 };
-
   let injDone = 0, injTot = 0, suppDone = 0, suppTot = 0, woDone = 0, woTot = 0;
-
   for (let d = new Date(testStart); d <= today; d.setDate(d.getDate() + 1)) {
-    const dateISO = isoLocal(d);
-    let rec, woIdx;
-    const testEnd = new Date(testStart); testEnd.setDate(testEnd.getDate() + TEST_PROTO_DAYS - 1);
-    if (d >= testStart && d <= testEnd) {
-      const t = Math.round((d - testStart) / 86400000);
-      rec = blob['test_proto_' + t] || {};
-      woIdx = t - TEST_PROTO_DAYS; // -2, -1 — stessa convenzione a indici negativi di index.html
-    } else {
-      const dIdx = dayIdxFromISO(dateISO);
-      rec = blob['p2_day_' + dIdx] || {};
-      woIdx = dIdx;
-    }
-
-    getInjectionSlots2(woIdx).forEach(s => {
-      s.fields.forEach(f => {
-        const v = rec['inj_' + s.n + '_' + fieldKey(f)] || '';
-        if (v === 'skip' || v === 'na') return; // 'skip' = valore legacy pre-31/07, trattato come 'na'
-        injTot++; if (v === 'fatto') injDone++;
-      });
-    });
-
-    SUPP_FIELDS.forEach(sf => {
-      if (rec[sf + '_skip']) return;
-      suppTot++; if (rec[sf] === '1') suppDone++;
-    });
-
-    const pw = getPlannedWorkout2(woIdx);
-    if (pw.type !== 'Riposo') {
-      woTot++;
-      if (woSessDone(rec) || pw.covered) woDone++;
-    }
+    const r = dayAdherence(isoLocal(d), blob);
+    injDone += r.injDone; injTot += r.injTot; suppDone += r.suppDone; suppTot += r.suppTot;
+    if (r.woPlanned) { woTot++; if (r.woDone) woDone++; }
   }
-
   return {
     inj: injTot ? Math.round(injDone / injTot * 100) : 0,
     supp: suppTot ? Math.round(suppDone / suppTot * 100) : 0,
@@ -2421,7 +2395,7 @@ function buildCycle(root){
     var i=document.createElement("span"); i.className="an-legend-item";
     i.innerHTML='<span class="an-sw" style="height:10px;width:10px;border-radius:var(--r-xs);background:'+p.color+'"></span>'+p.label;
     lg.appendChild(i); }); }
-  setB(root,"cycle.day","g"+(TODAY()+1)+" / "+CYCLE.days);
+  setB(root,"cycle.day","g"+cycleDayNo(TODAY())+" / "+CYCLE.days);
   setB(root,"cycle.week","W"+(Math.floor(TODAY()/7)+1));
   setB(root,"cycle.date",fmtDM(dateOfDay(TODAY())));
 }
@@ -3542,7 +3516,7 @@ function buildMuscles(root){
    soltanto un evento an:photo:new.
    ══════════════════════════════════════════════════════════ */
 /* PORTING: gli scatti pre-ciclo (i<0) non hanno un "giorno di ciclo" */
-function gTag(i){ return i>=0 ? "g"+(i+1) : "pre"; }
+function gTag(i){ return i>=0 ? "g"+cycleDayNo(i) : "pre"; }
 function photoDayIndex(p){
   var parts=String(p.date).split("-");
   return dayOfCycle(new Date(+parts[0], +parts[1]-1, +parts[2]));
@@ -3580,7 +3554,7 @@ function photoDayWeekLabel(p){
   /* PORTING 30/09: a 393px, in una tessera da 3 colonne, "Giorno 71/112 . Settimana 10"
      non entrava e finiva troncato in "Giorno 71/112 . Set..." (perdendo il numero di
      settimana). Versione compatta solo su mobile, il dato e' lo stesso. */
-  return isDesktop ? ("Giorno " + i + "/" + CYCLE.days + " \u00b7 Settimana " + wk) : ("G" + i + "/" + CYCLE.days + " \u00b7 Sett " + wk);
+  return isDesktop ? ("Giorno " + cycleDayNo(i) + "/" + CYCLE.days + " \u00b7 Settimana " + wk) : ("G" + cycleDayNo(i) + "/" + CYCLE.days + " \u00b7 Sett " + wk);
 }
 /* PORTING 26/09: quota allenamenti della settimana, congelata alla data dello scatto (non a
    oggi) -- stesso identico criterio (AN_dayAdh) gia' usato ovunque, letto giorno per giorno
@@ -4013,7 +3987,7 @@ function buildFotoEvals(root){
     if (photo){ head.appendChild(photoSlot(photo,"an-fshot an-ev-th")); }
     var meta=document.createElement("div"); meta.style.minWidth="0";
     var dd=document.createElement("div"); dd.className="an-ev-d";
-    dd.textContent=ev.date.slice(8,10)+"/"+ev.date.slice(5,7)+(idx>=0 ? " \u00b7 "+(EN?"Day ":"Giorno ")+(idx+1)+"/112 \u00b7 "+(EN?"Wk ":"Sett. ")+(Math.floor(idx/7)+1) : " \u00b7 "+(EN?"pre-cycle":"pre-ciclo"));
+    dd.textContent=ev.date.slice(8,10)+"/"+ev.date.slice(5,7)+(idx>=0 ? " \u00b7 "+(EN?"Day ":"Giorno ")+cycleDayNo(idx)+"/112 \u00b7 "+(EN?"Wk ":"Sett. ")+(Math.floor(idx/7)+1) : " \u00b7 "+(EN?"pre-cycle":"pre-ciclo"));
     meta.appendChild(dd);
     if (peso!=null){ var mm=document.createElement("div"); mm.className="an-ev-m"; mm.textContent=it(peso,1)+" kg"; meta.appendChild(mm); }
     head.appendChild(meta); card.appendChild(head);
@@ -4348,20 +4322,11 @@ function AN_buildDays(){
 }
 /* stessi criteri di adherence() di v2.html, per UN giorno */
 function AN_dayAdh(idx){
-  var rec = (store.blob && store.blob["p2_day_" + idx]) || {};
-  var r = { injDone:0, injTot:0, suppDone:0, suppTot:0, woDone:0, woTot:0 };
-  getInjectionSlots2(idx).forEach(function(s){ s.fields.forEach(function(f){
-    var v = rec["inj_" + s.n + "_" + fieldKey(f)] || "";
-    if (v === "skip" || v === "na") return;
-    r.injTot++; if (v === "fatto") r.injDone++;
-  }); });
-  SUPP_FIELDS.forEach(function(sf){ if (rec[sf + "_skip"]) return; r.suppTot++; if (rec[sf] === "1") r.suppDone++; });
-  var pw = getPlannedWorkout2(idx);
-  if (pw.type !== "Riposo") {
-    r.woTot++;
-    if (woSessDone(rec) || pw.covered) r.woDone++;
-  }
-  return r;
+  /* 08/10 (audit): derivata da dayAdherence() (unica fonte), nessuna logica propria. */
+  var d = new Date(CFG.CYCLE_START + "T00:00:00"); d.setDate(d.getDate() + idx);
+  var r = dayAdherence(isoLocal(d)) || {};
+  return { injDone:r.injDone||0, injTot:r.injTot||0, suppDone:r.suppDone||0, suppTot:r.suppTot||0,
+           woDone:(r.woPlanned && r.woDone) ? 1 : 0, woTot:r.woPlanned ? 1 : 0 };
 }
 function AN_buildAdherence(){
   var a = adherence(store.blob);
@@ -4848,7 +4813,7 @@ function CLIN_HTML() {
 
 function CLIN_cycleText() {
   var d = dayIdxFromISO(today);
-  return 'Ciclo 1 \u00b7 giorno ' + Math.max(1, Math.min(112, d + 1)) + ' di 112';
+  return 'Ciclo 1 \u00b7 giorno ' + Math.max(1, Math.min(112, cycleDayNo(d))) + ' di 112';
 }
 
 function CLIN_renderAll() {
@@ -6284,7 +6249,7 @@ function renderDayNav() {
       </div>` : `
       <div style="display:flex;flex-direction:column;gap:1px;min-width:0;">
         <span style="font-size:var(--fs-3xl);line-height:1.1;letter-spacing:-.02em;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dateHeaderTxt}</span>
-        <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${L.day} ${selIdx + 1} ${LANG === 'it' ? 'di' : 'of'} ${CFG.CYCLE_DAYS} · WK${selWeek + 1}</span>
+        <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${L.day} ${cycleDayNo(selIdx)} ${LANG === 'it' ? 'di' : 'of'} ${CFG.CYCLE_DAYS} · WK${selWeek + 1}</span>
       </div>`;
 
   return `
@@ -6372,7 +6337,8 @@ function weekAggregate(weekIdx) {
   const injRows = CANON_INJ_ROWS.map(row => {
     const cells = days.map(d => d.isFuture ? { state: 'futuro' } : injCellState(d.dayIdx, d.rec, row));
     const doneCount = cells.filter(c => c.state === 'fatto').length;
-    const applicable = cells.filter(c => c.state !== 'non-prevista' && c.state !== 'futuro').length;
+    /* 08/10 (audit): 'na' e 'skip' (legacy pre-31/07) NON sono dosi dovute, come in dayAdherence(): prima venivano contate e la % settimanale di W2 e W5 era 97% invece di 100% */
+    const applicable = cells.filter(c => c.state !== 'non-prevista' && c.state !== 'futuro' && c.state !== 'na' && c.state !== 'skip').length;
     return { row, cells, doneCount, applicable };
   });
   const injDoneTot = injRows.reduce((s, r) => s + r.doneCount, 0);
@@ -6487,18 +6453,9 @@ function weekAggregateShallow(weekIdx) {
     const dayIdx = startIdx + i;
     if (dayIdx > todayIdx) break;
     const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + dayIdx);
-    const rec = getDay(isoLocal(d));
-    getInjectionSlots2(dayIdx).forEach(s => s.fields.forEach(f => {
-      const v = rec['inj_' + s.n + '_' + fieldKey(f)] || '';
-      if (v === 'na') return;
-      injTot++; if (v === 'fatto') injDone++;
-    }));
-    SUPP_FIELDS.forEach(sf => { if (rec[sf + '_skip']) return; suppTot++; if (rec[sf] === '1') suppDone++; });
-    const pw = getPlannedWorkout2(dayIdx);
-    if (pw.type !== 'Riposo') {
-      woTot++;
-      if (woSessDone(rec) || pw.covered) woDone++;
-    }
+    const r = dayAdherence(isoLocal(d));   /* 08/10 (audit): stessa fonte unica di Oggi e Andamento (prima: copia senza il caso 'skip') */
+    injDone += r.injDone; injTot += r.injTot; suppDone += r.suppDone; suppTot += r.suppTot;
+    if (r.woPlanned) { woTot++; if (r.woDone) woDone++; }
   }
   const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
   const injPct = pct(injDone, injTot), suppPct = pct(suppDone, suppTot), woPct = pct(woDone, woTot);
@@ -7218,7 +7175,7 @@ function renderOggiFull() {
   const mapLbl = { 0: 'Upper Dom', 1: 'Riposo', 2: 'Push', 3: 'Pull', 4: 'Riposo', 5: 'Legs', 6: 'Upper Sab' };
   const defaultType = mapLbl[dowLbl] || 'Riposo';
   const overrideOpts = ['Riposo', 'Push', 'Pull', 'Legs', 'Upper Sab', 'Upper Dom'];
-  const dayMetaTxt = `${LANG === 'it' ? 'giorno' : 'day'} ${dayIdx} ${LANG === 'it' ? 'di' : 'of'} ${CFG.CYCLE_DAYS} · WK${weekN} · ${wo.type}`;
+  const dayMetaTxt = `${LANG === 'it' ? 'giorno' : 'day'} ${cycleDayNo(dayIdx)} ${LANG === 'it' ? 'di' : 'of'} ${CFG.CYCLE_DAYS} · WK${weekN} · ${wo.type}`;
 
   const heroHtml = `
     <div class="hero-card">
@@ -7735,7 +7692,7 @@ function renderOggiFull() {
       <div style="display:flex;flex-direction:column;gap:9px;">
         <span style="display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);font-weight:600;color:rgba(255,255,255,.62);">
           <span style="width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:${VD.dot};"></span>
-          ${VD.label} · ${L.day} ${dayIdx + 1} / ${CFG.CYCLE_DAYS} · WK${weekN}
+          ${VD.label} · ${L.day} ${cycleDayNo(dayIdx)} / ${CFG.CYCLE_DAYS} · WK${weekN}
         </span>
         <span style="font-size:var(--fs-4xl);line-height:1.13;letter-spacing:-.024em;font-weight:600;color:var(--white);text-wrap:pretty;">${esc(VD_TEXT[0])}</span>
       </div>
@@ -7992,7 +7949,7 @@ function renderOggiSections() {
     <div class="day-hdr">
       <div class="day-hdr-left">
         <div class="day-date">${dateLabel[0].toUpperCase() + dateLabel.slice(1)}</div>
-        <div class="day-meta">${L.day} ${dayIdx}/${CFG.CYCLE_DAYS} · ${L.week} ${weekN}</div>
+        <div class="day-meta">${L.day} ${cycleDayNo(dayIdx)}/${CFG.CYCLE_DAYS} · ${L.week} ${weekN}</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="day-badge ${isOverridden ? 'overridden' : ''}">${wo.type.toUpperCase()}</span>
