@@ -930,6 +930,45 @@
 /* PORTING 30/09: intestazione a colonne fisse di Correlazioni inutile su mobile ora che le
    righe sono a blocco impilato (fix 1a sopra). */
 @media (max-width:1023px){ .c-corr .an-thead{display:none;} }
+
+/* ══ PRE CICLO (09/10/2026) ══ */
+.pc-grid{display:flex;flex-direction:column;gap:12px;}
+.pc-card{border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:12px 15px;display:flex;flex-direction:column;gap:8px;overflow:hidden;min-width:0;}
+.pc-lbl{font-size:var(--fs-xs);font-weight:600;color:var(--ink2);}
+.pc-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.pc-tile{background:var(--surf2);border-radius:var(--r-sm);padding:6px;text-align:center;min-width:0;}
+.pc-tile b{display:block;font-size:var(--fs-xl);font-variant-numeric:tabular-nums;}
+.pc-tile span{font-size:var(--fs-2xs);color:var(--ink2);}
+.pc-dchip{flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:7px;padding:7px 4px;border-radius:var(--r-md);cursor:pointer;background:var(--surf);border:1px solid var(--line);font-size:var(--fs-sm);font-weight:600;min-width:0;}
+.pc-dchip.sel{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink);}
+.pc-dchip.off{opacity:.4;cursor:default;}
+.pc-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);flex:0 0 auto;}
+.pc-dot.n{background:var(--idle);} 
+.pc-wk{flex:0 0 auto;padding:5px 10px;border-radius:var(--r-sm);font-size:var(--fs-sm);font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;background:var(--surf2);color:var(--ink2);border:1px solid var(--line);}
+.pc-wk.sel{background:var(--accent);color:var(--white);border-color:var(--accent);}
+.pc-supp{display:flex;align-items:center;gap:7px;background:var(--surf2);border-radius:var(--r-md);padding:0 9px;min-width:0;font-size:var(--fs-md);font-weight:600;}
+.pc-supp i{flex:0 0 19px;height:19px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;color:#fff;font-weight:700;}
+.pc-supp span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pc-pips{display:flex;gap:3px;}.pc-pips i{flex:1 1 0;height:10px;border-radius:var(--r-xs);}
+.pc-ex{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;font-size:var(--fs-sm);padding:4px 0;border-bottom:1px solid var(--line2);align-items:baseline;}
+.pc-ex:last-child{border-bottom:0;}
+.pc-sec{font-size:var(--fs-xs);font-weight:700;color:var(--accent);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px;}
+.pc-ev{display:grid;grid-template-columns:1fr;gap:16px;}.pc-lifts{column-count:1;column-gap:32px}.pc-lifts>div{break-inside:avoid}
+.pc-pill{border-radius:var(--r-sm);padding:5px 8px;font-size:var(--fs-sm);font-weight:600;text-align:center;}
+.pc-top1{padding:8px 12px;gap:8px;}.pc-top2{padding:7px 12px;gap:7px;}
+.pc-dl{min-width:96px;}
+@media (min-width:1024px){
+ .pc-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:9px;align-items:stretch;}
+ .pc-hero{grid-column:1/6}.pc-peso{grid-column:6/13}.pc-wo{grid-column:1/7}.pc-adh{grid-column:7/13}
+ .pc-int{grid-column:1/5}.pc-sub{grid-column:5/9}.pc-note{grid-column:9/13}.pc-val{grid-column:1/-1}
+ .pc-ev{grid-template-columns:repeat(3,minmax(0,1fr));}.pc-lifts{column-count:3}
+ .pc-top1,.pc-top2{padding-left:20px;padding-right:20px}
+}
+@media (max-width:1023px){
+ .pc-dchip{flex-direction:column;gap:2px;padding:6px 0;font-size:var(--fs-xs);} .pc-dl{display:none}
+ .pc-top1,.pc-top2{padding-left:10px;padding-right:10px}
+ .pc-weekend{display:block}
+}
 </style>
 <script>
 /* ============================================================
@@ -5787,6 +5826,191 @@ let isDesktop = window.innerWidth >= 1024;
 // in index.html). Se in futuro T0 cambia riferimento, aggiornare qui e lì insieme.
 const T0_PESO = 71.1;
 
+/* ══ PRE CICLO (09/10/2026) — vista di sola lettura del warm-up V1 (8 giu – 17 lug, 40 giorni), nello stile di Oggi.
+   Dati: riga V1 (day_0..day_39), letti via proxy, mai scritti. Peptidi/iniezioni e le 3 note che le citano sono esclusi per scelta di Giorgio.
+   Integratori: sempre 9 in vista; contano nell'aderenza solo dal primo giorno di assunzione. ══ */
+const PRE = (function(){
+const START=new Date(2026,5,8);
+const WD=['DOM','LUN','MAR','MER','GIO','VEN','SAB'];
+const WDL=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+const MON=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+const PLAN={0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
+const SUPPS=[['d3','D3 + K2'],['omega','Omega-3'],['creat','Creatina'],['zinc','Zinco'],['b12','B12'],['norm','Normocis'],['mag','Magnesio'],['gly','Glicina'],['melatonina','Melatonina']];
+const LIFTS={bench:'Panca piana',incbench:'Panca inclinata',dbpress:'Distensioni manubri',pecfly:'Pectoral fly',legpress:'Leg Press',legext:'Leg Extension',legcurl:'Leg Curl',rdl:'RDL',hipthrust:'Hip Thrust',calf:'Calf',lat:'Lat Machine',bbrow:'Rematore bilanciere',tbar:'T-Bar Row',bbohp:'Military Press',dblateral:'Alzate laterali',dbcurl:'Curl manubri',hammercurl:'Hammer Curl',tridown:'Pushdown tricipiti',triover:'French Press'};
+let N=0, WEEKS=0, DAYS=[], status='idle';
+let selDay=0, rng='all';
+const num=v=>{const x=parseFloat(String(v).replace(',','.'));return isNaN(x)?null:x;};
+const dt=i=>{const d=new Date(START);d.setDate(d.getDate()+i);return d;};
+const dlab=i=>{const d=dt(i);return d.getDate()+' '+MON[d.getMonth()];};
+const f1=(v,d=1)=>v==null||isNaN(v)?'—':v.toFixed(d).replace('.',',');
+const hm=h=>{if(h==null)return'—';let H=Math.floor(h),M=Math.round((h-H)*60);if(M==60){H++;M=0}return H+'h'+String(M).padStart(2,'0');};
+const wk=i=>Math.floor(i/7);
+const plan=i=>PLAN[dt(i).getDay()];
+const hrvMid=d=>(num(d.hrv_min)!=null&&num(d.hrv_max)!=null)?(num(d.hrv_min)+num(d.hrv_max))/2:num(d.hrv);
+const suppFirst={};
+function suppState(d,k){ if(d.skip[k])return 's'; if(d.ck[k])return 'd'; if(d.i<suppFirst[k])return 'n'; return 'm'; }
+function suppDay(d){let a=0,t=0;SUPPS.forEach(([k])=>{const s=suppState(d,k);if(s==='n'||s==='s')return;t++;if(s==='d')a++;});return{a,t};}
+function suppRange(from,to){let a=0,t=0;for(let i=from;i<=to&&i<N;i++){const r=suppDay(DAYS[i]);a+=r.a;t+=r.t;}return{a,t};}
+const isWO=d=>!!(d.wo_durata||d.wo_volume||d.motra);
+const FIELDS=['peso','hrv','rhr','bp_sys','bp_dia','ore_sonno','qualita_sonno','energia','recupero','umore','appetito','abdom_full'];
+const filled=d=>FIELDS.filter(k=>d[k]!==''&&d[k]!=null).length;
+function ring(pct,color,txt){const c=213.63;return `<div style="position:relative;width:96px;height:96px"><svg viewBox="0 0 84 84" style="width:100%;height:100%"><circle cx="42" cy="42" r="34" fill="none" stroke="var(--line2)" stroke-width="8"/><circle cx="42" cy="42" r="34" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(pct*c/100).toFixed(1)} ${c}" style="transform:rotate(-90deg);transform-origin:42px 42px"/></svg><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--fs-2xl);font-weight:700">${txt}</div></div>`;}
+function spark(sel){
+  const from=rng==='all'?0:Math.max(0,N-parseInt(rng)), pts=[];
+  for(let i=from;i<N;i++){const v=num(DAYS[i].peso);if(v!=null)pts.push([i,v]);}
+  const W=640,H=120,P=6,mn=Math.min(...pts.map(p=>p[1]))-.3,mx=Math.max(...pts.map(p=>p[1]))+.3;
+  const X=i=>P+(i-from)/(N-1-from)*(W-2*P),Y=v=>H-P-(v-mn)/(mx-mn)*(H-2*P);
+  const path=pts.map((p,k)=>(k?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');
+  const area=path+` L${X(pts[pts.length-1][0]).toFixed(1)} ${H} L${X(pts[0][0]).toFixed(1)} ${H} Z`;
+  const sp=pts.find(p=>p[0]===sel);
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:120px;display:block"><path d="${area}" fill="var(--accent-soft)" opacity=".7"/><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/>${sp?`<circle cx="${X(sp[0])}" cy="${Y(sp[1])}" r="4.5" fill="var(--accent)" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/>`:''}</svg><div class="pc-row" style="font-size:var(--fs-2xs);color:var(--ink3)"><span>${dlab(from)} · min ${f1(Math.min(...pts.map(p=>p[1])))}</span><span>max ${f1(Math.max(...pts.map(p=>p[1])))} · ${dlab(N-1)}</span></div>`;
+}
+function pips(n,color){n=Math.round(n)||0;return `<div class="pc-pips">${Array.from({length:10},(_,k)=>`<i style="background:${k<n?color:'var(--line2)'}"></i>`).join('')}</div>`;}
+function subj(label,v,color){const n=num(v);return `<div><div class="pc-row"><span class="pc-lbl" style="font-weight:500">${label}</span><span style="font-size:var(--fs-xs);font-weight:700;color:${color}">${n==null?'—':v}</span></div>${pips(n,color)}</div>`;}
+function pill(label,val,tone){const m={Nessuna:['var(--surf2)','var(--ink2)'],Lieve:['var(--accent-soft)','var(--accent-ink)'],Moderata:['var(--warn-bg)','var(--warn-ink)'],Significativa:['var(--bad-bg)','var(--bad)'],Normale:['var(--surf2)','var(--ink2)'],Aumentato:['var(--accent-soft)','var(--accent-ink)'],Ridotto:['var(--warn-bg)','var(--warn-ink)']};const c=m[val]||['var(--surf2)','var(--ink3)'];return `<div><div class="pc-lbl" style="font-weight:500;margin-bottom:3px">${label}</div><div class="pc-pill" style="background:${c[0]};color:${c[1]}">${val||'—'}</div></div>`;}
+function chipsTop(){
+  const w=wk(selDay);
+  const wkChips=Array.from({length:WEEKS},(_,k)=>`<span class="pc-wk ${k===w?'sel':''}" onclick="PRE.sel(${k*7+Math.min(selDay%7,Math.min(6,N-1-k*7))})">PW${k+1}</span>`).join('');
+  const a=w*7,b=Math.min(N-1,a+6);
+  const days=Array.from({length:7},(_,k)=>{const i=a+k;const ok=i<N;const d=ok?dt(i):dt(i);
+    return `<div class="pc-dchip ${i===selDay?'sel':''} ${ok?'':'off'}" ${ok?`onclick="PRE.sel(${i})"`:''}><span>${WD[d.getDay()]}</span><span style="font-weight:500">${d.getDate()}</span>${ok?`<span class="pc-dot ${DAYS[i].peso?'':'n'}"></span>`:''}</div>`;}).join('');
+  return `<div style="margin-bottom:12px;border-radius:var(--r-card);overflow:hidden;border:1px solid var(--line)">
+  <div class="pc-top1" style="background:var(--surf);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px"><span class="pc-lbl" style="flex:0 0 auto">Pre ciclo</span><div style="flex:1 1 auto;min-width:0;display:flex;gap:4px;overflow-x:auto">${wkChips}</div><span onclick="PRE.close()" style="flex:0 0 auto;border:1px solid var(--line);background:var(--surf);border-radius:var(--r-sm);padding:5px 10px;font-size:var(--fs-sm);font-weight:600;cursor:pointer">Ciclo 1 →</span></div>
+  <div class="pc-top2" style="background:var(--surf2);display:flex;align-items:center;gap:7px"><span class="pc-lbl pc-dl" style="flex:0 0 auto">${dlab(a)} – ${dlab(b)}</span>${days}</div></div>`;
+}
+function hero(d){
+  const i=d.i,pct=Math.round((i+1)/N*100),w=wk(i),p=plan(i);
+  const segs=Array.from({length:WEEKS},(_,k)=>`<div style="flex:1;display:flex;flex-direction:column;gap:5px"><div style="height:3px;border-radius:2px;background:${k===w?'#fff':k<w?'#ffffff88':'#ffffff30'}"></div><span style="font-size:var(--fs-2xs);color:${k===w?'#fff':'var(--on-dark-2)'};font-weight:${k===w?600:400}">PW${k+1}</span></div>`).join('');
+  const left=N-1-i;
+  const s=d.sonno_h!=null?hm(d.sonno_h):(d.ore_sonno?d.ore_sonno+' ⚠':'—');
+  return `<section class="pc-hero" style="border-radius:var(--r-card);background:var(--hero);color:#fff;padding:20px 22px;display:flex;flex-direction:column;gap:14px;overflow:hidden">
+  <div style="font-size:var(--fs-xs);color:var(--on-dark-1);display:flex;align-items:center;gap:7px"><span style="width:7px;height:7px;border-radius:50%;background:var(--idle)"></span>Pre ciclo · Giorno ${i+1} / ${N} · PW${w+1}</div>
+  <div style="font-size:var(--fs-4xl);font-weight:700;letter-spacing:-.01em">${WDL[dt(i).getDay()]} ${dlab(i)} — ${p}</div>
+  <div style="font-size:var(--fs-base);color:var(--on-dark-1);line-height:1.5">Sonno ${s} · HRV ${f1(hrvMid(d),0)} · RHR ${d.rhr||'—'} · Peso ${d.peso||'—'} kg · Energia ${d.energia||'—'}/10${isWO(d)?'':' · nessun allenamento registrato'}</div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:auto"><div><div style="font-size:56px;font-weight:700;letter-spacing:-.03em;line-height:1">${pct}%</div><div style="font-size:var(--fs-xs);color:var(--on-dark-1);margin-top:4px">del pre ciclo completato</div></div><div style="text-align:right"><div style="font-size:var(--fs-5xl);font-weight:700;line-height:1">${left}</div><div style="font-size:var(--fs-xs);color:var(--on-dark-1);margin-top:4px">giorni alla fine · 17 lug</div></div></div>
+  <div style="display:flex;gap:6px">${segs}</div><div style="display:flex;justify-content:space-between;font-size:var(--fs-2xs);color:var(--on-dark-2)"><span>8 GIU</span><span>17 LUG · poi Test Protocollo</span></div></section>`;
+}
+function peso(d){
+  const first=num(DAYS[0].peso),cur=num(d.peso),delta=cur!=null&&first!=null?cur-first:null;
+  const rb=['7','14','30','all'].map(r=>`<span class="pc-wk ${rng===r?'sel':''}" onclick="PRE.setRng('${r}')" style="padding:3px 9px">${r==='all'?'Tutto':r+'g'}</span>`).join('');
+  let vita='';for(let i=d.i;i>=0;i--){if(DAYS[i].vita){vita=DAYS[i].vita;break}}
+  const hr=(num(d.hrv_min)!=null&&num(d.hrv_max)!=null)?`${d.hrv_min} – ${d.hrv_max}`:(d.hrv||'—');
+  const ch=[['HRV',hr],['RHR',d.rhr||'—'],['Press.',d.bp_sys?d.bp_sys+' / '+d.bp_dia:'—'],['Sonno',d.sonno_h!=null?hm(d.sonno_h):(d.ore_sonno?d.ore_sonno+' ⚠':'—')],['Girovita',vita?vita+' cm':'—']];
+  return `<section class="pc-card pc-peso" style="padding:16px 20px;gap:10px"><div class="pc-row"><span class="pc-lbl">Peso corporeo</span><div style="display:flex;gap:4px">${rb}</div></div>
+  <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:var(--fs-6xl,40px);font-weight:700;letter-spacing:-.02em">${d.peso||'—'}</span><span style="color:var(--ink2)">kg</span><span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink2)">${delta==null?'':(delta>0?'+':'')+f1(delta)+' dal 8 giu'}</span></div>
+  ${spark(d.i)}
+  <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px">${ch.map(c=>`<div><div style="font-size:var(--fs-xs);color:var(--ink3);margin-bottom:3px">${c[0]}</div><div class="pc-tile" style="font-weight:600;font-size:var(--fs-md);padding:8px 2px">${c[1]}</div></div>`).join('')}</div></section>`;
+}
+function wo(d){
+  const p=plan(d.i),m=d.motra;
+  let ex='';
+  if(m&&m.ex.length){ex=`<div class="pc-lbl" style="margin-top:4px;padding-top:8px;border-top:1px solid var(--line)">Esercizi svolti · da Motra</div>`+m.ex.map(e=>{const w=e.s.filter(s=>!s.w);const reps=w.length?`${w.length}×${w[0].reps}`:'—';const kgs=w.map(s=>s.kg).filter(v=>v!=null);const k=kgs.length?(kgs.every(v=>v===kgs[0])?kgs[0]:kgs.join('·'))+'kg':'—';return `<div class="pc-ex"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink2)">${e.n}</span><span style="color:var(--ink3)">${reps}</span><b style="font-variant-numeric:tabular-nums">${k}</b></div>`}).join('');}
+  else if(isWO(d)) ex=`<div class="pc-lbl" style="margin-top:4px;padding-top:8px;border-top:1px solid var(--line);font-weight:400;color:var(--ink3)">Nessun dettaglio esercizi (Motra non importato)</div>`;
+  else ex=`<div class="pc-lbl" style="margin-top:4px;padding-top:8px;border-top:1px solid var(--line);font-weight:400;color:var(--ink3)">${p==='Riposo'?'Giorno di riposo da programma':'Nessun allenamento registrato'}</div>`;
+  const vol=d.wo_volume?Number(d.wo_volume).toLocaleString('it-IT'):'—';
+  return `<section class="pc-card pc-wo"><div class="pc-row"><span class="pc-lbl" style="color:var(--wo)">Allenamento</span><span style="font-size:var(--fs-2xs);font-weight:700;padding:2px 7px;border-radius:var(--r-xs);background:var(--surf2);color:var(--ink2)">${p.toUpperCase()}</span></div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${[[d.wo_durata||'—','Durata min'],[vol,'Volume kg'],[d.wo_kcal||'—','Calorie'],[d.wo_rpe||'—','RPE']].map(t=>`<div class="pc-tile"><b>${t[0]}</b><span>${t[1]}</span></div>`).join('')}</div>${ex}</section>`;
+}
+function adh(d){
+  const w=wk(d.i),a=w*7,b=Math.min(N-1,a+6);
+  const s=suppRange(a,b),sp=s.t?Math.round(s.a/s.t*100):0;
+  let pl=0,dn=0,fl=0,fn=0;for(let i=a;i<=b;i++){if(plan(i)!=='Riposo')pl++;if(isWO(DAYS[i]))dn++;fl+=filled(DAYS[i]);fn+=FIELDS.length;}
+  const wp=pl?Math.min(100,Math.round(dn/pl*100)):0,fp=Math.round(fl/fn*100);
+  const sd=suppDay(d),df=filled(d);
+  const col=(t,c,txt,sub,s2)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:0">${ring(t,c,txt)}<div style="font-size:var(--fs-md);font-weight:600">${sub[0]}</div><div style="font-size:var(--fs-xs);color:var(--ink3)">${sub[1]}</div><div style="width:100%;height:3px;border-radius:2px;background:${c}"></div><div style="font-size:var(--fs-xs);font-weight:600;color:${c}">${s2}</div></div>`;
+  return `<section class="pc-card pc-adh" style="padding:14px 18px"><div class="pc-lbl">Aderenza · PW${w+1} (${dlab(a)} – ${dlab(b)})</div>
+  <div style="display:flex;gap:10px;justify-content:space-around;padding-top:4px">
+  ${col(sp,'var(--ok)',sp+'%',['Integratori',s.a+'/'+s.t],WD[dt(d.i).getDay()].slice(0,3)+' '+dt(d.i).getDate()+' '+sd.a+'/'+sd.t)}
+  ${col(wp,'var(--wo)',wp+'%',['Allenamenti',dn+'/'+pl],plan(d.i))}
+  ${col(fp,'var(--accent)',fp+'%',['Dati compilati',fl+'/'+fn],WD[dt(d.i).getDay()].slice(0,3)+' '+dt(d.i).getDate()+' '+df+'/'+FIELDS.length)}</div>
+  <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:6px">${Array.from({length:7},(_,k)=>{const i=a+k;if(i>=N)return `<div class="pc-tile" style="opacity:.35"><b style="font-size:var(--fs-sm)">·</b><span>${WD[dt(i).getDay()]}</span></div>`;const pl2=plan(i),done=isWO(DAYS[i]),rest=pl2==='Riposo';const c=rest?(done?'var(--wo)':'var(--idle)'):(done?'var(--wo)':'var(--bad)');return `<div class="pc-tile" style="${i===d.i?'outline:2px solid var(--accent);':''}"><b style="font-size:var(--fs-sm);color:${c}">${done?'✓':rest?'–':'✕'}</b><span>${WD[dt(i).getDay()]}<br>${pl2.replace('Upper ','Up ')}</span></div>`}).join('')}</div>
+  <div style="font-size:var(--fs-xs);color:var(--ink3)">Fatte su previste nella settimana · barra sotto = giorno mostrato · ✓ allenato, ✕ previsto ma non registrato, – riposo. Integratori: contano dal primo giorno di assunzione.</div></section>`;
+}
+function integ(d){
+  const sd=suppDay(d);
+  const it=SUPPS.map(([k,n])=>{const s=suppState(d,k);const c={d:'var(--ok)',s:'var(--warn)',m:'var(--bad)',n:'var(--idle)'}[s],g={d:'✓',s:'–',m:'✕',n:'N'}[s];return `<div class="pc-supp" style="${s==='n'?'opacity:.55':''}"><i style="background:${c}">${g}</i><span>${n}</span></div>`}).join('');
+  return `<section class="pc-card pc-int"><div class="pc-row"><span class="pc-lbl">Integratori</span><span class="pc-lbl">${sd.a}/${sd.t}</span></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:32px;gap:6px">${it}</div><div style="font-size:var(--fs-xs);color:var(--ink3)">✓ presa · – saltata apposta · ✕ non presa · N non ancora iniziata</div></section>`;
+}
+function sogg(d){
+  return `<section class="pc-card pc-sub"><div class="pc-lbl">Soggettivo · scala 1-10</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 16px">
+  ${subj('Energia',d.energia,'var(--c-subj-energia)')}${subj('Recupero',d.recupero,'var(--c-subj-recupero)')}${subj('Umore',d.umore,'var(--c-subj-umore)')}${subj('Sonno percepito',d.qualita_sonno,'var(--c-subj-sonno)')}${subj('RPE',d.wo_rpe,'var(--c-subj-rpe)')}${pill('Appetito',d.appetito)}${pill('Pienezza addominale',d.abdom_full)}</div></section>`;
+}
+function note(d){
+  const t=d.note||d.wo_note||'';
+  return `<section class="pc-card pc-note"><div class="pc-lbl">Note</div><div style="font-size:var(--fs-md);line-height:1.5;color:${t?'var(--ink)':'var(--ink3)'}">${t||'Nessuna nota per questo giorno.'}</div></section>`;
+}
+function stats(a){return a.length?{min:Math.min(...a),max:Math.max(...a),avg:a.reduce((x,y)=>x+y,0)/a.length,n:a.length}:null;}
+function fl(a,n=5){if(a.length<2)return null;const k=Math.max(1,Math.min(n,Math.floor(a.length/2)));const m=x=>x.reduce((p,q)=>p+q,0)/x.length;const f=m(a.slice(0,k)),l=m(a.slice(-k));return{f,l,d:l-f};}
+function valutazione(){
+  const ser={peso:[],hrv:[],rhr:[],sonno:[]};
+  DAYS.forEach(d=>{const p=num(d.peso),h=hrvMid(d),r=num(d.rhr),s=d.sonno_h;if(p!=null)ser.peso.push(p);if(h!=null)ser.hrv.push(h);if(r!=null)ser.rhr.push(r);if(s!=null)ser.sonno.push(s);});
+  const gd={peso:0,hrv:1,rhr:-1,sonno:1};
+  const dc=(k,dv)=>Math.abs(dv)<1e-9||gd[k]===0?'var(--ink3)':(dv*gd[k]>0?'var(--ok)':'var(--bad)');
+  const row=(lab,k,u,dec)=>{const a=ser[k],f=fl(a),s=stats(a);if(!f)return '';const sg=f.d>0?'+':'';return `<div style="padding:6px 0;border-bottom:1px solid var(--line2)"><div class="pc-row" style="font-size:var(--fs-base)"><b>${lab}</b><span>${f1(f.f,dec)} → <b>${f1(f.l,dec)}${u}</b> <span style="color:${dc(k,f.d)};font-weight:600">(${sg}${f1(f.d,dec)})</span></span></div><div style="font-size:var(--fs-xs);color:var(--ink3);margin-top:2px">min ${f1(s.min,dec)} · max ${f1(s.max,dec)} · media ${f1(s.avg,dec)}${u} · ${s.n} rilevazioni</div></div>`;};
+  const sp=suppRange(0,N-1),spp=Math.round(sp.a/sp.t*100);
+  const woN=DAYS.filter(isWO).length,volT=DAYS.reduce((a,d)=>a+(num(d.wo_volume)||0),0),dur=DAYS.map(d=>num(d.wo_durata)).filter(v=>v!=null),plN=DAYS.filter(d=>plan(d.i)!=='Riposo').length;
+  const av=k=>{const a=DAYS.map(d=>num(d[k])).filter(v=>v!=null);return a.reduce((x,y)=>x+y,0)/a.length;};
+  const tile=(big,sub,c='var(--ink)',span=false)=>`<div class="pc-tile" style="text-align:left;padding:9px 12px;${span?'grid-column:span 2':''}"><div style="font-size:var(--fs-3xl);font-weight:700;color:${c}">${big}</div><div style="font-size:var(--fs-xs);color:var(--ink2);font-weight:400">${sub}</div></div>`;
+  const lifts={};DAYS.forEach(d=>Object.entries(d.sl).forEach(([k,v])=>{(lifts[k]=lifts[k]||[]).push(v);}));
+  const lr=Object.entries(lifts).map(([k,a])=>({k,f:a[0],l:a[a.length-1],n:a.length})).sort((x,y)=>(y.l-y.f)-(x.l-x.f));
+  const lrow=lr.map(x=>{const dv=x.l-x.f;return `<div class="pc-row" style="font-size:var(--fs-sm);padding:5px 0;border-bottom:1px solid var(--line2)"><span>${LIFTS[x.k]||x.k}</span><span style="white-space:nowrap">${x.f}kg → <b>${x.l}kg</b> <span style="color:${dv>0?'var(--ok)':dv<0?'var(--bad)':'var(--ink3)'};font-weight:600">(${dv>0?'+':''}${dv}kg)</span></span></div>`}).join('');
+  return `<section class="pc-card pc-val" style="border-left:3px solid var(--accent);padding:16px 20px;gap:12px"><div><div style="font-size:var(--fs-xl);font-weight:700">Valutazione di fine pre ciclo</div><div style="font-size:var(--fs-xs);color:var(--ink3);margin-top:3px">8 giu – 17 lug 2026 · ${ser.peso.length}/${N} giorni con peso · confronto medie primi 5 vs ultimi 5 valori · andamento descrittivo, non giudizio clinico</div></div>
+  <div class="pc-ev"><div><div class="pc-sec">1 · Biometria</div>${row('Peso','peso',' kg',1)}${row('HRV','hrv',' ms',0)}${row('RHR','rhr',' bpm',0)}${row('Sonno','sonno',' h',1)}<div style="font-size:var(--fs-2xs);color:var(--ink3);margin-top:5px">Sonno: ${ser.sonno.length}/${N} notti${ser.sonno.length<N?' · valori in formato non valido esclusi':''}.</div></div>
+  <div><div class="pc-sec">2 · Aderenza &amp; allenamento</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${tile(spp+'%',`Integratori<br>${sp.a}/${sp.t} dosi`,spp>=80?'var(--ok)':spp>=60?'var(--warn-ink)':'var(--bad)')}${tile(woN,`Allenamenti<br>~${Math.round(dur.reduce((a,b)=>a+b,0)/dur.length)} min medi · ${plN} previsti`)}${tile(volT.toLocaleString('it-IT')+' kg',`Volume totale · media ${Math.round(volT/woN).toLocaleString('it-IT')} kg/seduta`,'var(--ink)',true)}</div></div>
+  <div><div class="pc-sec">3 · Benessere (media /10)</div><div style="display:grid;gap:8px">${[['Energia','energia','--c-subj-energia'],['Recupero','recupero','--c-subj-recupero'],['Umore','umore','--c-subj-umore'],['Sonno percepito','qualita_sonno','--c-subj-sonno']].map(([l,k,c])=>`<div><div class="pc-row"><span style="font-size:var(--fs-md)">${l}</span><b>${f1(av(k))}</b></div>${pips(av(k),`var(${c})`)}</div>`).join('')}</div></div>
+  </div><div><div class="pc-sec">4 · Sentinel lift · primo vs ultimo (${lr.length})</div><div class="pc-lifts">${lrow}</div></div></section>`;
+}
+function html(){
+  if(status==='loading'||status==='idle')return '<p style="padding:24px;color:var(--ink2)">Caricamento pre ciclo…</p>';
+  if(status==='err'||!N)return '<p style="padding:24px;color:var(--bad)">Dati del pre ciclo non disponibili (errore di lettura). <span onclick="PRE.close()" style="text-decoration:underline;cursor:pointer">Torna al Ciclo 1</span></p>';
+  const d=DAYS[selDay];
+  return chipsTop()+`<div class="pc-grid">${hero(d)}${peso(d)}${wo(d)}${adh(d)}${integ(d)}${sogg(d)}${note(d)}${valutazione()}</div>`;
+}
+
+const PEP=/pept|inj|inie|bpc|tb-?500|tesam|ipam|fragment|cjc|ghk|vial|sleep_inj/i;
+function sonnoH(raw){const m=String(raw||'').trim().match(/^(\d+)\.(\d{1,2})$/);if(!m)return null;const mm=m[2].length===1?m[2]+'0':m[2];const mi=parseInt(mm,10);return mi>59?null:parseInt(m[1],10)+mi/60;}
+function kfmt(v){const m=String(v||'').match(/([\d,\.]+)\s*([Kk])?/);if(!m)return null;const n=parseFloat(m[1].replace(',','.'));return isNaN(n)?null:Math.round(m[2]?n*1000:n);}
+function norm(i,d){
+  const r={i};
+  ['peso','hrv','hrv_min','hrv_max','rhr','bp_sys','bp_dia','ore_sonno','qualita_sonno','energia','recupero','umore','appetito','abdom_full','vita','wo_durata','wo_volume','wo_kcal','wo_rpe','wo_note'].forEach(k=>{r[k]=d[k]==null?'':String(d[k]);});
+  r.sonno_h=sonnoH(d.ore_sonno);
+  let note=String(d.note||'').split(/\s*\|\s*WO /)[0].trim();
+  r.note=PEP.test(note)?'':note;
+  r.ck={};r.skip={};r.sl={};
+  Object.keys(d).forEach(k=>{
+    if(k.startsWith('ck_')&&k.endsWith('_skip')){if(d[k])r.skip[k.slice(3,-5)]=true;}
+    else if(k.startsWith('ck_')){r.ck[k.slice(3)]=d[k]==='1';}
+    else if(k.startsWith('sl_')&&k.endsWith('_kg')&&d[k]!==''&&d[k]!=null){const v=parseFloat(d[k]);if(!isNaN(v))r.sl[k.slice(3,-3)]=v;}
+  });
+  r.motra=null;
+  if(d.motra_log){try{const m=JSON.parse(d.motra_log);r.motra={ex:(m.exercises||[]).map(e=>({n:e.name||'',s:(e.sets||[]).map(s=>{const lab=String(s.label||s.type||'').toUpperCase();return{w:lab.startsWith('W')||lab.startsWith('RISC')||s.type==='warmup',reps:s.reps,kg:s.kg!=null?s.kg:s.weight};})})),vol:kfmt(m.volume)||m.volume_kg||null};}catch(e){}}
+  if(r.wo_volume===''&&r.motra&&r.motra.vol)r.wo_volume=String(r.motra.vol);
+  return r;
+}
+function load(){
+  if(status==='loading'||status==='ok')return;
+  status='loading';
+  const keys=[];for(let i=0;i<40;i++)keys.push('day_'+i);
+  const sel=keys.map(k=>'data-%3E'+k).join(',');
+  fetch(CFG.PROXY_URL+'?user_id=eq.giorgio_protocollo_2026&select='+sel,{headers:{apikey:CFG.PROXY_KEY,Authorization:'Bearer '+CFG.PROXY_KEY}})
+   .then(r=>{if(!r.ok)throw new Error('pre '+r.status);return r.json();})
+   .then(j=>{const r0=(j&&j[0])||{};const arr=[];for(let i=0;i<40;i++){if(r0['day_'+i]&&typeof r0['day_'+i]==='object')arr.push(norm(i,r0['day_'+i]));else break;}
+     if(!arr.length)throw new Error('pre vuoto');
+     DAYS=arr;N=arr.length;WEEKS=Math.ceil(N/7);selDay=N-1;
+     SUPPS.forEach(([k])=>{const f=DAYS.findIndex(d=>d.ck[k]);suppFirst[k]=f<0?N:f;});
+     status='ok';})
+   .catch(()=>{status='err';})
+   .then(()=>{if(scope==='pre')render();});
+}
+let scope='ciclo';
+return {html,
+  open(){scope='pre';load();render();},
+  close(){scope='ciclo';render();},
+  sel(i){selDay=i;render();},
+  setRng(r){rng=r;render();},
+  active(){return scope==='pre';}};
+})();
+
 function render() {
   // Bug corretto 16/09/2026: flush() ora chiama render() all'inizio del
   // salvataggio (per mostrare "Salvataggio…"), ma render() ricostruisce
@@ -5815,7 +6039,7 @@ function render() {
         </nav>
         ${tab === 'oggi' ? `
         <div class="header-actions">
-          ${isDesktop ? `
+          ${isDesktop && !PRE.active() ? `
           <div class="view-toggle">
             <button data-view="day" class="${oggiViewMode === 'day' ? 'active' : ''}">${LANG === 'it' ? 'Giorno' : 'Day'}</button>
             <button data-view="week" class="${oggiViewMode === 'week' ? 'active' : ''}">${LANG === 'it' ? 'Settimana' : 'Week'}</button>
@@ -5830,7 +6054,7 @@ function render() {
     </header>
 
     <main class="page-wrap" style="padding:12px;">
-      ${!store.loaded ? '<p style="padding:24px;color:var(--ink2)">Caricamento…</p>' : (MIGRATED[tab] ? (tab === 'andamento' ? ANV2.html() : (tab === 'gestione' ? GST_HTML() : (tab === 'clinica' ? CLIN_HTML() : (tab === 'oggi' && oggiViewMode === 'week' ? renderWeekFull() : renderOggiFull())))) : renderNotMigrated(tab))}
+      ${!store.loaded ? '<p style="padding:24px;color:var(--ink2)">Caricamento…</p>' : (MIGRATED[tab] ? (tab === 'andamento' ? ANV2.html() : (tab === 'gestione' ? GST_HTML() : (tab === 'clinica' ? CLIN_HTML() : (tab === 'oggi' && PRE.active() ? PRE.html() : (tab === 'oggi' && oggiViewMode === 'week' ? renderWeekFull() : renderOggiFull()))))) : renderNotMigrated(tab))}
     </main>
   `;
 
@@ -6187,7 +6411,7 @@ function renderDayNav() {
         <div style="flex:0 0 auto;background:var(--surf);border-bottom:1px solid var(--line);padding:8px 20px;display:flex;align-items:center;gap:12px;">
           <span style="flex:0 0 auto;font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${LANG === 'it' ? 'Ciclo 1' : 'Cycle 1'}</span>
           <div style="flex:1 1 auto;min-width:0;display:flex;gap:4px;overflow-x:auto;">${weekTabsReal}</div>
-          <a href="${CFG.OLD_APP}" style="text-decoration:none;flex:0 0 auto;padding:5px 11px;border-radius:var(--r-sm);font-size:var(--fs-xs);font-weight:600;color:var(--ink2);border:1px solid var(--line);cursor:pointer;">${LANG === 'it' ? 'Mostra pre-ciclo' : 'Show pre-cycle'}</a>
+          <span onclick="PRE.open()" style="flex:0 0 auto;padding:5px 11px;border-radius:var(--r-sm);font-size:var(--fs-xs);font-weight:600;color:var(--ink2);border:1px solid var(--line);cursor:pointer;">${LANG === 'it' ? 'Mostra pre-ciclo' : 'Show pre-cycle'}</span>
         </div>
         ${oggiViewMode === 'week' ? '' : `
         <div style="flex:0 0 auto;background:var(--surf2);border-bottom:1px solid var(--line);padding:7px 20px;display:flex;align-items:center;gap:7px;">
