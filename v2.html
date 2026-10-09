@@ -763,6 +763,39 @@
 .an-hero-slot{grid-column:1/-1;min-width:0;}
 .an-hero-slot:empty{display:none;}
 </style>
+<style id="food-css">
+.food-sg{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
+.food-sg>div{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;background:var(--surf2);border-radius:8px;padding:0 8px;height:26px;cursor:pointer;color:var(--ink)}
+.food-sg i{width:8px;height:8px;border-radius:50%;flex:0 0 auto}.food-sg b{margin-left:auto;font-variant-numeric:tabular-nums}
+.food-src{font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;margin-left:5px;white-space:nowrap}
+.food-src.s-w{background:rgba(46,158,79,.14);color:var(--ok)}.food-src.s-l{background:var(--accent-soft);color:var(--accent-ink)}.food-src.s-e{background:rgba(46,158,79,.14);color:var(--ok)}.food-src.s-s{background:rgba(245,196,0,.2);color:var(--warn-ink)}
+#food-ov{position:fixed;inset:0;background:rgba(10,10,12,.5);z-index:300;display:none;align-items:flex-end;justify-content:center}
+#food-sheet{background:var(--surf);color:var(--ink);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:14px 16px max(24px,env(safe-area-inset-bottom));max-height:88vh;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.food-tab{flex:1 0 auto;border:0;background:transparent;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer;min-height:40px;white-space:nowrap}
+.food-tab.on{background:var(--accent);color:#fff}
+@media (max-width:1023px){#food-sheet input,#food-sheet select,#food-sheet textarea,[data-gst-view="alimenti"] input,[data-gst-view="alimenti"] select{font-size:16px!important}}
+/* Oggi con card Alimentazione (da START): stessa griglia a 12, card ridimensionate (layout Z approvato) */
+.oggi-grid.food-on{grid-template-rows:none!important;grid-auto-rows:min-content}
+.oggi-grid.food-on>:nth-child(1){grid-column:1/5!important;grid-row:1!important;padding:14px 18px!important;gap:8px!important}
+.oggi-grid.food-on>:nth-child(1) [style*="font-size:var(--fs-hero)"]{font-size:34px!important}
+.oggi-grid.food-on>:nth-child(1) [style*="font-size:var(--fs-6xl)"]{font-size:24px!important}
+.oggi-grid.food-on>:nth-child(1) [style*="font-size:var(--fs-4xl)"]{font-size:20px!important}
+.oggi-grid.food-on>:nth-child(2){grid-column:5/10!important;grid-row:1!important;padding:12px 16px!important;gap:3px!important}
+.oggi-grid.food-on>:nth-child(2) svg{height:58px!important}
+.oggi-grid.food-on>:nth-child(3){grid-column:1/7!important;grid-row:2!important;gap:4px!important}
+.oggi-grid.food-on>:nth-child(3)>div:nth-child(2){display:none!important}
+.oggi-grid.food-on>:nth-child(3) [style*="height:34px"]{height:28px!important}
+.oggi-grid.food-on>:nth-child(3) [style*="min-height"]{min-height:30px!important}
+.oggi-grid.food-on>:nth-child(4){grid-column:7/13!important;grid-row:2!important;padding:12px 16px!important;gap:6px!important}
+.oggi-grid.food-on>:nth-child(4) [style*="width:104px"]{width:72px!important;height:72px!important}
+.oggi-grid.food-on>:nth-child(4) svg{width:72px!important;height:72px!important}
+.oggi-grid.food-on>:nth-child(4) [style*="font-size:var(--fs-3xl)"]{font-size:16px!important}
+.oggi-grid.food-on>:nth-child(4) [style*="height:5px"]{height:3px!important}
+.oggi-grid.food-on>:nth-child(5){grid-column:1/5!important;grid-row:3!important;gap:5px!important}
+.oggi-grid.food-on>:nth-child(6){grid-column:5/9!important;grid-row:3!important;gap:5px!important}
+.oggi-grid.food-on>:nth-child(7){grid-column:9/13!important;grid-row:3!important;gap:5px!important}
+.oggi-grid.food-on>:nth-child(8){grid-column:10/13!important;grid-row:1!important}
+</style>
 </head>
 <body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
@@ -6016,6 +6049,391 @@ return {html,
   active(){return scope==='pre';}};
 })();
 
+/* ===================== FOOD · tracker alimentare (fase 1) =====================
+   Dati (chiavi di primo livello del record giorgio_proto2_2026, scritte in lettura-modifica-scrittura
+   come GST_saveRecon, MAI con il flush() dei giorni):
+     food_lib          {v:1, foods[], combos[], gts[], targets{kcal,p}}   libreria, combo, giornate tipo, obiettivi
+     food_YYYY-MM-DD   {v:1, s:{slot:[voce,...]}}                         diario del giorno
+   Voce: {id,n,q,k,p,c,g,src:'w'|'l'|'e'|'s', ref?:{t:'f'|'c',id,q}, r?:[min,max], plan?:true}
+   Se la voce ha ref e l'elemento esiste ancora in libreria, i valori si RICALCOLANO dalla libreria
+   (correggere una tabella corregge anche lo storico); altrimenti valgono i numeri salvati nella voce.
+   Card in Oggi operativa dal 2026-10-12 (START). */
+const FOOD = (function () {
+  const START = '2026-10-12';
+  const SL = [['caf', 'Caffè mattina', 'Caffè mat.'], ['col', 'Colazione', 'Colazione'], ['spm', 'Spuntino mattina', 'Spuntino mat.'], ['pra', 'Pranzo', 'Pranzo'], ['spp', 'Spuntino pomeriggio', 'Spuntino pom.'], ['cen', 'Cena', 'Cena'], ['ext', 'Extra / dopo cena', 'Extra']];
+  const SRCL = { w: ['⚖ pesato', 's-w'], l: ['▤ libreria', 's-l'], e: ['🏷 etichetta', 's-e'], s: ['≈ stima', 's-s'] };
+  let L = null, sub = 'pasto', sh = null, dirty = {}, err = false, busy = false, retryT = null, flt = { ver: false, q: '' }, msg = '';
+  const num = v => { const x = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(x) ? x : NaN; };
+  const r0 = v => Math.round(v), r1 = v => Math.round(v * 10) / 10;
+  const uid = p => p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const slug = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  const slotName = id => (SL.find(s => s[0] === id) || [id, id])[1];
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const deq = (a, b) => { if (a === b) return true; if (a == null || b == null || typeof a !== 'object' || typeof b !== 'object') return false; if (Array.isArray(a) !== Array.isArray(b)) return false; const ka = Object.keys(a), kb = Object.keys(b); return ka.length === kb.length && ka.every(k => deq(a[k], b[k])); };
+  const fmt = (v, d) => { const x = d ? r1(v) : r0(v); return String(x).replace('.', ','); };
+
+  /* ---------- dati ---------- */
+  function seed() {
+    const foods = [];
+    Object.keys(GST_FOOD_DB).forEach(cat => GST_FOOD_DB[cat].forEach(f => foods.push({
+      id: 'f_' + slug(f.name), n: f.name, cat, u: f.unit === 'fixed' ? 'pz' : 'g', ref: f.ref, k: f.kcal, p: f.p, c: f.c, g: f.g, note: f.note || '', ok: false, bar: !!f.barLabel
+    })));
+    const br = foods.find(f => /^Bresaola/.test(f.n)), sh2 = foods.find(f => /^Shaker/.test(f.n));
+    const combos = (br && sh2) ? [{ id: 'c_bresaola-shaker', n: 'Bresaola + shaker', slot: 'col', items: [{ f: br.id, q: br.ref }, { f: sh2.id, q: sh2.ref }] }] : [];
+    return { v: 1, foods, combos, gts: [{ id: 'gt_fer', n: 'Feriale', m: {} }, { id: 'gt_we', n: 'Weekend', m: {} }], targets: { kcal: null, p: null } };
+  }
+  function lib() {
+    if (L) return L;
+    const b = store.blob && store.blob.food_lib;
+    if (b && Array.isArray(b.foods)) { L = clone(b); L.combos = L.combos || []; L.gts = L.gts || []; L.targets = L.targets || { kcal: null, p: null }; }
+    else L = seed();
+    return L;
+  }
+  const food = id => lib().foods.find(f => f.id === id);
+  const combo = id => lib().combos.find(c => c.id === id);
+  const fv = (f, q) => { const m = f.u === 'g' ? q / 100 : q; return { k: f.k * m, p: f.p * m, c: f.c * m, g: f.g * m }; };
+  const zero = () => ({ k: 0, p: 0, c: 0, g: 0 });
+  const add = (a, b) => ({ k: a.k + b.k, p: a.p + b.p, c: a.c + b.c, g: a.g + b.g });
+  function itemVals(it) { const f = it.f && food(it.f); return f ? fv(f, it.q) : (it.s || zero()); }
+  function comboVals(c) { return c.items.reduce((a, it) => add(a, itemVals(it)), zero()); }
+  function qLabel(f, q) { return f.u === 'g' ? q + ' g' : (f.bar ? (q === 1 ? '1 barretta' : q + ' barrette') : (q === 1 ? '1 pz' : q + ' pz')); }
+  function comboText(c) { return c.items.map(it => { const f = it.f && food(it.f); return f ? (f.n.split(' (')[0] + ' ' + qLabel(f, it.q)) : (it.n || '?'); }).join(' + '); }
+  function vals(e) {
+    if (e.ref) {
+      if (e.ref.t === 'f') { const f = food(e.ref.id); if (f) return fv(f, e.ref.q); }
+      else { const c = combo(e.ref.id); if (c) return comboVals(c); }
+    }
+    return { k: e.k, p: e.p, c: e.c, g: e.g };
+  }
+
+  /* ---------- salvataggio (solo le mie chiavi) ---------- */
+  const getKey = k => (dirty[k] !== undefined ? dirty[k] : (store.blob || {})[k]);
+  function setKey(k, v) { dirty[k] = clone(v); if (store.blob) store.blob[k] = clone(v); sync(); badge(); }
+  function hdrs(json) { const h = { apikey: CFG.PROXY_KEY, Authorization: 'Bearer ' + CFG.PROXY_KEY }; if (json) { h['Content-Type'] = 'application/json'; h.Prefer = 'return=minimal'; } return h; }
+  async function sync() {
+    if (busy) return;
+    const keys = Object.keys(dirty); if (!keys.length) return;
+    busy = true;
+    const sent = {}; keys.forEach(k => { sent[k] = JSON.stringify(dirty[k]); });
+    try {
+      const r = await fetch(CFG.PROXY_URL + '?user_id=eq.' + CFG.USER_ID + '&select=data', { headers: hdrs() });
+      if (!r.ok) throw new Error('load ' + r.status);
+      const rows = await r.json();
+      if (!rows[0] || !rows[0].data || typeof rows[0].data !== 'object') throw new Error('dati non validi');
+      const d = rows[0].data;
+      keys.forEach(k => { d[k] = JSON.parse(sent[k]); });
+      const w = await fetch(CFG.PROXY_URL + '?user_id=eq.' + CFG.USER_ID, { method: 'PATCH', headers: hdrs(true), body: JSON.stringify({ data: d }) });
+      if (!w.ok) throw new Error('save ' + w.status);
+      /* rilettura di controllo: un salvataggio dei giorni (flush) partito con una copia più vecchia
+         potrebbe aver riscritto il record senza le mie chiavi. Se non coincidono resto in coda. */
+      const vr = await fetch(CFG.PROXY_URL + '?user_id=eq.' + CFG.USER_ID + '&select=' + keys.map(k => 'data-%3E' + k).join(','), { headers: hdrs() });
+      if (!vr.ok) throw new Error('verifica ' + vr.status);
+      const vrow = (await vr.json())[0] || {};
+      const bad = keys.filter(k => !deq(vrow[k], JSON.parse(sent[k])));
+      if (bad.length) throw new Error('verifica fallita: ' + bad.join(','));
+      keys.forEach(k => { if (JSON.stringify(dirty[k]) === sent[k]) delete dirty[k]; });
+      err = false;
+    } catch (e) { err = true; console.warn('food: salvataggio rimandato', e); }
+    busy = false;
+    clearTimeout(retryT);
+    if (Object.keys(dirty).length) retryT = setTimeout(sync, err ? 10000 : 30);
+    badge();
+  }
+  function badge() {
+    const n = Object.keys(dirty).length;
+    document.querySelectorAll('.food-sync').forEach(el => {
+      el.textContent = err ? '⚠ non salvato, riprovo' : (n ? 'salvo…' : '');
+      el.style.color = err ? 'var(--bad)' : 'var(--ink3)';
+    });
+  }
+  const saveLib = () => setKey('food_lib', lib());
+
+  /* ---------- diario ---------- */
+  const dkey = d => 'food_' + String(d).replace(/-/g, '');
+  function day(d) { const x = getKey(dkey(d)); const o = (x && x.s) ? clone(x) : { v: 1, s: {} }; SL.forEach(s => { if (!Array.isArray(o.s[s[0]])) o.s[s[0]] = []; }); return o; }
+  function mut(d, fn) { const o = day(d); fn(o); setKey(dkey(d), o); redraw(); }
+  const live = (o, id) => o.s[id].filter(e => !e.plan), plan = (o, id) => o.s[id].filter(e => e.plan);
+  function totals(d) {
+    const o = day(d), t = { k: 0, p: 0, c: 0, g: 0, est: 0, lo: 0, hi: 0, pk: 0, n: 0 };
+    SL.forEach(([id]) => {
+      o.s[id].forEach(e => {
+        const v = vals(e);
+        if (e.plan) { t.pk += v.k; return; }
+        t.n++; t.k += v.k; t.p += v.p; t.c += v.c; t.g += v.g;
+        if (e.src === 's') { t.est += v.k; if (e.r) { t.lo += e.r[0] - v.k; t.hi += e.r[1] - v.k; } }
+      });
+    });
+    return t;
+  }
+  const slotK = (o, id) => live(o, id).reduce((a, e) => a + vals(e).k, 0);
+  const slotP = (o, id) => live(o, id).reduce((a, e) => a + vals(e).p, 0);
+  const planK = (o, id) => plan(o, id).reduce((a, e) => a + vals(e).k, 0);
+  const planN = o => SL.reduce((a, [id]) => a + plan(o, id).length, 0);
+  const on = () => typeof tab !== 'undefined' && tab === 'oggi' && store.loaded && selDate >= START;
+  function newEntry(extra) { return Object.assign({ id: uid('e') }, extra); }
+  function entryFromFood(f, q) { const v = fv(f, q); return newEntry({ n: f.n, q: qLabel(f, q), k: r1(v.k), p: r1(v.p), c: r1(v.c), g: r1(v.g), src: (q === f.ref ? 'l' : 'w'), ref: { t: 'f', id: f.id, q } }); }
+  function entryFromCombo(c, planned) { const v = comboVals(c); const e = newEntry({ n: c.n, q: '1', k: r1(v.k), p: r1(v.p), c: r1(v.c), g: r1(v.g), src: 'l', ref: { t: 'c', id: c.id } }); if (planned) e.plan = true; return e; }
+
+  /* ---------- azioni ---------- */
+  function addEntry(slot, e) { mut(selDate, o => { o.s[slot].push(e); }); }
+  function removeEntry(slot, id) { mut(selDate, o => { o.s[slot] = o.s[slot].filter(e => e.id !== id); }); drawSheet(); }
+  function confirmSlot(slot) { mut(selDate, o => { o.s[slot].forEach(e => { delete e.plan; }); }); drawSheet(); }
+  function dropPlan(slot) { mut(selDate, o => { o.s[slot] = o.s[slot].filter(e => !e.plan); }); drawSheet(); }
+  function confirmAll() { mut(selDate, o => { SL.forEach(([id]) => o.s[id].forEach(e => { delete e.plan; })); }); }
+  function clearPlan() { mut(selDate, o => { SL.forEach(([id]) => { o.s[id] = o.s[id].filter(e => !e.plan); }); }); }
+  function applyGT(gid) {
+    const g = lib().gts.find(x => x.id === gid); if (!g) return;
+    let n = 0, skipped = 0;
+    mut(selDate, o => {
+      SL.forEach(([id]) => {
+        const cid = g.m[id]; if (!cid) return;
+        if (o.s[id].length) { skipped++; return; }
+        const c = combo(cid); if (!c) return;
+        o.s[id].push(entryFromCombo(c, true)); n++;
+      });
+    });
+    msg = n ? `Previsti ${n} slot (non contano finché non confermi).` + (skipped ? ` ${skipped} slot già compilati: non toccati.` : '') : 'Nessuno slot vuoto da riempire.';
+    drawSheet();
+  }
+
+  /* ---------- foglio (overlay) ---------- */
+  function open(slot) { sh = { m: 'slot', slot: slot || '', tab: 'cmb', q: '' }; msg = ''; ensureOv(); drawSheet(); }
+  function openGT() { const dow = new Date(selDate + 'T00:00:00').getDay(); sh = { m: 'gt', gt: (dow === 0 || dow === 6) ? 'gt_we' : 'gt_fer' }; msg = ''; ensureOv(); drawSheet(); }
+  function ensureOv() {
+    let ov = document.getElementById('food-ov');
+    if (!ov) { ov = document.createElement('div'); ov.id = 'food-ov'; ov.onclick = e => { if (e.target === ov) close(); }; ov.innerHTML = '<div id="food-sheet"></div>'; document.body.appendChild(ov); }
+    ov.style.display = 'flex';
+  }
+  function close() { sh = null; const ov = document.getElementById('food-ov'); if (ov) ov.style.display = 'none'; }
+  function setTab(t) { sh.tab = t; msg = ''; drawSheet(); }
+  function pickSlot(id) { sh.slot = id; drawSheet(); }
+  function setGT(id) { sh.gt = id; msg = ''; drawSheet(); }
+  const inp = 'border:1px solid var(--line);border-radius:10px;min-height:44px;padding:0 12px;font-size:14px;background:var(--surf);color:var(--ink);width:100%;box-sizing:border-box';
+  const btn = 'border:0;border-radius:10px;background:var(--accent);color:#fff;font-weight:700;font-size:13px;min-height:44px;padding:0 14px;cursor:pointer';
+  const pl = 'border:0;border-radius:50%;width:40px;height:40px;background:var(--accent);color:#fff;font-size:20px;font-weight:700;cursor:pointer;line-height:1;flex:0 0 auto';
+  const srcTag = s => `<span class="food-src ${SRCL[s][1]}">${SRCL[s][0]}</span>`;
+
+  function entriesBlock(slot) {
+    const o = day(selDate), it = o.s[slot]; if (!it.length) return '';
+    const hasPlan = it.some(e => e.plan);
+    return `<div style="border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:4px"><div style="font-size:11px;font-weight:700;color:var(--ink2)">Già in questo slot</div>` +
+      it.map(e => { const v = vals(e); return `<div style="display:flex;align-items:center;gap:8px;min-height:36px"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;${e.plan ? 'font-style:italic;color:var(--accent-ink)' : ''}">${esc(e.n)} ${e.plan ? '<span class="food-src s-l">previsto</span>' : srcTag(e.src)}</div><div style="font-size:11px;color:var(--ink2)">${esc(e.q)} · ${r0(v.k)} kcal · P ${fmt(v.p, 1)}${e.r ? ' · stima ' + e.r[0] + '–' + e.r[1] + ' kcal' + (e.ra ? ' (range ±25% assunto)' : '') : ''}</div></div><button onclick="FOOD.rm('${slot}','${e.id}')" style="border:0;background:none;color:var(--ink3);font-size:16px;cursor:pointer;width:36px;height:36px" aria-label="Elimina">✕</button></div>`; }).join('') +
+      (hasPlan ? `<div style="display:flex;gap:8px;margin-top:4px"><button style="${btn};flex:1" onclick="FOOD.cslot('${slot}')">✓ Confermo, l'ho mangiato</button><button class="an-chip" style="min-height:44px" onclick="FOOD.dplan('${slot}')">Non l'ho mangiato</button></div>` : '') + '</div>';
+  }
+  function comboRows(slot) {
+    const cs = lib().combos.slice().sort((a, b) => (b.slot === slot) - (a.slot === slot));
+    if (!cs.length) return '<div style="font-size:12px;color:var(--ink3)">Nessuna combo. Creale in Gestione › Alimenti › Combo.</div>';
+    return cs.map(c => { const v = comboVals(c); return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:48px;border-bottom:1px solid var(--line2)"><div style="min-width:0"><b style="font-size:13px">${esc(c.n)}</b>${c.slot === slot ? '<span class="food-src s-l">per questo slot</span>' : ''}<div style="font-size:11px;color:var(--ink2)">${esc(comboText(c))} · ${r0(v.k)} kcal · P ${fmt(v.p, 1)}</div></div><button style="${pl}" onclick="FOOD.addCombo('${slot}','${c.id}')">+</button></div>`; }).join('');
+  }
+  function listFoods() {
+    const q = (sh && sh.q || '').toLowerCase();
+    const fs = lib().foods.filter(f => !q || f.n.toLowerCase().includes(q) || (f.cat || '').toLowerCase().includes(q));
+    if (!fs.length) return '<div style="font-size:12px;color:var(--ink3)">Nessun alimento. Aggiungilo in Gestione › Alimenti › Libreria o usa Manuale.</div>';
+    return fs.map(f => { const v = fv(f, f.ref); return `<div style="display:flex;align-items:center;gap:8px;min-height:52px;border-bottom:1px solid var(--line2)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(f.n)}${f.ok ? '' : '<span class="food-src s-s">da verificare</span>'}</div><div style="font-size:11px;color:var(--ink2)">${r0(v.k)} kcal · P ${fmt(v.p, 1)} alla porzione standard</div></div><input id="fq_${f.id}" type="number" inputmode="decimal" step="any" value="${f.ref}" style="width:68px;${inp.replace('width:100%', 'width:68px')};padding:0 6px;text-align:right"><span style="font-size:11px;color:var(--ink2);width:18px">${f.u === 'g' ? 'g' : 'pz'}</span><button style="${pl}" onclick="FOOD.addFood('${slot0()}','${f.id}')">+</button></div>`; }).join('');
+  }
+  const slot0 = () => (sh && sh.slot) || '';
+  function drawSheet() {
+    const el = document.getElementById('food-sheet'); if (!el || !sh) return;
+    if (sh.m === 'gt') return drawGT(el);
+    const slot = sh.slot, name = slot ? slotName(slot) : 'scegli lo slot';
+    let body = '';
+    if (!slot) body = `<div class="food-sg" style="grid-template-columns:1fr 1fr">${SL.map(([id, n]) => `<div onclick="FOOD.pick('${id}')" style="min-height:44px;font-size:12px">${n}</div>`).join('')}</div>`;
+    else {
+      const tabs = [['cmb', 'Combo'], ['ali', 'Alimenti'], ['foto', 'Foto'], ['man', 'Manuale']];
+      let tb = '';
+      if (sh.tab === 'cmb') tb = comboRows(slot) + '<div style="font-size:10px;color:var(--ink3)">Un tap = voce completa, con i numeri della libreria.</div>';
+      else if (sh.tab === 'ali') tb = `<input placeholder="Cerca nella libreria…" value="${esc(sh.q)}" oninput="FOOD.q(this.value)" style="${inp}"><div id="food-list">${listFoods()}</div><div style="font-size:10px;color:var(--ink3)">Se cambi la quantità la voce risulta “pesato”, altrimenti “libreria” (porzione standard).</div>`;
+      else if (sh.tab === 'foto') tb = `<div style="font-size:12px;line-height:1.5">1 · Manda a Claude in chat la foto del piatto (o dell'etichetta), dicendo i pesi e l'olio che conosci.<br>2 · Incolla qui il blocco della risposta: righe <code>nome;porzione;kcal;P;C;G</code> e, se c'è, <code>#range;min-max</code>. Diventa <b>una</b> voce di <b>${esc(name)}</b> marcata “≈ stima”.</div><input id="ph_n" placeholder="Nome del piatto (es. Pranzo fuori casa)" style="${inp}"><textarea id="ph_t" placeholder="tonno sgocciolato;90 g;100;22;0;1&#10;#range;380-600" style="${inp};min-height:110px;padding:10px;font:12px ui-monospace,Menlo,monospace"></textarea><button style="${btn}" onclick="FOOD.importPhoto('${slot}')">Importa in ${esc(name)}</button>`;
+      else tb = `<input id="mn_n" placeholder="Nome (es. gelato fuori casa)" style="${inp}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="mn_k" type="number" inputmode="decimal" step="any" placeholder="kcal" style="${inp}"><input id="mn_p" type="number" inputmode="decimal" step="any" placeholder="Proteine g" style="${inp}"><input id="mn_c" type="number" inputmode="decimal" step="any" placeholder="Carboidrati g" style="${inp}"><input id="mn_g" type="number" inputmode="decimal" step="any" placeholder="Grassi g" style="${inp}"></div><select id="mn_s" onchange="document.getElementById('mn_r').style.display=this.value==='s'?'grid':'none'" style="${inp}"><option value="e">Da etichetta / valori noti</option><option value="s">È una stima mia</option></select><div id="mn_r" style="display:none;grid-template-columns:1fr 1fr;gap:8px"><input id="mn_lo" type="number" inputmode="decimal" placeholder="kcal minime" style="${inp}"><input id="mn_hi" type="number" inputmode="decimal" placeholder="kcal massime" style="${inp}"></div><button style="${btn}" onclick="FOOD.addManual('${slot}')">Aggiungi a ${esc(name)}</button>`;
+      body = entriesBlock(slot) + `<div class="seg" style="display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px">${tabs.map(([k, l]) => `<button class="food-tab ${sh.tab === k ? 'on' : ''}" onclick="FOOD.tab('${k}')">${l}</button>`).join('')}</div>` + tb;
+    }
+    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">Aggiungi · ${esc(name)}</b><span onclick="FOOD.close()" style="font-size:22px;padding:6px 10px;cursor:pointer">✕</span></div>${body}<div style="font-size:11px;color:var(--accent-ink);font-weight:600;min-height:14px">${esc(msg)}</div><span class="food-sync" style="font-size:10px"></span>`;
+    badge();
+  }
+  function drawGT(el) {
+    const gts = lib().gts; if (!gts.length) { el.innerHTML = '<b>Giornata tipo</b><div style="font-size:12px">Nessuna giornata tipo: creala in Gestione › Alimenti.</div><button style="' + btn + '" onclick="FOOD.close()">Chiudi</button>'; return; }
+    const g = gts.find(x => x.id === sh.gt) || gts[0]; sh.gt = g.id;
+    const o = day(selDate); let tk = 0, tp = 0;
+    const rows = SL.map(([id, n]) => {
+      const c = g.m[id] && combo(g.m[id]); const v = c ? comboVals(c) : null; if (v) { tk += v.k; tp += v.p; }
+      const filled = o.s[id].some(e => !e.plan);
+      return `<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;min-height:40px;border-bottom:1px solid var(--line2)"><div><div style="font-size:12px;font-weight:600">${n}${filled ? '<span class="food-src s-w">già compilato</span>' : ''}</div><div style="font-size:11px;color:${c ? 'var(--ink2)' : 'var(--ink3)'}">${c ? esc(c.n) + ' · ' + esc(comboText(c)) : 'libero (a mano o foto)'}</div></div><b style="font-size:12px">${v ? r0(v.k) + ' kcal' : ''}</b></div>`;
+    }).join('');
+    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">Giornata tipo</b><span onclick="FOOD.close()" style="font-size:22px;padding:6px 10px;cursor:pointer">✕</span></div><div style="display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;overflow-x:auto">${gts.map(x => `<button class="food-tab ${g.id === x.id ? 'on' : ''}" onclick="FOOD.setGT('${x.id}')">${esc(x.n)}</button>`).join('')}</div>${rows}<div style="font-size:12px;font-weight:600">Totale previsto: ${r0(tk)} kcal · P ${fmt(tp, 1)} g</div><button style="${btn}" onclick="FOOD.applyGT('${g.id}')">Applica agli slot vuoti</button><div style="font-size:11px;color:var(--accent-ink);font-weight:600;min-height:14px">${esc(msg)}</div><div style="font-size:10px;color:var(--ink3);line-height:1.4">Le voci entrano come <b>previsto</b> e non contano nei totali finché non le confermi (✓ per slot o “Conferma tutto”). Gli slot già compilati non vengono mai sovrascritti. Le giornate si modificano in Gestione › Alimenti.</div>`;
+  }
+  function addCombo(slot, cid) { const c = combo(cid); if (!c) return; addEntry(slot, entryFromCombo(c, false)); close(); }
+  function addFood(slot, fid) {
+    const f = food(fid), el = document.getElementById('fq_' + fid), q = num(el && el.value);
+    if (!f || !(q > 0)) { msg = 'Quantità non valida.'; drawSheet(); return; }
+    addEntry(slot, entryFromFood(f, q)); msg = `Aggiunto: ${f.n} ${qLabel(f, q)}.`; drawSheet();
+  }
+  function addManual(slot) {
+    const g = id => document.getElementById(id), n = (g('mn_n').value || '').trim();
+    const k = num(g('mn_k').value), p = num(g('mn_p').value) || 0, c = num(g('mn_c').value) || 0, gr = num(g('mn_g').value) || 0, s = g('mn_s').value;
+    if (!n || !(k >= 0)) { msg = 'Servono almeno nome e kcal.'; drawSheet(); return; }
+    const e = newEntry({ n, q: '1', k: r1(k), p: r1(p), c: r1(c), g: r1(gr), src: s });
+    if (s === 's') { const lo = num(g('mn_lo').value), hi = num(g('mn_hi').value); if (isFinite(lo) && isFinite(hi) && lo <= k && k <= hi) e.r = [lo, hi]; else { msg = 'Per una stima servono kcal minime ≤ kcal ≤ massime.'; drawSheet(); return; } }
+    addEntry(slot, e); close();
+  }
+  function importPhoto(slot) {
+    const txt = (document.getElementById('ph_t').value || ''), nm = (document.getElementById('ph_n').value || '').trim() || 'Piatto (foto)';
+    let k = 0, p = 0, c = 0, g = 0, comp = [], range = null, bad = [];
+    txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean).forEach((l, i) => {
+      if (/^#range/i.test(l)) { const m = l.match(/(\d+(?:[.,]\d+)?)\s*[-–]\s*(\d+(?:[.,]\d+)?)/); if (m) range = [num(m[1]), num(m[2])]; else bad.push(i + 1); return; }
+      const a = l.split(';').map(x => x.trim());
+      if (a.length < 6) { bad.push(i + 1); return; }
+      const v = [a[2], a[3], a[4], a[5]].map(num);
+      if (v.some(x => !isFinite(x))) { bad.push(i + 1); return; }
+      k += v[0]; p += v[1]; c += v[2]; g += v[3]; comp.push(a[0] + ' ' + a[1]);
+    });
+    if (bad.length || !comp.length) { msg = bad.length ? 'Righe non valide: ' + bad.join(', ') + ' (formato nome;porzione;kcal;P;C;G).' : 'Nessuna riga da importare.'; drawSheet(); return; }
+    let rng = range && range[0] <= range[1] ? range : null, assumed = false;
+    if (!rng) { rng = [r0(k * 0.75), r0(k * 1.25)]; assumed = true; }
+    if (k < rng[0] || k > rng[1]) rng = [Math.min(rng[0], r0(k)), Math.max(rng[1], r0(k))];
+    const e = newEntry({ n: nm, q: comp.join(' + '), k: r1(k), p: r1(p), c: r1(c), g: r1(g), src: 's', r: rng });
+    if (assumed) e.ra = 1;
+    addEntry(slot, e); close();
+  }
+
+  /* ---------- card in Oggi ---------- */
+  const bar = (l, v, t, col) => `<div><div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:var(--ink2);font-weight:500">${l}</span><b>${fmt(v)}${t ? ` <span style="color:var(--ink3);font-weight:500">/ ${t} g</span>` : ' g'}</b></div>${t ? `<div style="height:5px;border-radius:3px;background:var(--line2);margin-top:3px;overflow:hidden"><i style="display:block;height:100%;width:${Math.min(100, v / t * 100)}%;background:${col}"></i></div>` : ''}</div>`;
+  function dotStyle(o, id) {
+    const Lv = live(o, id), P = plan(o, id);
+    if (Lv.length) return Lv.some(e => e.src === 's') ? 'background:var(--warn)' : 'background:var(--ok)';
+    if (P.length) return 'background:var(--surf);box-shadow:inset 0 0 0 2px var(--accent)';
+    return 'background:var(--idle)';
+  }
+  function splitLine(t) {
+    if (!t.n) return '<div style="font-size:10px;color:var(--ink3);font-weight:500">Nessuna voce registrata oggi.</div>';
+    return `<div style="font-size:10px;color:var(--ink2);font-weight:500">Non stimato ${fmt(t.k - t.est)} kcal · stimato ${fmt(t.est)} kcal${t.est ? ` → totale tra ${fmt(t.k + t.lo)} e ${fmt(t.k + t.hi)} kcal` : ''}</div>`;
+  }
+  function planLine(o, mob) {
+    const n = planN(o); if (!n) return '';
+    const tot = SL.reduce((a, [id]) => a + planK(o, id), 0);
+    return mob ? `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--accent-soft);border-radius:8px;padding:0 10px;min-height:40px;font-size:12px;font-weight:600;color:var(--accent-ink)"><span>Previsto +${fmt(tot)} kcal</span><button style="${btn};min-height:32px" onclick="FOOD.confirmAll()">✓ Conferma tutto</button></div>`
+      : `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--accent-soft);border-radius:8px;padding:0 8px;height:26px;font-size:11px;font-weight:600;color:var(--accent-ink)"><span>Previsto +${fmt(tot)} kcal</span><span><u style="cursor:pointer" onclick="FOOD.confirmAll()">✓ Tutto</u> · <u style="cursor:pointer" onclick="FOOD.clearPlan()">Svuota</u></span></div>`;
+  }
+  function head(t) {
+    const T = lib().targets;
+    const kc = `<span style="font-size:${isDesktop ? 28 : 30}px;font-weight:700;letter-spacing:-.02em">${fmt(t.k)}</span><span style="font-size:12px;color:var(--ink2);font-weight:500"> ${T.kcal ? '/ ' + T.kcal + ' ' : ''}kcal</span>`;
+    const pr = T.p ? (t.p >= T.p ? 'proteine: obiettivo raggiunto' : 'mancano ' + fmt(T.p - t.p) + ' g P') : 'P ' + fmt(t.p) + ' g';
+    return `<div style="display:flex;justify-content:space-between;align-items:flex-end"><div>${kc}</div><span style="font-size:11px;font-weight:700;color:var(--accent-ink)">${pr}</span></div>${bar('Proteine', t.p, T.p, 'var(--accent)')}`;
+  }
+  function cardHTML() {
+    const o = day(selDate), t = totals(selDate), T = lib().targets;
+    const noT = (!T.kcal && !T.p) ? `<div style="font-size:10px;color:var(--ink3);font-weight:500">Obiettivi non impostati (Gestione › Alimenti › Obiettivi).</div>` : '';
+    if (isDesktop) {
+      return `<section class="food-card" style="border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:12px 15px;display:flex;flex-direction:column;gap:7px;overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2)">Alimentazione <span class="food-sync" style="font-size:10px;font-weight:600"></span></span><span class="an-chip" style="min-height:22px;font-size:10px;padding:0 8px" onclick="FOOD.openGT()">▦ Giornata tipo</span></div>${head(t)}${planLine(o, false)}
+<div class="food-sg">${SL.map(([id, n, s]) => { const Lv = live(o, id), P = plan(o, id); return `<div onclick="FOOD.open('${id}')"><i style="${dotStyle(o, id)}"></i>${s}${Lv.length ? `<b>${fmt(slotK(o, id))}</b>` : P.length ? `<b style="color:var(--accent-ink);font-style:italic">${fmt(planK(o, id))}</b>` : '<b>—</b>'}</div>`; }).join('')}<div style="background:var(--accent);color:#fff;justify-content:center" onclick="FOOD.open('')">+ Aggiungi</div></div>${splitLine(t)}${noT}</section>`;
+    }
+    return `<section class="food-card" style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2)">Alimentazione <span class="food-sync" style="font-size:10px;font-weight:600"></span></span><span class="an-chip" style="min-height:32px;font-size:11px" onclick="FOOD.openGT()">▦ Giornata tipo</span></div>${head(t)}${splitLine(t)}${noT}${planLine(o, true)}
+<div style="border-top:1px solid var(--line)">${SL.map(([id, n]) => { const Lv = live(o, id), P = plan(o, id), it = Lv.length ? Lv : P; const only = !Lv.length && P.length; return `<div style="display:grid;grid-template-columns:1fr auto 44px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line2);min-height:44px"><div style="min-width:0"><div style="font-size:12px;font-weight:600">${n}${only ? '<span class="food-src s-l">previsto</span>' : ''}${Lv.some(e => e.src === 's') ? '<span class="food-src s-s">≈ stima</span>' : ''}</div><div style="font-size:11px;color:${it.length ? 'var(--ink2)' : 'var(--ink3)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${only ? 'font-style:italic' : ''}">${it.length ? it.map(e => esc(e.n)).join(' · ') : 'non registrato'}</div></div><b style="font-size:12px;${only ? 'color:var(--accent-ink);font-style:italic' : ''}">${Lv.length ? fmt(slotK(o, id)) + ' kcal' : P.length ? fmt(planK(o, id)) + ' kcal' : ''}</b>${only ? `<button style="${pl};background:var(--accent-ink)" onclick="FOOD.cslot('${id}')" aria-label="Conferma">✓</button>` : `<button style="${pl}" onclick="FOOD.open('${id}')" aria-label="Aggiungi">+</button>`}</div>`; }).join('')}</div></section>`;
+  }
+  function redraw() { render(); if (sh) drawSheet(); badge(); }
+
+  /* ---------- Gestione › Alimenti ---------- */
+  const SUBS = [['pasto', 'Pasto'], ['lib', 'Libreria'], ['combo', 'Combo'], ['gt', 'Giornate tipo'], ['obj', 'Obiettivi']];
+  function subnav() { return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:2px">${SUBS.map(([k, l]) => `<button type="button" class="an-chip${sub === k ? ' is-active' : ''}" onclick="FOOD.sub('${k}')">${l}</button>`).join('')}</div><span class="food-sync" style="font-size:10px"></span>`; }
+  const gi = 'border:1px solid var(--line2);border-radius:8px;background:var(--surf);color:var(--ink);font-size:13px;padding:0 8px;height:40px;box-sizing:border-box;min-width:0';
+  function reGest() { GST_renderAlimenti(); badge(); }
+  function flash(m) { msg = m; }
+  function chk(f) { const calc = 4 * f.p + 4 * f.c + 9 * f.g; return (Math.abs(f.k - calc) > 15 && Math.abs(f.k - calc) > 0.15 * Math.max(f.k, 1)) ? `<span class="food-src s-s" title="kcal dichiarate ${f.k} · calcolate dai macro ${r0(calc)} (4P+4C+9G; fibre/alcol/arrotondamenti possibili)">⚠ kcal≠macro (${r0(calc)})</span>` : ''; }
+  function gestView() {
+    const l = lib();
+    if (sub === 'lib') {
+      const vis = l.foods.filter(f => (!flt.ver || !f.ok) && (!flt.q || f.n.toLowerCase().includes(flt.q.toLowerCase())));
+      const nv = l.foods.filter(f => !f.ok).length;
+      const cats = [...new Set(l.foods.map(f => f.cat || 'Altro'))];
+      return `<section class="an-card" style="gap:8px"><div class="an-note">Valori per 100 g (unità g) o per pezzo (unità pz). I valori importati dalla vecchia tabella sono <b>da verificare</b>: spuntando “ok” confermi di averli controllati su etichetta o fonte. Una correzione si propaga a combo e storico.</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input placeholder="Cerca…" value="${esc(flt.q)}" onchange="FOOD.g.fq(this.value)" style="${gi};flex:1;min-width:140px"><button type="button" class="an-chip${flt.ver ? ' is-active' : ''}" onclick="FOOD.g.ver()">Da verificare (${nv})</button></div>
+${vis.map(f => `<div style="border:1px solid var(--line2);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;gap:6px"><input value="${esc(f.n)}" onchange="FOOD.g.f('${f.id}','n',this.value)" style="${gi};flex:1"><button type="button" onclick="FOOD.g.delF('${f.id}')" style="border:0;background:none;color:var(--ink3);font-size:16px;cursor:pointer;width:40px" aria-label="Elimina">✕</button></div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${[['u', 'unità'], ['ref', 'porz.'], ['k', 'kcal'], ['p', 'P'], ['c', 'C'], ['g', 'G']].map(([k, lb]) => k === 'u' ? `<select onchange="FOOD.g.f('${f.id}','u',this.value)" style="${gi};width:62px"><option value="g"${f.u === 'g' ? ' selected' : ''}>g</option><option value="pz"${f.u === 'pz' ? ' selected' : ''}>pz</option></select>` : `<label style="font-size:10px;color:var(--ink3);display:flex;flex-direction:column;gap:1px">${lb}<input type="number" inputmode="decimal" step="any" value="${f[k]}" onchange="FOOD.g.f('${f.id}','${k}',this.value)" style="${gi};width:${k === 'ref' ? 64 : 58}px"></label>`).join('')}<label style="font-size:11px;font-weight:600;display:flex;align-items:center;gap:4px;margin-left:auto"><input type="checkbox" ${f.ok ? 'checked' : ''} onchange="FOOD.g.ok('${f.id}',this.checked)" style="width:20px;height:20px"> ok</label></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input value="${esc(f.cat || '')}" list="food-cats" placeholder="categoria" onchange="FOOD.g.f('${f.id}','cat',this.value)" style="${gi};width:130px"><input value="${esc(f.note || '')}" placeholder="nota" onchange="FOOD.g.f('${f.id}','note',this.value)" style="${gi};flex:1;min-width:120px">${chk(f)}</div></div>`).join('') || '<div class="an-note">Nessun alimento.</div>'}
+<datalist id="food-cats">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
+<div style="border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px"><b style="font-size:13px">Nuovo alimento</b><div style="display:flex;gap:6px;flex-wrap:wrap"><input id="nf_n" placeholder="Nome" style="${gi};flex:1;min-width:160px"><input id="nf_cat" list="food-cats" placeholder="Categoria" style="${gi};width:130px"><select id="nf_u" style="${gi};width:62px"><option value="g">g</option><option value="pz">pz</option></select></div><div style="display:flex;gap:6px;flex-wrap:wrap">${[['ref', 'porzione'], ['k', 'kcal'], ['p', 'P'], ['c', 'C'], ['g', 'G']].map(([k, lb]) => `<input id="nf_${k}" type="number" inputmode="decimal" step="any" placeholder="${lb}" style="${gi};width:${k === 'ref' ? 82 : 66}px">`).join('')}<button type="button" class="an-chip is-active" onclick="FOOD.g.newF()">+ Aggiungi</button></div><div style="font-size:11px;color:var(--accent-ink);font-weight:600">${esc(msg)}</div></div></section>`;
+    }
+    if (sub === 'combo') {
+      return `<section class="an-card" style="gap:8px"><div class="an-note">Una combo è un insieme di alimenti della libreria con le quantità. I valori si ricalcolano dalla libreria. Nel foglio “+” di ogni slot le combo di quello slot compaiono per prime.</div>
+${l.combos.map(c => { const v = comboVals(c); return `<div style="border:1px solid var(--line2);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;gap:6px"><input value="${esc(c.n)}" onchange="FOOD.g.cn('${c.id}',this.value)" style="${gi};flex:1"><select onchange="FOOD.g.cs('${c.id}',this.value)" style="${gi}">${SL.map(([id, n]) => `<option value="${id}"${c.slot === id ? ' selected' : ''}>${n}</option>`).join('')}</select><button type="button" onclick="FOOD.g.delC('${c.id}')" style="border:0;background:none;color:var(--ink3);font-size:16px;cursor:pointer;width:40px" aria-label="Elimina">✕</button></div>${c.items.map((it, i) => { const f = it.f && food(it.f); return `<div style="display:flex;gap:6px;align-items:center"><span style="flex:1;font-size:12px;font-weight:600;min-width:0">${esc(f ? f.n : (it.n || '(alimento rimosso)'))}${f ? '' : ' <span class="food-src s-s">fuori libreria</span>'}</span>${f ? `<input type="number" inputmode="decimal" step="any" value="${it.q}" onchange="FOOD.g.iq('${c.id}',${i},this.value)" style="${gi};width:70px"><span style="font-size:11px;color:var(--ink2);width:18px">${f.u === 'g' ? 'g' : 'pz'}</span>` : ''}<button type="button" onclick="FOOD.g.delI('${c.id}',${i})" style="border:0;background:none;color:var(--ink3);cursor:pointer;width:32px" aria-label="Rimuovi">✕</button></div>`; }).join('')}
+<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="ci_${c.id}" style="${gi};flex:1;min-width:140px"><option value="">+ aggiungi alimento…</option>${l.foods.map(f => `<option value="${f.id}">${esc(f.n)}</option>`).join('')}</select><button type="button" class="an-chip" onclick="FOOD.g.addI('${c.id}')">Aggiungi</button><b style="font-size:12px;margin-left:auto">${r0(v.k)} kcal · P ${fmt(v.p, 1)} · C ${fmt(v.c, 1)} · G ${fmt(v.g, 1)}</b></div></div>`; }).join('') || '<div class="an-note">Nessuna combo ancora.</div>'}
+<div><button type="button" class="an-chip is-active" onclick="FOOD.g.newC()">+ Nuova combo</button></div></section>`;
+    }
+    if (sub === 'gt') {
+      return `<section class="an-card" style="gap:8px"><div class="an-note">Per ogni slot scegli una combo (solo quelle di quello slot) oppure “libero”. Applicandola in Oggi le voci entrano come <b>previsto</b> e contano solo dopo la tua conferma.</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px">${l.gts.map(g => { let tk = 0, tp = 0; SL.forEach(([id]) => { const c = g.m[id] && combo(g.m[id]); if (c) { const v = comboVals(c); tk += v.k; tp += v.p; } }); return `<div style="border:1px solid var(--line2);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;gap:6px;align-items:center"><input value="${esc(g.n)}" onchange="FOOD.g.gn('${g.id}',this.value)" style="${gi};flex:1"><span style="font-size:11px;color:var(--ink2);font-weight:600;white-space:nowrap">${r0(tk)} kcal · P ${fmt(tp, 1)}</span><button type="button" onclick="FOOD.g.delG('${g.id}')" style="border:0;background:none;color:var(--ink3);font-size:16px;cursor:pointer;width:36px" aria-label="Elimina">✕</button></div>${SL.map(([id, n]) => `<label style="display:grid;grid-template-columns:104px 1fr;gap:8px;align-items:center;font-size:12px;font-weight:600">${n}<select onchange="FOOD.g.gm('${g.id}','${id}',this.value)" style="${gi}"><option value="">— libero —</option>${l.combos.filter(c => c.slot === id).map(c => `<option value="${c.id}"${g.m[id] === c.id ? ' selected' : ''}>${esc(c.n)}</option>`).join('')}</select></label>`).join('')}</div>`; }).join('')}</div><div><button type="button" class="an-chip is-active" onclick="FOOD.g.newG()">+ Nuova giornata tipo</button></div></section>`;
+    }
+    if (sub === 'obj') {
+      const T = l.targets;
+      return `<section class="an-card" style="gap:8px"><div class="an-note">Obiettivi giornalieri. Lasciali vuoti finché non li decidi: la card mostrerà solo i totali, senza “mancano” né barre.</div><div style="display:flex;gap:10px;flex-wrap:wrap"><label style="font-size:12px;font-weight:600;display:flex;flex-direction:column;gap:3px">Calorie (kcal)<input type="number" inputmode="decimal" value="${T.kcal == null ? '' : T.kcal}" onchange="FOOD.g.tgt('kcal',this.value)" style="${gi};width:120px"></label><label style="font-size:12px;font-weight:600;display:flex;flex-direction:column;gap:3px">Proteine (g)<input type="number" inputmode="decimal" value="${T.p == null ? '' : T.p}" onchange="FOOD.g.tgt('p',this.value)" style="${gi};width:120px"></label></div></section>`;
+    }
+    return '';
+  }
+  const G = {
+    fq(v) { flt.q = v; reGest(); }, ver() { flt.ver = !flt.ver; reGest(); },
+    f(id, k, v) {
+      const f = food(id); if (!f) return;
+      if (k === 'n' || k === 'cat' || k === 'note') {
+        v = String(v).trim();
+        if (k === 'n') { if (!v || lib().foods.some(x => x.id !== id && x.n.toLowerCase() === v.toLowerCase())) { flash('Nome vuoto o già usato.'); return reGest(); } }
+        f[k] = v;
+      } else if (k === 'u') { f.u = v === 'pz' ? 'pz' : 'g'; if (f.u === 'pz') f.ref = f.ref > 0 && f.ref <= 20 ? f.ref : 1; f.ok = false; }
+      else { const x = num(v); if (!(x >= 0) || (k === 'ref' && !(x > 0))) { flash('Valore non valido.'); return reGest(); } f[k] = x; if (['k', 'p', 'c', 'g'].includes(k)) f.ok = false; }
+      saveLib(); reGest();
+    },
+    ok(id, v) { const f = food(id); if (f) { f.ok = !!v; saveLib(); reGest(); } },
+    delF(id) {
+      const used = lib().combos.filter(c => c.items.some(it => it.f === id)).map(c => c.n);
+      if (used.length && !confirm('Questo alimento è usato nelle combo: ' + used.join(', ') + '. Nelle combo resterà il valore salvato (fuori libreria). Eliminare?')) return;
+      if (!used.length && !confirm('Eliminare l\'alimento?')) return;
+      const f = food(id);
+      lib().combos.forEach(c => c.items.forEach(it => { if (it.f === id) { it.s = fv(f, it.q); it.n = f.n; delete it.f; } }));
+      lib().foods = lib().foods.filter(x => x.id !== id); saveLib(); reGest();
+    },
+    newF() {
+      const g = id => document.getElementById(id).value, n = g('nf_n').trim(), v = { ref: num(g('nf_ref')), k: num(g('nf_k')), p: num(g('nf_p')), c: num(g('nf_c')), g: num(g('nf_g')) };
+      if (!n || !(v.ref > 0) || !(v.k >= 0) || [v.p, v.c, v.g].some(x => !(x >= 0))) { flash('Compila nome, porzione, kcal, P, C, G (numeri ≥ 0).'); return reGest(); }
+      if (lib().foods.some(x => x.n.toLowerCase() === n.toLowerCase())) { flash('Esiste già un alimento con questo nome.'); return reGest(); }
+      lib().foods.push({ id: uid('f'), n, cat: g('nf_cat').trim() || 'Altro', u: g('nf_u'), ref: v.ref, k: v.k, p: v.p, c: v.c, g: v.g, note: '', ok: false });
+      flash('Aggiunto: ' + n); saveLib(); reGest();
+    },
+    cn(id, v) { const c = combo(id); v = String(v).trim(); if (!c) return; if (!v) return reGest(); c.n = v; saveLib(); reGest(); },
+    cs(id, v) { const c = combo(id); if (c) { c.slot = v; saveLib(); reGest(); } },
+    iq(id, i, v) { const c = combo(id), x = num(v); if (!c || !(x > 0)) { flash('Quantità non valida.'); return reGest(); } c.items[i].q = x; saveLib(); reGest(); },
+    delI(id, i) { const c = combo(id); if (c) { c.items.splice(i, 1); saveLib(); reGest(); } },
+    addI(id) { const c = combo(id), fid = document.getElementById('ci_' + id).value, f = food(fid); if (c && f) { c.items.push({ f: fid, q: f.ref }); saveLib(); reGest(); } },
+    delC(id) {
+      if (!confirm('Eliminare la combo? Le voci già registrate nei giorni restano con i valori salvati.')) return;
+      lib().gts.forEach(g => Object.keys(g.m).forEach(k => { if (g.m[k] === id) delete g.m[k]; }));
+      lib().combos = lib().combos.filter(x => x.id !== id); saveLib(); reGest();
+    },
+    newC() { lib().combos.push({ id: uid('c'), n: 'Nuova combo', slot: 'col', items: [] }); saveLib(); reGest(); },
+    gn(id, v) { const g = lib().gts.find(x => x.id === id); v = String(v).trim(); if (g && v) { g.n = v; saveLib(); } reGest(); },
+    gm(id, slot, v) { const g = lib().gts.find(x => x.id === id); if (!g) return; if (v) g.m[slot] = v; else delete g.m[slot]; saveLib(); reGest(); },
+    delG(id) { if (lib().gts.length <= 1) { flash('Serve almeno una giornata tipo.'); return reGest(); } if (!confirm('Eliminare la giornata tipo?')) return; lib().gts = lib().gts.filter(x => x.id !== id); saveLib(); reGest(); },
+    newG() { lib().gts.push({ id: uid('gt'), n: 'Nuova giornata', m: {} }); saveLib(); reGest(); },
+    tgt(k, v) { const x = String(v).trim() === '' ? null : num(v); if (x !== null && !(x > 0)) { flash('Valore non valido.'); return reGest(); } lib().targets[k] = x; saveLib(); reGest(); },
+    mealToCombo() {
+      const items = []; Object.keys(GST_MEAL).forEach(name => { const f = lib().foods.find(x => x.n === name); if (f) items.push({ f: f.id, q: GST_MEAL[name] }); });
+      if (!items.length) return;
+      lib().combos.push({ id: uid('c'), n: 'Nuova combo', slot: 'col', items }); saveLib(); sub = 'combo'; GST_MEAL = {}; reGest();
+    }
+  };
+  function mealActions() {
+    if (!Object.keys(GST_MEAL).length) return '';
+    return `<div style="margin-top:10px"><button type="button" class="an-chip is-active" onclick="FOOD.g.mealToCombo()">Salva come combo</button><div class="an-note" style="margin-top:4px">Poi rinomina la combo e scegli lo slot in Combo.</div></div>`;
+  }
+  function asGstDB() {
+    const out = {}; lib().foods.forEach(f => { (out[f.cat || 'Altro'] = out[f.cat || 'Altro'] || []).push({ name: f.n, unit: f.u === 'pz' ? 'fixed' : 'g', barLabel: !!f.bar, ref: f.ref, kcal: f.k, p: f.p, c: f.c, g: f.g, note: f.note + (f.ok ? '' : (f.note ? ' · ' : '') + 'da verificare') }); });
+    return out;
+  }
+
+  return {
+    START, on, cardHTML, subnav, gestView, mealActions, asGstDB, G, g: G,
+    sub(k) { if (arguments.length) { sub = k; msg = ''; reGest(); } return sub; }, subGet: () => sub,
+    open, openGT, close, tab: setTab, pick: pickSlot, setGT, q(v) { sh.q = v; const l = document.getElementById('food-list'); if (l) l.innerHTML = listFoods(); },
+    addCombo, addFood, addManual, importPhoto, rm: removeEntry, cslot: confirmSlot, dplan: dropPlan, confirmAll, clearPlan, applyGT,
+    _t: { totals, day, vals, lib, comboVals, SL, sync, dirty: () => dirty, reset() { L = null; dirty = {}; } }
+  };
+})();
+
 function render() {
   // Bug corretto 16/09/2026: flush() ora chiama render() all'inizio del
   // salvataggio (per mostrare "Salvataggio…"), ma render() ricostruisce
@@ -7808,7 +8226,7 @@ function renderOggiFull() {
     return `
       ${renderDayNav()}
       <div style="padding:0 18px 20px;display:flex;flex-direction:column;gap:10px;">
-        ${heroM}${pesoM}${ringsM}${biometriaM}${sonnoM}${iniezioniM}${integratoriM}${allenamentoM}${soggettivoM}${noteM}${saveBtnM}
+        ${heroM}${pesoM}${FOOD.on() ? FOOD.cardHTML() : ''}${ringsM}${biometriaM}${sonnoM}${iniezioniM}${integratoriM}${allenamentoM}${soggettivoM}${noteM}${saveBtnM}
       </div>
     `;
   }
@@ -8101,7 +8519,7 @@ function renderOggiFull() {
       </div>
       <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:3px;">
         <span style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink2);">${L.exercises}</span>
-        ${exList ? exList.map(e => {
+        ${exList ? exList.slice(0, FOOD.on() ? 3 : 99).map(e => {
           const sm = setsSummary(e.sets);
           return `
             <div style="display:flex;align-items:center;gap:8px;padding:2px 0;">
@@ -8109,7 +8527,7 @@ function renderOggiFull() {
               <span style="flex:0 0 38px;text-align:right;font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${sm.reps}</span>
               <span style="flex:0 1 auto;min-width:0;text-align:right;font-size:var(--fs-xs);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sm.kg}</span>
             </div>`;
-        }).join('') : `<span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink2);">—</span>`}
+        }).join('') + (FOOD.on() && exList.length > 3 ? `<span style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);">+ ${exList.length - 3} altri esercizi</span>` : '') : `<span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink2);">—</span>`}
       </div>`}
     </section>`;
 
@@ -8151,8 +8569,8 @@ function renderOggiFull() {
 
   return `
     <div class="g-nav">${renderDayNav()}</div>
-    <div class="oggi-grid" style="display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(3,min-content);gap:9px;">
-      ${heroCard}${pesoCard}${iniezioniCard}${adherenceCard}${integratoriCard}${allenamentoCard}${soggettivoCard}
+    <div class="oggi-grid${FOOD.on() ? ' food-on' : ''}" style="display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(3,min-content);gap:9px;">
+      ${heroCard}${pesoCard}${iniezioniCard}${adherenceCard}${integratoriCard}${allenamentoCard}${soggettivoCard}${FOOD.on() ? FOOD.cardHTML() : ''}
     </div>
   `;
 }
@@ -9543,6 +9961,8 @@ function GST_mealTotals(){
 
 function GST_renderAlimenti(){
   var host = document.querySelector('[data-gst-view="alimenti"]'); if (!host) return;
+  GST_FOOD_DB = FOOD.asGstDB();
+  if (FOOD.subGet() !== 'pasto') { host.innerHTML = '<div style="grid-column:1/-1;display:flex;flex-direction:column;gap:10px">' + FOOD.subnav() + FOOD.gestView() + '</div>'; return; }
   var cats = Object.keys(GST_FOOD_DB);
   var html = '<div class="gst-2col">';
   html += '<section class="an-card">' +
@@ -9574,7 +9994,7 @@ function GST_renderAlimenti(){
     '</div>' +
     '<div data-gst-meal-rows style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div>' +
   '</section></div>';
-  host.innerHTML = html;
+  host.innerHTML = '<div style="grid-column:1/-1">' + FOOD.subnav() + '</div>' + html;
   GST_renderFoodList(host);
   GST_renderMealPanel(host);
   GST_bindAlimenti(host);
@@ -9627,7 +10047,7 @@ function GST_renderMealPanel(host){
       '<button type="button" data-gst-meal-del="'+esc(name)+'" style="border:none;background:none;color:var(--ink3);cursor:pointer;font-size:var(--fs-md);'+(isDesktop?'':'width:36px;height:36px')+'">\u2715</button>' +
     '</div>';
   });
-  wrap.innerHTML = html;
+  wrap.innerHTML = html + FOOD.mealActions();
 }
 
 function GST_bindAlimenti(host){
