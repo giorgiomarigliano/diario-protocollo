@@ -937,8 +937,8 @@
 .pc-lbl{font-size:var(--fs-xs);font-weight:600;color:var(--ink2);}
 .pc-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
 .pc-tile{background:var(--surf2);border-radius:var(--r-sm);padding:6px;text-align:center;min-width:0;}
-.pc-tile b{display:block;font-size:var(--fs-xl);font-variant-numeric:tabular-nums;}
-.pc-tile span{font-size:var(--fs-2xs);color:var(--ink2);}
+.pc-tile b{display:block;font-size:var(--fs-sm);font-weight:600;font-variant-numeric:tabular-nums;}
+.pc-tile span{font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);}
 .pc-dchip{flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:7px;padding:7px 4px;border-radius:var(--r-md);cursor:pointer;background:var(--surf);border:1px solid var(--line);font-size:var(--fs-sm);font-weight:600;min-width:0;}
 .pc-dchip.sel{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink);}
 .pc-dchip.off{opacity:.4;cursor:default;}
@@ -946,15 +946,15 @@
 .pc-dot.n{background:var(--idle);} 
 .pc-wk{flex:0 0 auto;padding:5px 10px;border-radius:var(--r-sm);font-size:var(--fs-sm);font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;background:var(--surf2);color:var(--ink2);border:1px solid var(--line);}
 .pc-wk.sel{background:var(--accent);color:var(--white);border-color:var(--accent);}
-.pc-supp{display:flex;align-items:center;gap:7px;background:var(--surf2);border-radius:var(--r-md);padding:0 9px;min-width:0;font-size:var(--fs-md);font-weight:600;}
-.pc-supp i{flex:0 0 19px;height:19px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;color:#fff;font-weight:700;}
+.pc-supp{display:flex;align-items:center;gap:7px;background:var(--surf2);border-radius:var(--r-md);padding:0 9px;min-width:0;font-size:var(--fs-sm);font-weight:600;}
+.pc-supp i{flex:0 0 19px;height:19px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:var(--fs-2xs);color:#fff;font-weight:700;}
 .pc-supp span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .pc-pips{display:flex;gap:3px;}.pc-pips i{flex:1 1 0;height:10px;border-radius:var(--r-xs);}
-.pc-ex{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;font-size:var(--fs-sm);padding:4px 0;border-bottom:1px solid var(--line2);align-items:baseline;}
+.pc-ex{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;font-size:var(--fs-xs);padding:4px 0;border-bottom:1px solid var(--line2);align-items:baseline;}
 .pc-ex:last-child{border-bottom:0;}
-.pc-sec{font-size:var(--fs-xs);font-weight:700;color:var(--accent);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px;}
+.pc-sec{font-size:var(--fs-2xs);font-weight:700;color:var(--accent);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px;}
 .pc-ev{display:grid;grid-template-columns:1fr;gap:16px;}.pc-lifts{column-count:1;column-gap:32px}.pc-lifts>div{break-inside:avoid}
-.pc-pill{border-radius:var(--r-sm);padding:5px 8px;font-size:var(--fs-sm);font-weight:600;text-align:center;}
+.pc-pill{border-radius:var(--r-sm);height:22px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-2xs);font-weight:600;}
 .pc-top1{padding:8px 12px;gap:8px;}.pc-top2{padding:7px 12px;gap:7px;}
 .pc-dl{min-width:96px;}
 @media (min-width:1024px){
@@ -5854,7 +5854,7 @@ function suppRange(from,to){let a=0,t=0;for(let i=from;i<=to&&i<N;i++){const r=s
 const isWO=d=>!!(d.wo_durata||d.wo_volume||d.motra);
 const FIELDS=['peso','hrv','rhr','bp_sys','bp_dia','ore_sonno','qualita_sonno','energia','recupero','umore','appetito','abdom_full'];
 const filled=d=>FIELDS.filter(k=>d[k]!==''&&d[k]!=null).length;
-function ring(pct,color,txt){const c=213.63;return `<div style="position:relative;width:96px;height:96px"><svg viewBox="0 0 84 84" style="width:100%;height:100%"><circle cx="42" cy="42" r="34" fill="none" stroke="var(--line2)" stroke-width="8"/><circle cx="42" cy="42" r="34" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(pct*c/100).toFixed(1)} ${c}" style="transform:rotate(-90deg);transform-origin:42px 42px"/></svg><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--fs-2xl);font-weight:700">${txt}</div></div>`;}
+function ring(pct,color,txt){const c=213.63;return `<div style="position:relative;width:104px;height:104px"><svg viewBox="0 0 84 84" style="width:104px;height:104px"><circle cx="42" cy="42" r="34" fill="none" stroke="var(--line2)" stroke-width="8"/><circle cx="42" cy="42" r="34" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(pct*c/100).toFixed(1)} ${c}" style="transform:rotate(-90deg);transform-origin:42px 42px"/></svg><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--fs-3xl);font-weight:600">${txt}</div></div>`;}
 function spark(sel){
   const from=rng==='all'?0:Math.max(0,N-parseInt(rng)), pts=[];
   for(let i=from;i<N;i++){const v=num(DAYS[i].peso);if(v!=null)pts.push([i,v]);}
@@ -5863,76 +5863,81 @@ function spark(sel){
   const path=pts.map((p,k)=>(k?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ');
   const area=path+` L${X(pts[pts.length-1][0]).toFixed(1)} ${H} L${X(pts[0][0]).toFixed(1)} ${H} Z`;
   const sp=pts.find(p=>p[0]===sel);
-  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:120px;display:block"><path d="${area}" fill="var(--accent-soft)" opacity=".7"/><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/>${sp?`<circle cx="${X(sp[0])}" cy="${Y(sp[1])}" r="4.5" fill="var(--accent)" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/>`:''}</svg><div class="pc-row" style="font-size:var(--fs-2xs);color:var(--ink3)"><span>${dlab(from)} · min ${f1(Math.min(...pts.map(p=>p[1])))}</span><span>max ${f1(Math.max(...pts.map(p=>p[1])))} · ${dlab(N-1)}</span></div>`;
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:112px;display:block"><path d="${area}" fill="var(--accent-soft)" opacity=".7"/><path d="${path}" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/>${sp?`<circle cx="${X(sp[0])}" cy="${Y(sp[1])}" r="4.5" fill="var(--accent)" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/>`:''}</svg><div class="pc-row" style="font-size:var(--fs-2xs);color:var(--ink3)"><span>${dlab(from)} · min ${f1(Math.min(...pts.map(p=>p[1])))}</span><span>max ${f1(Math.max(...pts.map(p=>p[1])))} · ${dlab(N-1)}</span></div>`;
 }
 function pips(n,color){n=Math.round(n)||0;return `<div class="pc-pips">${Array.from({length:10},(_,k)=>`<i style="background:${k<n?color:'var(--line2)'}"></i>`).join('')}</div>`;}
-function subj(label,v,color){const n=num(v);return `<div><div class="pc-row"><span class="pc-lbl" style="font-weight:500">${label}</span><span style="font-size:var(--fs-xs);font-weight:700;color:${color}">${n==null?'—':v}</span></div>${pips(n,color)}</div>`;}
-function pill(label,val,tone){const m={Nessuna:['var(--surf2)','var(--ink2)'],Lieve:['var(--accent-soft)','var(--accent-ink)'],Moderata:['var(--warn-bg)','var(--warn-ink)'],Significativa:['var(--bad-bg)','var(--bad)'],Normale:['var(--surf2)','var(--ink2)'],Aumentato:['var(--accent-soft)','var(--accent-ink)'],Ridotto:['var(--warn-bg)','var(--warn-ink)']};const c=m[val]||['var(--surf2)','var(--ink3)'];return `<div><div class="pc-lbl" style="font-weight:500;margin-bottom:3px">${label}</div><div class="pc-pill" style="background:${c[0]};color:${c[1]}">${val||'—'}</div></div>`;}
+function subj(label,v,color){const n=num(v);return `<div><div class="pc-row" style="margin-bottom:3px"><span style="font-size:var(--fs-2xs);font-weight:500;color:var(--ink2)">${label}</span><span style="font-size:var(--fs-2xs);font-weight:600;color:${color}">${n==null?'—':v}</span></div>${pips(n,color)}</div>`;}
+function pill(label,val,tone){const m={Nessuna:['var(--surf2)','var(--ink2)'],Lieve:['var(--accent-soft)','var(--accent-ink)'],Moderata:['var(--warn-bg)','var(--warn-ink)'],Significativa:['var(--bad-bg)','var(--bad)'],Normale:['var(--surf2)','var(--ink2)'],Aumentato:['var(--accent-soft)','var(--accent-ink)'],Ridotto:['var(--warn-bg)','var(--warn-ink)']};const c=m[val]||['var(--surf2)','var(--ink3)'];return `<div><div style="font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);margin-bottom:3px">${label}</div><div class="pc-pill" style="background:${c[0]};color:${c[1]}">${val||'—'}</div></div>`;}
 function chipsTop(){
   const w=wk(selDay);
   const wkChips=Array.from({length:WEEKS},(_,k)=>`<span class="pc-wk ${k===w?'sel':''}" onclick="PRE.sel(${k*7+Math.min(selDay%7,Math.min(6,N-1-k*7))})">PW${k+1}</span>`).join('');
   const a=w*7,b=Math.min(N-1,a+6);
   const days=Array.from({length:7},(_,k)=>{const i=a+k;const ok=i<N;const d=ok?dt(i):dt(i);
-    return `<div class="pc-dchip ${i===selDay?'sel':''} ${ok?'':'off'}" ${ok?`onclick="PRE.sel(${i})"`:''}><span>${WD[d.getDay()]}</span><span style="font-weight:500">${d.getDate()}</span>${ok?`<span class="pc-dot ${DAYS[i].peso?'':'n'}"></span>`:''}</div>`;}).join('');
+    return `<div class="pc-dchip ${i===selDay?'sel':''} ${ok?'':'off'}" ${ok?`onclick="PRE.sel(${i})"`:''}><span>${WD[d.getDay()]}</span><span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink2)">${d.getDate()}</span>${ok?`<span class="pc-dot ${DAYS[i].peso?'':'n'}"></span>`:''}</div>`;}).join('');
   return `<div style="margin-bottom:12px;border-radius:var(--r-card);overflow:hidden;border:1px solid var(--line)">
   <div class="pc-top1" style="background:var(--surf);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px"><span class="pc-lbl" style="flex:0 0 auto">Pre ciclo</span><div style="flex:1 1 auto;min-width:0;display:flex;gap:4px;overflow-x:auto">${wkChips}</div><span onclick="PRE.close()" style="flex:0 0 auto;border:1px solid var(--line);background:var(--surf);border-radius:var(--r-sm);padding:5px 10px;font-size:var(--fs-sm);font-weight:600;cursor:pointer">Ciclo 1 →</span></div>
   <div class="pc-top2" style="background:var(--surf2);display:flex;align-items:center;gap:7px"><span class="pc-lbl pc-dl" style="flex:0 0 auto">${dlab(a)} – ${dlab(b)}</span>${days}</div></div>`;
 }
 function hero(d){
-  const i=d.i,pct=Math.round((i+1)/N*100),w=wk(i),p=plan(i);
-  const segs=Array.from({length:WEEKS},(_,k)=>`<div style="flex:1;display:flex;flex-direction:column;gap:5px"><div style="height:3px;border-radius:2px;background:${k===w?'#fff':k<w?'#ffffff88':'#ffffff30'}"></div><span style="font-size:var(--fs-2xs);color:${k===w?'#fff':'var(--on-dark-2)'};font-weight:${k===w?600:400}">PW${k+1}</span></div>`).join('');
-  const left=N-1-i;
+  const i=d.i,pct=Math.round((i+1)/N*100),w=wk(i),p=plan(i),left=N-1-i;
+  const segs=Array.from({length:WEEKS},(_,k)=>`<div style="flex:1;display:flex;flex-direction:column;gap:5px"><div style="height:3px;border-radius:2px;background:${k===w?'#fff':k<w?'rgba(255,255,255,.55)':'rgba(255,255,255,.2)'}"></div><span style="font-size:var(--fs-2xs);font-weight:600;color:${k===w?'#fff':'rgba(255,255,255,.45)'}">PW${k+1}</span></div>`).join('');
   const s=d.sonno_h!=null?hm(d.sonno_h):(d.ore_sonno?d.ore_sonno+' ⚠':'—');
+  const big=(v,l)=>`<div style="text-align:right"><div style="font-size:var(--fs-6xl);font-weight:700;line-height:1">${v}</div><div style="font-size:var(--fs-xs);font-weight:600;color:rgba(255,255,255,.66);margin-top:3px">${l}</div></div>`;
   return `<section class="pc-hero" style="border-radius:var(--r-card);background:var(--hero);color:#fff;padding:20px 22px;display:flex;flex-direction:column;gap:14px;overflow:hidden">
-  <div style="font-size:var(--fs-xs);color:var(--on-dark-1);display:flex;align-items:center;gap:7px"><span style="width:7px;height:7px;border-radius:50%;background:var(--idle)"></span>Pre ciclo · Giorno ${i+1} / ${N} · PW${w+1}</div>
-  <div style="font-size:var(--fs-4xl);font-weight:700;letter-spacing:-.01em">${WDL[dt(i).getDay()]} ${dlab(i)} — ${p}</div>
-  <div style="font-size:var(--fs-base);color:var(--on-dark-1);line-height:1.5">Sonno ${s} · HRV ${f1(hrvMid(d),0)} · RHR ${d.rhr||'—'} · Peso ${d.peso||'—'} kg · Energia ${d.energia||'—'}/10${isWO(d)?'':' · nessun allenamento registrato'}</div>
-  <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:auto"><div><div style="font-size:56px;font-weight:700;letter-spacing:-.03em;line-height:1">${pct}%</div><div style="font-size:var(--fs-xs);color:var(--on-dark-1);margin-top:4px">del pre ciclo completato</div></div><div style="text-align:right"><div style="font-size:var(--fs-5xl);font-weight:700;line-height:1">${left}</div><div style="font-size:var(--fs-xs);color:var(--on-dark-1);margin-top:4px">giorni alla fine · 17 lug</div></div></div>
-  <div style="display:flex;gap:6px">${segs}</div><div style="display:flex;justify-content:space-between;font-size:var(--fs-2xs);color:var(--on-dark-2)"><span>8 GIU</span><span>17 LUG · poi Test Protocollo</span></div></section>`;
+  <div style="font-size:var(--fs-xs);font-weight:600;color:rgba(255,255,255,.62);display:flex;align-items:center;gap:7px"><span style="width:7px;height:7px;border-radius:50%;background:var(--idle)"></span>Pre ciclo · Giorno ${i+1} / ${N} · PW${w+1}</div>
+  <div style="font-size:var(--fs-4xl);font-weight:600;line-height:1.1">${WDL[dt(i).getDay()]} ${dlab(i)} · ${p}</div>
+  <div style="font-size:var(--fs-md);color:rgba(255,255,255,.86);line-height:1.5">Sonno ${s} · HRV ${f1(hrvMid(d),0)} · RHR ${d.rhr||'—'} · Peso ${d.peso||'—'} kg · Energia ${d.energia||'—'}/10${isWO(d)?'':' · nessun allenamento registrato'}</div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-top:auto"><div><div style="font-size:var(--fs-hero);font-weight:700;line-height:1">${pct}%</div><div style="font-size:var(--fs-xs);font-weight:600;color:rgba(255,255,255,.66);margin-top:4px">del pre ciclo completato</div></div><div style="display:flex;gap:28px">${big(i+1,'giorni trascorsi')}${big(left,'giorni alla fine · 17 lug')}</div></div>
+  <div style="display:flex;gap:6px">${segs}</div><div style="display:flex;justify-content:space-between;font-size:var(--fs-2xs);font-weight:600;color:rgba(255,255,255,.7)"><span>8 GIU</span><span>17 LUG</span></div></section>`;
 }
 function peso(d){
   const first=num(DAYS[0].peso),cur=num(d.peso),delta=cur!=null&&first!=null?cur-first:null;
-  const rb=['7','14','30','all'].map(r=>`<span class="pc-wk ${rng===r?'sel':''}" onclick="PRE.setRng('${r}')" style="padding:3px 9px">${r==='all'?'Tutto':r+'g'}</span>`).join('');
+  const rb=['7','14','30','all'].map(r=>`<span class="pc-wk ${rng===r?'sel':''}" onclick="PRE.setRng('${r}')" style="padding:4px 9px;font-size:var(--fs-xs)">${r==='all'?'Tutto':r+'g'}</span>`).join('');
+  const from=rng==='all'?0:Math.max(0,N-parseInt(rng));
+  const pts=[];for(let i=from;i<N;i++){const v=num(DAYS[i].peso);if(v!=null)pts.push([i,v]);}
+  let slope=null;if(pts.length>2){const mx=pts.reduce((a,p)=>a+p[0],0)/pts.length,my=pts.reduce((a,p)=>a+p[1],0)/pts.length;let nu=0,de=0;pts.forEach(p=>{nu+=(p[0]-mx)*(p[1]-my);de+=(p[0]-mx)**2;});if(de)slope=nu/de*7;}
   let vita='';for(let i=d.i;i>=0;i--){if(DAYS[i].vita){vita=DAYS[i].vita;break}}
   const hr=(num(d.hrv_min)!=null&&num(d.hrv_max)!=null)?`${d.hrv_min} – ${d.hrv_max}`:(d.hrv||'—');
-  const ch=[['HRV',hr],['RHR',d.rhr||'—'],['Press.',d.bp_sys?d.bp_sys+' / '+d.bp_dia:'—'],['Sonno',d.sonno_h!=null?hm(d.sonno_h):(d.ore_sonno?d.ore_sonno+' ⚠':'—')],['Girovita',vita?vita+' cm':'—']];
-  return `<section class="pc-card pc-peso" style="padding:16px 20px;gap:10px"><div class="pc-row"><span class="pc-lbl">Peso corporeo</span><div style="display:flex;gap:4px">${rb}</div></div>
-  <div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:var(--fs-6xl,40px);font-weight:700;letter-spacing:-.02em">${d.peso||'—'}</span><span style="color:var(--ink2)">kg</span><span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink2)">${delta==null?'':(delta>0?'+':'')+f1(delta)+' dal 8 giu'}</span></div>
+  const ch=[['HRV',hr],['Freq. riposo',d.rhr||'—'],['Pressione',d.bp_sys?d.bp_sys+' / '+d.bp_dia:'—'],['Sonno',d.sonno_h!=null?hm(d.sonno_h):(d.ore_sonno?d.ore_sonno+' ⚠':'—')],['Girovita',vita?vita+' cm':'—']];
+  return `<section class="pc-card pc-peso" style="padding:16px 20px;gap:6px"><div class="pc-row" style="align-items:center"><span class="pc-lbl">Peso corporeo</span><div style="display:flex;gap:4px">${rb}</div></div>
+  <div class="pc-row" style="align-items:center"><div style="display:flex;align-items:baseline;gap:8px"><span style="display:inline-flex;align-items:center;height:40px;min-width:112px;padding:0 10px;box-sizing:border-box;background:var(--surf2);border-radius:var(--r-md);font-size:var(--fs-6xl);font-weight:600;letter-spacing:-.02em">${d.peso||'—'}</span><span style="font-size:var(--fs-base);font-weight:500;color:var(--ink2)">kg</span><span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink2)">${delta==null?'':(delta>0?'+':'')+f1(delta)+' dal 8 giu'}</span></div><span style="font-size:var(--fs-sm);font-weight:600">${slope==null?'':(slope>0?'+':'')+f1(slope,2)+' kg / sett. su '+(rng==='all'?N:rng)+'gg'}</span></div>
   ${spark(d.i)}
-  <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px">${ch.map(c=>`<div><div style="font-size:var(--fs-xs);color:var(--ink3);margin-bottom:3px">${c[0]}</div><div class="pc-tile" style="font-weight:600;font-size:var(--fs-md);padding:8px 2px">${c[1]}</div></div>`).join('')}</div></section>`;
+  <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px">${ch.map(c=>`<div><div style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink2);margin-bottom:3px">${c[0]}</div><div class="pc-tile" style="font-weight:600;font-size:var(--fs-sm);height:27px;display:flex;align-items:center;justify-content:center;padding:0">${c[1]}</div></div>`).join('')}</div></section>`;
 }
 function wo(d){
   const p=plan(d.i),m=d.motra;
+  const sub='margin-top:4px;padding-top:8px;border-top:1px solid var(--line);font-size:var(--fs-2xs);font-weight:600;color:var(--ink2)';
   let ex='';
-  if(m&&m.ex.length){ex=`<div class="pc-lbl" style="margin-top:4px;padding-top:8px;border-top:1px solid var(--line)">Esercizi svolti · da Motra</div>`+m.ex.map(e=>{const w=e.s.filter(s=>!s.w);const reps=w.length?`${w.length}×${w[0].reps}`:'—';const kgs=w.map(s=>s.kg).filter(v=>v!=null);const k=kgs.length?(kgs.every(v=>v===kgs[0])?kgs[0]:kgs.join('·'))+'kg':'—';return `<div class="pc-ex"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink2)">${e.n}</span><span style="color:var(--ink3)">${reps}</span><b style="font-variant-numeric:tabular-nums">${k}</b></div>`}).join('');}
-  else if(isWO(d)) ex=`<div class="pc-lbl" style="margin-top:4px;padding-top:8px;border-top:1px solid var(--line);font-weight:400;color:var(--ink3)">Nessun dettaglio esercizi (Motra non importato)</div>`;
-  else ex=`<div class="pc-lbl" style="margin-top:4px;padding-top:8px;border-top:1px solid var(--line);font-weight:400;color:var(--ink3)">${p==='Riposo'?'Giorno di riposo da programma':'Nessun allenamento registrato'}</div>`;
+  if(m&&m.ex.length){ex=`<div style="${sub}">Esercizi svolti · da Motra</div><div>`+m.ex.map(e=>{const w=e.s.filter(s=>!s.w);const reps=w.length?`${w.length}×${w[0].reps}`:'—';const kgs=w.map(s=>s.kg).filter(v=>v!=null);const k=kgs.length?(kgs.every(v=>v===kgs[0])?kgs[0]:kgs.join('·'))+'kg':'—';return `<div class="pc-ex"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500;color:var(--ink2)">${e.n}</span><span style="font-size:var(--fs-2xs);font-weight:500;color:var(--ink2)">${reps}</span><b style="font-weight:600;font-variant-numeric:tabular-nums">${k}</b></div>`}).join('')+'</div>';}
+  else if(isWO(d)) ex=`<div style="${sub};font-weight:400;color:var(--ink3)">Nessun dettaglio esercizi (Motra non importato)</div>`;
+  else ex=`<div style="${sub};font-weight:400;color:var(--ink3)">${p==='Riposo'?'Giorno di riposo da programma':'Nessun allenamento registrato'}</div>`;
   const vol=d.wo_volume?Number(d.wo_volume).toLocaleString('it-IT'):'—';
-  return `<section class="pc-card pc-wo"><div class="pc-row"><span class="pc-lbl" style="color:var(--wo)">Allenamento</span><span style="font-size:var(--fs-2xs);font-weight:700;padding:2px 7px;border-radius:var(--r-xs);background:var(--surf2);color:var(--ink2)">${p.toUpperCase()}</span></div>
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${[[d.wo_durata||'—','Durata min'],[vol,'Volume kg'],[d.wo_kcal||'—','Calorie'],[d.wo_rpe||'—','RPE']].map(t=>`<div class="pc-tile"><b>${t[0]}</b><span>${t[1]}</span></div>`).join('')}</div>${ex}</section>`;
+  return `<section class="pc-card pc-wo"><div class="pc-row" style="align-items:center"><span class="pc-lbl">Allenamento</span><span style="font-size:var(--fs-2xs);font-weight:700;padding:4px 12px;border-radius:var(--r-xs);background:var(--surf2);color:var(--ink2)">${p}</span></div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${[[d.wo_durata||'—','Durata'],[vol,'Volume'],[d.wo_kcal||'—','Calorie'],[d.wo_rpe||'—','RPE']].map(t=>`<div class="pc-tile"><b>${t[0]}</b><span>${t[1]}</span></div>`).join('')}</div>${ex}</section>`;
 }
 function adh(d){
   const w=wk(d.i),a=w*7,b=Math.min(N-1,a+6);
   const s=suppRange(a,b),sp=s.t?Math.round(s.a/s.t*100):0;
-  let pl=0,dn=0,fl=0,fn=0;for(let i=a;i<=b;i++){if(plan(i)!=='Riposo')pl++;if(isWO(DAYS[i]))dn++;fl+=filled(DAYS[i]);fn+=FIELDS.length;}
-  const wp=pl?Math.min(100,Math.round(dn/pl*100)):0,fp=Math.round(fl/fn*100);
-  const sd=suppDay(d),df=filled(d);
-  const col=(t,c,txt,sub,s2)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:0">${ring(t,c,txt)}<div style="font-size:var(--fs-md);font-weight:600">${sub[0]}</div><div style="font-size:var(--fs-xs);color:var(--ink3)">${sub[1]}</div><div style="width:100%;height:3px;border-radius:2px;background:${c}"></div><div style="font-size:var(--fs-xs);font-weight:600;color:${c}">${s2}</div></div>`;
-  return `<section class="pc-card pc-adh" style="padding:14px 18px"><div class="pc-lbl">Aderenza · PW${w+1} (${dlab(a)} – ${dlab(b)})</div>
+  let pl=0,dn=0,fl2=0,fn=0;for(let i=a;i<=b;i++){if(plan(i)!=='Riposo')pl++;if(isWO(DAYS[i]))dn++;fl2+=filled(DAYS[i]);fn+=FIELDS.length;}
+  const wp=pl?Math.min(100,Math.round(dn/pl*100)):0,fp=Math.round(fl2/fn*100);
+  const sd=suppDay(d),df=filled(d),dd=WD[dt(d.i).getDay()].charAt(0)+WD[dt(d.i).getDay()].slice(1).toLowerCase()+' '+dt(d.i).getDate();
+  const col=(t,c,txt,sub,s2,tc)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:0">${ring(t,c,txt)}<div style="font-size:var(--fs-md);font-weight:600">${sub[0]}</div><div style="font-size:var(--fs-xs);font-weight:500;color:var(--ink2)">${sub[1]}</div><div style="width:100%;max-width:167px;height:3px;border-radius:2px;background:${c}"></div><div style="font-size:var(--fs-xs);font-weight:700;color:${tc||c}">${s2}</div></div>`;
+  const strip=Array.from({length:7},(_,k)=>{const i=a+k;if(i>=N)return `<div class="pc-tile" style="opacity:.35"><b style="font-size:var(--fs-sm)">·</b><span>${WD[dt(i).getDay()]}</span></div>`;const pl2=plan(i),done=isWO(DAYS[i]),rest=pl2==='Riposo';const c=done?'var(--wo)':(rest?'var(--idle)':'var(--bad)');return `<div class="pc-tile" style="${i===d.i?'outline:2px solid var(--accent);':''}"><b style="font-size:var(--fs-sm);color:${c}">${done?'✓':rest?'–':'✕'}</b><span>${WD[dt(i).getDay()]}<br>${pl2.replace('Upper ','Up ')}</span></div>`}).join('');
+  return `<section class="pc-card pc-adh" style="padding:14px 18px;gap:10px"><div class="pc-lbl">Aderenza · PW${w+1} (${dlab(a)} – ${dlab(b)})</div>
   <div style="display:flex;gap:10px;justify-content:space-around;padding-top:4px">
-  ${col(sp,'var(--ok)',sp+'%',['Integratori',s.a+'/'+s.t],WD[dt(d.i).getDay()].slice(0,3)+' '+dt(d.i).getDate()+' '+sd.a+'/'+sd.t)}
-  ${col(wp,'var(--wo)',wp+'%',['Allenamenti',dn+'/'+pl],plan(d.i))}
-  ${col(fp,'var(--accent)',fp+'%',['Dati compilati',fl+'/'+fn],WD[dt(d.i).getDay()].slice(0,3)+' '+dt(d.i).getDate()+' '+df+'/'+FIELDS.length)}</div>
-  <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:6px">${Array.from({length:7},(_,k)=>{const i=a+k;if(i>=N)return `<div class="pc-tile" style="opacity:.35"><b style="font-size:var(--fs-sm)">·</b><span>${WD[dt(i).getDay()]}</span></div>`;const pl2=plan(i),done=isWO(DAYS[i]),rest=pl2==='Riposo';const c=rest?(done?'var(--wo)':'var(--idle)'):(done?'var(--wo)':'var(--bad)');return `<div class="pc-tile" style="${i===d.i?'outline:2px solid var(--accent);':''}"><b style="font-size:var(--fs-sm);color:${c}">${done?'✓':rest?'–':'✕'}</b><span>${WD[dt(i).getDay()]}<br>${pl2.replace('Upper ','Up ')}</span></div>`}).join('')}</div>
-  <div style="font-size:var(--fs-xs);color:var(--ink3)">Fatte su previste nella settimana · barra sotto = giorno mostrato · ✓ allenato, ✕ previsto ma non registrato, – riposo. Integratori: contano dal primo giorno di assunzione.</div></section>`;
+  ${col(sp,'var(--ok)',sp+'%',['Integratori',s.a+'/'+s.t],dd+' '+sd.a+'/'+sd.t)}
+  ${col(wp,'var(--wo)',wp+'%',['Allenamenti',dn+'/'+pl],dd+(isWO(d)?' ✓':plan(d.i)==='Riposo'?' riposo':' —'))}
+  ${col(fp,'var(--accent)',fp+'%',['Dati compilati',fl2+'/'+fn],dd+' '+df+'/'+FIELDS.length,'var(--accent-ink)')}</div>
+  <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px">${strip}</div>
+  <div style="font-size:var(--fs-xs);font-weight:500;color:var(--ink3)">Fatte su previste nella settimana · barra sotto = giorno mostrato · ✓ allenato, ✕ previsto ma non registrato, – riposo. Integratori: contano dal primo giorno di assunzione.</div></section>`;
 }
 function integ(d){
   const sd=suppDay(d);
   const it=SUPPS.map(([k,n])=>{const s=suppState(d,k);const c={d:'var(--ok)',s:'var(--warn)',m:'var(--bad)',n:'var(--idle)'}[s],g={d:'✓',s:'–',m:'✕',n:'N'}[s];return `<div class="pc-supp" style="${s==='n'?'opacity:.55':''}"><i style="background:${c}">${g}</i><span>${n}</span></div>`}).join('');
-  return `<section class="pc-card pc-int"><div class="pc-row"><span class="pc-lbl">Integratori</span><span class="pc-lbl">${sd.a}/${sd.t}</span></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:32px;gap:6px">${it}</div><div style="font-size:var(--fs-xs);color:var(--ink3)">✓ presa · – saltata apposta · ✕ non presa · N non ancora iniziata</div></section>`;
+  return `<section class="pc-card pc-int"><div class="pc-row"><span class="pc-lbl">Integratori</span><span class="pc-lbl">${sd.a}/${sd.t}</span></div><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:32px;gap:6px">${it}</div><div style="font-size:var(--fs-2xs);font-weight:500;color:var(--ink3)">✓ presa · – saltata apposta · ✕ non presa · N non ancora iniziata</div></section>`;
 }
 function sogg(d){
-  return `<section class="pc-card pc-sub"><div class="pc-lbl">Soggettivo · scala 1-10</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 16px">
+  return `<section class="pc-card pc-sub" style="gap:7px"><div class="pc-lbl">Soggettivo · scala 1-10</div><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 16px">
   ${subj('Energia',d.energia,'var(--c-subj-energia)')}${subj('Recupero',d.recupero,'var(--c-subj-recupero)')}${subj('Umore',d.umore,'var(--c-subj-umore)')}${subj('Sonno percepito',d.qualita_sonno,'var(--c-subj-sonno)')}${subj('RPE',d.wo_rpe,'var(--c-subj-rpe)')}${pill('Appetito',d.appetito)}${pill('Pienezza addominale',d.abdom_full)}</div></section>`;
 }
 function note(d){
@@ -5946,18 +5951,18 @@ function valutazione(){
   DAYS.forEach(d=>{const p=num(d.peso),h=hrvMid(d),r=num(d.rhr),s=d.sonno_h;if(p!=null)ser.peso.push(p);if(h!=null)ser.hrv.push(h);if(r!=null)ser.rhr.push(r);if(s!=null)ser.sonno.push(s);});
   const gd={peso:0,hrv:1,rhr:-1,sonno:1};
   const dc=(k,dv)=>Math.abs(dv)<1e-9||gd[k]===0?'var(--ink3)':(dv*gd[k]>0?'var(--ok)':'var(--bad)');
-  const row=(lab,k,u,dec)=>{const a=ser[k],f=fl(a),s=stats(a);if(!f)return '';const sg=f.d>0?'+':'';return `<div style="padding:6px 0;border-bottom:1px solid var(--line2)"><div class="pc-row" style="font-size:var(--fs-base)"><b>${lab}</b><span>${f1(f.f,dec)} → <b>${f1(f.l,dec)}${u}</b> <span style="color:${dc(k,f.d)};font-weight:600">(${sg}${f1(f.d,dec)})</span></span></div><div style="font-size:var(--fs-xs);color:var(--ink3);margin-top:2px">min ${f1(s.min,dec)} · max ${f1(s.max,dec)} · media ${f1(s.avg,dec)}${u} · ${s.n} rilevazioni</div></div>`;};
+  const row=(lab,k,u,dec)=>{const a=ser[k],f=fl(a),s=stats(a);if(!f)return '';const sg=f.d>0?'+':'';return `<div style="padding:6px 0;border-bottom:1px solid var(--line2)"><div class="pc-row" style="font-size:var(--fs-md)"><b style="font-weight:600">${lab}</b><span style="font-weight:500">${f1(f.f,dec)} → <b style="font-weight:600">${f1(f.l,dec)}${u}</b> <span style="color:${dc(k,f.d)};font-weight:600">(${sg}${f1(f.d,dec)})</span></span></div><div style="font-size:var(--fs-xs);color:var(--ink3);margin-top:2px">min ${f1(s.min,dec)} · max ${f1(s.max,dec)} · media ${f1(s.avg,dec)}${u} · ${s.n} rilevazioni</div></div>`;};
   const sp=suppRange(0,N-1),spp=Math.round(sp.a/sp.t*100);
   const woN=DAYS.filter(isWO).length,volT=DAYS.reduce((a,d)=>a+(num(d.wo_volume)||0),0),dur=DAYS.map(d=>num(d.wo_durata)).filter(v=>v!=null),plN=DAYS.filter(d=>plan(d.i)!=='Riposo').length;
   const av=k=>{const a=DAYS.map(d=>num(d[k])).filter(v=>v!=null);return a.reduce((x,y)=>x+y,0)/a.length;};
-  const tile=(big,sub,c='var(--ink)',span=false)=>`<div class="pc-tile" style="text-align:left;padding:9px 12px;${span?'grid-column:span 2':''}"><div style="font-size:var(--fs-3xl);font-weight:700;color:${c}">${big}</div><div style="font-size:var(--fs-xs);color:var(--ink2);font-weight:400">${sub}</div></div>`;
+  const tile=(big,sub,c='var(--ink)',span=false)=>`<div class="pc-tile" style="text-align:left;padding:9px 12px;${span?'grid-column:span 2':''}"><div style="font-size:var(--fs-3xl);font-weight:600;color:${c}">${big}</div><div style="font-size:var(--fs-xs);color:var(--ink2);font-weight:500">${sub}</div></div>`;
   const lifts={};DAYS.forEach(d=>Object.entries(d.sl).forEach(([k,v])=>{(lifts[k]=lifts[k]||[]).push(v);}));
   const lr=Object.entries(lifts).map(([k,a])=>({k,f:a[0],l:a[a.length-1],n:a.length})).sort((x,y)=>(y.l-y.f)-(x.l-x.f));
-  const lrow=lr.map(x=>{const dv=x.l-x.f;return `<div class="pc-row" style="font-size:var(--fs-sm);padding:5px 0;border-bottom:1px solid var(--line2)"><span>${LIFTS[x.k]||x.k}</span><span style="white-space:nowrap">${x.f}kg → <b>${x.l}kg</b> <span style="color:${dv>0?'var(--ok)':dv<0?'var(--bad)':'var(--ink3)'};font-weight:600">(${dv>0?'+':''}${dv}kg)</span></span></div>`}).join('');
-  return `<section class="pc-card pc-val" style="border-left:3px solid var(--accent);padding:16px 20px;gap:12px"><div><div style="font-size:var(--fs-xl);font-weight:700">Valutazione di fine pre ciclo</div><div style="font-size:var(--fs-xs);color:var(--ink3);margin-top:3px">8 giu – 17 lug 2026 · ${ser.peso.length}/${N} giorni con peso · confronto medie primi 5 vs ultimi 5 valori · andamento descrittivo, non giudizio clinico</div></div>
+  const lrow=lr.map(x=>{const dv=x.l-x.f;return `<div class="pc-row" style="font-size:var(--fs-xs);font-weight:500;padding:5px 0;border-bottom:1px solid var(--line2)"><span style="color:var(--ink2)">${LIFTS[x.k]||x.k}</span><span style="white-space:nowrap">${x.f}kg → <b style="font-weight:600">${x.l}kg</b> <span style="color:${dv>0?'var(--ok)':dv<0?'var(--bad)':'var(--ink3)'};font-weight:600">(${dv>0?'+':''}${dv}kg)</span></span></div>`}).join('');
+  return `<section class="pc-card pc-val" style="border-left:3px solid var(--accent);padding:16px 20px;gap:12px"><div><div style="font-size:var(--fs-base);font-weight:600">Valutazione di fine pre ciclo</div><div style="font-size:var(--fs-xs);color:var(--ink3);margin-top:3px">8 giu – 17 lug 2026 · ${ser.peso.length}/${N} giorni con peso · confronto medie primi 5 vs ultimi 5 valori · andamento descrittivo, non giudizio clinico</div></div>
   <div class="pc-ev"><div><div class="pc-sec">1 · Biometria</div>${row('Peso','peso',' kg',1)}${row('HRV','hrv',' ms',0)}${row('RHR','rhr',' bpm',0)}${row('Sonno','sonno',' h',1)}<div style="font-size:var(--fs-2xs);color:var(--ink3);margin-top:5px">Sonno: ${ser.sonno.length}/${N} notti${ser.sonno.length<N?' · valori in formato non valido esclusi':''}.</div></div>
   <div><div class="pc-sec">2 · Aderenza &amp; allenamento</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${tile(spp+'%',`Integratori<br>${sp.a}/${sp.t} dosi`,spp>=80?'var(--ok)':spp>=60?'var(--warn-ink)':'var(--bad)')}${tile(woN,`Allenamenti<br>~${Math.round(dur.reduce((a,b)=>a+b,0)/dur.length)} min medi · ${plN} previsti`)}${tile(volT.toLocaleString('it-IT')+' kg',`Volume totale · media ${Math.round(volT/woN).toLocaleString('it-IT')} kg/seduta`,'var(--ink)',true)}</div></div>
-  <div><div class="pc-sec">3 · Benessere (media /10)</div><div style="display:grid;gap:8px">${[['Energia','energia','--c-subj-energia'],['Recupero','recupero','--c-subj-recupero'],['Umore','umore','--c-subj-umore'],['Sonno percepito','qualita_sonno','--c-subj-sonno']].map(([l,k,c])=>`<div><div class="pc-row"><span style="font-size:var(--fs-md)">${l}</span><b>${f1(av(k))}</b></div>${pips(av(k),`var(${c})`)}</div>`).join('')}</div></div>
+  <div><div class="pc-sec">3 · Benessere (media /10)</div><div style="display:grid;gap:8px">${[['Energia','energia','--c-subj-energia'],['Recupero','recupero','--c-subj-recupero'],['Umore','umore','--c-subj-umore'],['Sonno percepito','qualita_sonno','--c-subj-sonno']].map(([l,k,c])=>`<div><div class="pc-row"><span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink2)">${l}</span><b style="font-size:var(--fs-xs);font-weight:600">${f1(av(k))}</b></div>${pips(av(k),`var(${c})`)}</div>`).join('')}</div></div>
   </div><div><div class="pc-sec">4 · Sentinel lift · primo vs ultimo (${lr.length})</div><div class="pc-lifts">${lrow}</div></div></section>`;
 }
 function html(){
