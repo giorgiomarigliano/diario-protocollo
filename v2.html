@@ -6109,16 +6109,21 @@ const FOOD = (function () {
     MIG2.foods.forEach(f => { if (!l.foods.some(x => x.id === f.id || x.n === f.n)) l.foods.push(clone(f)); });
     MIG2.notes.forEach(([re, add]) => l.foods.forEach(f => { if (re.test(f.n) && (f.note || '').indexOf(add) < 0) f.note = (f.note || '') + add; }));
   }
-  /* Verifiche da etichetta: si applicano solo se i valori in libreria coincidono con l'etichetta (altrimenti non si tocca nulla). */
+  /* Verifiche da etichetta: si applicano solo se i valori in libreria sono ancora quelli di partenza (from); se li hai modificati tu non si tocca nulla. to = valori dell'etichetta. */
   const MIG3 = {
     id: 'm_20261009_label1',
     items: [
-      { re: /^Ember Biltong/, k: 244, p: 51.8, c: 2.1, g: 4.3, fonte: 'Etichetta retro confezione Ember biltong 25 g (foto 09/10/2026): per 100 g 244 kcal, G4,3 (sat 1,9), C2,1 (zuccheri 0,6), P51,8, sale 5,3; per bustina 25 g 61 kcal, P12,9. Gusto non leggibile nella foto', add: ' · sale 5,3 g/100 g (1,3 g a bustina)' }
+      { re: /^Ember Biltong/, from: { k: 244, p: 51.8, c: 2.1, g: 4.3 }, to: { k: 244, p: 51.8, c: 2.1, g: 4.3 }, fonte: 'Etichetta retro confezione Ember biltong 25 g (foto 09/10/2026): per 100 g 244 kcal, G4,3 (sat 1,9), C2,1 (zuccheri 0,6), P51,8, sale 5,3; per bustina 25 g 61 kcal, P12,9. Gusto non leggibile nella foto', add: ' · sale 5,3 g/100 g (1,3 g a bustina)' },
+      { re: /^Bresaola$/, from: { k: 112, p: 20.5, c: 0, g: 1.2 }, to: { k: 158, p: 32, c: 0, g: 3.3 }, fonte: 'Etichetta Esselunga Smart bresaola (Bresaole Pini) 80 g (foto 09/10/2026): per 100 g 667 kJ / 158 kcal, G3,3 (sat 1,4), C0, P32, sale 3,2; per 50 g 79 kcal, P16', add: ' · sale 3,2 g/100 g (1,6 g per 50 g) · valori precedenti (112 kcal, P20,5, G1,2) errati' }
     ]
   };
   function migrate3(l) {
     MIG3.items.forEach(m => l.foods.forEach(f => {
-      if (m.re.test(f.n) && f.ver !== 'A' && f.k === m.k && f.p === m.p && f.c === m.c && f.g === m.g) { f.ver = 'A'; f.ok = true; f.fonte = m.fonte; if (m.add && (f.note || '').indexOf(m.add) < 0) f.note = (f.note || '') + m.add; }
+      if (!m.re.test(f.n) || f.ver === 'A') return;
+      if (f.k === m.from.k && f.p === m.from.p && f.c === m.from.c && f.g === m.from.g) {
+        f.k = m.to.k; f.p = m.to.p; f.c = m.to.c; f.g = m.to.g; f.ver = 'A'; f.ok = true; f.fonte = m.fonte;
+        if (m.add && (f.note || '').indexOf(m.add) < 0) f.note = (f.note || '') + m.add;
+      }
     }));
   }
   function migrate(l) {
