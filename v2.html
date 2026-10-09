@@ -6077,9 +6077,9 @@ const FOOD = (function () {
   const MIG1 = {
     id: 'm_20261009_net',
     foods: [
-      { id: 'f_shaker-net-1-misurino-cocco-200', n: 'Shaker Net whey 1 misurino (17 g) + 200 ml Alpro cocco', cat: 'Integratori', u: 'pz', ref: 1, k: 106.5, p: 15.4, c: 5.4, g: 2.2, note: 'Etichetta barattolo: dose 34 g (= 2 misurini, sito Net) 133 kcal, P30,3, C0, G1,2 → 1 misurino 17 g = metà; + cocco 200 ml (40 kcal, P0,2, C5,4, G1,6, etichetta cartone)', ok: true, bar: false },
-      { id: 'f_shaker-net-2-misurini-cocco-200', n: 'Shaker Net whey 2 misurini (34 g) + 200 ml Alpro cocco', cat: 'Integratori', u: 'pz', ref: 1, k: 173, p: 30.5, c: 5.4, g: 2.8, note: 'Etichetta barattolo: dose 34 g (= 2 misurini, dose consigliata Net) 133 kcal, P30,3, C0, G1,2; + cocco 200 ml (40 kcal, P0,2, C5,4, G1,6, etichetta cartone)', ok: true, bar: false },
-      { id: 'f_caffe-vertuo-macchiato-cocco', n: 'Caffè Vertuo 150 ml macchiato Alpro cocco + dolcificante', cat: 'Bevande', u: 'pz', ref: 1, k: 3, p: 0, c: 0.4, g: 0.1, note: 'STIMA: macchiato 10–20 ml (assunto 15) × cocco 20 kcal/100 ml = 2–4 kcal; caffè ~0 kcal non misurato; dolcificante 0 kcal (dichiarato)', ok: false, bar: false }
+      { id: 'f_shaker-net-1-misurino-cocco-200', n: 'Shaker Net whey 1 misurino (17 g) + 200 ml Alpro cocco', cat: 'Integratori', u: 'pz', ref: 1, k: 106.5, p: 15.4, c: 5.4, g: 2.2, note: 'Etichetta barattolo: dose 34 g (= 2 misurini, sito Net) 133 kcal, P30,3, C0, G1,2 → 1 misurino 17 g = metà; + cocco 200 ml (40 kcal, P0,2, C5,4, G1,6, etichetta cartone)', ok: true, ver: 'A', fonte: 'Etichetta barattolo Net whey + etichetta cartone bevanda cocco (foto 09/10/2026); misurino 17 g = metà dose 34 g (sito Net)', bar: false },
+      { id: 'f_shaker-net-2-misurini-cocco-200', n: 'Shaker Net whey 2 misurini (34 g) + 200 ml Alpro cocco', cat: 'Integratori', u: 'pz', ref: 1, k: 173, p: 30.5, c: 5.4, g: 2.8, note: 'Etichetta barattolo: dose 34 g (= 2 misurini, dose consigliata Net) 133 kcal, P30,3, C0, G1,2; + cocco 200 ml (40 kcal, P0,2, C5,4, G1,6, etichetta cartone)', ok: true, ver: 'A', fonte: 'Etichetta barattolo Net whey + etichetta cartone bevanda cocco (foto 09/10/2026); dose consigliata Net 2 misurini = 34 g', bar: false },
+      { id: 'f_caffe-vertuo-macchiato-cocco', n: 'Caffè Vertuo 150 ml macchiato Alpro cocco + dolcificante', cat: 'Bevande', u: 'pz', ref: 1, k: 3, p: 0, c: 0.4, g: 0.1, note: 'STIMA: macchiato 10–20 ml (assunto 15) × cocco 20 kcal/100 ml = 2–4 kcal; caffè ~0 kcal non misurato; dolcificante 0 kcal (dichiarato)', ok: false, ver: 'C', fonte: 'Stima: 10–20 ml di latte di cocco (dichiarato da Giorgio) × etichetta cartone 20 kcal/100 ml; caffè non misurato', bar: false }
     ],
     combos: [
       { id: 'c_caffe-mattina', n: 'Caffè mattina', slot: 'caf', items: [{ f: 'f_caffe-vertuo-macchiato-cocco', q: 1 }] },
@@ -6089,18 +6089,40 @@ const FOOD = (function () {
       { id: 'c_bresaola-shaker-net-2', n: 'Bresaola + shaker Net 2 misurini', slot: 'col', items: [{ f: 'f_bresaola', q: 80 }, { f: 'f_shaker-net-2-misurini-cocco-200', q: 1 }] }
     ]
   };
+  /* Livelli di verifica (09/10/2026): ver 'A' etichetta · 'B' banca dati (CREA/USDA) · 'C' stima · '' da verificare. A/B richiedono sempre la fonte. */
+  const MIG2 = {
+    id: 'm_20261009_ver',
+    foods: [
+      { id: 'f_whey-net-polvere', n: 'Whey Net (polvere, per 100 g)', cat: 'Integratori', u: 'g', ref: 17, k: 391, p: 89.1, c: 0, g: 3.5, note: '1 misurino = 17 g; dose consigliata 2 misurini = 34 g (133 kcal, P30,3). Gusto non identificabile dalla foto: sul sito Net le kcal/100 g variano per gusto', ok: true, ver: 'A', fonte: 'Etichetta barattolo Net whey (foto 09/10/2026): 391 kcal, P89,1, C0, G3,5 per 100 g', bar: false },
+      { id: 'f_alpro-cocco-100ml', n: 'Alpro cocco (bevanda, per 100 ml)', cat: 'Bevande', u: 'g', ul: 'ml', ref: 200, k: 20, p: 0.1, c: 2.7, g: 0.8, note: 'Con riso, calcio e B12 · di cui zuccheri 1,9 g · marchio non visibile nella foto (dichiarato da Giorgio)', ok: true, ver: 'A', fonte: 'Etichetta cartone (foto 09/10/2026): 84 kJ / 20 kcal per 100 ml', bar: false },
+      { id: 'f_barretta-net-tiramisu', n: 'Barretta proteica Net Tiramisù (50 g)', cat: 'Integratori', u: 'pz', ref: 1, k: 173.5, p: 25, c: 14, g: 5.2, note: 'Di cui polioli 12,8 g, zuccheri 0,6 g, fibre 0,6 g, sale 0,1 g (i polioli non sono 4 kcal/g: kcal≠4P+4C+9G è normale)', ok: true, ver: 'A', fonte: 'Etichetta barretta Tiramisù (foto 09/10/2026): dose 50 g = 173,5 kcal (347,0 per 100 g)', bar: true }
+    ],
+    notes: [
+      [/^Shaker VB Whey/, ' · SUPERATA: usare "Shaker Net 1/2 misurini" (misurino reale 17 g, valori da etichetta)'],
+      [/^Scoop VB Whey/, ' · SUPERATA: usare "Whey Net (polvere)" (misurino reale 17 g, non 34 g)'],
+      [/^VB Bar 25 Net/, ' · Possibile duplicato di "Barretta proteica Net Tiramisù" (etichetta 173,5 kcal, G5,2): verificare se è lo stesso prodotto']
+    ]
+  };
+  function migrate2(l) {
+    MIG1.foods.forEach(m => { const f = l.foods.find(x => x.id === m.id); if (f && f.ver === undefined) { f.ver = m.ver; f.fonte = m.fonte; } });
+    l.foods.forEach(f => { if (f.ver === undefined) f.ver = ''; if (f.fonte === undefined) f.fonte = ''; });
+    MIG2.foods.forEach(f => { if (!l.foods.some(x => x.id === f.id || x.n === f.n)) l.foods.push(clone(f)); });
+    MIG2.notes.forEach(([re, add]) => l.foods.forEach(f => { if (re.test(f.n) && (f.note || '').indexOf(add) < 0) f.note = (f.note || '') + add; }));
+  }
   function migrate(l) {
-    l.mig = l.mig || [];
-    if (l.mig.indexOf(MIG1.id) >= 0) return false;
-    MIG1.foods.forEach(f => { if (!l.foods.some(x => x.id === f.id)) l.foods.push(clone(f)); });
-    MIG1.combos.forEach(c => { if (!l.combos.some(x => x.id === c.id) && c.items.every(it => l.foods.some(x => x.id === it.f))) l.combos.push(clone(c)); });
-    l.mig.push(MIG1.id);
-    return true;
+    let ch = false; l.mig = l.mig || [];
+    if (l.mig.indexOf(MIG1.id) < 0) {
+      MIG1.foods.forEach(f => { if (!l.foods.some(x => x.id === f.id)) l.foods.push(clone(f)); });
+      MIG1.combos.forEach(c => { if (!l.combos.some(x => x.id === c.id) && c.items.every(it => l.foods.some(x => x.id === it.f))) l.combos.push(clone(c)); });
+      l.mig.push(MIG1.id); ch = true;
+    }
+    if (l.mig.indexOf(MIG2.id) < 0) { migrate2(l); l.mig.push(MIG2.id); ch = true; }
+    return ch;
   }
   function seed() {
     const foods = [];
     Object.keys(GST_FOOD_DB).forEach(cat => GST_FOOD_DB[cat].forEach(f => foods.push({
-      id: 'f_' + slug(f.name), n: f.name, cat, u: f.unit === 'fixed' ? 'pz' : 'g', ref: f.ref, k: f.kcal, p: f.p, c: f.c, g: f.g, note: f.note || '', ok: false, bar: !!f.barLabel
+      id: 'f_' + slug(f.name), n: f.name, cat, u: f.unit === 'fixed' ? 'pz' : 'g', ref: f.ref, k: f.kcal, p: f.p, c: f.c, g: f.g, note: f.note || '', ok: false, ver: '', fonte: '', bar: !!f.barLabel
     })));
     const br = foods.find(f => /^Bresaola/.test(f.n)), sh2 = foods.find(f => /^Shaker/.test(f.n));
     const combos = (br && sh2) ? [{ id: 'c_bresaola-shaker', n: 'Bresaola + shaker', slot: 'col', items: [{ f: br.id, q: br.ref }, { f: sh2.id, q: sh2.ref }] }] : [];
@@ -6114,13 +6136,14 @@ const FOOD = (function () {
     return L;
   }
   const food = id => lib().foods.find(f => f.id === id);
+  const vok = f => f.ver === 'A' || f.ver === 'B' || (f.ver === undefined && !!f.ok);
   const combo = id => lib().combos.find(c => c.id === id);
   const fv = (f, q) => { const m = f.u === 'g' ? q / 100 : q; return { k: f.k * m, p: f.p * m, c: f.c * m, g: f.g * m }; };
   const zero = () => ({ k: 0, p: 0, c: 0, g: 0 });
   const add = (a, b) => ({ k: a.k + b.k, p: a.p + b.p, c: a.c + b.c, g: a.g + b.g });
   function itemVals(it) { const f = it.f && food(it.f); return f ? fv(f, it.q) : (it.s || zero()); }
   function comboVals(c) { return c.items.reduce((a, it) => add(a, itemVals(it)), zero()); }
-  function qLabel(f, q) { return f.u === 'g' ? q + ' g' : (f.bar ? (q === 1 ? '1 barretta' : q + ' barrette') : (q === 1 ? '1 pz' : q + ' pz')); }
+  function qLabel(f, q) { return f.u === 'g' ? q + ' ' + (f.ul || 'g') : (f.bar ? (q === 1 ? '1 barretta' : q + ' barrette') : (q === 1 ? '1 pz' : q + ' pz')); }
   function comboText(c) { return c.items.map(it => { const f = it.f && food(it.f); return f ? (f.n.split(' (')[0] + ' ' + qLabel(f, it.q)) : (it.n || '?'); }).join(' + '); }
   function vals(e) {
     if (e.ref) {
@@ -6177,13 +6200,19 @@ const FOOD = (function () {
   function day(d) { const x = getKey(dkey(d)); const o = (x && x.s) ? clone(x) : { v: 1, s: {} }; SL.forEach(s => { if (!Array.isArray(o.s[s[0]])) o.s[s[0]] = []; }); return o; }
   function mut(d, fn) { const o = day(d); fn(o); setKey(dkey(d), o); redraw(); }
   const live = (o, id) => o.s[id].filter(e => !e.plan), plan = (o, id) => o.s[id].filter(e => e.plan);
+  function unvE(e) {
+    if (!e.ref || e.src === 's') return false;
+    if (e.ref.t === 'f') { const f = food(e.ref.id); return !!f && !vok(f); }
+    const c = combo(e.ref.id); return !!c && c.items.some(it => { const f = it.f && food(it.f); return !!f && !vok(f); });
+  }
   function totals(d) {
-    const o = day(d), t = { k: 0, p: 0, c: 0, g: 0, est: 0, lo: 0, hi: 0, pk: 0, n: 0 };
+    const o = day(d), t = { k: 0, p: 0, c: 0, g: 0, est: 0, lo: 0, hi: 0, pk: 0, n: 0, unv: 0 };
     SL.forEach(([id]) => {
       o.s[id].forEach(e => {
         const v = vals(e);
         if (e.plan) { t.pk += v.k; return; }
         t.n++; t.k += v.k; t.p += v.p; t.c += v.c; t.g += v.g;
+        if (unvE(e)) t.unv += v.k;
         if (e.src === 's') { t.est += v.k; if (e.r) { t.lo += e.r[0] - v.k; t.hi += e.r[1] - v.k; } }
       });
     });
@@ -6253,7 +6282,7 @@ const FOOD = (function () {
     const q = (sh && sh.q || '').toLowerCase();
     const fs = lib().foods.filter(f => !q || f.n.toLowerCase().includes(q) || (f.cat || '').toLowerCase().includes(q));
     if (!fs.length) return '<div style="font-size:12px;color:var(--ink3)">Nessun alimento. Aggiungilo in Gestione › Alimenti › Libreria o usa Manuale.</div>';
-    return fs.map(f => { const v = fv(f, f.ref); return `<div style="display:flex;align-items:center;gap:8px;min-height:52px;border-bottom:1px solid var(--line2)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(f.n)}${f.ok ? '' : '<span class="food-src s-s">da verificare</span>'}</div><div style="font-size:11px;color:var(--ink2)">${r0(v.k)} kcal · P ${fmt(v.p, 1)} alla porzione standard</div></div><input id="fq_${f.id}" type="number" inputmode="decimal" step="any" value="${f.ref}" style="width:68px;${inp.replace('width:100%', 'width:68px')};padding:0 6px;text-align:right"><span style="font-size:11px;color:var(--ink2);width:18px">${f.u === 'g' ? 'g' : 'pz'}</span><button style="${pl}" onclick="FOOD.addFood('${slot0()}','${f.id}')">+</button></div>`; }).join('');
+    return fs.map(f => { const v = fv(f, f.ref); return `<div style="display:flex;align-items:center;gap:8px;min-height:52px;border-bottom:1px solid var(--line2)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(f.n)}${vok(f) ? '' : `<span class="food-src s-s">${f.ver === 'C' ? 'stima' : 'da verificare'}</span>`}</div><div style="font-size:11px;color:var(--ink2)">${r0(v.k)} kcal · P ${fmt(v.p, 1)} alla porzione standard</div></div><input id="fq_${f.id}" type="number" inputmode="decimal" step="any" value="${f.ref}" style="width:68px;${inp.replace('width:100%', 'width:68px')};padding:0 6px;text-align:right"><span style="font-size:11px;color:var(--ink2);width:22px">${f.u === 'g' ? (f.ul || 'g') : 'pz'}</span><button style="${pl}" onclick="FOOD.addFood('${slot0()}','${f.id}')">+</button></div>`; }).join('');
   }
   const slot0 = () => (sh && sh.slot) || '';
   function drawSheet() {
@@ -6329,7 +6358,7 @@ const FOOD = (function () {
   }
   function splitLine(t) {
     if (!t.n) return '<div style="font-size:10px;color:var(--ink3);font-weight:500">Nessuna voce registrata oggi.</div>';
-    return `<div style="font-size:10px;color:var(--ink2);font-weight:500">Non stimato ${fmt(t.k - t.est)} kcal · stimato ${fmt(t.est)} kcal${t.est ? ` → totale tra ${fmt(t.k + t.lo)} e ${fmt(t.k + t.hi)} kcal` : ''}</div>`;
+    return `<div style="font-size:10px;color:var(--ink2);font-weight:500">Non stimato ${fmt(t.k - t.est)} kcal · stimato ${fmt(t.est)} kcal${t.est ? ` → totale tra ${fmt(t.k + t.lo)} e ${fmt(t.k + t.hi)} kcal` : ''}${t.unv ? ` · ${fmt(t.unv)} kcal su valori da verificare` : ''}</div>`;
   }
   function planLine(o, mob) {
     const n = planN(o); if (!n) return '';
@@ -6361,22 +6390,22 @@ const FOOD = (function () {
   const gi = 'border:1px solid var(--line2);border-radius:8px;background:var(--surf);color:var(--ink);font-size:13px;padding:0 8px;height:40px;box-sizing:border-box;min-width:0';
   function reGest() { GST_renderAlimenti(); badge(); }
   function flash(m) { msg = m; }
-  function chk(f) { const calc = 4 * f.p + 4 * f.c + 9 * f.g; return (Math.abs(f.k - calc) > 15 && Math.abs(f.k - calc) > 0.15 * Math.max(f.k, 1)) ? `<span class="food-src s-s" title="kcal dichiarate ${f.k} · calcolate dai macro ${r0(calc)} (4P+4C+9G; fibre/alcol/arrotondamenti possibili)">⚠ kcal≠macro (${r0(calc)})</span>` : ''; }
+  function chk(f) { if (f.ver === 'A') return ''; const calc = 4 * f.p + 4 * f.c + 9 * f.g; return (Math.abs(f.k - calc) > 15 && Math.abs(f.k - calc) > 0.15 * Math.max(f.k, 1)) ? `<span class="food-src s-s" title="kcal dichiarate ${f.k} · calcolate dai macro ${r0(calc)} (4P+4C+9G; fibre/alcol/arrotondamenti possibili)">⚠ kcal≠macro (${r0(calc)})</span>` : ''; }
   function gestView() {
     const l = lib();
     if (sub === 'lib') {
-      const vis = l.foods.filter(f => (!flt.ver || !f.ok) && (!flt.q || f.n.toLowerCase().includes(flt.q.toLowerCase())));
-      const nv = l.foods.filter(f => !f.ok).length;
+      const vis = l.foods.filter(f => (!flt.ver || !vok(f)) && (!flt.q || f.n.toLowerCase().includes(flt.q.toLowerCase())));
+      const nv = l.foods.filter(f => !vok(f)).length;
       const cats = [...new Set(l.foods.map(f => f.cat || 'Altro'))];
-      return `<section class="an-card" style="gap:8px"><div class="an-note">Valori per 100 g (unità g) o per pezzo (unità pz). I valori importati dalla vecchia tabella sono <b>da verificare</b>: spuntando “ok” confermi di averli controllati su etichetta o fonte. Una correzione si propaga a combo e storico.</div>
+      return `<section class="an-card" style="gap:8px"><div class="an-note">Valori per 100 g (unità g) o per pezzo (unità pz). I valori importati dalla vecchia tabella sono <b>da verificare</b>. Livelli: <b>etichetta</b> (foto), <b>banca dati</b> (CREA/USDA, con riferimento), <b>stima</b> (non conta come verificato). Etichetta e banca dati richiedono la fonte; se modifichi kcal o macro, la voce torna “da verificare”. Una correzione si propaga a combo e storico.</div>
 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input placeholder="Cerca…" value="${esc(flt.q)}" onchange="FOOD.g.fq(this.value)" style="${gi};flex:1;min-width:140px"><button type="button" class="an-chip${flt.ver ? ' is-active' : ''}" onclick="FOOD.g.ver()">Da verificare (${nv})</button></div>
-${vis.map(f => `<div style="border:1px solid var(--line2);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;gap:6px"><input value="${esc(f.n)}" onchange="FOOD.g.f('${f.id}','n',this.value)" style="${gi};flex:1"><button type="button" onclick="FOOD.g.delF('${f.id}')" style="border:0;background:none;color:var(--ink3);font-size:16px;cursor:pointer;width:40px" aria-label="Elimina">✕</button></div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${[['u', 'unità'], ['ref', 'porz.'], ['k', 'kcal'], ['p', 'P'], ['c', 'C'], ['g', 'G']].map(([k, lb]) => k === 'u' ? `<select onchange="FOOD.g.f('${f.id}','u',this.value)" style="${gi};width:62px"><option value="g"${f.u === 'g' ? ' selected' : ''}>g</option><option value="pz"${f.u === 'pz' ? ' selected' : ''}>pz</option></select>` : `<label style="font-size:10px;color:var(--ink3);display:flex;flex-direction:column;gap:1px">${lb}<input type="number" inputmode="decimal" step="any" value="${f[k]}" onchange="FOOD.g.f('${f.id}','${k}',this.value)" style="${gi};width:${k === 'ref' ? 64 : 58}px"></label>`).join('')}<label style="font-size:11px;font-weight:600;display:flex;align-items:center;gap:4px;margin-left:auto"><input type="checkbox" ${f.ok ? 'checked' : ''} onchange="FOOD.g.ok('${f.id}',this.checked)" style="width:20px;height:20px"> ok</label></div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input value="${esc(f.cat || '')}" list="food-cats" placeholder="categoria" onchange="FOOD.g.f('${f.id}','cat',this.value)" style="${gi};width:130px"><input value="${esc(f.note || '')}" placeholder="nota" onchange="FOOD.g.f('${f.id}','note',this.value)" style="${gi};flex:1;min-width:120px">${chk(f)}</div></div>`).join('') || '<div class="an-note">Nessun alimento.</div>'}
+${vis.map(f => `<div style="border:1px solid var(--line2);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;gap:6px"><input value="${esc(f.n)}" onchange="FOOD.g.f('${f.id}','n',this.value)" style="${gi};flex:1"><button type="button" onclick="FOOD.g.delF('${f.id}')" style="border:0;background:none;color:var(--ink3);font-size:16px;cursor:pointer;width:40px" aria-label="Elimina">✕</button></div><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">${[['u', 'unità'], ['ref', 'porz.'], ['k', 'kcal'], ['p', 'P'], ['c', 'C'], ['g', 'G']].map(([k, lb]) => k === 'u' ? `<select onchange="FOOD.g.f('${f.id}','u',this.value)" style="${gi};width:62px"><option value="g"${f.u === 'g' ? ' selected' : ''}>g</option><option value="pz"${f.u === 'pz' ? ' selected' : ''}>pz</option></select>` : `<label style="font-size:10px;color:var(--ink3);display:flex;flex-direction:column;gap:1px">${lb}<input type="number" inputmode="decimal" step="any" value="${f[k]}" onchange="FOOD.g.f('${f.id}','${k}',this.value)" style="${gi};width:${k === 'ref' || k === 'k' ? 70 : 60}px"></label>`).join('')}<select onchange="FOOD.g.ver2('${f.id}',this.value)" style="${gi};width:118px;margin-left:auto">${[['', 'Da verificare'], ['A', 'Etichetta'], ['B', 'Banca dati'], ['C', 'Stima']].map(([v, lb]) => `<option value="${v}"${(f.ver || '') === v ? ' selected' : ''}>${lb}</option>`).join('')}</select></div><input value="${esc(f.fonte || '')}" placeholder="fonte (es. etichetta + data; CREA/USDA + riferimento)" onchange="FOOD.g.f('${f.id}','fonte',this.value)" style="${gi};width:100%"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><input value="${esc(f.cat || '')}" list="food-cats" placeholder="categoria" onchange="FOOD.g.f('${f.id}','cat',this.value)" style="${gi};width:130px"><input value="${esc(f.note || '')}" placeholder="nota" onchange="FOOD.g.f('${f.id}','note',this.value)" style="${gi};flex:1;min-width:120px">${chk(f)}</div></div>`).join('') || '<div class="an-note">Nessun alimento.</div>'}
 <datalist id="food-cats">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
 <div style="border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px"><b style="font-size:13px">Nuovo alimento</b><div style="display:flex;gap:6px;flex-wrap:wrap"><input id="nf_n" placeholder="Nome" style="${gi};flex:1;min-width:160px"><input id="nf_cat" list="food-cats" placeholder="Categoria" style="${gi};width:130px"><select id="nf_u" style="${gi};width:62px"><option value="g">g</option><option value="pz">pz</option></select></div><div style="display:flex;gap:6px;flex-wrap:wrap">${[['ref', 'porzione'], ['k', 'kcal'], ['p', 'P'], ['c', 'C'], ['g', 'G']].map(([k, lb]) => `<input id="nf_${k}" type="number" inputmode="decimal" step="any" placeholder="${lb}" style="${gi};width:${k === 'ref' ? 82 : 66}px">`).join('')}<button type="button" class="an-chip is-active" onclick="FOOD.g.newF()">+ Aggiungi</button></div><div style="font-size:11px;color:var(--accent-ink);font-weight:600">${esc(msg)}</div></div></section>`;
     }
     if (sub === 'combo') {
       return `<section class="an-card" style="gap:8px"><div class="an-note">Una combo è un insieme di alimenti della libreria con le quantità. I valori si ricalcolano dalla libreria. Nel foglio “+” di ogni slot le combo di quello slot compaiono per prime.</div>
-${l.combos.map(c => { const v = comboVals(c); return `<div style="border:1px solid var(--line2);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;gap:6px"><input value="${esc(c.n)}" onchange="FOOD.g.cn('${c.id}',this.value)" style="${gi};flex:1"><select onchange="FOOD.g.cs('${c.id}',this.value)" style="${gi}">${SL.map(([id, n]) => `<option value="${id}"${c.slot === id ? ' selected' : ''}>${n}</option>`).join('')}</select><button type="button" onclick="FOOD.g.delC('${c.id}')" style="border:0;background:none;color:var(--ink3);font-size:16px;cursor:pointer;width:40px" aria-label="Elimina">✕</button></div>${c.items.map((it, i) => { const f = it.f && food(it.f); return `<div style="display:flex;gap:6px;align-items:center"><span style="flex:1;font-size:12px;font-weight:600;min-width:0">${esc(f ? f.n : (it.n || '(alimento rimosso)'))}${f ? '' : ' <span class="food-src s-s">fuori libreria</span>'}</span>${f ? `<input type="number" inputmode="decimal" step="any" value="${it.q}" onchange="FOOD.g.iq('${c.id}',${i},this.value)" style="${gi};width:70px"><span style="font-size:11px;color:var(--ink2);width:18px">${f.u === 'g' ? 'g' : 'pz'}</span>` : ''}<button type="button" onclick="FOOD.g.delI('${c.id}',${i})" style="border:0;background:none;color:var(--ink3);cursor:pointer;width:32px" aria-label="Rimuovi">✕</button></div>`; }).join('')}
+${l.combos.map(c => { const v = comboVals(c); return `<div style="border:1px solid var(--line2);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px"><div style="display:flex;gap:6px"><input value="${esc(c.n)}" onchange="FOOD.g.cn('${c.id}',this.value)" style="${gi};flex:1"><select onchange="FOOD.g.cs('${c.id}',this.value)" style="${gi}">${SL.map(([id, n]) => `<option value="${id}"${c.slot === id ? ' selected' : ''}>${n}</option>`).join('')}</select><button type="button" onclick="FOOD.g.delC('${c.id}')" style="border:0;background:none;color:var(--ink3);font-size:16px;cursor:pointer;width:40px" aria-label="Elimina">✕</button></div>${c.items.map((it, i) => { const f = it.f && food(it.f); return `<div style="display:flex;gap:6px;align-items:center"><span style="flex:1;font-size:12px;font-weight:600;min-width:0">${esc(f ? f.n : (it.n || '(alimento rimosso)'))}${f ? '' : ' <span class="food-src s-s">fuori libreria</span>'}</span>${f ? `<input type="number" inputmode="decimal" step="any" value="${it.q}" onchange="FOOD.g.iq('${c.id}',${i},this.value)" style="${gi};width:70px"><span style="font-size:11px;color:var(--ink2);width:22px">${f.u === 'g' ? (f.ul || 'g') : 'pz'}</span>` : ''}<button type="button" onclick="FOOD.g.delI('${c.id}',${i})" style="border:0;background:none;color:var(--ink3);cursor:pointer;width:32px" aria-label="Rimuovi">✕</button></div>`; }).join('')}
 <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><select id="ci_${c.id}" style="${gi};flex:1;min-width:140px"><option value="">+ aggiungi alimento…</option>${l.foods.map(f => `<option value="${f.id}">${esc(f.n)}</option>`).join('')}</select><button type="button" class="an-chip" onclick="FOOD.g.addI('${c.id}')">Aggiungi</button><b style="font-size:12px;margin-left:auto">${r0(v.k)} kcal · P ${fmt(v.p, 1)} · C ${fmt(v.c, 1)} · G ${fmt(v.g, 1)}</b></div></div>`; }).join('') || '<div class="an-note">Nessuna combo ancora.</div>'}
 <div><button type="button" class="an-chip is-active" onclick="FOOD.g.newC()">+ Nuova combo</button></div></section>`;
     }
@@ -6394,15 +6423,19 @@ ${l.combos.map(c => { const v = comboVals(c); return `<div style="border:1px sol
     fq(v) { flt.q = v; reGest(); }, ver() { flt.ver = !flt.ver; reGest(); },
     f(id, k, v) {
       const f = food(id); if (!f) return;
-      if (k === 'n' || k === 'cat' || k === 'note') {
+      if (k === 'n' || k === 'cat' || k === 'note' || k === 'fonte') {
         v = String(v).trim();
         if (k === 'n') { if (!v || lib().foods.some(x => x.id !== id && x.n.toLowerCase() === v.toLowerCase())) { flash('Nome vuoto o già usato.'); return reGest(); } }
-        f[k] = v;
-      } else if (k === 'u') { f.u = v === 'pz' ? 'pz' : 'g'; if (f.u === 'pz') f.ref = f.ref > 0 && f.ref <= 20 ? f.ref : 1; f.ok = false; }
-      else { const x = num(v); if (!(x >= 0) || (k === 'ref' && !(x > 0))) { flash('Valore non valido.'); return reGest(); } f[k] = x; if (['k', 'p', 'c', 'g'].includes(k)) f.ok = false; }
+        f[k] = v; if (k === 'fonte' && !v && (f.ver === 'A' || f.ver === 'B')) { f.ver = ''; f.ok = false; }
+      } else if (k === 'u') { f.u = v === 'pz' ? 'pz' : 'g'; if (f.u === 'pz') f.ref = f.ref > 0 && f.ref <= 20 ? f.ref : 1; f.ok = false; f.ver = ''; }
+      else { const x = num(v); if (!(x >= 0) || (k === 'ref' && !(x > 0))) { flash('Valore non valido.'); return reGest(); } f[k] = x; if (['k', 'p', 'c', 'g'].includes(k)) { f.ok = false; f.ver = ''; } }
       saveLib(); reGest();
     },
-    ok(id, v) { const f = food(id); if (f) { f.ok = !!v; saveLib(); reGest(); } },
+    ver2(id, v) {
+      const f = food(id); if (!f) return; v = ['A', 'B', 'C'].includes(v) ? v : '';
+      if ((v === 'A' || v === 'B') && !String(f.fonte || '').trim()) { alert('Per segnare la voce come ' + (v === 'A' ? 'etichetta' : 'banca dati') + ' scrivi prima la fonte (es. “etichetta + data” oppure “CREA/USDA + riferimento”).'); return reGest(); }
+      f.ver = v; f.ok = v === 'A' || v === 'B'; saveLib(); reGest();
+    },
     delF(id) {
       const used = lib().combos.filter(c => c.items.some(it => it.f === id)).map(c => c.n);
       if (used.length && !confirm('Questo alimento è usato nelle combo: ' + used.join(', ') + '. Nelle combo resterà il valore salvato (fuori libreria). Eliminare?')) return;
@@ -6415,7 +6448,7 @@ ${l.combos.map(c => { const v = comboVals(c); return `<div style="border:1px sol
       const g = id => document.getElementById(id).value, n = g('nf_n').trim(), v = { ref: num(g('nf_ref')), k: num(g('nf_k')), p: num(g('nf_p')), c: num(g('nf_c')), g: num(g('nf_g')) };
       if (!n || !(v.ref > 0) || !(v.k >= 0) || [v.p, v.c, v.g].some(x => !(x >= 0))) { flash('Compila nome, porzione, kcal, P, C, G (numeri ≥ 0).'); return reGest(); }
       if (lib().foods.some(x => x.n.toLowerCase() === n.toLowerCase())) { flash('Esiste già un alimento con questo nome.'); return reGest(); }
-      lib().foods.push({ id: uid('f'), n, cat: g('nf_cat').trim() || 'Altro', u: g('nf_u'), ref: v.ref, k: v.k, p: v.p, c: v.c, g: v.g, note: '', ok: false });
+      lib().foods.push({ id: uid('f'), n, cat: g('nf_cat').trim() || 'Altro', u: g('nf_u'), ref: v.ref, k: v.k, p: v.p, c: v.c, g: v.g, note: '', ok: false, ver: '', fonte: '' });
       flash('Aggiunto: ' + n); saveLib(); reGest();
     },
     cn(id, v) { const c = combo(id); v = String(v).trim(); if (!c) return; if (!v) return reGest(); c.n = v; saveLib(); reGest(); },
