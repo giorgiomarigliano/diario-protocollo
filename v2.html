@@ -973,6 +973,9 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .food-card,:root:not([data-theme="light"]) #food-sheet,:root:not([data-theme="light"]) .an-root{--off:var(--violet-on-dark)}}
 :root[data-theme="dark"] .food-card,:root[data-theme="dark"] #food-sheet,:root[data-theme="dark"] .an-root{--off:var(--violet-on-dark)}
 .food-src.s-o{background:var(--off);color:var(--on-accent)}
+.food-src.s-k{background:transparent;color:var(--ink3);box-shadow:inset 0 0 0 1px var(--ink3)}
+.food-sg>div.sk,.food-card div.sk{box-shadow:inset 3px 0 0 var(--ink3)}.food-card div.sk{padding-left:8px!important}
+.food-tog.sk{box-shadow:inset 3px 0 0 var(--ink3)}.food-tog.sk b{color:var(--ink2)}.food-tog.dis{opacity:.5;cursor:default}
 .food-bal{display:flex;justify-content:space-between;align-items:center;gap:8px;border-radius:10px;padding:6px 10px;min-height:32px;font-size:11px;font-weight:600;color:var(--ink2);background:var(--surf2)}
 .food-bal b{font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
 .food-bal.def{background:var(--ok);color:var(--on-ok)}.food-bal.def b{color:var(--on-ok)}
@@ -3174,6 +3177,7 @@ function buildFoodHist(root){
     var has=r.n||r.inc, pills="";
     if (r.today) pills+='<span class="food-src s-l">in corso</span>';
     if (r.off) pills+='<span class="food-src s-o">fuori piano</span>';
+    if (r.skip) pills+='<span class="food-src s-k">'+r.skip+(r.skip===1?' saltato':' saltati')+'</span>';
     if (r.inc) pills+='<span class="food-src s-s">incompleto</span>';
     if (r.est>0 && r.k>0) pills+='<span class="food-src s-s">≈ stima '+Math.round(r.est/r.k*100)+'%</span>';
     if (!has) pills+='<span class="fh-nd">nessun dato</span>';
@@ -6639,7 +6643,7 @@ const FOOD = (function () {
   /* ---------- diario ---------- */
   const dkey = d => 'food_' + String(d).replace(/-/g, '');
   function day(d) { const x = getKey(dkey(d)); const o = (x && x.s) ? clone(x) : { v: 1, s: {} }; SL.forEach(s => { if (!Array.isArray(o.s[s[0]])) o.s[s[0]] = []; }); return o; }
-  function mut(d, fn, quiet) { const o = day(d); fn(o); setKey(dkey(d), o); if (quiet) badge(); else redraw(); }
+  function mut(d, fn, quiet) { const o = day(d); fn(o); if (o.skip) { Object.keys(o.skip).forEach(k => { if (!o.s[k] || o.s[k].some(e => !e.plan)) delete o.skip[k]; }); if (!Object.keys(o.skip).length) delete o.skip; } setKey(dkey(d), o); if (quiet) badge(); else redraw(); }
   /* fabbisogno energetico del giorno: basale Mifflin-St Jeor (peso del giorno dalla bilancia, o l'ultimo dei 14 giorni precedenti; altezza; eta) x fattore attivita' quotidiana + kcal allenamento (wo_kcal). Derivato, mai salvato: cambiare i parametri ricalcola anche il passato. Margine ~±10% sulla parte basale. */
   const EN_D = { h: 170, dob: '1976-02-27', pal: 1.3 };
   const numS = v => { const x = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(x) ? x : null; };
@@ -6665,19 +6669,21 @@ const FOOD = (function () {
       if (iso < START) continue;
       const t = totals(iso);
       const en = energy(iso), okS = !!en && iso < last && t.n > 0 && !t.inc;
-      rows.push({ d: iso, k: t.k, p: t.p, c: t.c, g: t.g, est: t.est, lo: t.k + t.lo, hi: t.k + t.hi, n: t.n, off: t.off, inc: t.inc, today: iso === last, e: en, sd: okS ? t.k - en.need : null, slo: okS ? t.k + t.lo - en.need : null, shi: okS ? t.k + t.hi - en.need : null });
+      rows.push({ d: iso, k: t.k, p: t.p, c: t.c, g: t.g, est: t.est, lo: t.k + t.lo, hi: t.k + t.hi, n: t.n, off: t.off, skip: t.skip, inc: t.inc, today: iso === last, e: en, sd: okS ? t.k - en.need : null, slo: okS ? t.k + t.lo - en.need : null, shi: okS ? t.k + t.hi - en.need : null });
     }
     return { rows, targets: { kcal: T.kcal || null, p: T.p || null, en: enP() } };
   }
   const live = (o, id) => o.s[id].filter(e => !e.plan), plan = (o, id) => o.s[id].filter(e => e.plan);
   const offOf = o => (o.off && typeof o.off === 'object') ? o.off : {};
+  /* pasto saltato volontariamente (13/10): flag per slot in o.skip. Vale 0 kcal dichiarato, NON e' un dato mancante; non cambia totali, medie ne' saldo. Esclusivo con voci e con fuori piano. */
+  const skipOf = o => (o.skip && typeof o.skip === 'object') ? o.skip : {};
   function unvE(e) {
     if (!e.ref || e.src === 's') return false;
     if (e.ref.t === 'f') { const f = food(e.ref.id); return !!f && !vok(f); }
     const c = combo(e.ref.id); return !!c && c.items.some(it => { const f = it.f && food(it.f); return !!f && !vok(f); });
   }
   function totals(d) {
-    const o = day(d), t = { k: 0, p: 0, c: 0, g: 0, est: 0, lo: 0, hi: 0, pk: 0, n: 0, unv: 0, off: 0, inc: 0, offN: [] };
+    const o = day(d), t = { k: 0, p: 0, c: 0, g: 0, est: 0, lo: 0, hi: 0, pk: 0, n: 0, unv: 0, off: 0, inc: 0, offN: [], skip: 0, skipN: [] };
     SL.forEach(([id]) => {
       o.s[id].forEach(e => {
         const v = vals(e);
@@ -6689,6 +6695,7 @@ const FOOD = (function () {
     });
     /* pasto fuori piano: flag per slot (o.off). Non cambia i totali; segnala solo gli slot marcati e quelli ancora senza voci (= incompleti). */
     SL.forEach(([id, n]) => { if (offOf(o)[id]) { t.off++; t.offN.push(n); if (!live(o, id).length) t.inc++; } });
+    SL.forEach(([id, n]) => { if (skipOf(o)[id] && !live(o, id).length) { t.skip++; t.skipN.push(n); } });
     return t;
   }
   /* statistiche su N giorni chiusi (oggi escluso, non prima di START): "Tutti" vs "In piano" (giorni senza pasti fuori piano).
@@ -6722,7 +6729,17 @@ const FOOD = (function () {
   function removeEntry(slot, id) { mut(selDate, o => { o.s[slot] = o.s[slot].filter(e => e.id !== id); }); drawSheet(); }
   function confirmSlot(slot) { mut(selDate, o => { o.s[slot].forEach(e => { delete e.plan; }); }); drawSheet(); }
   function dropPlan(slot) { mut(selDate, o => { o.s[slot] = o.s[slot].filter(e => !e.plan); }); drawSheet(); }
-  function togOff(slot) { mut(selDate, o => { const f = Object.assign({}, offOf(o)); if (f[slot]) delete f[slot]; else f[slot] = true; if (Object.keys(f).length) o.off = f; else delete o.off; }); drawSheet(); }
+  function togOff(slot) { mut(selDate, o => { const f = Object.assign({}, offOf(o)); if (f[slot]) delete f[slot]; else { f[slot] = true; if (o.skip) delete o.skip[slot]; } if (Object.keys(f).length) o.off = f; else delete o.off; }); drawSheet(); }
+  function togSkip(slot) {
+    if (live(day(selDate), slot).length) { msg = 'Il pasto ha già voci: rimuovile prima di segnarlo come saltato.'; drawSheet(); return; }
+    mut(selDate, o => {
+      const f = Object.assign({}, skipOf(o));
+      if (f[slot]) delete f[slot];
+      else { f[slot] = true; o.s[slot] = o.s[slot].filter(e => !e.plan); if (o.off && o.off[slot]) { delete o.off[slot]; if (!Object.keys(o.off).length) delete o.off; } }
+      if (Object.keys(f).length) o.skip = f; else delete o.skip;
+    });
+    msg = ''; drawSheet();
+  }
   function confirmAll() { mut(selDate, o => { SL.forEach(([id]) => o.s[id].forEach(e => { delete e.plan; })); }); }
   function clearPlan() { mut(selDate, o => { SL.forEach(([id]) => { o.s[id] = o.s[id].filter(e => !e.plan); }); }); }
   function applyGT(gid, d, quiet) {
@@ -6732,7 +6749,7 @@ const FOOD = (function () {
     mut(dd, o => {
       SL.forEach(([id]) => {
         const cid = g.m[id]; if (!cid) return;
-        if (o.s[id].length) { skipped++; return; }
+        if (o.s[id].length || skipOf(o)[id]) { skipped++; return; }
         const c = combo(cid); if (!c) return;
         o.s[id].push(entryFromCombo(c, true)); n++;
       });
@@ -6792,7 +6809,9 @@ const FOOD = (function () {
       else tb = `<input id="mn_n" placeholder="Nome (es. gelato fuori casa)" style="${inp}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="mn_k" type="number" inputmode="decimal" step="any" placeholder="kcal" style="${inp}"><input id="mn_p" type="number" inputmode="decimal" step="any" placeholder="Proteine g" style="${inp}"><input id="mn_c" type="number" inputmode="decimal" step="any" placeholder="Carboidrati g" style="${inp}"><input id="mn_g" type="number" inputmode="decimal" step="any" placeholder="Grassi g" style="${inp}"></div><select id="mn_s" onchange="document.getElementById('mn_r').style.display=this.value==='s'?'grid':'none'" style="${inp}"><option value="e">Da etichetta / valori noti</option><option value="s">È una stima mia</option></select><div id="mn_r" style="display:none;grid-template-columns:1fr 1fr;gap:8px"><input id="mn_lo" type="number" inputmode="decimal" placeholder="kcal minime" style="${inp}"><input id="mn_hi" type="number" inputmode="decimal" placeholder="kcal massime" style="${inp}"></div><button style="${btn}" onclick="FOOD.addManual('${slot}')">Aggiungi a ${esc(name)}</button>`;
       const isO = !!offOf(day(selDate))[slot], noLive = !live(day(selDate), slot).length;
       const tog = `<div class="food-tog" role="switch" aria-checked="${isO}" tabindex="0" onclick="FOOD.togOff('${slot}')" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();FOOD.togOff('${slot}')}"><div><b>Pasto fuori piano</b><span>${isO ? 'Attivo: conta nei totali (valore centrale e range). Nelle statistiche compare a parte.' : 'Attivalo se qui hai mangiato fuori dal piano (ristorante, evento, viaggio).'}</span></div><i class="food-sw${isO ? ' on' : ''}"></i></div>${isO && noLive ? '<div class="food-warn">Incompleto: nessuna voce in questo slot. Il giorno resta fuori dalle statistiche finché non aggiungi una stima (scheda Foto o Manuale).</div>' : ''}`;
-      body = tog + entriesBlock(slot) + `<div class="seg" style="display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px">${tabs.map(([k, l]) => `<button class="food-tab ${sh.tab === k ? 'on' : ''}" onclick="FOOD.tab('${k}')">${l}</button>`).join('')}</div>` + tb;
+      const isK = !!skipOf(day(selDate))[slot];
+      const tgk = `<div class="food-tog sk${!noLive && !isK ? ' dis' : ''}" role="switch" aria-checked="${isK}" tabindex="0" onclick="FOOD.togSkip('${slot}')" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();FOOD.togSkip('${slot}')}"><div><b>Pasto saltato volontariamente</b><span>${isK ? 'Attivo: 0 kcal dichiarate, non è un dato mancante. Se aggiungi una voce il segno si toglie da solo.' : !noLive ? 'Non disponibile: questo pasto ha già delle voci.' : 'Attivalo se hai deciso di non mangiare qui. Resta distinto da un pasto dimenticato.'}</span></div><i class="food-sw${isK ? ' on' : ''}"></i></div>`;
+      body = tog + tgk + entriesBlock(slot) + `<div class="seg" style="display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px">${tabs.map(([k, l]) => `<button class="food-tab ${sh.tab === k ? 'on' : ''}" onclick="FOOD.tab('${k}')">${l}</button>`).join('')}</div>` + tb;
     }
     el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">Aggiungi · ${esc(name)}</b><span onclick="FOOD.close()" style="font-size:22px;padding:6px 10px;cursor:pointer">✕</span></div>${body}<div style="font-size:11px;color:var(--accent-ink);font-weight:600;min-height:14px">${esc(msg)}</div><span class="food-sync" style="font-size:10px"></span>`;
     badge();
@@ -6858,6 +6877,10 @@ const FOOD = (function () {
     if (!t.off) return '';
     return `<div style="font-size:10px;font-weight:600;color:var(--off)">● ${t.off} ${t.off === 1 ? 'pasto fuori piano' : 'pasti fuori piano'} oggi (${esc(t.offN.join(', '))})${t.inc ? ` · ${t.inc} incomplet${t.inc === 1 ? 'o' : 'i'}: totale per difetto` : ''}</div>`;
   }
+  function skipLine(t) {
+    if (!t.skip) return '';
+    return `<div style="font-size:10px;font-weight:600;color:var(--ink3)">○ ${t.skip} ${t.skip === 1 ? 'pasto saltato' : 'pasti saltati'} volontariamente (${esc(t.skipN.join(', '))}): 0 kcal dichiarate</div>`;
+  }
   function planLine(o, mob) {
     const n = planN(o); if (!n) return '';
     const tot = SL.reduce((a, [id]) => a + planK(o, id), 0);
@@ -6886,10 +6909,10 @@ const FOOD = (function () {
     const noT = (!T.kcal && !T.p) ? `<div style="font-size:10px;color:var(--ink3);font-weight:500">Obiettivi non impostati (Gestione › Alimenti › Obiettivi).</div>` : '';
     if (isDesktop) {
       return `<section class="food-card" style="border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:12px 15px;display:flex;flex-direction:column;gap:7px;overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2)">Alimentazione <span class="food-sync" style="font-size:10px;font-weight:600"></span></span><span class="an-chip" style="min-height:22px;font-size:10px;padding:0 8px" onclick="FOOD.openGT()">▦ Giornata tipo</span></div>${head(t)}${planLine(o, false)}
-<div class="food-sg">${SL.map(([id, n, s]) => { const Lv = live(o, id), P = plan(o, id), of = !!offOf(o)[id]; return `<div${of ? ' class="off"' : ''} onclick="FOOD.open('${id}')"><i style="${dotStyle(o, id)}"></i>${s}${Lv.length ? `<b>${fmt(slotK(o, id))}</b>` : P.length ? `<b style="color:var(--accent-ink);font-style:italic">${fmt(planK(o, id))}</b>` : of ? '<b style="color:var(--off)" title="Fuori piano, nessuna voce: incompleto">inc.</b>' : '<b>—</b>'}</div>`; }).join('')}<div style="background:var(--accent);color:#fff;justify-content:center" onclick="FOOD.open('')">+ Aggiungi</div></div>${splitLine(t)}${offLine(t)}${balLine(t)}${noT}</section>`;
+<div class="food-sg">${SL.map(([id, n, s]) => { const Lv = live(o, id), P = plan(o, id), of = !!offOf(o)[id], sk = !!skipOf(o)[id] && !Lv.length && !P.length; return `<div${of ? ' class="off"' : sk ? ' class="sk"' : ''} onclick="FOOD.open('${id}')"><i style="${dotStyle(o, id)}"></i>${s}${Lv.length ? `<b>${fmt(slotK(o, id))}</b>` : P.length ? `<b style="color:var(--accent-ink);font-style:italic">${fmt(planK(o, id))}</b>` : of ? '<b style="color:var(--off)" title="Fuori piano, nessuna voce: incompleto">inc.</b>' : sk ? '<b style="color:var(--ink3)" title="Saltato volontariamente: 0 kcal dichiarate">salt.</b>' : '<b>—</b>'}</div>`; }).join('')}<div style="background:var(--accent);color:#fff;justify-content:center" onclick="FOOD.open('')">+ Aggiungi</div></div>${splitLine(t)}${offLine(t)}${skipLine(t)}${balLine(t)}${noT}</section>`;
     }
-    return `<section class="food-card" style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2)">Alimentazione <span class="food-sync" style="font-size:10px;font-weight:600"></span></span><span class="an-chip" style="min-height:32px;font-size:11px" onclick="FOOD.openGT()">▦ Giornata tipo</span></div>${head(t)}${splitLine(t)}${offLine(t)}${balLine(t)}${noT}${planLine(o, true)}
-<div style="border-top:1px solid var(--line)">${SL.map(([id, n]) => { const Lv = live(o, id), P = plan(o, id), it = Lv.length ? Lv : P; const only = !Lv.length && P.length, of = !!offOf(o)[id]; return `<div${of ? ' class="off"' : ''} style="display:grid;grid-template-columns:1fr auto 44px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line2);min-height:44px"><div style="min-width:0"><div style="font-size:12px;font-weight:600">${n}${of ? '<span class="food-src s-o">fuori piano</span>' : ''}${only ? '<span class="food-src s-l">previsto</span>' : ''}${Lv.some(e => e.src === 's') ? '<span class="food-src s-s">≈ stima</span>' : ''}</div><div style="font-size:11px;color:${it.length ? 'var(--ink2)' : 'var(--ink3)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${only ? 'font-style:italic' : ''}">${it.length ? it.map(e => esc(e.n)).join(' · ') : of ? 'incompleto: manca la stima' : 'non registrato'}</div></div><b style="font-size:12px;${only ? 'color:var(--accent-ink);font-style:italic' : ''}">${Lv.length ? fmt(slotK(o, id)) + ' kcal' : P.length ? fmt(planK(o, id)) + ' kcal' : ''}</b>${only ? `<button style="${pl};background:var(--accent-ink)" onclick="FOOD.cslot('${id}')" aria-label="Conferma">✓</button>` : `<button style="${pl}" onclick="FOOD.open('${id}')" aria-label="Aggiungi">+</button>`}</div>`; }).join('')}</div></section>`;
+    return `<section class="food-card" style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2)">Alimentazione <span class="food-sync" style="font-size:10px;font-weight:600"></span></span><span class="an-chip" style="min-height:32px;font-size:11px" onclick="FOOD.openGT()">▦ Giornata tipo</span></div>${head(t)}${splitLine(t)}${offLine(t)}${skipLine(t)}${balLine(t)}${noT}${planLine(o, true)}
+<div style="border-top:1px solid var(--line)">${SL.map(([id, n]) => { const Lv = live(o, id), P = plan(o, id), it = Lv.length ? Lv : P; const only = !Lv.length && P.length, of = !!offOf(o)[id], sk = !!skipOf(o)[id] && !it.length; return `<div${of ? ' class="off"' : sk ? ' class="sk"' : ''} style="display:grid;grid-template-columns:1fr auto 44px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line2);min-height:44px"><div style="min-width:0"><div style="font-size:12px;font-weight:600">${n}${of ? '<span class="food-src s-o">fuori piano</span>' : ''}${sk ? '<span class="food-src s-k">saltato</span>' : ''}${only ? '<span class="food-src s-l">previsto</span>' : ''}${Lv.some(e => e.src === 's') ? '<span class="food-src s-s">≈ stima</span>' : ''}</div><div style="font-size:11px;color:${it.length ? 'var(--ink2)' : 'var(--ink3)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${only ? 'font-style:italic' : ''}">${it.length ? it.map(e => esc(e.n)).join(' · ') : of ? 'incompleto: manca la stima' : sk ? 'saltato volontariamente' : 'non registrato'}</div></div><b style="font-size:12px;${only ? 'color:var(--accent-ink);font-style:italic' : ''}">${Lv.length ? fmt(slotK(o, id)) + ' kcal' : P.length ? fmt(planK(o, id)) + ' kcal' : sk ? '<span style="color:var(--ink3);font-weight:600">0 kcal</span>' : ''}</b>${only ? `<button style="${pl};background:var(--accent-ink)" onclick="FOOD.cslot('${id}')" aria-label="Conferma">✓</button>` : `<button style="${pl}" onclick="FOOD.open('${id}')" aria-label="Aggiungi">+</button>`}</div>`; }).join('')}</div></section>`;
   }
   function redraw() { render(); if (sh) drawSheet(); badge(); }
 
@@ -6919,7 +6942,7 @@ const FOOD = (function () {
     const dl = new Date(d + 'T00:00:00').toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
     let rows = '';
     SL.forEach(([id, n]) => {
-      const it = o.s[id]; if (!it.length) return;
+      const it = o.s[id]; if (!it.length) { if (skipOf(o)[id]) rows += `<div class="fxc-sh" style="color:var(--ink3)"><span>${n}</span><span>saltato · 0 kcal</span></div>`; return; }
       let k = 0, p = 0, live = 0; it.forEach(e => { if (!e.plan) { const v = vals(e); k += v.k; p += v.p; live++; } });
       rows += `<div class="fxc-sh"><span>${n}${it.length > 1 ? ' · ' + it.length : ''}</span><span>${live ? fmt(k) + ' kcal · P ' + fmt(p, 0) : 'previsto'}</span></div>`;
       it.forEach(e => {
@@ -7156,7 +7179,7 @@ ${d < START ? `<div class="an-note">La card in Oggi si attiva dal 12/10. Le voci
     START, on, cardHTML, subnav, todayCard, gestView, mealActions, asGstDB, pastoNote, G, g: G,
     sub(k) { if (arguments.length) { sub = k; msg = ''; reGest(); } return sub; }, subGet: () => sub,
     open, openGT, close, tab: setTab, pick: pickSlot, setGT, q(v) { sh.q = v; const l = document.getElementById('food-list'); if (l) l.innerHTML = listFoods(); },
-    addCombo, addFood, addManual, importPhoto, togOff, periodStats, dailyRows, energy, rm: removeEntry, cslot: confirmSlot, dplan: dropPlan, confirmAll, clearPlan, applyGT,
+    addCombo, addFood, addManual, importPhoto, togOff, periodStats, dailyRows, energy, rm: removeEntry, cslot: confirmSlot, dplan: dropPlan, confirmAll, clearPlan, applyGT, togSkip,
     _t: { totals, day, vals, lib, comboVals, SL, sync, dirty: () => dirty, reset() { L = null; dirty = {}; } }
   };
 })();
@@ -11317,12 +11340,12 @@ function exportRows() {
   const proto = [['data', 'giorno_ciclo', 'ader_iniezioni_pct', 'ader_integratori_pct', 'iniezioni_fatte', 'iniezioni_dovute', 'integratori_fatti', 'integratori_dovuti']];
   const wo = [['data', 'giorno_ciclo', 'workout_fatto', 'wo_tipo', 'wo_durata_min', 'wo_volume_kg', 'wo_kcal']];
   /* Alimentazione (dal START del diario alimentare): una riga per giorno, solo totali, derivati da food_AAAAMMGG tramite FOOD.dailyRows */
-  const food = [['data', 'kcal', 'kcal_min', 'kcal_max', 'proteine_g', 'carboidrati_g', 'grassi_g', 'basale_kcal', 'attivita_quotidiana_kcal', 'allenamento_kcal', 'fabbisogno_kcal', 'saldo_kcal', 'quota_stimata_pct', 'pasti_fuori_piano', 'incompleto', 'stato']];
+  const food = [['data', 'kcal', 'kcal_min', 'kcal_max', 'proteine_g', 'carboidrati_g', 'grassi_g', 'basale_kcal', 'attivita_quotidiana_kcal', 'allenamento_kcal', 'fabbisogno_kcal', 'saldo_kcal', 'quota_stimata_pct', 'pasti_fuori_piano', 'pasti_saltati', 'incompleto', 'stato']];
   if (typeof FOOD !== 'undefined' && FOOD.dailyRows) FOOD.dailyRows(0).rows.forEach(r => {
     const has = r.n || r.inc, rd = (v, d) => Math.round(v * Math.pow(10, d)) / Math.pow(10, d);
     food.push([r.d, has ? rd(r.k, 0) : '', has ? rd(r.lo, 0) : '', has ? rd(r.hi, 0) : '', has ? rd(r.p, 1) : '', has ? rd(r.c, 1) : '', has ? rd(r.g, 1) : '',
       r.e ? rd(r.e.bmr, 0) : '', r.e ? rd(r.e.neat, 0) : '', r.e ? rd(r.e.wo, 0) : '', r.e ? rd(r.e.need, 0) : '', r.sd != null ? rd(r.sd, 0) : '',
-      (has && r.k > 0) ? Math.round(r.est / r.k * 100) : '', r.off || 0, r.inc ? 1 : '', r.today ? 'in_corso' : r.inc ? 'incompleto' : has ? 'ok' : 'nessun_dato']);
+      (has && r.k > 0) ? Math.round(r.est / r.k * 100) : '', r.off || 0, r.skip || 0, r.inc ? 1 : '', r.today ? 'in_corso' : r.inc ? 'incompleto' : has ? 'ok' : 'nessun_dato']);
   });
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const iso = isoLocal(d);
@@ -11367,7 +11390,7 @@ function exportRows() {
     ['wo_volume_kg', 'volume totale della seduta (kg), dal campo volume o dal log Motra'],
     ['Alimentazione', 'foglio dal 12/10/2026 (inizio del diario alimentare): una riga per giorno, solo totali, valori centrali. kcal_min/kcal_max = intervallo delle voci stimate (uguali al valore se non ci sono stime); quota_stimata_pct = kcal da voci stimate sul totale del giorno'],
     ['fabbisogno (Alimentazione)', 'basale Mifflin-St Jeor (10 x peso + 6,25 x altezza - 5 x eta + 5; peso del giorno dalla bilancia, o ultimo dei 14 giorni precedenti) x fattore attivita quotidiana (parametri in Gestione > Alimenti > Obiettivi) + kcal allenamento (wo_kcal da Motra: non verificabile se attive o totali). Stima con margine ~10%. saldo_kcal = kcal - fabbisogno_kcal: solo per giorni chiusi con voci e non incompleti (vuoto altrimenti); le colonne del fabbisogno si ricalcolano con i parametri attuali'],
-    ['stato (Alimentazione)', 'ok = giorno con voci; incompleto = pasto fuori piano ancora senza voci (valori per difetto); nessun_dato = nulla registrato (NON e uno zero); in_corso = oggi, parziale. pasti_fuori_piano = slot marcati. L\'app non puo sapere se tutti i pasti sono stati registrati']];
+    ['stato (Alimentazione)', 'ok = giorno con voci; incompleto = pasto fuori piano ancora senza voci (valori per difetto); nessun_dato = nulla registrato (NON e uno zero); in_corso = oggi, parziale. pasti_fuori_piano = slot marcati; pasti_saltati = slot segnati come saltati volontariamente (0 kcal dichiarate, non sono un dato mancante; non cambiano totali, medie né saldo). L\'app non puo sapere se tutti i pasti sono stati registrati']];
   return { bio, proto, wo, food, note, todayISO };
 }
 async function exportXLSX(statusEl, btn) {
