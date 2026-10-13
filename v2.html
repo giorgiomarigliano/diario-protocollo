@@ -831,6 +831,83 @@
 .fx-field{display:flex;flex-direction:column;gap:4px;font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase}
 .fx-field .fx-in{height:40px;font-size:var(--fs-lg)}
 @media (max-width:1023px){.fx-c6{grid-column:1/-1}.fx-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* ===== Gestione › Alimenti compatto (13/10/2026) ===== */
+.fx-c4{grid-column:span 4}
+@media (max-width:1023px){.fx-c4{grid-column:1/-1}}
+.fxc-hero{grid-column:1/-1;display:grid;grid-template-columns:150px repeat(4,minmax(0,1fr));gap:14px;align-items:center;background:var(--hero);color:var(--white);border-radius:var(--r-card);padding:10px 18px}
+.fxc-hl{font-size:var(--fs-xs);font-weight:600;color:#ffffffb0;text-transform:uppercase;line-height:1.5}
+.fxc-hl small{display:block;text-transform:none;font-weight:500}
+.fxc-hn{font-size:var(--fs-4xl);font-weight:700;line-height:1.1;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.fxc-hlab{font-size:var(--fs-2xs);font-weight:600;color:#ffffffb0;text-transform:uppercase;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fxc-hb{display:block;height:3px;border-radius:2px;background:#ffffff30;margin-top:4px;overflow:hidden}.fxc-hb b{display:block;height:100%;background:#ffffffd0}
+.fxc-2c{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:10px;align-items:start}
+.fxc-2c>.an-card{position:sticky;top:8px}
+.fxc-sh{display:flex;justify-content:space-between;gap:8px;background:var(--surf2);border-radius:var(--r-sm);padding:4px 8px;margin-top:6px;font-size:var(--fs-xs);font-weight:600;color:var(--ink2);text-transform:uppercase;font-variant-numeric:tabular-nums}
+.fxc-en{display:grid;grid-template-columns:minmax(0,1fr) 34px 36px auto;gap:6px;align-items:center;min-height:28px;padding:1px 4px;font-size:var(--fs-sm)}
+.fxc-en .nm{display:flex;align-items:center;gap:4px;min-width:0}.fxc-en .nm b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fxc-en .nm .food-src,.fxc-en .nm .fx-pill{flex:0 0 auto}
+.fxc-en .p{text-align:right;color:var(--ink3);font-size:var(--fs-xs);font-variant-numeric:tabular-nums}
+.fxc-en .k{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.fxc-en .fx-x{height:24px}
+.fxc-rc{display:flex;flex-direction:column;gap:10px;min-width:0}
+.gst-foodlist{max-height:calc(100vh - 360px);min-height:320px}
+.fxc-pn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fxc-main{display:grid;grid-template-columns:minmax(0,1fr) 340px;padding:0;gap:0;overflow:hidden;height:calc(100vh - 440px);min-height:430px}
+.fxc-left{display:flex;flex-direction:column;gap:6px;padding:12px 14px;min-width:0;min-height:0}
+.fxc-tbl{flex:1;min-height:0;overflow-y:auto}
+.fxc-side{border-left:1px solid var(--line);background:var(--surf2);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-height:0;overflow-y:auto}
+.fxc-lh,.fxc-lr{display:grid;grid-template-columns:10px minmax(0,1fr) 34px 52px 56px 48px 84px 84px 14px;gap:8px;align-items:center}
+.fxc-lh{font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase;padding:4px 0;position:sticky;top:0;background:var(--surf);z-index:1}
+.fxc-lr{min-height:32px;border-top:1px solid var(--line2);font-size:var(--fs-sm);color:var(--ink2);cursor:pointer;padding:0 4px;border-radius:var(--r-sm)}
+.fxc-lr .nm{display:flex;align-items:center;gap:6px;min-width:0}.fxc-lr .nm b{font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fxc-lr .n{text-align:right;font-variant-numeric:tabular-nums}.fxc-lr .ch{color:var(--ink3);text-align:center}
+.fxc-lr.sel{background:var(--accent-soft)}
+.fxc-tbl .fx-cat{padding:8px 0 2px}
+.fxc-dh{display:flex;justify-content:space-between;align-items:center;gap:8px}.fxc-dh b{font-size:var(--fs-base);font-weight:700;color:var(--ink)}
+.fxc-df{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.fxc-df label,.fxc-dx label{display:flex;flex-direction:column;gap:2px;font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase}
+.fxc-dx{display:grid;grid-template-columns:1fr 1fr;gap:6px}.fxc-dx .w{grid-column:1/-1}
+.fxc-dx .fx-in{background:var(--surf)}.fxc-df .fx-in,.fxc-df .fx-sel{background:var(--surf)}
+.fxc-df .fx-in,.fxc-df .fx-sel,.fxc-dx .fx-in,.fxc-dx .fx-sel{font-size:var(--fs-sm);color:var(--ink);font-weight:600;text-transform:none;letter-spacing:0}.fxc-dx .fx-in.l{font-weight:500}
+.fxc-hint{font-size:var(--fs-2xs);color:var(--ink3);line-height:1.4}
+.fxc-da{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.fxc-rr{display:flex;justify-content:space-between;gap:8px;min-height:26px;align-items:center;border-top:1px solid var(--line2);font-size:var(--fs-xs);color:var(--ink2);font-variant-numeric:tabular-nums}.fxc-rr small{color:var(--ink3)}
+.fxc-inl{padding:8px 4px 10px;display:flex;flex-direction:column;gap:8px;background:var(--surf2);border-radius:var(--r-md);margin:2px 0 4px}
+.fxc-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.fxc-strip>.an-card{padding:10px 14px;gap:6px}
+.fxc-chips{display:flex;flex-wrap:wrap;gap:5px}
+.fxc-chips button{cursor:pointer;font-family:inherit}.fxc-chips .fx-pill{font-size:var(--fs-xs);padding:3px 9px}.fxc-chips .an-chip{font-size:var(--fs-xs)}.fxc-more summary{cursor:pointer;font-size:var(--fs-xs);font-weight:600;color:var(--accent-ink);padding:2px 0}.fxc-more[open] summary{margin-bottom:6px}
+.fxc-cov{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0 16px}
+.fxc-cv{display:grid;grid-template-columns:78px minmax(0,1fr) 30px;gap:8px;align-items:center;min-height:20px;font-size:var(--fs-xs);color:var(--ink2);font-variant-numeric:tabular-nums}
+.fxc-cv i{display:flex;height:6px;border-radius:3px;background:var(--line);overflow:hidden}.fxc-cv i b{background:var(--ok)}.fxc-cv i u{background:var(--warn)}
+.fxc-cv span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fxc-cbs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;grid-column:1/-1}
+.fxc-cb{padding:10px 14px;gap:6px}.fxc-cb.open{grid-column:1/-1}
+.fxc-cr{display:flex;align-items:center;gap:8px;min-width:0}
+.fxc-cr .fx-in.l{flex:1;font-weight:700;background:transparent;border-color:transparent;padding:0 4px}
+.fxc-cs{font-size:var(--fs-xs);color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.fxc-2c .fx-slot{padding:5px 0}
+@media (max-width:1023px){
+ .fxc-main{display:block;height:auto;min-height:0}.fxc-tbl{max-height:none;overflow:visible}
+ .fxc-2c{grid-template-columns:1fr}.fxc-2c>.an-card{position:static}
+ .fxc-strip{grid-template-columns:1fr}.fxc-cbs{grid-template-columns:1fr}
+}
+@media (max-width:860px){
+ .fxc-rc{display:contents}
+ .gst-2col>.fxc-rc>section:first-child{order:-1;position:static!important}
+ .gst-foodlist{max-height:none;min-height:0}
+ .fxc-pn{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+}
+@media (max-width:680px){
+ .fxc-hero{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 10px;padding:10px 14px}.fxc-hl{grid-column:1/-1}.fxc-hn{font-size:var(--fs-3xl)}
+ .fxc-hlab{white-space:normal;line-height:1.2}
+ .fxc-lh{display:none}
+ .fxc-lr{grid-template-columns:10px minmax(0,1fr) 40px 34px 72px;gap:6px;min-height:44px;padding:4px}.fxc-lr .nm b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.fxc-lr .fx-pill{padding:3px 6px}
+ .fxc-cr .pp{display:none}
+ .fxc-lr .u,.fxc-lr .porz,.fxc-lr .cg,.fxc-lr .ch{display:none}
+ .fxc-en{min-height:40px;grid-template-columns:minmax(0,1fr) 36px 44px auto}.fxc-en .fx-x{height:36px;width:32px}
+ .fxc-df{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
 @media (max-width:680px){
  .fx-cards{grid-template-columns:1fr}
  .fx-thead{display:none!important}
@@ -1034,6 +1111,7 @@
   .gst-m .an-main{padding:10px 14px 22px;}
   .gst-m .gst-2col{display:flex;flex-direction:column;gap:9px;}
   .gst-m .gst-2col > section:last-child{order:-1;position:static !important;}
+  .gst-m .fxc-rc{display:contents}.gst-m .gst-2col>.fxc-rc>section:first-child{order:-1;position:static!important}
   .gst-m .gst-macros{display:grid !important;grid-template-columns:repeat(3,1fr);gap:8px !important;}
   .gst-m .gst-macros span{display:flex;flex-direction:column;line-height:1.35;}
   .gst-m [data-gst-reco-f]{height:44px !important;font-size:var(--fs-base) !important;}
@@ -6382,7 +6460,7 @@ const FOOD = (function () {
   const START = '2026-10-12';
   const SL = [['caf', 'Caffè mattina', 'Caffè mat.'], ['col', 'Colazione', 'Colazione'], ['spm', 'Spuntino mattina', 'Spuntino mat.'], ['pra', 'Pranzo', 'Pranzo'], ['spp', 'Spuntino pomeriggio', 'Spuntino pom.'], ['cen', 'Cena', 'Cena'], ['ext', 'Extra / dopo cena', 'Extra']];
   const SRCL = { w: ['⚖ pesato', 's-w'], l: ['▤ libreria', 's-l'], e: ['🏷 etichetta', 's-e'], s: ['≈ stima', 's-s'] };
-  let L = null, sub = 'pasto', sh = null, dirty = {}, err = false, busy = false, retryT = null, flt = { ver: false, q: '' }, msg = '';
+  let L = null, sub = 'pasto', sh = null, dirty = {}, err = false, busy = false, retryT = null, flt = { ver: false, q: '', tab: 'det', more: false }, msg = '';
   const num = v => { const x = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(x) ? x : NaN; };
   const r0 = v => Math.round(v), r1 = v => Math.round(v * 10) / 10;
   const uid = p => p + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
@@ -6807,94 +6885,129 @@ const FOOD = (function () {
   const SUBS = [['pasto', 'Pasto'], ['lib', 'Libreria'], ['combo', 'Combo'], ['gt', 'Giornate tipo'], ['obj', 'Obiettivi']];
   /* subnav/gestView: vedi sotto */
   const gi = 'border:1px solid var(--line2);border-radius:8px;background:var(--surf);color:var(--ink);font-size:13px;padding:0 8px;height:40px;box-sizing:border-box;min-width:0';
-  function reGest() { GST_renderAlimenti(); badge(); }
+  function reGest() { const t0 = document.querySelector('.fxc-tbl'), st = t0 ? t0.scrollTop : 0; GST_renderAlimenti(); const t1 = document.querySelector('.fxc-tbl'); if (t1) t1.scrollTop = st; badge(); }
   function flash(m) { msg = m; }
   function chk(f) { if (f.ver === 'A') return ''; const calc = 4 * f.p + 4 * f.c + 9 * f.g; return (Math.abs(f.k - calc) > 15 && Math.abs(f.k - calc) > 0.15 * Math.max(f.k, 1)) ? `<span class="food-src s-s" title="kcal dichiarate ${f.k} · calcolate dai macro ${r0(calc)} (4P+4C+9G; fibre/alcol/arrotondamenti possibili)">⚠ kcal≠macro (${r0(calc)})</span>` : ''; }
   const td = () => isoLocal(new Date());
   const dotC = f => vok(f) ? 'var(--ok)' : (f.ver === 'C' ? 'var(--warn)' : 'var(--idle)');
   const LV = { A: ['ok', 'Etichetta'], B: ['db', 'Banca dati'], C: ['est', 'Stima'], '': ['todo', 'Da verificare'] };
   const cOk = c => c.items.length > 0 && c.items.every(it => { const f = it.f && food(it.f); return !!f && vok(f); });
-  let openF = null, mealSlot = '';
+  let openF = null, mealSlot = '', openC = {};
   const defSlot = () => { const h = new Date().getHours(); return h < 11 ? 'col' : h < 15 ? 'pra' : h < 18 ? 'spp' : 'cen'; };
   const slotSel = (id, def, extra) => `<select id="${id}" class="fx-sel" ${extra || ''}>${SL.map(([s, n]) => `<option value="${s}"${s === def ? ' selected' : ''}>${n}</option>`).join('')}</select>`;
   const hK = (n, l, c) => `<div style="flex:1 1 0;min-width:0"><div style="font-size:var(--fs-4xl);font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:${c}">${n}</div><div style="font-size:var(--fs-2xs);font-weight:600;color:#ffffffb0;text-transform:uppercase;margin-top:2px">${l}</div></div>`;
   function heroHTML() {
     const l = lib(), nV = l.foods.filter(vok).length, nT = l.foods.length - nV, T = l.targets, t = totals(td());
-    const nOk = l.combos.filter(cOk).length;
-    const H = {
-      pasto: `Componi un pasto con i ${nV} alimenti verificati e aggiungilo a oggi.`,
-      lib: `${nV} alimenti verificati su ${l.foods.length}: ${nT} aspettano etichetta o fonte.`,
-      combo: `${l.combos.length} combo: ${nOk} poggiano solo su alimenti verificati. Un tocco e finiscono in oggi.`,
-      gt: 'Scegli una combo per slot. Applica la giornata a oggi come previsto o aggiungi i singoli slot.',
-      obj: (T.kcal || T.p) ? `Obiettivo giornaliero: ${T.kcal || '—'} kcal e ${T.p || '—'} g di proteine.` : 'Obiettivi non ancora impostati.'
-    }[sub] || '';
     const nm = (SUBS.find(s => s[0] === sub) || ['', ''])[1];
-    return `<section class="an-card" style="background:var(--hero);color:var(--white);gap:10px"><span style="font-size:var(--fs-xs);font-weight:600;color:#ffffffb0;text-transform:uppercase">Alimenti · ${nm}</span><span style="font-size:var(--fs-3xl);font-weight:700;line-height:1.25">${H}</span><div style="display:flex;gap:10px;margin-top:4px">${hK(fmt(t.k), 'Oggi · kcal' + (T.kcal ? ' / ' + T.kcal : ''), 'var(--white)')}${hK(fmt(t.p), 'Oggi · proteine g' + (T.p ? ' / ' + T.p : ''), 'var(--white)')}${hK(nV, 'Verificati', 'var(--ok-on-dark)')}${hK(nT, 'Da verificare', 'var(--warn-on-dark)')}</div></section>`;
+    const hs = (n, lab, c, fr) => `<div style="min-width:0"><div class="fxc-hn" style="color:${c}">${n}</div><div class="fxc-hlab">${lab}</div>${fr != null ? `<i class="fxc-hb"><b style="width:${Math.max(0, Math.min(100, fr * 100))}%"></b></i>` : ''}</div>`;
+    return `<section class="fxc-hero"><span class="fxc-hl">Alimenti · ${nm}<small>${nV} verificati su ${l.foods.length}</small></span>${hs(fmt(t.k), 'Oggi · kcal' + (T.kcal ? ' / ' + T.kcal : ''), 'var(--white)', T.kcal ? t.k / T.kcal : null)}${hs(fmt(t.p), 'Oggi · proteine g' + (T.p ? ' / ' + T.p : ''), 'var(--white)', T.p ? t.p / T.p : null)}${hs(nV, 'Verificati', 'var(--ok-on-dark)', null)}${hs(nT, 'Da verificare', 'var(--warn-on-dark)', null)}</section>`;
   }
   function todayCard() {
     const d = td(), o = day(d), t = totals(d);
     const dl = new Date(d + 'T00:00:00').toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
     let rows = '';
     SL.forEach(([id, n]) => {
-      o.s[id].forEach(e => {
+      const it = o.s[id]; if (!it.length) return;
+      let k = 0, p = 0, live = 0; it.forEach(e => { if (!e.plan) { const v = vals(e); k += v.k; p += v.p; live++; } });
+      rows += `<div class="fxc-sh"><span>${n}${it.length > 1 ? ' · ' + it.length : ''}</span><span>${live ? fmt(k) + ' kcal · P ' + fmt(p, 0) : 'previsto'}</span></div>`;
+      it.forEach(e => {
         const v = vals(e);
-        rows += `<div class="fx-slot fx-slot4"><span class="t">${n}</span><span style="min-width:0"><b style="font-weight:600;${e.plan ? 'font-style:italic;color:var(--accent-ink)' : ''}">${esc(e.n)}</b> ${e.plan ? '<span class="fx-pill db">previsto</span>' : srcTag(e.src)}<div style="font-size:var(--fs-2xs);color:var(--ink3)">${esc(e.q)} · P ${fmt(v.p, 1)} g</div></span><span class="k">${fmt(v.k)} kcal</span><span style="display:flex;gap:4px;justify-content:flex-end">${e.plan ? `<button type="button" class="fx-ghost" style="min-height:30px;padding:0 10px" onclick="FOOD.g.cfT('${id}')">✓</button>` : ''}<button type="button" class="fx-x" onclick="FOOD.g.rmT('${id}','${e.id}')" aria-label="Rimuovi">✕</button></span></div>`;
+        rows += `<div class="fxc-en"><span class="nm" title="${esc(e.n)} · ${esc(e.q)} · P ${fmt(v.p, 1)} g"><b style="${e.plan ? 'font-style:italic;color:var(--accent-ink)' : ''}">${esc(e.n)}</b>${e.plan ? '<span class="fx-pill db">previsto</span>' : (e.src === 'l' ? '' : srcTag(e.src))}</span><span class="p">P ${fmt(v.p, 0)}</span><span class="k">${fmt(v.k)}</span><span style="display:flex;gap:2px;justify-content:flex-end">${e.plan ? `<button type="button" class="fx-ghost" style="min-height:24px;padding:0 8px" onclick="FOOD.g.cfT('${id}')">✓</button>` : ''}<button type="button" class="fx-x" onclick="FOOD.g.rmT('${id}','${e.id}')" aria-label="Rimuovi">✕</button></span></div>`;
       });
     });
     const pk = SL.reduce((a, [id]) => a + planK(o, id), 0);
-    const sub2 = t.n ? `${t.n} ${t.n === 1 ? 'voce' : 'voci'} · ${fmt(t.k)} kcal · P ${fmt(t.p, 1)} g${pk ? ` · previsto +${fmt(pk)} kcal` : ''}${t.unv ? ` · ${fmt(t.unv)} kcal su valori da verificare` : ''}` : 'nessuna voce';
-    return `<section class="an-card"><div class="an-head"><span class="an-title">Registrato oggi · ${dl}</span><span class="an-sub">${sub2}</span></div>
-${msg ? `<div class="fx-soft" style="padding:8px 12px"><span style="font-size:var(--fs-sm);font-weight:600">${esc(msg)}</span></div>` : ''}
-${rows || '<div class="an-note">Ancora niente. Aggiungi una combo, un pasto o una giornata tipo con i pulsanti qui sotto; per un piatto fuori libreria manda la foto a Claude e incolla il risultato in Oggi › + › Foto.</div>'}
+    const sub2 = t.n ? `${t.n} ${t.n === 1 ? 'voce' : 'voci'}${pk ? ` · previsto +${fmt(pk)} kcal` : ''}${t.unv ? ` · ${fmt(t.unv)} kcal da verificare` : ''}` : 'nessuna voce';
+    return `<section class="an-card" style="padding:12px 14px;gap:4px"><div class="an-head"><span class="an-title">Registrato oggi · ${dl}</span><span class="an-sub">${sub2}</span></div>
+${msg ? `<div class="fx-soft" style="padding:6px 10px"><span style="font-size:var(--fs-sm);font-weight:600">${esc(msg)}</span></div>` : ''}
+${rows || '<div class="an-note">Ancora niente. Aggiungi una combo, un pasto o una giornata tipo; per un piatto fuori libreria manda la foto a Claude e incolla il risultato in Oggi › + › Foto.</div>'}
 ${d < START ? `<div class="an-note">La card in Oggi si attiva dal 12/10. Le voci di oggi sono già salvate e le vedi qui.</div>` : ''}</section>`;
   }
   function subnav() {
     const chips = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:2px">${SUBS.map(([k, l]) => `<button type="button" class="an-chip${sub === k ? ' is-active' : ''}" onclick="FOOD.sub('${k}')">${l}</button>`).join('')}</div><span class="food-sync" style="font-size:10px"></span>`;
-    return chips + heroHTML() + ((sub === 'pasto' || sub === 'combo' || sub === 'gt') ? todayCard() : '');
+    return chips + heroHTML();
+  }
+  const sd = n => { const d = new Date(td() + 'T00:00:00'); d.setDate(d.getDate() - n); return isoLocal(d); };
+  function recentUse(fid, lim) {
+    const out = [];
+    for (let i = 0; i < 30 && out.length < lim; i++) {
+      const iso = sd(i), o = day(iso);
+      SL.forEach(([id, n]) => o.s[id].forEach(e => { if (!e.plan && e.ref && e.ref.t === 'f' && e.ref.id === fid && out.length < lim) out.push({ d: iso.slice(8) + '/' + iso.slice(5, 7), n, q: e.q, k: vals(e).k }); }));
+    }
+    return out;
+  }
+  function topUsed() {
+    const m = {};
+    for (let i = 0; i < 7; i++) {
+      const o = day(sd(i));
+      SL.forEach(([id]) => o.s[id].forEach(e => {
+        if (e.plan) return; const fid = e.ref && e.ref.t === 'f' ? e.ref.id : null, key = fid || 'n:' + e.n;
+        const x = m[key] || (m[key] = { n: e.n, id: fid, c: 0, k: 0 }); x.c++; x.k += vals(e).k;
+      }));
+    }
+    return Object.values(m).sort((a, b) => b.c - a.c || b.k - a.k).slice(0, 5);
+  }
+  function detailHTML(f) {
+    const L = LV[f.ver || ''] || LV[''], rec = recentUse(f.id, 12), id = f.id;
+    const ni = (k, lb) => `<label>${lb}<input class="fx-in" value="${fmt(f[k], 1)}" onchange="FOOD.g.f('${id}','${k}',this.value)"></label>`;
+    return `<div class="fxc-dh"><b>${esc(f.n)}</b><span class="fx-pill ${L[0]}">${L[1]}</span></div>
+<div class="fxc-df"><label>Unità<select class="fx-sel" onchange="FOOD.g.f('${id}','u',this.value)"><option value="g"${f.u === 'g' ? ' selected' : ''}>${f.ul || 'g'}</option><option value="pz"${f.u === 'pz' ? ' selected' : ''}>pz</option></select></label>${ni('ref', 'Porzione')}${ni('k', 'kcal')}${ni('p', 'Proteine')}${ni('c', 'Carbo')}${ni('g', 'Grassi')}</div>
+<div class="fxc-dx"><label class="w">Fonte (obbligatoria per Etichetta / Banca dati)<input class="fx-in l" value="${esc(f.fonte || '')}" placeholder="es. etichetta + data; CREA / USDA + riferimento" onchange="FOOD.g.f('${id}','fonte',this.value)"></label></div>
+<div class="fxc-hint">${chk(f)} Se cambi kcal o macro la voce torna “da verificare”; la correzione si propaga a combo e storico.</div>
+<div class="fxc-da">${slotSel('ft_' + id, defSlot(), 'style="flex:0 0 auto"')}<button type="button" class="fx-ghost fx-pri" style="flex:1" onclick="FOOD.g.foodToday('${id}')">+ Aggiungi a oggi</button></div>
+<details class="fxc-more"${flt.more ? ' open' : ''} ontoggle="FOOD.g.mo(this.open)"><summary>Nome, categoria, livello, nota</summary><div class="fxc-dx"><label class="w">Nome<input class="fx-in l" value="${esc(f.n)}" onchange="FOOD.g.f('${id}','n',this.value)"></label><label>Categoria<input class="fx-in l" list="food-cats" value="${esc(f.cat || '')}" onchange="FOOD.g.f('${id}','cat',this.value)"></label><label>Livello<select class="fx-sel" onchange="FOOD.g.ver2('${id}',this.value)">${[['', 'Da verificare'], ['A', 'Etichetta'], ['B', 'Banca dati'], ['C', 'Stima']].map(([v, n]) => `<option value="${v}"${(f.ver || '') === v ? ' selected' : ''}>${n}</option>`).join('')}</select></label><label class="w">Nota<input class="fx-in l" value="${esc(f.note || '')}" onchange="FOOD.g.f('${id}','note',this.value)"></label><button type="button" class="fx-ghost bad w" style="grid-column:1/-1" onclick="FOOD.g.delF('${id}')">Elimina alimento</button></div></details>
+<div style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase;margin-top:2px">Registrato di recente</div><div style="flex:1;min-height:0">${rec.length ? rec.map(r => `<div class="fxc-rr"><span>${r.d} · ${r.n}</span><small>${esc(r.q)} · ${fmt(r.k)} kcal</small></div>`).join('') : '<div class="fxc-hint">Mai registrato come singolo alimento.</div>'}</div>`;
+  }
+  function newHTML() {
+    return `<div class="fxc-dh"><b>Nuovo alimento</b></div><div class="fxc-hint">Compare come “da verificare” finché non aggiungi la fonte.</div>
+<div class="fxc-dx"><label class="w">Nome<input id="nf_n" class="fx-in l"></label><label>Categoria<input id="nf_cat" class="fx-in l" list="food-cats"></label><label>Unità<select id="nf_u" class="fx-sel"><option value="g">g</option><option value="pz">pz</option></select></label></div>
+<div class="fxc-df">${[['ref', 'Porzione'], ['k', 'kcal'], ['p', 'Proteine'], ['c', 'Carbo'], ['g', 'Grassi']].map(([k, lb]) => `<label>${lb}<input id="nf_${k}" class="fx-in" type="number" inputmode="decimal" step="any"></label>`).join('')}</div>
+<button type="button" class="fx-ghost fx-pri" onclick="FOOD.g.newF()">+ Aggiungi</button>`;
+  }
+  function libView(l) {
+    const lv = flt.lv || 'all', nV = l.foods.filter(vok).length, nE = l.foods.filter(f => f.ver === 'C').length, nT = l.foods.length - nV;
+    const q = (flt.q || '').toLowerCase();
+    const vis = l.foods.filter(f => (lv === 'all' || (lv === 'ok' && vok(f)) || (lv === 'todo' && !vok(f) && f.ver !== 'C') || (lv === 'est' && f.ver === 'C')) && (!q || f.n.toLowerCase().includes(q)));
+    const cats = [...new Set(vis.map(f => f.cat || 'Altro'))];
+    const sel = (openF && food(openF)) ? openF : (isDesktop && vis[0] ? vis[0].id : null), tab = flt.tab || 'det';
+    const chip = (k, lb, n) => `<button type="button" class="an-chip${lv === k ? ' is-active' : ''}" onclick="FOOD.g.lv('${k}')">${lb} ${n}</button>`;
+    let rows = '';
+    cats.forEach(c => {
+      rows += `<div class="fx-cat">${esc(c)}</div>`;
+      vis.filter(f => (f.cat || 'Altro') === c).forEach(f => {
+        const L = LV[f.ver || ''] || LV[''];
+        rows += `<div class="fxc-lr${f.id === sel ? ' sel' : ''}" onclick="FOOD.g.sel('${f.id}')" title="${esc(f.fonte || f.note || '')}"><i class="fx-dot" style="background:${dotC(f)}"></i><span class="nm"><b>${esc(f.n)}</b>${chk(f)}</span><span class="u">${f.u === 'pz' ? 'pz' : (f.ul || 'g')}</span><span class="n porz">${fmt(f.ref, 1)}</span><span class="n">${fmt(f.k, 1)}</span><span class="n">${fmt(f.p, 1)}</span><span class="n cg">${fmt(f.c, 1)} / ${fmt(f.g, 1)}</span><span class="lv"><span class="fx-pill ${L[0]}">${L[1]}</span></span><span class="ch">${!isDesktop && f.id === sel ? '▴' : '›'}</span></div>`;
+        if (!isDesktop && f.id === sel) rows += `<div class="fxc-inl">${detailHTML(f)}</div>`;
+      });
+    });
+    if (!vis.length) rows += '<div class="an-note">Nessun alimento trovato.</div>';
+    const sf = sel && food(sel);
+    const side = isDesktop ? `<aside class="fxc-side"><div style="display:flex;gap:6px"><button type="button" class="an-chip${tab === 'det' ? ' is-active' : ''}" onclick="FOOD.g.tab('det')">Dettaglio</button><button type="button" class="an-chip${tab === 'new' ? ' is-active' : ''}" onclick="FOOD.g.tab('new')">+ Nuovo</button></div>${tab === 'new' ? newHTML() : (sf ? detailHTML(sf) : '<div class="fxc-hint">Seleziona un alimento dalla tabella.</div>')}</aside>` : '';
+    const main = `<section class="an-card fxc-main fx-c12"><div class="fxc-left"><div class="fx-bar"><input id="fx-q" class="fx-in l" placeholder="Cerca un alimento…" value="${esc(flt.q || '')}" oninput="FOOD.g.fq(this.value)">${chip('all', 'Tutti', l.foods.length)}${chip('ok', 'Verificati', nV)}${chip('todo', 'Da verificare', nT - nE)}${chip('est', 'Stime', nE)}</div>
+<div class="fxc-tbl"><div class="fxc-lh"><span></span><span>Alimento</span><span>Unità</span><span class="n" style="text-align:right">Porz.</span><span style="text-align:right">kcal</span><span style="text-align:right">P</span><span style="text-align:right">C / G</span><span>Livello</span><span></span></div>${rows}</div></div>${side}</section>`;
+    const todo = l.foods.filter(f => !vok(f)), top = topUsed(), byC = {};
+    l.foods.forEach(f => { const c = f.cat || 'Altro'; (byC[c] = byC[c] || { n: 0, v: 0 }).n++; if (vok(f)) byC[c].v++; });
+    const strip = `<div class="fxc-strip fx-c12"><section class="an-card"><span class="an-title">Da completare · ${todo.length}</span><div class="fxc-chips">${todo.length ? todo.slice(0, 10).map(f => `<button type="button" class="fx-pill ${(LV[f.ver || ''] || LV[''])[0]}" onclick="FOOD.g.sel('${f.id}',1)">${esc(f.n.split(' (')[0])}</button>`).join('') + (todo.length > 10 ? `<span class="fxc-hint">+${todo.length - 10}</span>` : '') : '<span class="fxc-hint">Tutti gli alimenti sono verificati.</span>'}</div></section>
+<section class="an-card"><span class="an-title">Più usati · 7 giorni</span><div class="fxc-chips">${top.length ? top.map(x => `<button type="button" class="an-chip" style="min-height:0;padding:3px 9px;font-size:var(--fs-xs)"${x.id ? ` onclick="FOOD.g.sel('${x.id}',1)"` : ' disabled'}>${esc((x.id && food(x.id) ? food(x.id).n : x.n).split(' (')[0])} <small style="color:var(--ink3)">${x.c}× · ${fmt(x.k)} kcal</small></button>`).join('') : '<span class="fxc-hint">Nessun dato negli ultimi 7 giorni.</span>'}</div></section>
+<section class="an-card"><span class="an-title">Copertura per categoria</span><div class="fxc-cov">${Object.keys(byC).map(c => { const x = byC[c]; return `<div class="fxc-cv"><span title="${esc(c)}">${esc(c)}</span><i><b style="width:${x.v / x.n * 100}%"></b><u style="width:${(x.n - x.v) / x.n * 100}%"></u></i><span style="text-align:right">${x.v}/${x.n}</span></div>`; }).join('')}</div></section></div>`;
+    const nu = isDesktop ? '' : `<section class="an-card fx-c12"><div style="display:flex;flex-direction:column;gap:8px">${newHTML()}</div></section>`;
+    return `<div class="fx-grid">${main}${strip}${nu}<datalist id="food-cats">${[...new Set(l.foods.map(f => f.cat || 'Altro'))].map(c => `<option value="${esc(c)}">`).join('')}</datalist></div>`;
   }
   function gestView() {
     const l = lib();
-    if (sub === 'lib') {
-      const lv = flt.lv || 'all';
-      const nV = l.foods.filter(vok).length, nE = l.foods.filter(f => f.ver === 'C').length, nT = l.foods.length - nV;
-      const q = (flt.q || '').toLowerCase();
-      const vis = l.foods.filter(f => (lv === 'all' || (lv === 'ok' && vok(f)) || (lv === 'todo' && !vok(f) && f.ver !== 'C') || (lv === 'est' && f.ver === 'C')) && (!q || f.n.toLowerCase().includes(q)));
-      const cats = [...new Set(vis.map(f => f.cat || 'Altro'))];
-      const chip = (k, lb, n) => `<button type="button" class="an-chip${lv === k ? ' is-active' : ''}" onclick="FOOD.g.lv('${k}')">${lb} ${n}</button>`;
-      let h = `<section class="an-card fx-c12"><div class="an-head"><span class="an-title">Libreria alimenti</span><span class="an-sub">per 100 g / 100 ml o per pezzo · modifica direttamente in tabella</span></div>
-<div class="an-note">Etichetta e banca dati richiedono la fonte. Se cambi kcal o macro la voce torna “da verificare”. Una correzione si propaga a combo e storico.</div>
-<div class="fx-bar"><input id="fx-q" class="fx-in l" placeholder="Cerca un alimento…" value="${esc(flt.q || '')}" oninput="FOOD.g.fq(this.value)">${chip('all', 'Tutti', l.foods.length)}${chip('ok', 'Verificati', nV)}${chip('todo', 'Da verificare', nT - nE)}${chip('est', 'Stime', nE)}</div>
-<div class="an-thead fx-thead fx-lib"><span>Alimento</span><span>Unità</span><span class="an-num">Porz.</span><span class="an-num">kcal</span><span class="an-num">P</span><span class="an-num">C</span><span class="an-num">G</span><span>Livello</span><span></span></div>`;
-      cats.forEach(c => {
-        h += `<div class="fx-cat">${esc(c)}</div>`;
-        vis.filter(f => (f.cat || 'Altro') === c).forEach(f => {
-          const L = LV[f.ver || ''] || LV[''], sb = f.fonte || f.note || '', o = openF === f.id;
-          const ni = (k, lb) => `<label data-l="${lb}"><input class="fx-in" value="${fmt(f[k], 1)}" onchange="FOOD.g.f('${f.id}','${k}',this.value)"></label>`;
-          h += `<div class="fx-row fx-lib"><span class="fx-name nm"><i class="fx-dot" style="background:${dotC(f)}"></i><span><b>${esc(f.n)}</b><small>${esc(sb)} ${chk(f)}</small></span></span>
-<label class="ut" data-l="Unità"><select class="fx-sel" style="width:100%" onchange="FOOD.g.f('${f.id}','u',this.value)"><option value="g"${f.u === 'g' ? ' selected' : ''}>${f.ul || 'g'}</option><option value="pz"${f.u === 'pz' ? ' selected' : ''}>pz</option></select></label>
-${ni('ref', 'Porz.')}${ni('k', 'kcal')}${ni('p', 'P')}${ni('c', 'C')}${ni('g', 'G')}
-<span class="lv"><span class="fx-pill ${L[0]}">${L[1]}</span></span><button type="button" class="fx-x xx" onclick="FOOD.g.open('${f.id}')" aria-label="Dettagli">${o ? '▴' : '▾'}</button>
-${o ? `<div class="fx-detail"><label>Nome<input class="fx-in l" value="${esc(f.n)}" onchange="FOOD.g.f('${f.id}','n',this.value)"></label><label>Categoria<input class="fx-in l" list="food-cats" value="${esc(f.cat || '')}" onchange="FOOD.g.f('${f.id}','cat',this.value)"></label><label>Livello<select class="fx-sel" onchange="FOOD.g.ver2('${f.id}',this.value)">${[['', 'Da verificare'], ['A', 'Etichetta'], ['B', 'Banca dati'], ['C', 'Stima']].map(([v, n]) => `<option value="${v}"${(f.ver || '') === v ? ' selected' : ''}>${n}</option>`).join('')}</select></label><span></span></div>
-<div class="fx-detail"><label>Fonte (obbligatoria per Etichetta / Banca dati)<input class="fx-in l" value="${esc(f.fonte || '')}" placeholder="es. etichetta + data; CREA / USDA + riferimento" onchange="FOOD.g.f('${f.id}','fonte',this.value)"></label><label>Nota<input class="fx-in l" value="${esc(f.note || '')}" onchange="FOOD.g.f('${f.id}','note',this.value)"></label><span></span><button type="button" class="fx-ghost bad" onclick="FOOD.g.delF('${f.id}')">Elimina</button></div>` : ''}</div>`;
-        });
-      });
-      if (!vis.length) h += '<div class="an-note">Nessun alimento trovato.</div>';
-      h += `<datalist id="food-cats">${[...new Set(l.foods.map(f => f.cat || 'Altro'))].map(c => `<option value="${esc(c)}">`).join('')}</datalist></section>
-<section class="an-card fx-c12"><div class="an-head"><span class="an-title">Nuovo alimento</span><span class="an-sub">compare come “da verificare” finché non aggiungi la fonte</span></div>
-<div class="fx-bar"><input id="nf_n" class="fx-in l" placeholder="Nome" style="max-width:260px"><input id="nf_cat" class="fx-in l" list="food-cats" placeholder="Categoria" style="max-width:150px"><select id="nf_u" class="fx-sel"><option value="g">g</option><option value="pz">pz</option></select>${[['ref', 'porzione'], ['k', 'kcal'], ['p', 'P'], ['c', 'C'], ['g', 'G']].map(([k, lb]) => `<input id="nf_${k}" class="fx-in" type="number" inputmode="decimal" step="any" placeholder="${lb}" style="max-width:${k === 'ref' ? 84 : 70}px;min-width:60px;flex:0 1 auto">`).join('')}<button type="button" class="fx-ghost fx-pri" onclick="FOOD.g.newF()">+ Aggiungi</button></div></section>`;
-      return `<div class="fx-grid">${h}</div>`;
-    }
+    if (sub === 'lib') return libView(l);
     if (sub === 'combo') {
       let h = l.combos.map(c => {
-        const v = comboVals(c), ok = cOk(c);
-        return `<section class="an-card"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="display:flex;align-items:center;gap:8px;min-width:0;flex:1"><i class="fx-dot" style="background:${ok ? 'var(--ok)' : 'var(--warn)'}"></i><input class="fx-in l" value="${esc(c.n)}" onchange="FOOD.g.cn('${c.id}',this.value)" style="font-weight:700;font-size:var(--fs-md);background:transparent;border-color:transparent"></span><span class="fx-big">${fmt(v.k)} <small style="font-size:var(--fs-sm)">kcal</small></span></div>
-<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select class="fx-sel" onchange="FOOD.g.cs('${c.id}',this.value)">${SL.map(([id, n]) => `<option value="${id}"${c.slot === id ? ' selected' : ''}>${n}</option>`).join('')}</select><span class="fx-pill ${ok ? 'ok' : 'est'}">${ok ? 'tutti verificati' : (c.items.length ? 'contiene stime / da verificare' : 'vuota')}</span></div>
-<div class="fx-tiles" style="grid-template-columns:repeat(3,1fr)"><div class="fx-tile"><span>Proteine</span><b>${fmt(v.p, 1)} g</b></div><div class="fx-tile"><span>Carbo</span><b>${fmt(v.c, 1)} g</b></div><div class="fx-tile"><span>Grassi</span><b>${fmt(v.g, 1)} g</b></div></div>
+        const v = comboVals(c), ok = cOk(c), o = openC[c.id];
+        const names = c.items.map(it => { const f = it.f && food(it.f); return esc(f ? f.n.split(' (')[0] : (it.n || '?')); }).join(' · ');
+        const head = `<div class="fxc-cr"><i class="fx-dot" style="background:${ok ? 'var(--ok)' : 'var(--warn)'}"></i><input class="fx-in l" value="${esc(c.n)}" onchange="FOOD.g.cn('${c.id}',this.value)"><span class="fx-big" style="font-size:var(--fs-xl)">${fmt(v.k)} <small style="font-size:var(--fs-xs)">kcal</small></span><span class="pp" style="font-size:var(--fs-xs);color:var(--ink3);white-space:nowrap">P ${fmt(v.p, 0)}</span><button type="button" class="fx-x" onclick="FOOD.g.oc('${c.id}')" aria-label="Dettagli">${o ? '▴' : '▾'}</button></div>`;
+        const line = `<div class="fxc-cr"><span class="fx-pill ${ok ? 'ok' : 'est'}" title="${ok ? 'tutti verificati' : (c.items.length ? 'contiene stime / da verificare' : 'vuota')}">${slotName(c.slot)}</span><span class="fxc-cs">${names || 'vuota'}</span><button type="button" class="fx-ghost fx-pri" style="min-height:26px;padding:0 10px"${c.items.length ? '' : ' disabled'} onclick="FOOD.g.comboToday('${c.id}','${c.slot}')">+ oggi</button></div>`;
+        if (!o) return `<section class="an-card fxc-cb">${head}${line}</section>`;
+        return `<section class="an-card fxc-cb open">${head}
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select class="fx-sel" onchange="FOOD.g.cs('${c.id}',this.value)">${SL.map(([id, n]) => `<option value="${id}"${c.slot === id ? ' selected' : ''}>${n}</option>`).join('')}</select><span class="fx-pill ${ok ? 'ok' : 'est'}">${ok ? 'tutti verificati' : (c.items.length ? 'contiene stime / da verificare' : 'vuota')}</span><span class="fxc-hint" style="margin-left:auto">P ${fmt(v.p, 1)} g · C ${fmt(v.c, 1)} g · G ${fmt(v.g, 1)} g</span></div>
 <div>${c.items.map((it, i) => { const f = it.f && food(it.f); return `<div class="fx-item"><span class="fx-name"><i class="fx-dot" style="background:${f ? dotC(f) : 'var(--idle)'}"></i><span><b style="font-weight:600;color:var(--ink)">${esc(f ? f.n.split(' (')[0] : (it.n || '(alimento rimosso)'))}</b></span></span><input class="fx-in" value="${it.q}" onchange="FOOD.g.iq('${c.id}',${i},this.value)"><span class="u">${f ? (f.u === 'pz' ? 'pz' : (f.ul || 'g')) : ''}</span><button type="button" class="fx-x" onclick="FOOD.g.delI('${c.id}',${i})" aria-label="Rimuovi">✕</button></div>`; }).join('')}</div>
-<div class="fx-bar"><select id="ci_${c.id}" class="fx-sel" style="flex:1;min-width:140px"><option value="">+ aggiungi alimento…</option>${l.foods.map(f => `<option value="${f.id}">${esc(f.n)}${vok(f) ? '' : ' (da verificare)'}</option>`).join('')}</select><button type="button" class="fx-ghost" onclick="FOOD.g.addI('${c.id}')">Aggiungi</button></div>
-<div class="fx-bar" style="border-top:1px solid var(--line2);padding-top:10px">${slotSel('ct_' + c.id, c.slot)}<button type="button" class="fx-ghost fx-pri" onclick="FOOD.g.comboToday('${c.id}')"${c.items.length ? '' : ' disabled'}>+ Aggiungi a oggi</button><button type="button" class="fx-ghost bad" style="margin-left:auto" onclick="FOOD.g.delC('${c.id}')">Elimina</button></div></section>`;
+<div class="fx-bar"><select id="ci_${c.id}" class="fx-sel" style="flex:1;min-width:140px"><option value="">+ aggiungi alimento…</option>${l.foods.map(f => `<option value="${f.id}">${esc(f.n)}${vok(f) ? '' : ' (da verificare)'}</option>`).join('')}</select><button type="button" class="fx-ghost" onclick="FOOD.g.addI('${c.id}')">Aggiungi</button>${slotSel('ct_' + c.id, c.slot)}<button type="button" class="fx-ghost fx-pri" onclick="FOOD.g.comboToday('${c.id}')"${c.items.length ? '' : ' disabled'}>+ Aggiungi a oggi</button><button type="button" class="fx-ghost bad" style="margin-left:auto" onclick="FOOD.g.delC('${c.id}')">Elimina</button></div></section>`;
       }).join('') || '<div class="an-note">Nessuna combo ancora.</div>';
-      return `<div class="fx-grid"><div class="fx-cards">${h}</div><div class="fx-c12"><button type="button" class="fx-ghost" onclick="FOOD.g.newC()">+ Nuova combo</button></div></div>`;
+      return `<div class="fxc-2c"><div class="fx-grid"><div class="fxc-cbs">${h}</div><div class="fx-c12"><button type="button" class="fx-ghost" onclick="FOOD.g.newC()">+ Nuova combo</button></div></div>${todayCard()}</div>`;
     }
     if (sub === 'gt') {
       const cards = l.gts.map(g => {
@@ -6906,17 +7019,17 @@ ${o ? `<div class="fx-detail"><label>Nome<input class="fx-in l" value="${esc(f.n
         }).join('');
         return `<section class="an-card fx-c6"><div class="an-head"><input class="fx-in l" value="${esc(g.n)}" onchange="FOOD.g.gn('${g.id}',this.value)" style="max-width:200px;font-weight:700"><span style="display:flex;gap:6px;align-items:center"><button type="button" class="fx-ghost fx-pri" onclick="FOOD.g.gtToday('${g.id}')">Prevedi oggi</button><button type="button" class="fx-x" onclick="FOOD.g.delG('${g.id}')" aria-label="Elimina">✕</button></span></div>${rows}<div class="fx-slot fx-slot4" style="border-top:1px solid var(--line)"><span class="t">Totale previsto</span><span class="an-sub">${tk ? `P ${fmt(tp, 1)} g${l.targets.kcal ? ' · obiettivo ' + l.targets.kcal + ' kcal' : ''}` : 'nessuna combo scelta'}</span><span class="k">${tk ? fmt(tk) + ' kcal' : '—'}</span><span></span></div></section>`;
       }).join('');
-      return `<div class="fx-grid">${cards}<div class="fx-c12"><div class="an-note">“Prevedi oggi” inserisce le combo come previsto: contano solo dopo la conferma e non toccano gli slot già compilati. “+ oggi” aggiunge subito quella combo come mangiata.</div></div><div class="fx-c12"><button type="button" class="fx-ghost" onclick="FOOD.g.newG()">+ Nuova giornata tipo</button></div></div>`;
+      return `<div class="fxc-2c"><div class="fx-grid">${cards}<div class="fx-c12"><div class="an-note">“Prevedi oggi” inserisce le combo come previsto: contano solo dopo la conferma e non toccano gli slot già compilati. “+ oggi” aggiunge subito quella combo come mangiata.</div></div><div class="fx-c12"><button type="button" class="fx-ghost" onclick="FOOD.g.newG()">+ Nuova giornata tipo</button></div></div>${todayCard()}</div>`;
     }
     if (sub === 'obj') {
       const T = l.targets, t = totals(td()), P = enP(), E = energy(td());
-      return `<div class="fx-grid"><section class="an-card fx-c6"><div class="an-head"><span class="an-title">Obiettivi giornalieri</span><span class="an-sub">usati dalla card di Oggi</span></div>
+      return `<div class="fx-grid"><section class="an-card fx-c4"><div class="an-head"><span class="an-title">Obiettivi giornalieri</span><span class="an-sub">usati dalla card di Oggi</span></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="fx-field">Energia · kcal<input class="fx-in" type="number" inputmode="decimal" value="${T.kcal == null ? '' : T.kcal}" onchange="FOOD.g.tgt('kcal',this.value)"></label><label class="fx-field">Proteine · g<input class="fx-in" type="number" inputmode="decimal" value="${T.p == null ? '' : T.p}" onchange="FOOD.g.tgt('p',this.value)"></label></div>
 <div class="an-note">Se un campo è vuoto la card di Oggi mostra solo i totali, senza barra di avanzamento.</div></section>
-<section class="an-card fx-c6"><div class="an-head"><span class="an-title">Fabbisogno energetico</span><span class="an-sub">saldo deficit/surplus</span></div>
+<section class="an-card fx-c4"><div class="an-head"><span class="an-title">Fabbisogno energetico</span><span class="an-sub">saldo deficit/surplus</span></div>
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><label class="fx-field">Altezza · cm<input class="fx-in" type="number" inputmode="decimal" value="${P.h}" onchange="FOOD.g.enSet('h',this.value)"></label><label class="fx-field">Nascita<input class="fx-in" type="date" value="${P.dob}" onchange="FOOD.g.enSet('dob',this.value)"></label><label class="fx-field">Attività ×<input class="fx-in" type="number" step="0.05" inputmode="decimal" value="${P.pal}" onchange="FOOD.g.enSet('pal',this.value)"></label></div>
 <div class="an-note">${E ? `Oggi: basale ${fmt(E.bmr)} (Mifflin–St Jeor, ${String(E.w).replace('.', ',')} kg, ${E.h} cm, ${E.age} anni) × ${String(E.pal).replace('.', ',')} + allenamento ${fmt(E.wo)} = ${fmt(E.need)} kcal.` : 'Serve almeno un peso registrato negli ultimi 14 giorni.'} Il fabbisogno non è salvato: si ricalcola dal peso del giorno, quindi cambiare un parametro aggiorna anche i giorni passati. Margine ~±10%; ×1,3 è un'ipotesi (nessun dato sui passi), le kcal di Motra non sono verificabili (attive o totali).</div></section>
-<section class="an-card fx-c6"><div class="an-head"><span class="an-title">Oggi finora</span><span class="an-sub">dai dati registrati</span></div><div class="fx-soft"><span class="h">Alimentazione</span><span class="n">${fmt(t.k)} <small>${T.kcal ? '/ ' + T.kcal + ' ' : ''}kcal</small></span><span style="font-size:var(--fs-sm);font-weight:600">${fmt(t.p)}${T.p ? ' / ' + T.p : ''} g proteine${T.kcal ? ' · ' + (t.k <= T.kcal ? 'mancano ' + fmt(T.kcal - t.k) : 'oltre di ' + fmt(t.k - T.kcal)) + ' kcal' : ''}</span></div></section></div>`;
+<section class="an-card fx-c4"><div class="an-head"><span class="an-title">Oggi finora</span><span class="an-sub">dai dati registrati</span></div><div class="fx-soft"><span class="h">Alimentazione</span><span class="n">${fmt(t.k)} <small>${T.kcal ? '/ ' + T.kcal + ' ' : ''}kcal</small></span><span style="font-size:var(--fs-sm);font-weight:600">${fmt(t.p)}${T.p ? ' / ' + T.p : ''} g proteine${T.kcal ? ' · ' + (t.k <= T.kcal ? 'mancano ' + fmt(T.kcal - t.k) : 'oltre di ' + fmt(t.k - T.kcal)) + ' kcal' : ''}</span></div></section></div>`;
     }
     return '';
   }
@@ -6925,6 +7038,17 @@ ${o ? `<div class="fx-detail"><label>Nome<input class="fx-in l" value="${esc(f.n
     ver() { flt.ver = !flt.ver; flt.lv = flt.ver ? 'todo' : 'all'; reGest(); },
     lv(k) { flt.lv = k; flt.ver = k === 'todo'; reGest(); },
     open(id) { openF = openF === id ? null : id; reGest(); },
+    sel(id, jump) { openF = (!isDesktop && openF === id && !jump) ? null : id; flt.tab = 'det'; if (jump && flt.lv && flt.lv !== 'all') { const f = food(id); if (f && flt.lv === 'ok' && !vok(f)) flt.lv = 'all'; } reGest(); if (jump) { const e = document.querySelector('.fxc-lr.sel'); if (e && e.scrollIntoView) e.scrollIntoView({ block: 'nearest' }); } },
+    tab(k) { flt.tab = k; reGest(); },
+    mo(v) { flt.more = !!v; },
+    oc(id) { openC[id] = !openC[id]; reGest(); },
+    foodToday(id) {
+      const f = food(id); if (!f) return;
+      const sel = document.getElementById('ft_' + id), slot = sel ? sel.value : defSlot();
+      if (!SL.some(x => x[0] === slot)) return;
+      const e = entryFromFood(f, f.ref); mut(td(), o => { o.s[slot].push(e); }, true);
+      msg = 'Aggiunto a oggi · ' + slotName(slot) + ': ' + f.n + ' (+' + r0(e.k) + ' kcal, P ' + fmt(e.p, 1) + ' g)'; reGest();
+    },
     rmT(slot, id) { mut(td(), o => { o.s[slot] = o.s[slot].filter(e => e.id !== id); }, true); reGest(); },
     cfT(slot) { mut(td(), o => { o.s[slot].forEach(e => { delete e.plan; }); }, true); reGest(); },
     comboToday(cid, slot0) {
@@ -6972,7 +7096,8 @@ ${o ? `<div class="fx-detail"><label>Nome<input class="fx-in l" value="${esc(f.n
       const g = id => document.getElementById(id).value, n = g('nf_n').trim(), v = { ref: num(g('nf_ref')), k: num(g('nf_k')), p: num(g('nf_p')), c: num(g('nf_c')), g: num(g('nf_g')) };
       if (!n || !(v.ref > 0) || !(v.k >= 0) || [v.p, v.c, v.g].some(x => !(x >= 0))) { flash('Compila nome, porzione, kcal, P, C, G (numeri ≥ 0).'); return reGest(); }
       if (lib().foods.some(x => x.n.toLowerCase() === n.toLowerCase())) { flash('Esiste già un alimento con questo nome.'); return reGest(); }
-      lib().foods.push({ id: uid('f'), n, cat: g('nf_cat').trim() || 'Altro', u: g('nf_u'), ref: v.ref, k: v.k, p: v.p, c: v.c, g: v.g, note: '', ok: false, ver: '', fonte: '' });
+      const nid = uid('f'); lib().foods.push({ id: nid, n, cat: g('nf_cat').trim() || 'Altro', u: g('nf_u'), ref: v.ref, k: v.k, p: v.p, c: v.c, g: v.g, note: '', ok: false, ver: '', fonte: '' });
+      openF = nid; flt.tab = 'det'; flt.lv = 'all'; flt.q = '';
       flash('Aggiunto: ' + n); saveLib(); reGest();
     },
     cn(id, v) { const c = combo(id); v = String(v).trim(); if (!c) return; if (!v) return reGest(); c.n = v; saveLib(); reGest(); },
@@ -7015,7 +7140,7 @@ ${o ? `<div class="fx-detail"><label>Nome<input class="fx-in l" value="${esc(f.n
   }
 
   return {
-    START, on, cardHTML, subnav, gestView, mealActions, asGstDB, pastoNote, G, g: G,
+    START, on, cardHTML, subnav, todayCard, gestView, mealActions, asGstDB, pastoNote, G, g: G,
     sub(k) { if (arguments.length) { sub = k; msg = ''; reGest(); } return sub; }, subGet: () => sub,
     open, openGT, close, tab: setTab, pick: pickSlot, setGT, q(v) { sh.q = v; const l = document.getElementById('food-list'); if (l) l.innerHTML = listFoods(); },
     addCombo, addFood, addManual, importPhoto, togOff, periodStats, dailyRows, energy, rm: removeEntry, cslot: confirmSlot, dplan: dropPlan, confirmAll, clearPlan, applyGT,
@@ -10658,7 +10783,7 @@ function GST_renderAlimenti(){
     '<div class="an-tbl gst-foodlist" data-gst-food-list></div>' +
   '</section>';
   var tot = GST_mealTotals();
-  html += '<section class="an-card" style="position:sticky;top:8px">' +
+  html += '<div class="fxc-rc"><section class="an-card" style="position:sticky;top:8px">' +
     '<div style="background:var(--hero);color:var(--white);border-radius:var(--r-xl);padding:14px 16px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center">' +
         '<span style="font-size:var(--fs-2xs);text-transform:uppercase;color:#fff9">Totale pasto \u00b7 '+tot.n+(tot.n===1?' alimento':' alimenti')+'</span>' +
@@ -10676,7 +10801,7 @@ function GST_renderAlimenti(){
       })() : '') +
     '</div>' +
     '<div data-gst-meal-rows style="display:flex;flex-direction:column;gap:8px;margin-top:10px"></div>' +
-  '</section></div>';
+  '</section>' + FOOD.todayCard() + '</div></div>';
   host.innerHTML = '<div style="grid-column:1/-1;display:flex;flex-direction:column;gap:10px">' + FOOD.subnav() + '</div>' + html;
   GST_renderFoodList(host);
   GST_renderMealPanel(host);
@@ -10703,7 +10828,7 @@ function GST_renderFoodList(host){
          successiva. <div> con min-width:0 (necessario perche' un figlio di grid non si allarga
          mai oltre la sua colonna di default, altrimenti il testo lungo avrebbe spinto la riga
          intera fuori dai bordi invece di andare a capo). */
-      '<div style="min-width:0"><div style="font-weight:500;font-size:var(--fs-md)">'+esc(f.name)+'</div><div style="font-size:var(--fs-2xs);color:var(--ink3)">'+gstQtyLabel(f,f.ref)+' \u00b7 '+esc(f.note||"")+'</div></div>' +
+      '<div style="min-width:0"><div style="font-weight:500;font-size:var(--fs-md)">'+esc(f.name)+'</div><div class="fxc-pn" title="'+esc(f.note||"")+'" style="font-size:var(--fs-2xs);color:var(--ink3)">'+gstQtyLabel(f,f.ref)+' \u00b7 '+esc(f.note||"")+'</div></div>' +
       '<span class="an-num" style="font-size:var(--fs-sm)">'+m.kcal+' kcal</span>' +
       (isDesktop?'<span class="an-num" style="font-size:var(--fs-xs);color:var(--ink3)">P'+gstIt(m.p,1)+'</span>':'') +
       '<button type="button" data-gst-food-add="'+esc(f.name)+'" style="border:none;border-radius:50%;width:'+(isDesktop?26:40)+'px;height:'+(isDesktop?26:40)+'px;cursor:pointer;font-size:'+(isDesktop?14:19)+'px;background:'+(inMeal?"var(--ok)":"var(--accent)")+';color:var(--white);font-weight:700">'+(inMeal?"\u2713":"+")+'</button>' +
