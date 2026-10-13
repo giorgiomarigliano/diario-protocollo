@@ -10,13 +10,15 @@
   :root{
     --bg:#f4f4f6; --surf:#ffffff; --surf2:#f7f7f9; --line:#e4e4e8; --line2:#eeeef1;
     --ink:#0a0a0c; --ink2:#57575f; --ink3:#8a8a93;
-    --accent:#1f5fbf; --accent-soft:#e7effc; --accent-ink:#1a4f9e;
+    --accent:var(--h-blue); --accent-soft:#e7effc; --accent-ink:#1a4f9e;
     --hero:#0a0a0c;
-    --ok:#1e8a3c; --warn:#ffb800; --warn-ink:#e8590c; --bad:#d81e05; --idle:#b6b6be;
+    /* PALETTE UNICA (13/10): 11 colori, uno per famiglia, per tema. Ogni ruolo (stato, marchio, soggettivi, muscoli, sonno, allenamento) li richiama con var(--h-*): niente valori vicini sparsi. Stato = verde/giallo/arancio/rosso; blu = azione e selezione; il resto sono categorie. */
+    --h-red:#d81e05; --h-orange:#e8590c; --h-yellow:#ffb800; --h-green:#1e8a3c; --h-teal:#00a19a; --h-cyan:#0a9bc9; --h-blue:#1f5fbf; --h-indigo:#3b32c8; --h-violet:#7a3ff2; --h-magenta:#e2208f; --h-graphite:#1c1c22;
+    --ok:var(--h-green); --warn:var(--h-yellow); --warn-ink:var(--h-orange); --bad:var(--h-red); --idle:#b6b6be;
   --on-ok:#ffffff; --on-bad:#ffffff; --on-accent:#ffffff; --on-warn:#1c1c22;
     /* PORTING 26/09: due colori dal mockup approvato, non presenti nella palette base --
        servono all'identita' per composto in Stock (IGF-1 DES, TB-500). */
-    --c-igf:#7a4fc9; --c-tb:#45454e;
+    --c-igf:var(--h-violet); --c-tb:#45454e;
     --shadow:0 1px 2px rgba(10,10,14,.05), 0 8px 24px -8px rgba(10,10,14,.10);
     --shadow-lg:0 2px 4px rgba(10,10,14,.06), 0 24px 60px -20px rgba(10,10,14,.22);
     --r-card:16px;
@@ -28,37 +30,38 @@
     --shadow-sm:0 1px 2px rgba(10,10,14,.10);
     /* Colori semantici (prima scritti a mano nel JS) */
     --white:#ffffff;
-    --wo:#ff2d12;              /* Allenamento: rosso fuoco (regola UI 3) */
+    --wo:var(--h-teal);         /* Allenamento: teal (13/10: il rosso fuoco si confondeva con il rosso di "problema") */
     --on-dark-1:#c8c8ce; --on-dark-2:#9d9da6;               /* testo secondario sulle card nere */
     /* CARD NERE DI APERTURA (01/10): UNA sola palette di stati, forte e piena (ne' pallida ne' fluo), con contrasto >= 5:1 sul nero.
        Dentro ogni card nera i token semantici (--ok, --warn, --bad, --accent, --c-igf) vengono rimappati su queste varianti (regola in coda al CSS):
        la stessa cosa ha lo stesso colore in tutte le card, e per cambiarli basta modificare qui. */
-    --ok-on-dark:#25b84f; --warn-on-dark:#ffb800; --orange-on-dark:#ff7a1a; --bad-on-dark:#ff3b30; --accent-on-dark:#2f7bff; --violet-on-dark:#9b5cff;
-    --warn-bg:#ffb800; --bad-bg:#d81e05;
+    --ok-on-dark:#25b84f; --warn-on-dark:#ffb800; --orange-on-dark:#ff7a1a; --bad-on-dark:#ff3b30; --accent-on-dark:#5b95e8; --violet-on-dark:#9b5cff;
+    --warn-bg:var(--warn); --bad-bg:var(--bad);
     /* 01/10: NIENTE MARRONE. --warn-ink (testo/segno di attenzione) e' arancio pieno #e8590c invece dell'ocra #8a6d00; --on-warn (testo su ambra) e' quasi nero
        invece del marrone #3d3100; --c-s3 e' ambra #f5a100. Regola: nessun colore con tinta 14-58 gradi e luminosita' <= 46% (ocra, oliva, marrone). */
     /* Soggettivi (scala 1-10): 8 colori PIENI su 8 tinte diverse, nessun marrone, un solo blu-viola; stessa assegnazione ovunque
        (card di Oggi, grafici di Insights, sparkline, legende). Non coincidono con i colori di stato (ok, warn, bad). */
-    --c-subj-energia:#ff8a00;      /* arancio */
-    --c-subj-recupero:#1fa84f;     /* verde */
-    --c-subj-umore:#e2208f;        /* magenta */
-    --c-subj-appetito:#f2b800;     /* giallo oro pieno */
-    --c-subj-chiarezza:#00b3d6;    /* ciano */
-    --c-subj-libido:#d9182d;       /* rosso */
-    --c-subj-sonno:#7a3ff2;        /* viola */
-    --c-subj-rpe:#1c1c22;          /* grafite */
+    --c-subj-energia:var(--h-orange);      /* arancio */
+    --c-subj-recupero:var(--h-green);     /* verde */
+    --c-subj-umore:var(--h-magenta);        /* magenta */
+    --c-subj-appetito:var(--h-yellow);     /* giallo oro pieno */
+    --c-subj-chiarezza:var(--h-cyan);    /* ciano */
+    --c-subj-libido:var(--h-indigo);       /* rosso */
+    --c-subj-sonno:var(--h-violet);        /* viola */
+    --c-subj-rpe:var(--h-graphite);          /* grafite */
     /* Fasi del sonno (Insights): stessa logica dell'app Salute (profondo = indaco scuro, principale = blu, REM = ciano, veglia = arancio)
        cosi' le riconosci a colpo d'occhio; colori pieni, niente marrone. */
-    --c-sl-deep:#3b32c8; --c-sl-core:#2f7bff; --c-sl-rem:#00b8d9; --c-sl-awake:#ff6b2c;
-    --c-frozen:#0ea5c4; --c-presleep:#0a8fb0;
+    --c-sl-deep:var(--h-indigo); --c-sl-core:var(--h-blue); --c-sl-rem:var(--h-cyan); --c-sl-awake:var(--h-orange);
+    --c-frozen:var(--h-cyan); --c-presleep:var(--h-cyan);
 
   }
   [data-theme="dark"]{
     --bg:#000000; --surf:#131317; --surf2:#1b1b20; --line:#292930; --line2:#212127;
     --ink:#f5f5f7; --ink2:#9d9da6; --ink3:#6d6d76;
-    --accent:#5b95e8; --accent-soft:#0f2340; --accent-ink:#9cc2f5;
+    --accent:var(--h-blue); --accent-soft:#0f2340; --accent-ink:#9cc2f5;
     --hero:#131317;
-    --ok:#25b84f; --warn:#ffb800; --warn-ink:#ff7a1a; --bad:#ff3b30; --idle:#4a4a54;
+    --h-red:#ff3b30; --h-orange:#ff7a1a; --h-yellow:#ffb800; --h-green:#25b84f; --h-teal:#00b3a8; --h-cyan:#1fb5ff; --h-blue:#5b95e8; --h-indigo:#6d7bff; --h-violet:#9b5cff; --h-magenta:#ff4fa3; --h-graphite:#c8c8ce;
+    --ok:var(--h-green); --warn:var(--h-yellow); --warn-ink:var(--h-orange); --bad:var(--h-red); --idle:#4a4a54;
   --on-ok:#0a0a0c; --on-bad:#0a0a0c; --on-accent:#0a0a0c; --on-warn:#0a0a0c;
   }
   *{box-sizing:border-box;}
@@ -327,9 +330,10 @@
   /* ══ ANDAMENTO v2 — porting di produzione/andamento_v2_*.html (Claude Design). ══ */
 .an-root{--bg:#f4f4f6; --surf:#ffffff; --surf2:#f7f7f9; --line:#e4e4e8; --line2:#eeeef1;
   --ink:#0a0a0c; --ink2:#57575f; --ink3:#8a8a93;
-  --accent:#1f5fbf; --accent-soft:#e7effc; --accent-ink:#1a4f9e;
+  --h-red:#d81e05; --h-orange:#e8590c; --h-yellow:#ffb800; --h-green:#1e8a3c; --h-teal:#00a19a; --h-cyan:#0a9bc9; --h-blue:#1f5fbf; --h-indigo:#3b32c8; --h-violet:#7a3ff2; --h-magenta:#e2208f; --h-graphite:#1c1c22;
+  --accent:var(--h-blue); --accent-soft:#e7effc; --accent-ink:#1a4f9e;
   --hero:#0a0a0c;
-  --ok:#1e8a3c; --warn:#ffb800; --warn-ink:#e8590c; --bad:#d81e05; --idle:#b6b6be;
+  --ok:var(--h-green); --warn:var(--h-yellow); --warn-ink:var(--h-orange); --bad:var(--h-red); --idle:#b6b6be;
   --on-ok:#ffffff; --on-bad:#ffffff; --on-accent:#ffffff; --on-warn:#1c1c22;
   --shadow:0 1px 2px rgba(10,10,14,.05),0 8px 24px -8px rgba(10,10,14,.10);
   --shadow-lg:0 2px 4px rgba(10,10,14,.06),0 24px 60px -20px rgba(10,10,14,.22);
@@ -340,12 +344,12 @@
      viaggio) -- risultato una dominante azzurra che in Oggi non c'e', dove il blu resta riservato
      a pulsanti/stati attivi. Qui il blu resta SOLO dove segna "fase attuale/enfasi", il resto
      passa a grigi neutri o ai colori semantici gia' in uso (verde/ambra/rosso). */
-  --c-s1:var(--ink2); --c-s2:#1e8a3c; --c-s3:#ffb800; --c-s4:#d81e05;
+  --c-s1:var(--ink2); --c-s2:var(--h-green); --c-s3:var(--h-yellow); --c-s4:var(--h-red);
   --c-band:rgba(10,10,14,.07);
   --c-ph1:#e4e4e8; --c-ph2:#b6b6be; --c-ph3:var(--accent); --c-ph4:#8a8a93; --c-ph5:#eeeef1;
   /* PORTING 26/09: Bangkok/Mallorca (etichetta + fascia) non hanno un corrispettivo in Oggi -- Oggi non mostra periodi di viaggio. Tolto il marrone-oliva, allineato al grigio neutro gia' usato per la fascia "viaggio" nel grafico Ricomposizione, stesso token. */
   --c-event:rgba(10,10,14,.07); --c-event-ink:var(--ink2);
-  --c-mark:#d81e05;
+  --c-mark:var(--h-red);
   
   /* PORTING 26/09: la palette muscoli era fatta di sfumature spente, con tre grigi diversi
      (Spalle/Femorali/Polpacci) e piu' toni di marrone/oliva facilmente confondibili tra loro
@@ -360,26 +364,27 @@
      marcati e a piena saturazione: rosso ferrari (Petto), giallo taxi (Bicipiti, tolto l'ocra),
      grigio scuro pieno al posto del marrone terroso (Lombari). Nessun colore tenue in tutta la
      tavolozza. */
-  --c-m1:#1f5fbf; --c-m2:#1e8a3c; --c-m3:#e8112d; --c-m4:#8b2fc9; --c-m5:#ff7a00;
-  --c-m6:#e0227a; --c-m7:#00a19a; --c-m8:#ffc400; --c-m9:#00aeef; --c-m10:#4854c4; --c-m11:#2e2e33;
+  --c-m1:var(--h-blue); --c-m2:var(--h-green); --c-m3:var(--h-red); --c-m4:var(--h-violet); --c-m5:var(--h-orange);
+  --c-m6:var(--h-magenta); --c-m7:var(--h-teal); --c-m8:var(--h-yellow); --c-m9:var(--h-cyan); --c-m10:var(--h-indigo); --c-m11:var(--h-graphite);
   font:400 15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,sans-serif;
   color:var(--ink); background:var(--bg);
   display:flex; flex-direction:column; min-height:0;}
 .an-root[data-an-theme="dark"],
 [data-theme="dark"] .an-root{--bg:#000000; --surf:#131317; --surf2:#1b1b20; --line:#292930; --line2:#212127;
   --ink:#f5f5f7; --ink2:#9d9da6; --ink3:#6d6d76;
-  --accent:#5b95e8; --accent-soft:#0f2340; --accent-ink:#9cc2f5;
+  --h-red:#ff3b30; --h-orange:#ff7a1a; --h-yellow:#ffb800; --h-green:#25b84f; --h-teal:#00b3a8; --h-cyan:#1fb5ff; --h-blue:#5b95e8; --h-indigo:#6d7bff; --h-violet:#9b5cff; --h-magenta:#ff4fa3; --h-graphite:#c8c8ce;
+  --accent:var(--h-blue); --accent-soft:#0f2340; --accent-ink:#9cc2f5;
   --hero:#131317;
-  --ok:#25b84f; --warn:#ffb800; --warn-ink:#ff7a1a; --bad:#ff3b30; --idle:#4a4a54;
+  --ok:var(--h-green); --warn:var(--h-yellow); --warn-ink:var(--h-orange); --bad:var(--h-red); --idle:#4a4a54;
   --on-ok:#0a0a0c; --on-bad:#0a0a0c; --on-accent:#0a0a0c; --on-warn:#0a0a0c;
-  --c-s1:#5b95e8; --c-s2:#25b84f; --c-s3:#ffb800; --c-s4:#ff3b30;
+  --c-s1:var(--h-blue); --c-s2:var(--h-green); --c-s3:var(--h-yellow); --c-s4:var(--h-red);
   --c-band:rgba(91,149,232,.20);
   --c-ph1:#2a3a52; --c-ph2:#3d5f8f; --c-ph3:#5b95e8; --c-ph4:#4a5666; --c-ph5:#2b2e33;
   --c-event:rgba(255,255,255,.12); --c-event-ink:#c8c8ce;
-  --c-mark:#ff3b30;
+  --c-mark:var(--h-red);
   --c-g1:var(--c-m3); --c-g2:var(--c-m2); --c-g3:var(--c-m1); --c-g4:var(--c-m8); --c-g5:var(--c-m4); --c-g6:var(--c-m5);
-  --c-m1:#5b95e8; --c-m2:#25b84f; --c-m3:#ff3b30; --c-m4:#9b5cff; --c-m5:#ff7a1a;
-  --c-m6:#ff4fa3; --c-m7:#00b3a8; --c-m8:#ffb800; --c-m9:#1fb5ff; --c-m10:#6d7bff; --c-m11:#c8c8ce;}
+  --c-m1:var(--h-blue); --c-m2:var(--h-green); --c-m3:var(--h-red); --c-m4:var(--h-violet); --c-m5:var(--h-orange);
+  --c-m6:var(--h-magenta); --c-m7:var(--h-teal); --c-m8:var(--h-yellow); --c-m9:var(--h-cyan); --c-m10:var(--h-indigo); --c-m11:var(--h-graphite);}
 .an-root *{box-sizing:border-box;}
 .an-root button,
 .an-root select,
@@ -3443,7 +3448,7 @@ function buildWorkout(root){
     if (!keys.length) ht.innerHTML='<div class="an-chart-state">'+T().noData+'</div>';
     keys.forEach(function(k,i){
       var b=byType[k], pct=b.planned?Math.round(b.done/b.planned*100):0;
-      var col=["var(--c-g1)","var(--c-g2)","var(--c-g3)","var(--c-g4)","var(--c-g5)","var(--c-g6)"][i%6];
+      var col=["var(--h-violet)","var(--h-cyan)","var(--h-indigo)","var(--h-magenta)","var(--h-blue)","var(--h-graphite)"][i%6]; /* tipi di seduta: niente colori di stato, qui la percentuale a fianco e' verde/arancio/rosso */
       var el=document.createElement("div"); el.className="an-trow";
       el.style.gridTemplateColumns="92px 1fr 62px 52px 58px";
       el.innerHTML='<span style="display:flex;align-items:center;gap:7px;font-weight:600;color:var(--ink)"><span style="width:8px;height:8px;border-radius:var(--r-xs);background:'+col+'"></span>'+k+'</span>'+
@@ -8572,7 +8577,7 @@ function renderOggiFull() {
       const RINGS = [
         { label: L.injectionsRing, pct: a.inj, sub: `${a.injDone}/${a.injTot}`, color: 'var(--accent)', today: todayBarHtml('inj', dAdh, false) },
         { label: L.supplements,    pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)', today: todayBarHtml('supp', dAdh, false) },
-        { label: L.workoutsRing,   pct: a.wo,  sub: `${a.woDone}/${a.woTot}`,  color: 'var(--wo)', today: todayBarHtml('wo', dAdh, false) } /* rosso fuoco, 28/09 */
+        { label: L.workoutsRing,   pct: a.wo,  sub: `${a.woDone}/${a.woTot}`,  color: 'var(--wo)', today: todayBarHtml('wo', dAdh, false) } /* teal (--wo), 28/09 */
       ];
       return `
       <div style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:16px 12px;display:flex;justify-content:space-around;">
@@ -8887,7 +8892,7 @@ function renderOggiFull() {
   const RINGS = [
     { label: L.injectionsRing,       pct: a.inj,  sub: `${a.injDone}/${a.injTot}`,   color: 'var(--accent)', today: todayBarHtml('inj', dAdh, true) },
     { label: L.supplements,          pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)', today: todayBarHtml('supp', dAdh, true) },
-    { label: L.workoutsRing, pct: a.wo,   sub: `${a.woDone}/${a.woTot}`,     color: 'var(--wo)', today: todayBarHtml('wo', dAdh, true) } /* rosso fuoco, 28/09 */
+    { label: L.workoutsRing, pct: a.wo,   sub: `${a.woDone}/${a.woTot}`,     color: 'var(--wo)', today: todayBarHtml('wo', dAdh, true) } /* teal (--wo), 28/09 */
   ];
 
   // Iniezioni — appiattite in un'unica lista di righe (come nel mockup: non
