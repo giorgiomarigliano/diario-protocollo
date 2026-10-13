@@ -838,20 +838,25 @@
 .fh-seg{display:flex;gap:2px;background:var(--surf2);border-radius:var(--r-md);padding:3px;width:max-content}
 .fh-seg button{border:0;background:transparent;color:var(--ink2);font:inherit;font-size:var(--fs-sm);font-weight:600;padding:6px 12px;min-height:36px;border-radius:var(--r-sm);cursor:pointer}
 .fh-seg button.on{background:var(--accent);color:var(--white)}
-.fh-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.fh-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .fh-kpis div{background:var(--surf2);border-radius:var(--r-md);padding:8px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .fh-kpis b{font-size:var(--fs-2xl);font-variant-numeric:tabular-nums;color:var(--ink)}.fh-kpis b small{font-size:var(--fs-xs);color:var(--ink3);font-weight:600}.fh-kpis span{font-size:var(--fs-2xs);color:var(--ink3);line-height:1.25}
 .fh-leg{display:flex;gap:12px;flex-wrap:wrap;font-size:var(--fs-2xs);color:var(--ink3)}.fh-leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 .fh-th{display:none}
 .fh-row{display:grid;grid-template-columns:84px 1fr;gap:3px 8px;align-items:center;padding:9px 0;border-top:1px solid var(--line2);min-height:44px;cursor:pointer;font-variant-numeric:tabular-nums}
 .fh-row.off{box-shadow:inset 3px 0 0 var(--off)}.fh-row.off .fh-d{padding-left:8px}
+.fh-row.off>.fh-en,.fh-row.off>.fh-mac,.fh-row.off>.fh-s{padding-left:8px}
 .fh-d{font-size:var(--fs-sm);font-weight:600;color:var(--ink)}.fh-k{text-align:right;font-size:var(--fs-md);color:var(--ink)}.fh-rg{display:block;font-size:var(--fs-2xs);color:var(--ink3);font-weight:500}
 .fh-mac{grid-column:1/-1;display:flex;gap:12px;font-size:var(--fs-xs);color:var(--ink2)}.fh-mac span::before{content:attr(data-l) " ";color:var(--ink3)}
+.fh-en{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:2px 12px;font-size:var(--fs-xs);color:var(--ink2)}.fh-en>span::before{content:attr(data-l) " ";color:var(--ink3)}.fh-bd{flex-basis:100%;font-size:var(--fs-2xs);color:var(--ink3)}
+.fh-def{color:var(--ok);font-weight:700}.fh-sur{color:var(--warn-ink);font-weight:700}
 .fh-s{grid-column:1/-1;display:flex;gap:4px;flex-wrap:wrap}.fh-s .food-src{margin-left:0}.fh-nd{font-size:var(--fs-xs);color:var(--ink3);font-style:italic}
 @media (max-width:1023px){.fh-seg button{min-height:44px}}
 @media (min-width:1024px){
- .fh-th,.fh-row{display:grid;grid-template-columns:96px 120px 70px 70px 70px 1fr;gap:0 8px}
- .fh-th{font-size:var(--fs-xs);color:var(--ink3);font-weight:600;padding:6px 0}.fh-th span:nth-child(n+2):nth-child(-n+5){text-align:right}
+ .fh-kpis{grid-template-columns:repeat(6,1fr)}
+ .fh-th,.fh-row{display:grid;grid-template-columns:96px 120px 92px 80px 64px 64px 64px 1fr;gap:0 8px}
+ .fh-th{font-size:var(--fs-xs);color:var(--ink3);font-weight:600;padding:6px 0}.fh-th span:nth-child(n+2):nth-child(-n+7){text-align:right}
+ .fh-en{display:contents}.fh-en>span{text-align:right;font-size:var(--fs-sm);color:var(--ink)}.fh-en>span::before{content:none}.fh-bd{display:none}
  .fh-mac{display:contents}.fh-mac span{text-align:right;font-size:var(--fs-sm);color:var(--ink)}.fh-mac span::before{content:none}
  .fh-s{grid-column:auto;padding-left:6px}.fh-k{font-size:var(--fs-sm)}
 }
@@ -859,6 +864,10 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .food-card,:root:not([data-theme="light"]) #food-sheet,:root:not([data-theme="light"]) .an-root{--off:var(--violet-on-dark)}}
 :root[data-theme="dark"] .food-card,:root[data-theme="dark"] #food-sheet,:root[data-theme="dark"] .an-root{--off:var(--violet-on-dark)}
 .food-src.s-o{background:var(--off-soft);color:var(--off)}
+.food-bal{display:flex;justify-content:space-between;align-items:center;gap:8px;border-radius:10px;padding:6px 10px;min-height:32px;font-size:11px;font-weight:600;color:var(--ink2);background:var(--surf2)}
+.food-bal b{font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}
+.food-bal.def{background:color-mix(in srgb,var(--ok) 15%,transparent)}.food-bal.def b{color:var(--ok)}
+.food-bal.sur{background:color-mix(in srgb,var(--warn-ink) 14%,transparent)}.food-bal.sur b{color:var(--warn-ink)}
 .food-sg>div.off{box-shadow:inset 3px 0 0 var(--off)}
 .food-card div.off{box-shadow:inset 3px 0 0 var(--off);padding-left:8px}
 .food-tog{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--off-soft);border-radius:10px;padding:8px 12px;min-height:48px;cursor:pointer}
@@ -2901,7 +2910,7 @@ function buildFood(root){
 /* Scheda "Alimenti": storico giornaliero (kcal, P, C, G), grafico kcal con range delle stime e linea obiettivo da FOOD (Gestione > Alimenti > Obiettivi). Solo lettura. */
 function fhChart(rows,T,W0){
   var W=Math.max(300,W0||600),H=176,pl=44,pr=8,pt=12,pb=24,iw=W-pl-pr,ih=H-pt-pb,n=rows.length,mx=0,f=function(v){return Math.round(v).toLocaleString("it-IT");};
-  rows.forEach(function(r){ if(r.n||r.inc) mx=Math.max(mx,r.k,r.hi); });
+  rows.forEach(function(r){ if(r.n||r.inc) mx=Math.max(mx,r.k,r.hi,r.e?r.e.need:0); });
   if(T.kcal) mx=Math.max(mx,T.kcal);
   mx=Math.max(mx*1.08,100);
   var raw=mx/3, pw=Math.pow(10,Math.floor(Math.log(raw)/Math.LN10)), ts=[1,2,2.5,5,10].map(function(m){return m*pw;}).filter(function(v){return v>=raw;})[0];
@@ -2918,8 +2927,9 @@ function fhChart(rows,T,W0){
     if (r.inc) s+='<rect x="'+x+'" y="'+top+'" width="'+bw+'" height="'+h+'" rx="2" fill="none" stroke="'+col+'" stroke-dasharray="3 2"/>';
     else s+='<rect x="'+x+'" y="'+top+'" width="'+bw+'" height="'+h+'" rx="2" fill="'+col+'"'+(r.today?' opacity=".45"':'')+'/>';
     if (r.est>0 && r.hi>r.lo) s+='<line x1="'+cx+'" x2="'+cx+'" y1="'+y(r.hi)+'" y2="'+y(r.lo)+'" stroke="var(--ink)" stroke-width="1.4"/><line x1="'+(cx-3)+'" x2="'+(cx+3)+'" y1="'+y(r.hi)+'" y2="'+y(r.hi)+'" stroke="var(--ink)"/><line x1="'+(cx-3)+'" x2="'+(cx+3)+'" y1="'+y(r.lo)+'" y2="'+y(r.lo)+'" stroke="var(--ink)"/>';
+    if (r.e) s+='<line x1="'+(cx-bw/2-3)+'" x2="'+(cx+bw/2+3)+'" y1="'+y(r.e.need)+'" y2="'+y(r.e.need)+'" stroke="var(--ok)" stroke-width="2.5"/>';
   });
-  if (T.kcal) s+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(T.kcal)+'" y2="'+y(T.kcal)+'" stroke="var(--ink2)" stroke-dasharray="5 4"/><text x="'+(W-pr)+'" y="'+(y(T.kcal)-4)+'" text-anchor="end" font-size="10" fill="var(--ink2)">obiettivo '+f(T.kcal)+'</text>';
+  if (T.kcal) s+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+y(T.kcal)+'" y2="'+y(T.kcal)+'" stroke="var(--ink2)" stroke-dasharray="5 4"/><text x="'+(W-pr)+'" y="'+(y(T.kcal)-4)+'" text-anchor="end" font-size="10" fill="var(--ink2)" stroke="var(--surf)" stroke-width="3" paint-order="stroke">obiettivo '+f(T.kcal)+'</text>';
   return s+'</svg>';
 }
 function buildFoodHist(root){
@@ -2929,13 +2939,14 @@ function buildFoodHist(root){
   var f=function(v){return Math.round(v).toLocaleString("it-IT");}, A=ST.all, I=ST.inp;
   var seg='<div class="fh-seg">'+[[14,"14g"],[30,"30g"],[0,"Tutto"]].map(function(x){return '<button type="button" data-fh-range="'+x[0]+'"'+(rg===x[0]?' class="on"':'')+'>'+x[1]+'</button>';}).join("")+'</div>';
   var kp=function(b,l){return '<div><b>'+b+'</b><span>'+l+'</span></div>';};
-  var kpis='<div class="fh-kpis">'+kp(A.d?f(A.k/A.d):"\u2014","kcal medie (giorni completi)")+kp(A.d?f(A.p/A.d)+(T.p?'<small> / '+T.p+'</small>':''):"\u2014","P medie, g"+(T.p?" / obiettivo":""))+kp(I.d?f(I.k/I.d):"\u2014","kcal medie \u201cIn piano\u201d")+kp(ST.offDays,"giorni con pasti fuori piano")+'</div>';
+  var sg=function(v){return (v>0?"+":v<0?"\u2212":"")+f(Math.abs(v));};
+  var kpis='<div class="fh-kpis">'+kp(A.d?f(A.k/A.d):"\u2014","kcal medie (giorni completi)")+kp(A.ed?f(A.e/A.ed):"\u2014","fabbisogno medio")+kp(A.ed?sg((A.ek-A.e)/A.ed):"\u2014","saldo medio, kcal")+kp(A.d?f(A.p/A.d)+(T.p?'<small> / '+T.p+'</small>':''):"\u2014","P medie, g"+(T.p?" / obiettivo":""))+kp(I.d?f(I.k/I.d):"\u2014","kcal medie \u201cIn piano\u201d")+kp(ST.offDays,"giorni con pasti fuori piano")+'</div>';
   setB(root,"fhist.sub",A.d?A.d+" giorni completi":"in attesa del primo giorno completo");
-  var leg='<div class="fh-leg"><span><i style="background:var(--accent)"></i>giorno in piano</span><span><i style="background:var(--off)"></i>con pasto fuori piano</span><span>\u2502 range delle stime</span><span>tratteggio = incompleto</span></div>';
+  var leg='<div class="fh-leg"><span><i style="background:var(--accent)"></i>giorno in piano</span><span><i style="background:var(--off)"></i>con pasto fuori piano</span><span>\u2502 range delle stime</span><span><i style="background:var(--ok);height:3px;vertical-align:3px"></i>fabbisogno</span><span>tratteggio = incompleto</span></div>';
   var days=rows.filter(function(r){return r.n||r.inc;}).length;
   var chart=days?fhChart(rows,T,host.clientWidth):'<span class="an-note">Nessun dato alimentare in questo intervallo.</span>';
   var noT=T.kcal?'':'<span class="an-note">Obiettivo kcal non impostato: si modifica in Gestione \u203a Alimenti \u203a Obiettivi e il grafico si aggiorna.</span>';
-  var head='<div class="fh-th"><span>Data</span><span>kcal</span><span>P g</span><span>C g</span><span>G g</span><span>Stato</span></div>';
+  var head='<div class="fh-th"><span>Data</span><span>kcal</span><span>Fabbisogno</span><span>Saldo</span><span>P g</span><span>C g</span><span>G g</span><span>Stato</span></div>';
   var body=rows.slice().reverse().map(function(r){
     var dt=new Date(r.d+"T00:00:00"), lab=dt.toLocaleDateString("it-IT",{weekday:"short",day:"2-digit",month:"2-digit"}); lab=lab.charAt(0).toUpperCase()+lab.slice(1);
     var has=r.n||r.inc, pills="";
@@ -2946,9 +2957,12 @@ function buildFoodHist(root){
     if (!has) pills+='<span class="fh-nd">nessun dato</span>';
     var kc=has?'<b>'+(r.inc?"\u2265 ":"")+f(r.k)+'</b>'+((r.est>0&&r.hi>r.lo)?'<span class="fh-rg">'+f(r.lo)+'\u2013'+f(r.hi)+'</span>':''):'\u2014';
     var m=function(l,v){return '<span data-l="'+l+'">'+(has?f(v):"\u2014")+'</span>';};
-    return '<div class="fh-row'+(r.off?' off':'')+'" role="button" tabindex="0" data-fh-day="'+r.d+'"><span class="fh-d">'+lab+'</span><span class="fh-k">'+kc+'</span><span class="fh-mac">'+m("P",r.p)+m("C",r.c)+m("G",r.g)+'</span><span class="fh-s">'+pills+'</span></div>';
+    var en=r.e, bd=en?'basale '+f(en.bmr)+' + attivit\u00e0 '+f(en.neat)+' (\u00d7'+String(en.pal).replace(".",",")+') + allenamento '+f(en.wo):'', tip=en?'Basale '+f(en.bmr)+' (Mifflin\u2013St Jeor, '+String(en.w).replace(".",",")+' kg, '+en.h+' cm, '+en.age+' anni) + attivit\u00e0 quotidiana '+f(en.neat)+' (\u00d7'+String(en.pal).replace(".",",")+') + allenamento '+f(en.wo)+' = '+f(en.need)+' kcal (\u00b110% sulla parte basale)':'';
+    var sv=(r.sd!=null)?'<span data-l="Saldo" class="'+(r.sd<0?'fh-def':'fh-sur')+'" title="Intervallo per le stime: '+sg(r.slo)+' / '+sg(r.shi)+' kcal">'+sg(r.sd)+'</span>':'<span data-l="Saldo">'+((r.today&&en)?'in corso':'\u2014')+'</span>';
+    var enc='<span class="fh-en"><span data-l="Fabbisogno"'+(tip?' title="'+tip+'"':'')+'>'+(en?f(en.need):'\u2014')+'</span>'+sv+(en?'<span class="fh-bd">'+bd+'</span>':'')+'</span>';
+    return '<div class="fh-row'+(r.off?' off':'')+'" role="button" tabindex="0" data-fh-day="'+r.d+'"><span class="fh-d">'+lab+'</span><span class="fh-k">'+kc+'</span>'+enc+'<span class="fh-mac">'+m("P",r.p)+m("C",r.c)+m("G",r.g)+'</span><span class="fh-s">'+pills+'</span></div>';
   }).join("");
-  host.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'+seg+'<span class="an-sub">giorni chiusi + oggi</span></div>'+kpis+chart+leg+noT+'<div class="fh-tbl">'+head+body+'</div><span class="an-note">Una riga per giorno, solo totali (non i singoli pasti). I valori sono centrali; il range indica le stime. \u201cIncompleto\u201d = pasto fuori piano senza voci: escluso dalle medie. \u201cNessun dato\u201d non \u00e8 uno zero. L\u2019app non pu\u00f2 sapere se hai registrato tutti i pasti. Tocca una riga per aprire quel giorno in Oggi.</span>';
+  host.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'+seg+'<span class="an-sub">giorni chiusi + oggi</span></div>'+kpis+chart+leg+noT+'<div class="fh-tbl">'+head+body+'</div><span class="an-note">Una riga per giorno, solo totali (non i singoli pasti). I valori sono centrali; il range indica le stime. \u201cIncompleto\u201d = pasto fuori piano senza voci: escluso dalle medie. \u201cNessun dato\u201d non \u00e8 uno zero. L\u2019app non pu\u00f2 sapere se hai registrato tutti i pasti. Tocca una riga per aprire quel giorno in Oggi.</span><span class="an-note">Fabbisogno = basale (Mifflin\u2013St Jeor: 10\u00b7peso + 6,25\u00b7altezza \u2212 5\u00b7et\u00e0 + 5, peso del giorno dalla bilancia) \u00d7 '+String(T.en.pal).replace(".",",")+' + kcal dell\u2019allenamento (Motra: non verificabile se attive o totali). Margine ~\u00b110%: un saldo entro \u00b1150 kcal non \u00e8 distinguibile da zero. Il saldo si calcola solo per i giorni chiusi con voci e non incompleti; oggi \u00e8 \u201cin corso\u201d. Parametri in Gestione \u203a Alimenti \u203a Obiettivi: cambiandoli si ricalcola anche il passato.</span>';
   host.querySelectorAll("[data-fh-range]").forEach(function(b){ b.addEventListener("click",function(){ AN.foodRange=parseInt(b.getAttribute("data-fh-range"),10); renderAll(); }); });
   host.querySelectorAll("[data-fh-day]").forEach(function(el){
     var go=function(){ var iso=el.getAttribute("data-fh-day"); if (typeof selDate==="undefined"||typeof render!=="function") return; selDate=iso; oggiViewMode="day"; tab="oggi"; location.hash="oggi"; render(); };
@@ -6400,6 +6414,22 @@ const FOOD = (function () {
   const dkey = d => 'food_' + String(d).replace(/-/g, '');
   function day(d) { const x = getKey(dkey(d)); const o = (x && x.s) ? clone(x) : { v: 1, s: {} }; SL.forEach(s => { if (!Array.isArray(o.s[s[0]])) o.s[s[0]] = []; }); return o; }
   function mut(d, fn, quiet) { const o = day(d); fn(o); setKey(dkey(d), o); if (quiet) badge(); else redraw(); }
+  /* fabbisogno energetico del giorno: basale Mifflin-St Jeor (peso del giorno dalla bilancia, o l'ultimo dei 14 giorni precedenti; altezza; eta) x fattore attivita' quotidiana + kcal allenamento (wo_kcal). Derivato, mai salvato: cambiare i parametri ricalcola anche il passato. Margine ~±10% sulla parte basale. */
+  const EN_D = { h: 170, dob: '1976-02-27', pal: 1.3 };
+  const numS = v => { const x = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(x) ? x : null; };
+  function enP() { const T = lib().targets || {}; return { h: T.h > 0 ? T.h : EN_D.h, dob: /^\d{4}-\d{2}-\d{2}$/.test(T.dob || '') ? T.dob : EN_D.dob, pal: T.pal > 0 ? T.pal : EN_D.pal }; }
+  function weightOf(iso) {
+    for (let i = 0; i < 15; i++) { const dt = new Date(iso + 'T00:00:00'); dt.setDate(dt.getDate() - i); const w = numS((getDay(isoLocal(dt)) || {}).peso); if (w && w > 30 && w < 250) return w; }
+    return null;
+  }
+  function energy(iso) {
+    const P = enP(), w = weightOf(iso); if (!w) return null;
+    const b = new Date(P.dob + 'T00:00:00'), d = new Date(iso + 'T00:00:00');
+    let age = d.getFullYear() - b.getFullYear(); if (d.getMonth() < b.getMonth() || (d.getMonth() === b.getMonth() && d.getDate() < b.getDate())) age--;
+    const bmr = 10 * w + 6.25 * P.h - 5 * age + 5, base = bmr * P.pal, wo = Math.max(0, numS((getDay(iso) || {}).wo_kcal) || 0);
+    return { w, age, h: P.h, pal: P.pal, bmr, neat: base - bmr, wo, need: base + wo, tol: base * 0.1 };
+  }
+  const sgn = v => (v > 0 ? '+' : v < 0 ? '\u2212' : '') + fmt(Math.abs(v));
   /* righe giornaliere per lo storico (Andamento > Alimenti) e per il foglio Excel: n giorni chiusi + oggi; n=0 = dal START. Nessuna archiviazione propria: derivato da food_AAAAMMGG. */
   function dailyRows(n) {
     const T = lib().targets, last = isoLocal(new Date()), rows = [];
@@ -6408,9 +6438,10 @@ const FOOD = (function () {
       const dt = new Date(); dt.setDate(dt.getDate() - i); const iso = isoLocal(dt);
       if (iso < START) continue;
       const t = totals(iso);
-      rows.push({ d: iso, k: t.k, p: t.p, c: t.c, g: t.g, est: t.est, lo: t.k + t.lo, hi: t.k + t.hi, n: t.n, off: t.off, inc: t.inc, today: iso === last });
+      const en = energy(iso), okS = !!en && iso < last && t.n > 0 && !t.inc;
+      rows.push({ d: iso, k: t.k, p: t.p, c: t.c, g: t.g, est: t.est, lo: t.k + t.lo, hi: t.k + t.hi, n: t.n, off: t.off, inc: t.inc, today: iso === last, e: en, sd: okS ? t.k - en.need : null, slo: okS ? t.k + t.lo - en.need : null, shi: okS ? t.k + t.hi - en.need : null });
     }
-    return { rows, targets: { kcal: T.kcal || null, p: T.p || null } };
+    return { rows, targets: { kcal: T.kcal || null, p: T.p || null, en: enP() } };
   }
   const live = (o, id) => o.s[id].filter(e => !e.plan), plan = (o, id) => o.s[id].filter(e => e.plan);
   const offOf = o => (o.off && typeof o.off === 'object') ? o.off : {};
@@ -6437,7 +6468,7 @@ const FOOD = (function () {
   /* statistiche su N giorni chiusi (oggi escluso, non prima di START): "Tutti" vs "In piano" (giorni senza pasti fuori piano).
      Un giorno con un pasto fuori piano ancora senza voci e' incompleto: escluso da entrambe le letture e contato a parte. */
   function periodStats(n) {
-    const r = { n: 0, all: { d: 0, k: 0, p: 0 }, inp: { d: 0, k: 0, p: 0 }, offDays: 0, incDays: 0, empty: 0 };
+    const r = { n: 0, all: { d: 0, k: 0, p: 0, ed: 0, e: 0, ek: 0 }, inp: { d: 0, k: 0, p: 0 }, offDays: 0, incDays: 0, empty: 0 };
     for (let i = 1; i <= n; i++) {
       const dt = new Date(); dt.setDate(dt.getDate() - i); const iso = isoLocal(dt);
       if (iso < START) break;
@@ -6446,6 +6477,7 @@ const FOOD = (function () {
       if (t.inc) { r.incDays++; continue; }
       if (!t.n) { r.empty++; continue; }
       r.all.d++; r.all.k += t.k; r.all.p += t.p;
+      const en = energy(iso); if (en) { r.all.ed++; r.all.e += en.need; r.all.ek += t.k; }
       if (t.off) r.offDays++; else { r.inp.d++; r.inp.k += t.k; r.inp.p += t.p; }
     }
     return r;
@@ -6606,6 +6638,17 @@ const FOOD = (function () {
     return mob ? `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--accent-soft);border-radius:8px;padding:0 10px;min-height:40px;font-size:12px;font-weight:600;color:var(--accent-ink)"><span>Previsto +${fmt(tot)} kcal</span><button style="${btn};min-height:32px" onclick="FOOD.confirmAll()">✓ Conferma tutto</button></div>`
       : `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--accent-soft);border-radius:8px;padding:0 8px;height:26px;font-size:11px;font-weight:600;color:var(--accent-ink)"><span>Previsto +${fmt(tot)} kcal</span><span><u style="cursor:pointer" onclick="FOOD.confirmAll()">✓ Tutto</u> · <u style="cursor:pointer" onclick="FOOD.clearPlan()">Svuota</u></span></div>`;
   }
+  function balLine(t) {
+    if (selDate < START || selDate > td()) return '';
+    const en = energy(selDate); if (!en) return '';
+    const mk = (c, l, v) => `<div class="food-bal ${c}"><span>${l}</span><b>${v}</b></div>`, fb = 'fabbisogno ' + fmt(en.need);
+    if (selDate === td()) return mk('pro', 'Fabbisogno ' + fmt(en.need) + ' \u00b7 saldo a fine giornata', 'in corso');
+    if (t.inc) return mk('pro', 'Incompleto \u00b7 ' + fb, 'saldo n.d.');
+    if (!t.n) return mk('pro', 'Nessun dato \u00b7 ' + fb, '\u2014');
+    const s = t.k - en.need;
+    if (Math.abs(s) < 50) return mk('pro', 'In pareggio stimato \u00b7 ' + fb, sgn(s) + ' kcal');
+    return mk(s < 0 ? 'def' : 'sur', (s < 0 ? 'Deficit' : 'Surplus') + ' stimato \u00b7 ' + fb, sgn(s) + ' kcal');
+  }
   function head(t) {
     const T = lib().targets;
     const kc = `<span style="font-size:${isDesktop ? 28 : 30}px;font-weight:700;letter-spacing:-.02em">${fmt(t.k)}</span><span style="font-size:12px;color:var(--ink2);font-weight:500"> ${T.kcal ? '/ ' + T.kcal + ' ' : ''}kcal</span>`;
@@ -6617,9 +6660,9 @@ const FOOD = (function () {
     const noT = (!T.kcal && !T.p) ? `<div style="font-size:10px;color:var(--ink3);font-weight:500">Obiettivi non impostati (Gestione › Alimenti › Obiettivi).</div>` : '';
     if (isDesktop) {
       return `<section class="food-card" style="border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:12px 15px;display:flex;flex-direction:column;gap:7px;overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2)">Alimentazione <span class="food-sync" style="font-size:10px;font-weight:600"></span></span><span class="an-chip" style="min-height:22px;font-size:10px;padding:0 8px" onclick="FOOD.openGT()">▦ Giornata tipo</span></div>${head(t)}${planLine(o, false)}
-<div class="food-sg">${SL.map(([id, n, s]) => { const Lv = live(o, id), P = plan(o, id), of = !!offOf(o)[id]; return `<div${of ? ' class="off"' : ''} onclick="FOOD.open('${id}')"><i style="${dotStyle(o, id)}"></i>${s}${Lv.length ? `<b>${fmt(slotK(o, id))}</b>` : P.length ? `<b style="color:var(--accent-ink);font-style:italic">${fmt(planK(o, id))}</b>` : of ? '<b style="color:var(--off)" title="Fuori piano, nessuna voce: incompleto">inc.</b>' : '<b>—</b>'}</div>`; }).join('')}<div style="background:var(--accent);color:#fff;justify-content:center" onclick="FOOD.open('')">+ Aggiungi</div></div>${splitLine(t)}${offLine(t)}${noT}</section>`;
+<div class="food-sg">${SL.map(([id, n, s]) => { const Lv = live(o, id), P = plan(o, id), of = !!offOf(o)[id]; return `<div${of ? ' class="off"' : ''} onclick="FOOD.open('${id}')"><i style="${dotStyle(o, id)}"></i>${s}${Lv.length ? `<b>${fmt(slotK(o, id))}</b>` : P.length ? `<b style="color:var(--accent-ink);font-style:italic">${fmt(planK(o, id))}</b>` : of ? '<b style="color:var(--off)" title="Fuori piano, nessuna voce: incompleto">inc.</b>' : '<b>—</b>'}</div>`; }).join('')}<div style="background:var(--accent);color:#fff;justify-content:center" onclick="FOOD.open('')">+ Aggiungi</div></div>${splitLine(t)}${offLine(t)}${balLine(t)}${noT}</section>`;
     }
-    return `<section class="food-card" style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2)">Alimentazione <span class="food-sync" style="font-size:10px;font-weight:600"></span></span><span class="an-chip" style="min-height:32px;font-size:11px" onclick="FOOD.openGT()">▦ Giornata tipo</span></div>${head(t)}${splitLine(t)}${offLine(t)}${noT}${planLine(o, true)}
+    return `<section class="food-card" style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2)">Alimentazione <span class="food-sync" style="font-size:10px;font-weight:600"></span></span><span class="an-chip" style="min-height:32px;font-size:11px" onclick="FOOD.openGT()">▦ Giornata tipo</span></div>${head(t)}${splitLine(t)}${offLine(t)}${balLine(t)}${noT}${planLine(o, true)}
 <div style="border-top:1px solid var(--line)">${SL.map(([id, n]) => { const Lv = live(o, id), P = plan(o, id), it = Lv.length ? Lv : P; const only = !Lv.length && P.length, of = !!offOf(o)[id]; return `<div${of ? ' class="off"' : ''} style="display:grid;grid-template-columns:1fr auto 44px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line2);min-height:44px"><div style="min-width:0"><div style="font-size:12px;font-weight:600">${n}${of ? '<span class="food-src s-o">fuori piano</span>' : ''}${only ? '<span class="food-src s-l">previsto</span>' : ''}${Lv.some(e => e.src === 's') ? '<span class="food-src s-s">≈ stima</span>' : ''}</div><div style="font-size:11px;color:${it.length ? 'var(--ink2)' : 'var(--ink3)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${only ? 'font-style:italic' : ''}">${it.length ? it.map(e => esc(e.n)).join(' · ') : of ? 'incompleto: manca la stima' : 'non registrato'}</div></div><b style="font-size:12px;${only ? 'color:var(--accent-ink);font-style:italic' : ''}">${Lv.length ? fmt(slotK(o, id)) + ' kcal' : P.length ? fmt(planK(o, id)) + ' kcal' : ''}</b>${only ? `<button style="${pl};background:var(--accent-ink)" onclick="FOOD.cslot('${id}')" aria-label="Conferma">✓</button>` : `<button style="${pl}" onclick="FOOD.open('${id}')" aria-label="Aggiungi">+</button>`}</div>`; }).join('')}</div></section>`;
   }
   function redraw() { render(); if (sh) drawSheet(); badge(); }
@@ -6730,10 +6773,13 @@ ${o ? `<div class="fx-detail"><label>Nome<input class="fx-in l" value="${esc(f.n
       return `<div class="fx-grid">${cards}<div class="fx-c12"><div class="an-note">“Prevedi oggi” inserisce le combo come previsto: contano solo dopo la conferma e non toccano gli slot già compilati. “+ oggi” aggiunge subito quella combo come mangiata.</div></div><div class="fx-c12"><button type="button" class="fx-ghost" onclick="FOOD.g.newG()">+ Nuova giornata tipo</button></div></div>`;
     }
     if (sub === 'obj') {
-      const T = l.targets, t = totals(td());
+      const T = l.targets, t = totals(td()), P = enP(), E = energy(td());
       return `<div class="fx-grid"><section class="an-card fx-c6"><div class="an-head"><span class="an-title">Obiettivi giornalieri</span><span class="an-sub">usati dalla card di Oggi</span></div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="fx-field">Energia · kcal<input class="fx-in" type="number" inputmode="decimal" value="${T.kcal == null ? '' : T.kcal}" onchange="FOOD.g.tgt('kcal',this.value)"></label><label class="fx-field">Proteine · g<input class="fx-in" type="number" inputmode="decimal" value="${T.p == null ? '' : T.p}" onchange="FOOD.g.tgt('p',this.value)"></label></div>
 <div class="an-note">Se un campo è vuoto la card di Oggi mostra solo i totali, senza barra di avanzamento.</div></section>
+<section class="an-card fx-c6"><div class="an-head"><span class="an-title">Fabbisogno energetico</span><span class="an-sub">saldo deficit/surplus</span></div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><label class="fx-field">Altezza · cm<input class="fx-in" type="number" inputmode="decimal" value="${P.h}" onchange="FOOD.g.enSet('h',this.value)"></label><label class="fx-field">Nascita<input class="fx-in" type="date" value="${P.dob}" onchange="FOOD.g.enSet('dob',this.value)"></label><label class="fx-field">Attività ×<input class="fx-in" type="number" step="0.05" inputmode="decimal" value="${P.pal}" onchange="FOOD.g.enSet('pal',this.value)"></label></div>
+<div class="an-note">${E ? `Oggi: basale ${fmt(E.bmr)} (Mifflin–St Jeor, ${String(E.w).replace('.', ',')} kg, ${E.h} cm, ${E.age} anni) × ${String(E.pal).replace('.', ',')} + allenamento ${fmt(E.wo)} = ${fmt(E.need)} kcal.` : 'Serve almeno un peso registrato negli ultimi 14 giorni.'} Il fabbisogno non è salvato: si ricalcola dal peso del giorno, quindi cambiare un parametro aggiorna anche i giorni passati. Margine ~±10%; ×1,3 è un'ipotesi (nessun dato sui passi), le kcal di Motra non sono verificabili (attive o totali).</div></section>
 <section class="an-card fx-c6"><div class="an-head"><span class="an-title">Oggi finora</span><span class="an-sub">dai dati registrati</span></div><div class="fx-soft"><span class="h">Alimentazione</span><span class="n">${fmt(t.k)} <small>${T.kcal ? '/ ' + T.kcal + ' ' : ''}kcal</small></span><span style="font-size:var(--fs-sm);font-weight:600">${fmt(t.p)}${T.p ? ' / ' + T.p : ''} g proteine${T.kcal ? ' · ' + (t.k <= T.kcal ? 'mancano ' + fmt(T.kcal - t.k) : 'oltre di ' + fmt(t.k - T.kcal)) + ' kcal' : ''}</span></div></section></div>`;
     }
     return '';
@@ -6808,6 +6854,12 @@ ${o ? `<div class="fx-detail"><label>Nome<input class="fx-in l" value="${esc(f.n
     gm(id, slot, v) { const g = lib().gts.find(x => x.id === id); if (!g) return; if (v) g.m[slot] = v; else delete g.m[slot]; saveLib(); reGest(); },
     delG(id) { if (lib().gts.length <= 1) { flash('Serve almeno una giornata tipo.'); return reGest(); } if (!confirm('Eliminare la giornata tipo?')) return; lib().gts = lib().gts.filter(x => x.id !== id); saveLib(); reGest(); },
     newG() { lib().gts.push({ id: uid('gt'), n: 'Nuova giornata', m: {} }); saveLib(); reGest(); },
+    enSet(k, v) {
+      const T = lib().targets; v = String(v).trim();
+      if (k === 'dob') { const a = new Date().getFullYear() - parseInt(v.slice(0, 4), 10); if (!/^\d{4}-\d{2}-\d{2}$/.test(v) || isNaN(new Date(v + 'T00:00:00')) || a < 18 || a > 100) { flash('Data non valida.'); return reGest(); } T.dob = v; }
+      else { const x = numS(v), r = k === 'h' ? [120, 230] : [1, 2]; if (x === null || x < r[0] || x > r[1]) { flash('Valore non valido.'); return reGest(); } T[k] = x; }
+      saveLib(); reGest(); badge();
+    },
     tgt(k, v) { const x = String(v).trim() === '' ? null : num(v); if (x !== null && !(x > 0)) { flash('Valore non valido.'); return reGest(); } lib().targets[k] = x; saveLib(); reGest(); },
     mealToCombo() {
       const items = []; Object.keys(GST_MEAL).forEach(name => { const f = lib().foods.find(x => x.n === name); if (f) items.push({ f: f.id, q: GST_MEAL[name] }); });
@@ -6830,7 +6882,7 @@ ${o ? `<div class="fx-detail"><label>Nome<input class="fx-in l" value="${esc(f.n
     START, on, cardHTML, subnav, gestView, mealActions, asGstDB, pastoNote, G, g: G,
     sub(k) { if (arguments.length) { sub = k; msg = ''; reGest(); } return sub; }, subGet: () => sub,
     open, openGT, close, tab: setTab, pick: pickSlot, setGT, q(v) { sh.q = v; const l = document.getElementById('food-list'); if (l) l.innerHTML = listFoods(); },
-    addCombo, addFood, addManual, importPhoto, togOff, periodStats, dailyRows, rm: removeEntry, cslot: confirmSlot, dplan: dropPlan, confirmAll, clearPlan, applyGT,
+    addCombo, addFood, addManual, importPhoto, togOff, periodStats, dailyRows, energy, rm: removeEntry, cslot: confirmSlot, dplan: dropPlan, confirmAll, clearPlan, applyGT,
     _t: { totals, day, vals, lib, comboVals, SL, sync, dirty: () => dirty, reset() { L = null; dirty = {}; } }
   };
 })();
@@ -10897,10 +10949,11 @@ function exportRows() {
   const proto = [['data', 'giorno_ciclo', 'ader_iniezioni_pct', 'ader_integratori_pct', 'iniezioni_fatte', 'iniezioni_dovute', 'integratori_fatti', 'integratori_dovuti']];
   const wo = [['data', 'giorno_ciclo', 'workout_fatto', 'wo_tipo', 'wo_durata_min', 'wo_volume_kg', 'wo_kcal']];
   /* Alimentazione (dal START del diario alimentare): una riga per giorno, solo totali, derivati da food_AAAAMMGG tramite FOOD.dailyRows */
-  const food = [['data', 'kcal', 'kcal_min', 'kcal_max', 'proteine_g', 'carboidrati_g', 'grassi_g', 'quota_stimata_pct', 'pasti_fuori_piano', 'incompleto', 'stato']];
+  const food = [['data', 'kcal', 'kcal_min', 'kcal_max', 'proteine_g', 'carboidrati_g', 'grassi_g', 'basale_kcal', 'attivita_quotidiana_kcal', 'allenamento_kcal', 'fabbisogno_kcal', 'saldo_kcal', 'quota_stimata_pct', 'pasti_fuori_piano', 'incompleto', 'stato']];
   if (typeof FOOD !== 'undefined' && FOOD.dailyRows) FOOD.dailyRows(0).rows.forEach(r => {
     const has = r.n || r.inc, rd = (v, d) => Math.round(v * Math.pow(10, d)) / Math.pow(10, d);
     food.push([r.d, has ? rd(r.k, 0) : '', has ? rd(r.lo, 0) : '', has ? rd(r.hi, 0) : '', has ? rd(r.p, 1) : '', has ? rd(r.c, 1) : '', has ? rd(r.g, 1) : '',
+      r.e ? rd(r.e.bmr, 0) : '', r.e ? rd(r.e.neat, 0) : '', r.e ? rd(r.e.wo, 0) : '', r.e ? rd(r.e.need, 0) : '', r.sd != null ? rd(r.sd, 0) : '',
       (has && r.k > 0) ? Math.round(r.est / r.k * 100) : '', r.off || 0, r.inc ? 1 : '', r.today ? 'in_corso' : r.inc ? 'incompleto' : has ? 'ok' : 'nessun_dato']);
   });
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -10945,6 +10998,7 @@ function exportRows() {
     ['workout_fatto', '1 se sono presenti calorie, volume o RPE; vuoto il tipo nei giorni di riposo'],
     ['wo_volume_kg', 'volume totale della seduta (kg), dal campo volume o dal log Motra'],
     ['Alimentazione', 'foglio dal 12/10/2026 (inizio del diario alimentare): una riga per giorno, solo totali, valori centrali. kcal_min/kcal_max = intervallo delle voci stimate (uguali al valore se non ci sono stime); quota_stimata_pct = kcal da voci stimate sul totale del giorno'],
+    ['fabbisogno (Alimentazione)', 'basale Mifflin-St Jeor (10 x peso + 6,25 x altezza - 5 x eta + 5; peso del giorno dalla bilancia, o ultimo dei 14 giorni precedenti) x fattore attivita quotidiana (parametri in Gestione > Alimenti > Obiettivi) + kcal allenamento (wo_kcal da Motra: non verificabile se attive o totali). Stima con margine ~10%. saldo_kcal = kcal - fabbisogno_kcal: solo per giorni chiusi con voci e non incompleti (vuoto altrimenti); le colonne del fabbisogno si ricalcolano con i parametri attuali'],
     ['stato (Alimentazione)', 'ok = giorno con voci; incompleto = pasto fuori piano ancora senza voci (valori per difetto); nessun_dato = nulla registrato (NON e uno zero); in_corso = oggi, parziale. pasti_fuori_piano = slot marcati. L\'app non puo sapere se tutti i pasti sono stati registrati']];
   return { bio, proto, wo, food, note, todayISO };
 }

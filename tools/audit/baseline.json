@@ -6,13 +6,14 @@
  "hideX",
  "hideY",
  "hrv_max",
+ "lv",
  "mig",
  "motra_log",
+ "off",
+ "plan",
  "rating",
  "showN",
  "ul",
  "width",
- "lv",
- "off",
- "plan"
+ "wo_kcal"
 ]
