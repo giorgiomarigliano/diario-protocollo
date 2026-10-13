@@ -850,6 +850,17 @@
 .fxc-en .fx-x{height:24px}
 .fxc-rc{display:flex;flex-direction:column;gap:10px;min-width:0}
 .gst-foodlist{max-height:calc(100vh - 360px);min-height:320px}
+@media (min-width:861px){
+ .gst-2col{align-items:stretch;min-height:calc(100vh - 330px)}
+ .gst-2col>section:first-child{display:flex;flex-direction:column;height:0;min-height:100%;overflow:hidden}
+ .gst-2col>section:first-child .gst-foodlist{flex:1 1 auto;min-height:0;max-height:none}
+ .fxc-2c{align-items:stretch;min-height:calc(100vh - 330px)}
+ .fxc-cmb{display:flex!important;flex-direction:column;gap:10px;align-items:stretch!important}
+ .fxc-cmb>.fxc-cbs{flex:1 1 auto;grid-auto-rows:1fr}
+ .fxc-cb{justify-content:flex-start}.fxc-cb>.fxc-cm{flex:1 1 auto}
+ .fxc-gt{grid-template-rows:1fr auto auto;align-items:stretch!important}
+ .fxc-gt>.an-card>.fx-slot{flex:1 1 auto}
+}
 .fxc-pn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fxc-main{display:grid;grid-template-columns:minmax(0,1fr) 340px;padding:0;gap:0;overflow:hidden;height:calc(100vh - 440px);min-height:430px}
 .fxc-left{display:flex;flex-direction:column;gap:6px;padding:12px 14px;min-width:0;min-height:0}
@@ -884,6 +895,7 @@
 .fxc-cb{padding:10px 14px;gap:6px}.fxc-cb.open{grid-column:1/-1}
 .fxc-cr{display:flex;align-items:center;gap:8px;min-width:0}
 .fxc-cr .fx-in.l{flex:1;font-weight:700;background:transparent;border-color:transparent;padding:0 4px}
+.fxc-cm{display:flex;flex-direction:column;font-size:var(--fs-sm);color:var(--ink2);border-top:1px solid var(--line2)}.fxc-cm>div{display:flex;justify-content:space-between;gap:8px;min-height:24px;align-items:center;border-bottom:1px solid var(--line2)}.fxc-cm small{color:var(--ink3);font-variant-numeric:tabular-nums}.fxc-cm .mac{border:0;justify-content:flex-start;gap:14px;font-size:var(--fs-xs);color:var(--ink3);font-weight:600}
 .fxc-cs{font-size:var(--fs-xs);color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
 .fxc-2c .fx-slot{padding:5px 0}
 @media (max-width:1023px){
@@ -7001,13 +7013,14 @@ ${d < START ? `<div class="an-note">La card in Oggi si attiva dal 12/10. Le voci
         const names = c.items.map(it => { const f = it.f && food(it.f); return esc(f ? f.n.split(' (')[0] : (it.n || '?')); }).join(' · ');
         const head = `<div class="fxc-cr"><i class="fx-dot" style="background:${ok ? 'var(--ok)' : 'var(--warn)'}"></i><input class="fx-in l" value="${esc(c.n)}" onchange="FOOD.g.cn('${c.id}',this.value)"><span class="fx-big" style="font-size:var(--fs-xl)">${fmt(v.k)} <small style="font-size:var(--fs-xs)">kcal</small></span><span class="pp" style="font-size:var(--fs-xs);color:var(--ink3);white-space:nowrap">P ${fmt(v.p, 0)}</span><button type="button" class="fx-x" onclick="FOOD.g.oc('${c.id}')" aria-label="Dettagli">${o ? '▴' : '▾'}</button></div>`;
         const line = `<div class="fxc-cr"><span class="fx-pill ${ok ? 'ok' : 'est'}" title="${ok ? 'tutti verificati' : (c.items.length ? 'contiene stime / da verificare' : 'vuota')}">${slotName(c.slot)}</span><span class="fxc-cs">${names || 'vuota'}</span><button type="button" class="fx-ghost fx-pri" style="min-height:26px;padding:0 10px"${c.items.length ? '' : ' disabled'} onclick="FOOD.g.comboToday('${c.id}','${c.slot}')">+ oggi</button></div>`;
-        if (!o) return `<section class="an-card fxc-cb">${head}${line}</section>`;
+        const mid = `<div class="fxc-cm">${c.items.slice(0, 5).map(it => { const f = it.f && food(it.f); return `<div><span>${esc(f ? f.n.split(' (')[0] : (it.n || '?'))}</span><small>${fmt(it.q, 1)} ${f ? (f.u === 'pz' ? 'pz' : (f.ul || 'g')) : ''}</small></div>`; }).join('') || '<div><span>vuota</span></div>'}${c.items.length > 5 ? `<div><small>+${c.items.length - 5} altri</small></div>` : ''}<div class="mac"><span>P ${fmt(v.p, 1)} g</span><span>C ${fmt(v.c, 1)} g</span><span>G ${fmt(v.g, 1)} g</span></div></div>`;
+        if (!o) return `<section class="an-card fxc-cb">${head}${mid}${line}</section>`;
         return `<section class="an-card fxc-cb open">${head}
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select class="fx-sel" onchange="FOOD.g.cs('${c.id}',this.value)">${SL.map(([id, n]) => `<option value="${id}"${c.slot === id ? ' selected' : ''}>${n}</option>`).join('')}</select><span class="fx-pill ${ok ? 'ok' : 'est'}">${ok ? 'tutti verificati' : (c.items.length ? 'contiene stime / da verificare' : 'vuota')}</span><span class="fxc-hint" style="margin-left:auto">P ${fmt(v.p, 1)} g · C ${fmt(v.c, 1)} g · G ${fmt(v.g, 1)} g</span></div>
 <div>${c.items.map((it, i) => { const f = it.f && food(it.f); return `<div class="fx-item"><span class="fx-name"><i class="fx-dot" style="background:${f ? dotC(f) : 'var(--idle)'}"></i><span><b style="font-weight:600;color:var(--ink)">${esc(f ? f.n.split(' (')[0] : (it.n || '(alimento rimosso)'))}</b></span></span><input class="fx-in" value="${it.q}" onchange="FOOD.g.iq('${c.id}',${i},this.value)"><span class="u">${f ? (f.u === 'pz' ? 'pz' : (f.ul || 'g')) : ''}</span><button type="button" class="fx-x" onclick="FOOD.g.delI('${c.id}',${i})" aria-label="Rimuovi">✕</button></div>`; }).join('')}</div>
 <div class="fx-bar"><select id="ci_${c.id}" class="fx-sel" style="flex:1;min-width:140px"><option value="">+ aggiungi alimento…</option>${l.foods.map(f => `<option value="${f.id}">${esc(f.n)}${vok(f) ? '' : ' (da verificare)'}</option>`).join('')}</select><button type="button" class="fx-ghost" onclick="FOOD.g.addI('${c.id}')">Aggiungi</button>${slotSel('ct_' + c.id, c.slot)}<button type="button" class="fx-ghost fx-pri" onclick="FOOD.g.comboToday('${c.id}')"${c.items.length ? '' : ' disabled'}>+ Aggiungi a oggi</button><button type="button" class="fx-ghost bad" style="margin-left:auto" onclick="FOOD.g.delC('${c.id}')">Elimina</button></div></section>`;
       }).join('') || '<div class="an-note">Nessuna combo ancora.</div>';
-      return `<div class="fxc-2c"><div class="fx-grid"><div class="fxc-cbs">${h}</div><div class="fx-c12"><button type="button" class="fx-ghost" onclick="FOOD.g.newC()">+ Nuova combo</button></div></div>${todayCard()}</div>`;
+      return `<div class="fxc-2c"><div class="fx-grid fxc-cmb"><div class="fxc-cbs">${h}</div><div class="fx-c12"><button type="button" class="fx-ghost" onclick="FOOD.g.newC()">+ Nuova combo</button></div></div>${todayCard()}</div>`;
     }
     if (sub === 'gt') {
       const cards = l.gts.map(g => {
@@ -7019,7 +7032,7 @@ ${d < START ? `<div class="an-note">La card in Oggi si attiva dal 12/10. Le voci
         }).join('');
         return `<section class="an-card fx-c6"><div class="an-head"><input class="fx-in l" value="${esc(g.n)}" onchange="FOOD.g.gn('${g.id}',this.value)" style="max-width:200px;font-weight:700"><span style="display:flex;gap:6px;align-items:center"><button type="button" class="fx-ghost fx-pri" onclick="FOOD.g.gtToday('${g.id}')">Prevedi oggi</button><button type="button" class="fx-x" onclick="FOOD.g.delG('${g.id}')" aria-label="Elimina">✕</button></span></div>${rows}<div class="fx-slot fx-slot4" style="border-top:1px solid var(--line)"><span class="t">Totale previsto</span><span class="an-sub">${tk ? `P ${fmt(tp, 1)} g${l.targets.kcal ? ' · obiettivo ' + l.targets.kcal + ' kcal' : ''}` : 'nessuna combo scelta'}</span><span class="k">${tk ? fmt(tk) + ' kcal' : '—'}</span><span></span></div></section>`;
       }).join('');
-      return `<div class="fxc-2c"><div class="fx-grid">${cards}<div class="fx-c12"><div class="an-note">“Prevedi oggi” inserisce le combo come previsto: contano solo dopo la conferma e non toccano gli slot già compilati. “+ oggi” aggiunge subito quella combo come mangiata.</div></div><div class="fx-c12"><button type="button" class="fx-ghost" onclick="FOOD.g.newG()">+ Nuova giornata tipo</button></div></div>${todayCard()}</div>`;
+      return `<div class="fxc-2c"><div class="fx-grid fxc-gt">${cards}<div class="fx-c12"><div class="an-note">“Prevedi oggi” inserisce le combo come previsto: contano solo dopo la conferma e non toccano gli slot già compilati. “+ oggi” aggiunge subito quella combo come mangiata.</div></div><div class="fx-c12"><button type="button" class="fx-ghost" onclick="FOOD.g.newG()">+ Nuova giornata tipo</button></div></div>${todayCard()}</div>`;
     }
     if (sub === 'obj') {
       const T = l.targets, t = totals(td()), P = enP(), E = energy(td());
