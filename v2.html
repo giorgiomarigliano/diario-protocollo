@@ -2938,6 +2938,7 @@ function fhColK(k,t){ return !t?"var(--accent)":(k<=t?"var(--ok)":(k<=t*1.1?"var
 function fhColP(p,t){ return !t?"var(--accent)":(p>=t?"var(--ok)":(p>=t*0.9?"var(--warn)":"var(--bad)")); }
 function fhColS(s){ return s<=-FH_ZERO?"var(--ok)":(s<FH_ZERO?"var(--ink3)":"var(--warn-ink)"); }
 function fhMean(a,fn){ return a.length?a.reduce(function(s,x){return s+fn(x);},0)/a.length:null; }
+window.FH_API={fhF:fhF,fhSg:fhSg,fhColK:fhColK,fhColP:fhColP,fhColS:fhColS,fhMean:fhMean};  /* soglie condivise con la vista Settimana di Oggi */
 function fhXlab(s,r,cx,H,n,every,i){ if (i%every===0||i===n-1) s.push('<text x="'+cx+'" y="'+(H-8)+'" text-anchor="middle" font-size="10" fill="var(--ink3)">'+r.d.slice(8)+"/"+r.d.slice(5,7)+'</text>'); }
 function fhChart(rows,T,W0){
   var W=Math.max(260,W0||600),H=150,pl=44,pr=8,pt=12,pb=24,iw=W-pl-pr,ih=H-pt-pb,n=rows.length,mx=0,f=fhF;
@@ -7751,6 +7752,100 @@ function renderWeekFull() {
   const months = LANG === 'it' ? monthsIt : monthsEn;
   const rangeTxt = `${wk.days[0].num} ${months[wk.days[0].date.getMonth()]} – ${wk.days[6].num} ${months[wk.days[6].date.getMonth()]}`;
 
+  // ---- Alimentazione della settimana (13/10): stessi dati e soglie del cruscotto Alimenti (Andamento) ----
+  const foodCardHtml = (function () {
+    if (typeof FOOD === 'undefined' || !FOOD.dailyRows || !window.FH_API) return null;
+    const { fhF, fhSg, fhColK, fhColP, fhColS, fhMean } = window.FH_API;
+    const R = FOOD.dailyRows(0), T = R.targets, byD = {};
+    R.rows.forEach(r => { byD[r.d] = r; });
+    const days = wk.days.map(d => ({ d, r: byD[d.dateISO] || null }));
+    if (!days.some(x => x.r && (x.r.n || x.r.inc))) return null;
+    const it = LANG === 'it';
+    const cl = days.map(x => x.r).filter(r => r && !r.today && r.n > 0 && !r.inc), n = cl.length;
+    const sdR = cl.filter(r => r.sd != null);
+    const P = fhMean(cl, r => r.p), K = fhMean(cl, r => r.k);
+    const SD = sdR.length ? fhMean(sdR, r => r.sd) : null;
+    const cum = sdR.reduce((a, r) => a + r.sd, 0), cumLo = sdR.reduce((a, r) => a + r.slo, 0), cumHi = sdR.reduce((a, r) => a + r.shi, 0);
+    const okD = cl.filter(r => T.kcal && T.p && r.k <= T.kcal && r.p >= T.p).length;
+    const one = n === 1 ? `<span style="font-weight:500;color:var(--ink3);text-transform:none;"> · n=1</span>` : '';
+    const tile = (label, val, unit, col, sub) => `
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+            <span style="font-size:var(--fs-2xs);color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;white-space:nowrap;">${label}${one}</span>
+            <div style="display:flex;align-items:baseline;gap:4px;"><span style="font-size:var(--fs-3xl);line-height:1.1;font-weight:700;letter-spacing:-.01em;color:${col};font-variant-numeric:tabular-nums;">${val}</span><span style="font-size:var(--fs-xs);color:var(--ink3);">${unit}</span></div>
+            <span style="font-size:var(--fs-2xs);color:var(--ink3);font-variant-numeric:tabular-nums;">${sub}</span>
+          </div>`;
+    const em = '—', noCl = it ? 'nessun giorno chiuso' : 'no closed day';
+    const tiles = [
+      tile(it ? 'Proteine' : 'Protein', n ? fhF(P) : em, `g / ${T.p || em}`, n ? fhColP(P, T.p) : 'var(--ink3)', n ? `${cl.filter(r => T.p && r.p >= T.p).length}/${n} ${it ? 'giorni a obiettivo' : 'days on target'}` : noCl),
+      tile(it ? 'Bilancio' : 'Balance', SD != null ? fhSg(SD) : em, it ? 'kcal/giorno' : 'kcal/day', SD != null ? fhColS(SD) : 'var(--ink3)', SD != null ? `${it ? 'cumulato' : 'total'} ${fhSg(cum)} · ${it ? 'stima' : 'est.'} ${fhSg(cumLo)} / ${fhSg(cumHi)}` : noCl),
+      tile('Kcal', n ? fhF(K) : em, `/ ${T.kcal ? fhF(T.kcal) : em}`, n ? fhColK(K, T.kcal) : 'var(--ink3)', n ? `${cl.filter(r => T.kcal && r.k <= T.kcal).length}/${n} ${it ? 'giorni entro obiettivo' : 'days within target'}` : noCl),
+      tile('Compliance', n ? `${okD}/${n}` : em, it ? 'giorni' : 'days', n ? (okD === n ? 'var(--ok)' : okD === 0 ? 'var(--bad)' : 'var(--warn-ink)') : 'var(--ink3)', it ? 'kcal e proteine in obiettivo' : 'kcal and protein on target')
+    ].join('');
+    const cell = (inner, bg, fg, bd) => `<span style="height:22px;border-radius:var(--r-sm);background:${bg};border:1px solid ${bd || 'transparent'};display:flex;align-items:center;justify-content:center;font-size:var(--fs-2xs);font-weight:700;color:${fg};font-variant-numeric:tabular-nums;white-space:nowrap;">${inner}</span>`;
+    const empty = cell('', 'transparent', 'var(--ink3)', 'var(--line)');
+    const head = days.map(x => `
+              <span onclick="selDate='${x.d.dateISO}';oggiViewMode='day';render();" style="display:flex;flex-direction:column;align-items:center;cursor:pointer;padding:2px 0;border-radius:var(--r-sm);">
+                <span style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink2);text-transform:uppercase;">${x.d.dow}</span>
+                <span style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;">${x.d.num}</span>
+              </span>`).join('');
+    const kcalRow = days.map(({ r }) => {
+      if (!r || !(r.n || r.inc)) return empty;
+      const col = r.off ? 'var(--c-igf)' : 'var(--accent)', mx = (T.kcal || 2000) * 1.4, w = Math.min(100, r.k / mx * 100), tk = (T.kcal || 0) / mx * 100;
+      return `<span title="${it ? 'obiettivo' : 'target'} ${T.kcal ? fhF(T.kcal) : em}" style="display:flex;flex-direction:column;gap:3px;align-items:stretch;opacity:${r.today ? .55 : 1};">
+                <span style="text-align:center;font-size:var(--fs-xs);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;">${fhF(r.k)}</span>
+                <span style="position:relative;height:5px;border-radius:3px;background:var(--line2);">
+                  <span style="position:absolute;left:0;top:0;bottom:0;width:${w}%;border-radius:3px;${r.inc ? `border:1px dashed ${col};` : `background:${col};`}"></span>
+                  ${T.kcal ? `<span style="position:absolute;top:-2px;bottom:-2px;left:${tk}%;width:2px;background:var(--ink2);"></span>` : ''}
+                </span></span>`;
+    }).join('');
+    const pRow = days.map(({ r }) => {
+      if (!r || !(r.n || r.inc)) return empty;
+      if (r.today || r.inc) return cell(fhF(r.p), 'transparent', 'var(--ink2)', 'var(--line)');
+      const c = fhColP(r.p, T.p), fg = c === 'var(--ok)' ? 'var(--on-ok)' : c === 'var(--warn)' ? 'var(--on-warn)' : c === 'var(--bad)' ? 'var(--on-bad)' : 'var(--on-accent)';
+      return cell(fhF(r.p), c, fg);
+    }).join('');
+    const sRow = days.map(({ r }) => {
+      if (!r || !(r.n || r.inc)) return empty;
+      if (r.today) return cell(it ? 'in corso' : 'today', 'transparent', 'var(--ink3)', 'var(--line)');
+      if (r.sd == null) return cell('—', 'transparent', 'var(--ink3)', 'var(--line)');
+      const c = fhColS(r.sd);
+      if (c === 'var(--ok)') return cell(fhSg(r.sd), 'var(--ok)', 'var(--on-ok)');
+      if (c === 'var(--warn-ink)' || c === 'var(--warn)') return cell(fhSg(r.sd), 'var(--warn-ink)', 'var(--on-warn)');
+      return cell(fhSg(r.sd), 'var(--surf2)', 'var(--ink2)', 'var(--line)');
+    }).join('');
+    const lab = t => `<span style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${t}</span>`;
+    const grid = `
+          <div style="display:grid;grid-template-columns:56px repeat(7,1fr);gap:2px 3px;align-items:center;">
+            <span></span>${head}
+            ${lab('kcal')}${kcalRow}
+            ${lab('Prot. g')}${pRow}
+            ${lab(it ? 'Saldo' : 'Balance')}${sRow}
+          </div>
+          <span style="font-size:var(--fs-2xs);color:var(--ink3);line-height:1.4;">${it ? 'Barra kcal: tacca = obiettivo; viola = pasto fuori piano; tratteggio = incompleto. Proteine: verde ≥ obiettivo, giallo ≥ 90%, rosso sotto. Saldo: verde deficit, arancio surplus, grigio ±150 = zero. Il giorno in corso non conta nelle medie.' : 'Kcal bar: tick = target; purple = off-plan meal; dashed = incomplete. Protein: green ≥ target, yellow ≥ 90%, red below. Balance: green deficit, orange surplus, grey ±150 = zero. Today is not counted in averages.'}</span>`;
+    return { tiles, grid, T };
+  })();
+  const fhF = window.FH_API ? window.FH_API.fhF : (v => v);
+  const foodTitle = `${LANG === 'it' ? 'Alimentazione' : 'Nutrition'} · ${LANG === 'it' ? 'settimana' : 'week'} ${weekIdx + 1}`;
+  const foodCard = foodCardHtml ? `
+    <div style="grid-column:1 / 13;grid-row:3 / 4;border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;">
+        <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${foodTitle}</span>
+        <span style="font-size:var(--fs-2xs);color:var(--ink3);">${LANG === 'it' ? 'obiettivo' : 'target'} ${foodCardHtml.T.kcal ? fhF(foodCardHtml.T.kcal) : '—'} kcal · ${foodCardHtml.T.p || '—'} g ${LANG === 'it' ? 'proteine' : 'protein'}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(300px,36%) 1fr;gap:22px;align-items:start;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">${foodCardHtml.tiles}</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">${foodCardHtml.grid}</div>
+      </div>
+    </div>` : '';
+  const foodCardM = foodCardHtml ? `
+    <div style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
+      <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${foodTitle}</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;">${foodCardHtml.tiles}</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">${foodCardHtml.grid}</div>
+    </div>` : '';
+  const foodRow = foodCard ? 1 : 0;
+
+
   // ---- Recap: tre varianti temporali (chiusa/in corso/futura) ----
   const cyc = adherence(store.blob);
   const cycAvg = Math.round((cyc.inj + cyc.supp + cyc.wo) / 3);
@@ -8025,7 +8120,7 @@ function renderWeekFull() {
                 </div>`;
   }).join('');
   const suppCard = `
-    <div style="grid-column:1 / 5;grid-row:3 / 4;border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:9px;overflow:hidden;">
+    <div style="grid-column:1 / 5;grid-row:${3 + foodRow} / ${4 + foodRow};border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:9px;overflow:hidden;">
       <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
         <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${L.supplements}</span>
         <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${wk.suppDoneTot}/${wk.suppApplTot}</span>
@@ -8048,7 +8143,7 @@ function renderWeekFull() {
           <span style="flex:0 0 26px;text-align:right;font-size:var(--fs-2xs);font-weight:600;color:${s.rpe != null && s.rpe >= 8 ? 'var(--warn-ink)' : 'var(--ink2)'};font-variant-numeric:tabular-nums;">${s.rpe != null ? s.rpe : '—'}</span>
         </div>`).join('');
   const sedCard = `
-    <div style="grid-column:5 / 9;grid-row:3 / 4;border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
+    <div style="grid-column:5 / 9;grid-row:${3 + foodRow} / ${4 + foodRow};border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
       <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
         <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${L.training}</span>
         <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${wk.woDone}/${wk.woTot}${wk.woExtra ? ' +' + wk.woExtra : ''} ${LANG === 'it' ? 'sedute' : 'sessions'}</span>
@@ -8109,7 +8204,7 @@ function renderWeekFull() {
   }).join('');
 
   const subjCard = `
-    <div style="grid-column:9 / 13;grid-row:3 / 4;border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:9px;overflow:hidden;">
+    <div style="grid-column:9 / 13;grid-row:${3 + foodRow} / ${4 + foodRow};border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:9px;overflow:hidden;">
       <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
         <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${L.subjective}</span>
         <span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink3);">${LANG === 'it' ? 'media' : 'average'} · ${L.subjScale}</span>
@@ -8130,8 +8225,8 @@ function renderWeekFull() {
   if (isDesktop) {
     return `
       ${renderDayNav()}
-      <div style="flex:1 1 auto;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(3,min-content);gap:9px;align-content:start;">
-        ${recapCard}${pesoCard}${injCard}${adherenceCard}${suppCard}${sedCard}${subjCard}
+      <div style="flex:1 1 auto;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(12,1fr);grid-template-rows:repeat(${3 + foodRow},min-content);gap:9px;align-content:start;">
+        ${recapCard}${pesoCard}${injCard}${adherenceCard}${foodCard}${suppCard}${sedCard}${subjCard}
       </div>`;
   }
 
@@ -8365,7 +8460,7 @@ function renderWeekFull() {
   return `
     ${renderDayNav()}
     <div style="flex:1 1 auto;min-height:0;overflow-y:auto;padding:0 18px 20px;display:flex;flex-direction:column;gap:10px;">
-      ${recapCardM}${pesoCardM}${adherenceCardM}${bioCardM}${injCardM}${suppCardM}${sedCardM}${subjCardM}
+      ${recapCardM}${pesoCardM}${adherenceCardM}${foodCardM}${bioCardM}${injCardM}${suppCardM}${sedCardM}${subjCardM}
     </div>`;
 }
 
