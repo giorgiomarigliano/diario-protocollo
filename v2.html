@@ -30,7 +30,7 @@
     --shadow-sm:0 1px 2px rgba(10,10,14,.10);
     /* Colori semantici (prima scritti a mano nel JS) */
     --white:#ffffff;
-    --wo:var(--h-teal);         /* Allenamento: teal (13/10: il rosso fuoco si confondeva con il rosso di "problema") */
+    --wo:var(--h-red);          /* Allenamento: stesso rosso del set unico (#d81e05 / scuro #ff3b30), come scelto da Giorgio il 13/10 */
     --on-dark-1:#c8c8ce; --on-dark-2:#9d9da6;               /* testo secondario sulle card nere */
     /* CARD NERE DI APERTURA (01/10): UNA sola palette di stati, forte e piena (ne' pallida ne' fluo), con contrasto >= 5:1 sul nero.
        Dentro ogni card nera i token semantici (--ok, --warn, --bad, --accent, --c-igf) vengono rimappati su queste varianti (regola in coda al CSS):
@@ -8577,7 +8577,7 @@ function renderOggiFull() {
       const RINGS = [
         { label: L.injectionsRing, pct: a.inj, sub: `${a.injDone}/${a.injTot}`, color: 'var(--accent)', today: todayBarHtml('inj', dAdh, false) },
         { label: L.supplements,    pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)', today: todayBarHtml('supp', dAdh, false) },
-        { label: L.workoutsRing,   pct: a.wo,  sub: `${a.woDone}/${a.woTot}`,  color: 'var(--wo)', today: todayBarHtml('wo', dAdh, false) } /* teal (--wo), 28/09 */
+        { label: L.workoutsRing,   pct: a.wo,  sub: `${a.woDone}/${a.woTot}`,  color: 'var(--wo)', today: todayBarHtml('wo', dAdh, false) } /* rosso (--wo), 28/09 */
       ];
       return `
       <div style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:16px 12px;display:flex;justify-content:space-around;">
@@ -8892,7 +8892,7 @@ function renderOggiFull() {
   const RINGS = [
     { label: L.injectionsRing,       pct: a.inj,  sub: `${a.injDone}/${a.injTot}`,   color: 'var(--accent)', today: todayBarHtml('inj', dAdh, true) },
     { label: L.supplements,          pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)', today: todayBarHtml('supp', dAdh, true) },
-    { label: L.workoutsRing, pct: a.wo,   sub: `${a.woDone}/${a.woTot}`,     color: 'var(--wo)', today: todayBarHtml('wo', dAdh, true) } /* teal (--wo), 28/09 */
+    { label: L.workoutsRing, pct: a.wo,   sub: `${a.woDone}/${a.woTot}`,     color: 'var(--wo)', today: todayBarHtml('wo', dAdh, true) } /* rosso (--wo), 28/09 */
   ];
 
   // Iniezioni — appiattite in un'unica lista di righe (come nel mockup: non
