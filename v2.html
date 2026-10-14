@@ -780,6 +780,14 @@
 /* Intestazioni nere contestuali (30/09): stesso componente di Clinica (CLIN_hero) nelle viste che non ce l'avevano. */
 .an-hero-slot{grid-column:1/-1;min-width:0;}
 .an-hero-slot:empty{display:none;}
+
+/* ── pulsante "torna in cima" (14/10): fuori da #app (render() lo ricostruisce), compare dopo ~1 schermata di scroll */
+#to-top{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(18px,calc(env(safe-area-inset-bottom) + 10px));z-index:35;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--hero);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;box-shadow:var(--shadow-lg);opacity:0;transform:translateY(8px);pointer-events:none;transition:opacity .18s,transform .18s;-webkit-tap-highlight-color:transparent}
+#to-top.on{opacity:1;transform:none;pointer-events:auto}
+#to-top:active{transform:scale(.94)}
+#to-top svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+@media (prefers-reduced-motion:reduce){#to-top{transition:none}}
+@media print{#to-top{display:none}}
 </style>
 <style id="food-css">
 /* Gestione › Alimenti: stile allineato a Stock/Orari */
@@ -10927,6 +10935,27 @@ function GST_bindAlimenti(host){
 }
 function GST_updateMealHero(){ /* il ridisegno completo di GST_renderAlimenti gia' aggiorna il totale */ }
 
+
+
+/* pulsante "torna in cima": un solo elemento, creato una volta; la pagina scorre sulla finestra */
+(function(){
+  try {
+    const b = document.createElement('button');
+    b.id = 'to-top'; b.type = 'button';
+    b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>';
+    const lab = () => LANG === 'it' ? 'Torna in cima' : 'Back to top';
+    b.setAttribute('aria-label', lab()); b.title = lab();
+    b.addEventListener('click', () => {
+      const red = window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches;
+      window.scrollTo({ top: 0, behavior: red ? 'auto' : 'smooth' });
+    });
+    document.body.appendChild(b);
+    let tick = false;
+    const upd = () => { tick = false; b.classList.toggle('on', window.scrollY > Math.max(400, window.innerHeight * 0.6)); b.setAttribute('aria-label', lab()); b.title = lab(); };
+    window.addEventListener('scroll', () => { if (!tick) { tick = true; requestAnimationFrame(upd); } }, { passive: true });
+    upd();
+  } catch (e) { console.error('to-top', e); }
+})();
 
 document.documentElement.lang = LANG;
 render();
