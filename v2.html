@@ -1230,12 +1230,20 @@
    1 · CONFIG — copiare i valori da index.html (SB_URL/SB_KEY),
    non reinventarli. USER_ID è quello del Ciclo v2 (giorni p2_day_N).
    ============================================================ */
+/* Calendario del ciclo: UNICA fonte di verita'. Tutte le date/durate del ciclo (CFG, CYCLE, T0/T1/T2, fine ciclo)
+   derivano da qui. Fine ciclo = ultimo giorno (giorno 112, 8 nov); T2 = controllo finale del giorno prima (7 nov). */
+const CAL = (function () {
+  var c = { START: '2026-07-20', DAYS: 112, T0: '2026-07-13', T1: '2026-09-12', T2: '2026-11-07' };
+  var d = new Date(c.START + 'T00:00:00'); d.setDate(d.getDate() + c.DAYS - 1);
+  c.END = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  return Object.freeze(c);
+})();
 const CFG = {
   PROXY_URL: 'https://viarmvaukgwdoursfnwu.supabase.co/functions/v1/diario-proxy/rest/v1/diary',
   PROXY_KEY: 'sb_publishable_ppqlo1IbPDjWqnkw_h5wuA_WH8dCtPx',
   USER_ID: 'giorgio_proto2_2026',   // riga v2 (Ciclo attivo) — NON 'giorgio_protocollo_2026' (v1/warm-up)
-  CYCLE_START: '2026-07-20',
-  CYCLE_DAYS: 112,
+  CYCLE_START: CAL.START,
+  CYCLE_DAYS: CAL.DAYS,
   OLD_APP: 'index.html'
 };
 
@@ -1488,8 +1496,12 @@ function persistPending() {
     else localStorage.removeItem(PENDING_LS);
   } catch (e) { /* storage pieno o non disponibile: il salvataggio in rete resta comunque */ }
 }
+/* Scale soggettive (1-10) e RPE: nel DB sono SEMPRE stringhe (""=vuoto), come il resto dei campi del giorno.
+   Prima 27 giorni (dal 12/09) li avevano come numeri: tipi misti nello stesso campo. */
+const STR_SCALE_FIELDS = { rpe: 1, energia: 1, umore: 1, libido: 1, appetito: 1, recupero: 1, chiarezza: 1, sonno_sogg: 1 };
 function patchKey(key, field, value) {
   if (!store.blob) return; // non scrivere mai prima del fetch iniziale
+  if (STR_SCALE_FIELDS[field] === 1 && typeof value === 'number') value = isFinite(value) ? String(value) : '';
   if (!store.blob[key]) store.blob[key] = {};
   store.blob[key][field] = value;
   if (!store.pending[key]) store.pending[key] = {};
@@ -1886,7 +1898,7 @@ function todayBarHtml(kind, r, wide) {
     if (!tot) txt = lab + ': ' + (it ? 'nessuna dose' : 'none due');
     else { txt = lab + ' ' + done + '/' + tot; pct = Math.round(done / tot * 100); }
   }
-  const w = wide ? 112 : 84;
+  const w = wide ? CAL.DAYS : 84;
   return `<div data-oggi-bar="${kind}" style="display:flex;flex-direction:column;align-items:center;gap:3px;margin-top:3px;width:${w}px;min-height:36px;justify-content:flex-start;">` +
     (pct !== null ? `<div style="width:100%;height:5px;border-radius:var(--r-pill);background:var(--line2);overflow:hidden;"><div style="height:100%;width:${pct}%;background:${col};border-radius:var(--r-pill);"></div></div>` : '<div style="height:5px;"></div>') +
     `<span style="font-size:var(--fs-xs);font-weight:700;line-height:1.2;color:${pct !== null ? ink : 'var(--ink3)'};font-variant-numeric:tabular-nums;text-align:center;">${txt}</span>` +
@@ -2003,7 +2015,7 @@ function T(){ return AN_I18N[AN_LANG]; }
 /* ══════════════════════════════════════════════════════════
    2 · DOMINIO — valori presi da index.html, non inventati.
    ══════════════════════════════════════════════════════════ */
-var CYCLE = { start: { y: 2026, m: 7, d: 20 }, days: 112 };
+var CYCLE = { start: { y: +CAL.START.slice(0, 4), m: +CAL.START.slice(5, 7), d: +CAL.START.slice(8, 10) }, days: CAL.DAYS };
 
 var PHASES = [
   { id:"adatt", label:"Adattamento",  weeks:2, color:"var(--c-ph1)" },
@@ -3030,7 +3042,7 @@ function buildFood(root){
 }
 /* Scheda "Alimenti" (Andamento): cruscotto. Card scura in alto con 4 indicatori (proteine, bilancio energetico, obiettivo T2, compliance), poi tre card di grafici sullo stesso asse dei giorni (energia, proteine, saldo) e la tabella giorno per giorno. Solo lettura da FOOD.
    Colori: SOLO i token semantici pieni (--ok verde, --warn giallo, --warn-ink arancio, --bad rosso, --off viola per i giorni fuori piano). Soglie (decise il 13/10): kcal verde <= obiettivo, giallo <= +10%, rosso oltre; proteine verde >= obiettivo, giallo >= 90%, rosso sotto; saldo verde <= -150, grigio entro +-150 (non distinguibile da zero), arancio >= +150. */
-var FH_T2={date:"2026-11-07",lo:71.5,hi:73,lab:"7/11"};  /* peso T2 sulla scala DEXA, fissato il 21/09/2026; la bilancia di casa legge circa 1 kg in meno (un solo confronto) */
+var FH_T2={date:CAL.T2,lo:71.5,hi:73,lab:"7/11"};  /* peso T2 sulla scala DEXA, fissato il 21/09/2026; la bilancia di casa legge circa 1 kg in meno (un solo confronto) */
 var FH_ZERO=150, FH_KCAL_KG=7700;
 function fhF(v){ return Math.round(v).toLocaleString("it-IT"); }
 function fhSg(v){ return (v>0?"+":v<0?"−":"")+fhF(Math.abs(v)); }
@@ -4037,7 +4049,7 @@ function photoMetrics(p){
 /* PORTING 25/09: countdown T1/T2 e giorno/settimana -- stessi dati gia' mostrati altrove
    nell'app (T1 12/09, T2 07/11), qui applicati alla DATA DELLO SCATTO come in V1, non a oggi. */
 function photoT1T2Label(p){
-  var t1 = new Date(2026, 8, 12), t2 = new Date(2026, 10, 7);
+  var t1 = new Date(CAL.T1 + 'T00:00:00'), t2 = new Date(CAL.T2 + 'T00:00:00');
   var d = new Date(p.date + "T00:00:00");
   var dT1 = Math.round((t1 - d) / 86400000), dT2 = Math.round((t2 - d) / 86400000);
   var lab = function(n){ return n > 0 ? n + "gg" : (n === 0 ? "Oggi" : "\u2713 fatto"); };
@@ -4483,7 +4495,7 @@ function buildFotoEvals(root){
     if (photo){ head.appendChild(photoSlot(photo,"an-fshot an-ev-th")); }
     var meta=document.createElement("div"); meta.style.minWidth="0";
     var dd=document.createElement("div"); dd.className="an-ev-d";
-    dd.textContent=ev.date.slice(8,10)+"/"+ev.date.slice(5,7)+(idx>=0 ? " \u00b7 "+(EN?"Day ":"Giorno ")+cycleDayNo(idx)+"/112 \u00b7 "+(EN?"Wk ":"Sett. ")+(Math.floor(idx/7)+1) : " \u00b7 "+(EN?"pre-cycle":"pre-ciclo"));
+    dd.textContent=ev.date.slice(8,10)+"/"+ev.date.slice(5,7)+(idx>=0 ? " \u00b7 "+(EN?"Day ":"Giorno ")+cycleDayNo(idx)+"/"+CAL.DAYS+" \u00b7 "+(EN?"Wk ":"Sett. ")+(Math.floor(idx/7)+1) : " \u00b7 "+(EN?"pre-cycle":"pre-ciclo"));
     meta.appendChild(dd);
     if (peso!=null){ var mm=document.createElement("div"); mm.className="an-ev-m"; mm.textContent=it(peso,1)+" kg"; meta.appendChild(mm); }
     head.appendChild(meta); card.appendChild(head);
@@ -5162,7 +5174,7 @@ var CLIN_LIFTS_META = [
   { id: 'dbcurl', label: 'Curl manubri', muscle: 'Braccia' },
   { id: 'legpress', label: 'Leg press', muscle: 'Gambe' }
 ];
-var CLIN_CK = { t0: '2026-07-13', t1: '2026-09-12', t2: '2026-11-07' };
+var CLIN_CK = { t0: CAL.T0, t1: CAL.T1, t2: CAL.T2 };
 var CLIN_WINDOW = 7;
 var CLIN_V1_DAY0 = '2026-06-08';
 
@@ -5310,7 +5322,7 @@ function CLIN_HTML() {
 
 function CLIN_cycleText() {
   var d = dayIdxFromISO(today);
-  return 'Ciclo 1 \u00b7 giorno ' + Math.max(1, Math.min(112, cycleDayNo(d))) + ' di 112';
+  return 'Ciclo 1 \u00b7 giorno ' + Math.max(1, Math.min(CAL.DAYS, cycleDayNo(d))) + ' di ' + CAL.DAYS;
 }
 
 function CLIN_renderAll() {
@@ -5497,7 +5509,7 @@ function CLIN_renderCheckpoint(host) {
      vs pieno, e i tre colori) -- non erano spiegati da nessuna parte. */
   '<div style="grid-column:1/-1;display:flex;flex-direction:column;gap:5px;padding:0 2px">' +
     '<div style="display:flex;gap:18px;flex-wrap:wrap">' +
-      [['T0', 'basale \u00b7 13 lug 2026'], ['T1', haveT1 ? 'attuale \u00b7 12 set 2026' : 'in attesa \u00b7 12 set 2026'], ['T2', 'fine ciclo \u00b7 7 nov 2026']].map(function (t) {
+      [['T0', 'basale \u00b7 13 lug 2026'], ['T1', haveT1 ? 'attuale \u00b7 12 set 2026' : 'in attesa \u00b7 12 set 2026'], ['T2', 'controllo finale \u00b7 7 nov 2026']].map(function (t) {
         return '<span style="font-size:var(--fs-xs);color:var(--ink2)"><strong style="color:var(--ink)">' + t[0] + '</strong> = ' + t[1] + '</span>';
       }).join('') +
     '</div>' +
@@ -5926,7 +5938,7 @@ function CLIN_renderProg(host) {
   var minP = pts.reduce(function (a, b) { return (!a || b.v < a.v) ? b : a; }, null);
   var maxP = pts.reduce(function (a, b) { return (!a || b.v > a.v) ? b : a; }, null);
   var lastKind = last ? CLIN_kindOf(last, sel) : null;
-  var CYCLE0 = '2026-07-20', CYCLE1 = '2026-11-08';
+  var CYCLE0 = CAL.START, CYCLE1 = CAL.END;
 
   var selectorDesk = '<section class="an-card" style="grid-column:span 3;align-self:start;max-height:900px;overflow-y:auto">' +
     '<div class="an-head"><span class="an-title">Scegli il parametro</span></div>' +
@@ -10199,7 +10211,7 @@ function GST_mount(){
   var root = document.querySelector('[data-gst-view="stock"]') ? document.body : null;
   root = document.body;
   var cycleEl = document.querySelector('[data-gst-cycle]');
-  if (cycleEl) cycleEl.textContent = "Ciclo 1 \u00b7 giorno "+(gstE()+1)+" di 112 \u00b7 "+gstGiorniAllaFine()+" giorni alla fine";
+  if (cycleEl) cycleEl.textContent = "Ciclo 1 \u00b7 giorno "+(gstE()+1)+" di "+CAL.DAYS+" \u00b7 "+gstGiorniAllaFine()+" giorni alla fine";
   document.querySelectorAll('[data-gst-tab]').forEach(function(b){
     if (b.dataset.bound) return; b.dataset.bound = "1";
     b.addEventListener("click", function(){
@@ -11056,7 +11068,7 @@ const EN_DICT = {
 'IGF-1 in µg/L. Foto: la più vicina alla data del checkpoint, entro ±3 giorni.':'IGF-1 in µg/L. Photo: closest to the checkpoint date, within ±3 days.','T1 non ancora inserito.':'T1 not entered yet.',
 'un punto per prelievo, la data è sotto':'one point per sample, date below','prelievi durante il ciclo':'samples during the cycle','Scegli il parametro':'Choose parameter',
 /* --- checkpoint --- */
-'T0 = basale':'T0 = baseline','T1 = attuale':'T1 = current','T2 = fine ciclo':'T2 = end of cycle','T1 nel range':'T1 in range','T1 fuori range':'T1 out of range','T1 sotto target clinico':'T1 below clinical target',
+'T0 = basale':'T0 = baseline','T1 = attuale':'T1 = current','T2 = controllo finale':'T2 = final check','T1 nel range':'T1 in range','T1 fuori range':'T1 out of range','T1 sotto target clinico':'T1 below clinical target',
 /* --- andamento --- */
 'Adattamento':'Adaptation','Costruzione':'Build','Mantenimento':'Maintenance','Fine ciclo':'End of cycle','peso':'weight','viaggio':'travel','Dettaglio per settimana':'Weekly detail','volume settimanale':'weekly volume','soglia 90%':'90% threshold',
 'Backup dati':'Data backup','Backup regolare':'Backup on schedule','Backup in ritardo':'Backup late','Backup fermo da troppo tempo':'Backup stalled for too long','Nessuno stato ricevuto ancora dal repo di backup.':'No status received yet from the backup repo.',
@@ -11552,7 +11564,7 @@ async function exportPDF(statusEl, btn) {
     y = sectionTitle(y, 'Punto della situazione');
     const wser = pdfWeightSeries(), lastW = wser[wser.length - 1];
     const d1 = CLIN_dexaT('peso', 't1'), bf1 = CLIN_dexaT('bf_pct', 't1'), ln1 = CLIN_dexaT('lean_kg', 't1');
-    y = bodyText(y, 'Giorno ' + elapsed + ' di 112 (' + Math.round(elapsed / 112 * 100) + '% del ciclo). ' + (lastW ? 'Ultimo peso registrato ' + pdfN(lastW.v, 1) + ' kg (' + pdfDMY(lastW.iso) + '). ' : '') +
+    y = bodyText(y, 'Giorno ' + elapsed + ' di ' + CAL.DAYS + ' (' + Math.round(elapsed / CAL.DAYS * 100) + '% del ciclo). ' + (lastW ? 'Ultimo peso registrato ' + pdfN(lastW.v, 1) + ' kg (' + pdfDMY(lastW.iso) + '). ' : '') +
       (d1 != null ? 'DEXA T1 (12/09/2026): peso ' + pdfN(d1, 1) + ' kg, massa grassa ' + pdfN(bf1, 1) + '%, massa magra ' + pdfN(ln1, 1) + ' kg, contro T0 (09/05/2026) ' + pdfN(CLIN_DEXA_META[0].t0, 1) + ' kg, ' + pdfN(CLIN_DEXA_META[3].t0, 1) + '% e ' + pdfN(CLIN_DEXA_META[1].t0, 1) + ' kg.' : 'DEXA T1 non ancora inserito.'));
     y = kpiRow(y, [
       { label: 'Ultimo peso', val: lastW ? pdfN(lastW.v, 1) + ' kg' : 'n/d' },
