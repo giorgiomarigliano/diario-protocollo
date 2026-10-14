@@ -7149,6 +7149,74 @@ ${d < START ? `<div class="an-note">La card in Oggi si attiva dal 12/10. Le voci
 <div class="fxc-df">${[['ref', 'Porzione'], ['k', 'kcal'], ['p', 'Proteine'], ['c', 'Carbo'], ['g', 'Grassi']].map(([k, lb]) => `<label>${lb}<input id="nf_${k}" class="fx-in" type="number" inputmode="decimal" step="any"></label>`).join('')}</div>
 <button type="button" class="fx-ghost fx-pri" onclick="FOOD.g.newF()">+ Aggiungi</button>`;
   }
+  /* ---------- coda "Alimenti in arrivo" (food_inbox): Claude la riempie, l'app la applica alla libreria dopo la tua conferma ---------- */
+  let inbMsg = '';
+  const inb = () => { const x = getKey('food_inbox'); return (x && Array.isArray(x.items)) ? x.items : []; };
+  function inbCheck(it) {
+    const bad = [], warn = [], N = v => typeof v === 'number' && isFinite(v) && v >= 0;
+    if (!String(it.n || '').trim()) bad.push('nome mancante');
+    if (it.u !== 'g' && it.u !== 'pz') bad.push('unità non valida');
+    if (!(typeof it.ref === 'number' && isFinite(it.ref) && it.ref > 0)) bad.push('porzione non valida');
+    ['k', 'p', 'c', 'g'].forEach(x => { if (!N(it[x])) bad.push('valore ' + x.toUpperCase() + ' mancante o illeggibile'); });
+    if (!['A', 'B', 'C'].includes(it.ver)) bad.push('livello non valido');
+    if ((it.ver === 'A' || it.ver === 'B') && !String(it.fonte || '').trim()) bad.push('fonte mancante');
+    if (Array.isArray(it.flags) && it.flags.length) bad.push('da rivedere: ' + it.flags.join('; '));
+    let coh = null;
+    if (!bad.length && it.k >= 20) { const e = 4 * it.p + 4 * it.c + 9 * it.g, d = Math.abs(it.k - e) / it.k; coh = d; if (d > 0.15) warn.push('kcal dichiarate ' + fmt(it.k, 0) + ' vs ' + fmt(e, 0) + ' da macro (scarto ' + Math.round(d * 100) + '%)'); }
+    return { bad, warn, coh };
+  }
+  function inboxHTML() {
+    const items = inb(); if (!items.length && !inbMsg) return '';
+    const open = !!flt.inb, n = items.length;
+    const nOk = items.filter(it => { const c = inbCheck(it); return !c.bad.length && !c.warn.length; }).length;
+    const rows = items.map(it => {
+      const c = inbCheck(it), L = LV[it.ver || ''] || LV[''], per = it.u === 'pz' ? 'per pezzo' : 'per 100 ' + (it.ul || 'g');
+      const line = c.bad.length ? `<div class="fxc-hint" style="color:var(--bad)">✕ ${esc(c.bad.join(' · '))}: resta in coda finché non lo scarti o lo faccio correggere a Claude</div>`
+        : (c.warn.length ? `<div class="fxc-hint" style="color:var(--warn)">⚠ ${esc(c.warn.join(' · '))}</div>` : (c.coh === null ? '' : `<div class="fxc-hint" style="color:var(--ok)">✓ coerenza kcal ≈ 4P+4C+9G (scarto ${Math.round(c.coh * 100)}%)</div>`));
+      return `<div class="fxc-lr" style="display:block;padding:8px 0"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(it.n)}</b><span><span class="fx-pill ${L[0]}">${L[1]}</span> <b>${fmt(it.k, 0)} kcal</b></span></div>
+<div class="fxc-hint">${per}${it.u === 'pz' ? '' : ''} · P ${fmt(it.p, 1)} · C ${fmt(it.c, 1)} · G ${fmt(it.g, 1)} · porzione ${fmt(it.ref, 1)}${it.cat ? ' · ' + esc(it.cat) : ''}</div>${line}
+<div class="fxc-hint">Fonte: ${esc(it.fonte || '—')}${it.note ? ' · ' + esc(it.note) : ''}</div>
+<div style="display:flex;gap:6px"><button type="button" class="fx-ghost" style="min-height:24px;padding:0 8px" onclick="FOOD.g.inbDiscard('${esc(it.id)}')">Scarta</button>${!c.bad.length && c.warn.length ? `<button type="button" class="fx-ghost" style="min-height:24px;padding:0 8px" onclick="FOOD.g.inbConfirm('${esc(it.id)}')">Conferma comunque</button>` : ''}</div></div>`;
+    }).join('');
+    return `<section class="an-card fx-c12" style="border:1.5px solid var(--accent,var(--ink3))"><div class="an-head" style="cursor:pointer" onclick="FOOD.g.inbToggle()"><span class="an-title">${n ? n + (n === 1 ? ' alimento in arrivo' : ' alimenti in arrivo') + ' da Claude' : 'Coda alimenti'}</span><span class="an-sub">${n ? 'da controllare · ' + (open ? 'chiudi ▴' : 'controlla ▾') : ''}</span></div>
+${inbMsg ? `<div class="fx-soft" style="padding:6px 10px"><span style="font-size:var(--fs-sm);font-weight:600">${esc(inbMsg)}</span></div>` : ''}
+${open && n ? rows + `<div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="fx-ghost" style="flex:0 0 auto" onclick="FOOD.g.inbDiscardAll()">Scarta tutti</button><button type="button" class="fx-ghost fx-pri" style="flex:1"${nOk ? '' : ' disabled'} onclick="FOOD.g.inbConfirm()">Conferma ${nOk} ${nOk === 1 ? 'alimento' : 'alimenti'}</button></div><div class="an-note">Le voci con ✕ o ⚠ restano in coda (le ⚠ si confermano una per una). Dopo “Conferma” entrano in libreria con fonte e livello indicati.</div>` : ''}</section>`;
+  }
+  /* scrittura atomica di piu' chiavi: segno tutte sporche e faccio un solo sync (read-modify-write unico) */
+  function setKeys(o) { Object.keys(o).forEach(k => { dirty[k] = clone(o[k]); if (store.blob) store.blob[k] = clone(o[k]); }); sync(); badge(); }
+  function inbSet(items) { return { v: 1, items }; }
+  const inbApi = {
+    inbToggle() { flt.inb = !flt.inb; reGest(); },
+    inbDiscard(id) {
+      if (!confirm('Scartare questo alimento dalla coda?')) return;
+      const items = inb().filter(x => x.id !== id); setKey('food_inbox', inbSet(items)); inbMsg = 'Scartato.'; reGest();
+    },
+    inbDiscardAll() {
+      if (!confirm('Scartare tutta la coda?')) return;
+      setKey('food_inbox', inbSet([])); inbMsg = 'Coda svuotata.'; flt.inb = false; reGest();
+    },
+    inbConfirm(only) {
+      const items = inb(), l = lib(), keep = [], added = []; let dup = 0;
+      items.forEach(it => {
+        const ck = inbCheck(it);
+        if (ck.bad.length || (only ? it.id !== only : ck.warn.length)) { keep.push(it); return; }
+        if (l.foods.some(f => f.n.toLowerCase() === String(it.n).trim().toLowerCase() && f.k === it.k && f.p === it.p && f.c === it.c && f.g === it.g)) { dup++; return; }
+        let id = slug(it.n) ? 'f_' + slug(it.n) : uid('f'); const base = id; let i = 2;
+        while (l.foods.some(f => f.id === id) || added.some(f => f.id === id)) id = base + '-' + (i++);
+        let nm = String(it.n).trim(); i = 2; const nb = nm;
+        while (l.foods.some(f => f.n.toLowerCase() === nm.toLowerCase()) || added.some(f => f.n.toLowerCase() === nm.toLowerCase())) nm = nb + ' (' + (i++) + ')';
+        const f = { id, n: nm, cat: String(it.cat || '').trim() || 'Altro', u: it.u, ref: it.ref, k: it.k, p: it.p, c: it.c, g: it.g, ok: it.ver === 'A' || it.ver === 'B', ver: it.ver, bar: !!it.bar, note: String(it.note || ''), fonte: String(it.fonte || '') };
+        if (it.ul) f.ul = it.ul;
+        added.push(f);
+      });
+      if (!added.length && !dup) { inbMsg = 'Niente da confermare: le voci in coda hanno problemi.'; return reGest(); }
+      added.forEach(f => l.foods.push(f));
+      setKeys({ food_lib: l, food_inbox: inbSet(keep) });
+      inbMsg = 'In libreria: ' + added.length + (added.length === 1 ? ' alimento' : ' alimenti') + (dup ? ' · ' + dup + ' già presenti (saltati)' : '') + (keep.length ? ' · ' + keep.length + ' restano in coda' : '') + '.';
+      if (!keep.length) flt.inb = false; flt.lv = 'all'; flt.q = '';
+      reGest();
+    }
+  };
   function libView(l) {
     const lv = flt.lv || 'all', nV = l.foods.filter(vok).length, nE = l.foods.filter(f => f.ver === 'C').length, nT = l.foods.length - nV;
     const q = (flt.q || '').toLowerCase();
@@ -7176,7 +7244,7 @@ ${d < START ? `<div class="an-note">La card in Oggi si attiva dal 12/10. Le voci
 <section class="an-card"><span class="an-title">Più usati · 7 giorni</span><div class="fxc-chips">${top.length ? top.map(x => `<button type="button" class="an-chip" style="min-height:0;padding:3px 9px;font-size:var(--fs-xs)"${x.id ? ` onclick="FOOD.g.sel('${x.id}',1)"` : ' disabled'}>${esc((x.id && food(x.id) ? food(x.id).n : x.n).split(' (')[0])} <small style="color:var(--ink3)">${x.c}× · ${fmt(x.k)} kcal</small></button>`).join('') : '<span class="fxc-hint">Nessun dato negli ultimi 7 giorni.</span>'}</div></section>
 <section class="an-card"><span class="an-title">Copertura per categoria</span><div class="fxc-cov">${Object.keys(byC).map(c => { const x = byC[c]; return `<div class="fxc-cv"><span title="${esc(c)}">${esc(c)}</span><i><b style="width:${x.v / x.n * 100}%"></b><u style="width:${(x.n - x.v) / x.n * 100}%"></u></i><span style="text-align:right">${x.v}/${x.n}</span></div>`; }).join('')}</div></section></div>`;
     const nu = isDesktop ? '' : `<section class="an-card fx-c12"><div style="display:flex;flex-direction:column;gap:8px">${newHTML()}</div></section>`;
-    return `<div class="fx-grid">${main}${strip}${nu}<datalist id="food-cats">${[...new Set(l.foods.map(f => f.cat || 'Altro'))].map(c => `<option value="${esc(c)}">`).join('')}</datalist></div>`;
+    return `<div class="fx-grid">${inboxHTML()}${main}${strip}${nu}<datalist id="food-cats">${[...new Set(l.foods.map(f => f.cat || 'Altro'))].map(c => `<option value="${esc(c)}">`).join('')}</datalist></div>`;
   }
   function gestView() {
     const l = lib();
@@ -7279,6 +7347,7 @@ ${d < START ? `<div class="an-note">La card in Oggi si attiva dal 12/10. Le voci
       lib().combos.forEach(c => c.items.forEach(it => { if (it.f === id) { it.s = fv(f, it.q); it.n = f.n; delete it.f; } }));
       lib().foods = lib().foods.filter(x => x.id !== id); saveLib(); reGest();
     },
+    ...inbApi,
     newF() {
       const g = id => document.getElementById(id).value, n = g('nf_n').trim(), v = { ref: num(g('nf_ref')), k: num(g('nf_k')), p: num(g('nf_p')), c: num(g('nf_c')), g: num(g('nf_g')) };
       if (!n || !(v.ref > 0) || !(v.k >= 0) || [v.p, v.c, v.g].some(x => !(x >= 0))) { flash('Compila nome, porzione, kcal, P, C, G (numeri ≥ 0).'); return reGest(); }
