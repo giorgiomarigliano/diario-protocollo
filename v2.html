@@ -76,8 +76,8 @@
     '#dpa .p{background:#5b95e8;color:#fff;font-weight:600}#dpa .s{background:transparent;color:#aeaeb2;border:1px solid #38383a}#dpa .l{background:none;color:#aeaeb2;min-height:36px;font-size:12px;text-decoration:underline}' +
     '#dpa input{font:inherit;font-size:16px;width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #38383a;background:#1c1c1e;color:#fff;min-height:44px}' +
     '#dpa .e{color:#ff3b30;font-size:12px;min-height:16px}' +
-    '#dpc{position:fixed;left:max(8px,env(safe-area-inset-left));bottom:max(8px,env(safe-area-inset-bottom));z-index:2147482000;display:flex;gap:6px}' +
-    '#dpc button{font:600 11px/1 -apple-system,system-ui,sans-serif;border:0;border-radius:99px;min-height:32px;padding:0 12px;background:rgba(10,10,12,.72);color:#fff;cursor:pointer;opacity:.75}';
+    '#dpc{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;padding:20px 16px calc(28px + env(safe-area-inset-bottom));font:11px/1.2 -apple-system,system-ui,sans-serif;color:#6e6e73}' +
+    '#dpc button{font:600 11px/1 -apple-system,system-ui,sans-serif;border:1px solid #c7c7cc;border-radius:99px;min-height:36px;padding:0 14px;background:transparent;color:#6e6e73;cursor:pointer}';
   function el(tag, attrs, html) { var e = document.createElement(tag); if (attrs) for (var k in attrs) e.setAttribute(k, attrs[k]); if (html != null) e.innerHTML = html; return e; }
   function ensureCss() { if (!document.getElementById('dpa-css')) { var s = el('style', { id: 'dpa-css' }); s.textContent = CSS; document.head.appendChild(s); } }
   function say(msg) { var e = document.getElementById('dpa-err'); if (e) e.textContent = msg || ''; }
@@ -119,7 +119,7 @@
     var out = el('button', { type: 'button' }, 'Esci'); out.onclick = function () { client().then(function (c) { return c.auth.signOut(); }).then(function () { location.reload(); }); };
     var pk = el('button', { type: 'button' }, '+ Passkey'); pk.title = 'Aggiungi una passkey su questo dispositivo';
     pk.onclick = function () { client().then(function (c) { return c.auth.registerPasskey(); }).then(function (r) { alert(r && r.error ? 'Passkey non registrata: ' + r.error.message : 'Passkey registrata su questo dispositivo.'); }).catch(function (e) { alert('Passkey non registrata: ' + e.message); }); };
-    chip.appendChild(pk); chip.appendChild(out); document.body.appendChild(chip);
+    chip.appendChild(el('span', null, 'Accesso attivo')); chip.appendChild(pk); chip.appendChild(out); document.body.appendChild(chip);
   }
 
   window.dpAuth = { required: function () { return AUTH_REQUIRED; }, session: function () { return session; }, show: function () { showLogin(false); }, ready: null };
