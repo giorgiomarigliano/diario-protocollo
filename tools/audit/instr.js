@@ -4,6 +4,7 @@ const re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g;
 let out='',last=0,m,nblocks=0,fails=[];
 while((m=re.exec(src))){
   const start=m.index+m[0].indexOf('>')+1, code=m[1];
+  if(code.indexOf('DP-AUTH')>=0&&code.indexOf('AUTH_REQUIRED')>=0)continue;   // modulo di accesso: provato a parte (tools/auth/test_auth.py)
   const baseLine=src.slice(0,start).split('\n').length-1;
   let ast;
   try{ast=acorn.parse(code,{ecmaVersion:'latest',locations:true,allowReturnOutsideFunction:true});}catch(e){fails.push(e.message);continue}

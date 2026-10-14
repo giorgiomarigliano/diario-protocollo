@@ -31,7 +31,7 @@ CYCLE_START = datetime.date(2026, 7, 20)
 def fetch_snapshots():
     SNAP.mkdir(exist_ok=True)
     for rec in RECORDS:
-        req = urllib.request.Request(f'{PROXY}?user_id=eq.{rec}&select=data', headers={'apikey': KEY, 'Authorization': f'Bearer {KEY}'})
+        req = urllib.request.Request(f'{PROXY}?user_id=eq.{rec}&select=data', headers={'apikey': KEY, 'Authorization': f'Bearer {KEY}', 'Origin': 'https://giorgiomarigliano.github.io'})  # il proxy v12 richiede l'Origin esatto
         body = urllib.request.urlopen(req, timeout=60).read()
         rows = json.loads(body)
         if not rows or not rows[0].get('data'):
@@ -76,7 +76,7 @@ def crawl(p, port, vw, lang, quick):
             res['bad'].append((label, t[max(0, m.start() - 40):m.end() + 40].replace('\n', ' | ')))
         o = pg.evaluate('[document.documentElement.scrollWidth,document.documentElement.clientWidth]')
         if o[0] > o[1] + 1: res['overflow'].append((label, o))
-    b = p.chromium.launch(); pg = b.new_page(viewport={'width': vw, 'height': 900}); pg.route('**/*', make_handler(SNAP))
+    b = p.chromium.launch(); pg = b.new_page(viewport={'width': vw, 'height': 900}); pg.add_init_script("try{localStorage.setItem('dp-auth-skip','1')}catch(e){}"); pg.route('**/*', make_handler(SNAP))
     pg.on('pageerror', lambda e: res['errors'].append(('pageerror', str(e)[:200])))
     pg.on('console', lambda m: res['errors'].append(('console', m.text[:200])) if m.type == 'error' and 'ERR_' not in m.text and 'Failed to load' not in m.text else None)
     pg.goto(f'http://127.0.0.1:{port}/instr.html'); pg.wait_for_timeout(5000)
@@ -130,7 +130,7 @@ CONSIST_JS = '''()=>{
 
 
 def consist(p, port):
-    b = p.chromium.launch(); pg = b.new_page(viewport={'width': 1440, 'height': 900}); pg.route('**/*', make_handler(SNAP))
+    b = p.chromium.launch(); pg = b.new_page(viewport={'width': 1440, 'height': 900}); pg.add_init_script("try{localStorage.setItem('dp-auth-skip','1')}catch(e){}"); pg.route('**/*', make_handler(SNAP))
     pg.goto(f'http://127.0.0.1:{port}/exp.html'); pg.wait_for_timeout(4500)
     r = pg.evaluate(CONSIST_JS); b.close()
     problems = list(r['A'])
