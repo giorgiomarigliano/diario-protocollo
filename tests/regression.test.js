@@ -180,7 +180,9 @@ blocksRun++; console.log('\n═══ 2. Buco Test Protocollo in getSessionsAll 
     })()
   `, ctx);
 
-  const testProtoSessions = sessions.filter(s => s.date.toISOString().slice(0,10) === '2026-07-18' || s.date.toISOString().slice(0,10) === '2026-07-19');
+  // Date locali (mezzanotte locale): toISOString() le sposterebbe al giorno prima in fusi a est di UTC.
+  const isoL = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  const testProtoSessions = sessions.filter(s => isoL(s.date) === '2026-07-18' || isoL(s.date) === '2026-07-19');
   assertTrue(testProtoSessions.length === 2, 'getSessionsAll include i 2gg di Test Protocollo (18-19/7) nella finestra');
   assertTrue(testProtoSessions.every(s => s.volume !== null), 'entrambi i giorni Test Protocollo hanno un volume valorizzato (non null)');
 }
