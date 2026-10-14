@@ -1,6 +1,7 @@
 # Guardia, storico e anomalie per `public.diary`
 
 - `001_guard_history.sql`: migrazione (idempotente). **Stato: APPLICATA a produzione l'08/10/2026** (SQL Editor di Supabase; l'applicazione via MCP veniva annullata dall'ambiente). Verificata: 2 tabelle, 2 funzioni, 3 trigger su `diary`, primo snapshot creato per entrambe le righe, guardia provata con rollback (3 chiavi su 117 rifiutate).
+- `002_revoke_trigger_exec.sql`: revoca EXECUTE su `diary_before_update()` e `diary_block_destructive()` per anon/authenticated (non devono essere chiamabili via RPC). **Stato: APPLICATA il 14/10/2026.** I trigger continuano a scattare (verificato: update normale OK, update distruttivo bloccato).
 - `test_001.sql`: collaudo su un Postgres locale vuoto (mai su produzione). Esito atteso: `TUTTI I TEST OK` (16 test).
 
 ## Cosa fa

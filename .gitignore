@@ -1,0 +1,5 @@
+.kbtmp/
+__pycache__/
+node_modules/
+.snap/
+*.log

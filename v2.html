@@ -2709,7 +2709,7 @@ function buildCycle(root){
 }
 
 /* Hero: 5 KPI. La barra si disegna SOLO se esiste un target.
-   Nessun obiettivo è inventato: TARGETS parte vuoto.           */
+   Nessun obiettivo è inventato: solo quelli fissati da Giorgio (peso e massa magra T2, 21/09); HRV resta null.  */
 /* PORTING 24/09: testo dell'hero mai calcolato -- i template vdText esistevano
    ma nessuna funzione li usava. Soglie: 90% come ovunque nell'app; sotto 70% sugli
    allenamenti si segnala quello come punto debole specifico. */
@@ -11029,7 +11029,7 @@ const EN_DICT = {
 'non disponibile':'n/a','n/d':'n/a','Ultima':'Latest','Precedente':'Previous','Minima':'Min','Massima':'Max','Media':'Average','media':'average',
 'Valore':'Value','Esito':'Result','Laboratorio':'Lab','Sicurezza':'Safety','Metabolico':'Metabolic','Lipidi':'Lipids','Altro':'Other',
 'Asse somatotropo':'Somatotropic axis','Asse ormonale':'Hormonal axis','Asse GH':'GH axis','Asse gonadico':'Gonadal axis',
-'Rene':'Kidney','Fegato':'Liver','Sangue':'Blood','Ferro e vitamine':'Iron & vitamins','Infiammazione':'Inflammation',
+'Rene':'Kidney','Fegato':'Liver','Ferro e vitamine':'Iron & vitamins','Infiammazione':'Inflammation',
 'Migliorati':'Improved','Peggiorati':'Worsened','Miglioramento':'Improvement',
 /* --- analiti / esami --- */
 'Glucosio':'Glucose','Insulina':'Insulin','Trigliceridi':'Triglycerides','Colesterolo totale':'Total cholesterol','T Libero':'Free T','T Totale':'Total T',
@@ -11062,11 +11062,11 @@ const EN_DICT = {
 /* --- corpo / foto / progressione --- */
 'Composizione':'Composition','Peso (DEXA)':'Weight (DEXA)','Massa magra':'Lean mass','Massa grassa':'Fat mass','Grasso %':'Fat %','Magra %':'Lean %','Grasso viscerale':'Visceral fat','Viscerale (g)':'Visceral (g)','Densità ossea':'Bone density',
 'Grasso':'Fat','Massa magra kg':'Lean mass kg','Peso DEXA':'DEXA weight','Forza ai checkpoint':'Strength at checkpoints','seduta più vicina, entro ±7 gg':'closest session, within ±7 d','Panca piana':'Flat bench press','Petto':'Chest','Dorso':'Back',
-'Spalle':'Shoulders','Braccia':'Arms','Gambe':'Legs','Bicipiti':'Biceps','Tricipiti':'Triceps','Curl manubri':'Dumbbell curl','Il rapporto carico/massa magra dice se la forza cresce più del muscolo.':'The load / lean-mass ratio shows whether strength grows faster than muscle.',
+'Spalle':'Shoulders','Braccia':'Arms','Gambe':'Legs','Bicipiti':'Biceps','Tricipiti':'Triceps','Il rapporto carico/massa magra dice se la forza cresce più del muscolo.':'The load / lean-mass ratio shows whether strength grows faster than muscle.',
 'Sangue e muscolo, stessa finestra':'Blood & muscle, same window','Forza sentinel (media)':'Sentinel strength (avg)','Foto ai checkpoint':'Photos at checkpoints','Foto (±3 gg)':'Photos (±3 d)','tocca per ingrandire':'tap to enlarge',
 'Nessuna foto entro 3 giorni':'No photo within 3 days','Dati ai checkpoint':'Checkpoint data','Foto e dati ai checkpoint':'Photos & data at checkpoints','foto più vicina alla data, entro ±3 giorni':'closest photo to the date, within ±3 days',
 'IGF-1 in µg/L. Foto: la più vicina alla data del checkpoint, entro ±3 giorni.':'IGF-1 in µg/L. Photo: closest to the checkpoint date, within ±3 days.','T1 non ancora inserito.':'T1 not entered yet.',
-'un punto per prelievo, la data è sotto':'one point per sample, date below','prelievi durante il ciclo':'samples during the cycle','Scegli il parametro':'Choose parameter',
+'un punto per prelievo, la data è sotto':'one point per sample, date below','prelievi durante il ciclo':'samples during the cycle',
 /* --- checkpoint --- */
 'T0 = basale':'T0 = baseline','T1 = attuale':'T1 = current','T2 = controllo finale':'T2 = final check','T1 nel range':'T1 in range','T1 fuori range':'T1 out of range','T1 sotto target clinico':'T1 below clinical target',
 /* --- andamento --- */
@@ -11090,7 +11090,7 @@ const EN_DICT = {
 'Volume cumulativo per muscolo, dal riepilogo del diario V1: non dipende dall\'intervallo.':'Cumulative volume per muscle, from the V1 diary summary: independent of the range.','Progressione esercizi':'Exercise progression','soglia 2 sessioni':'2-session threshold',
 'Per esercizio esatto (non per macchina generica), da history_sessions: segue da sola le sostituzioni in palestra.':'Per exact exercise (not generic machine), from history_sessions: it follows gym substitutions on its own.',
 'Frequenza per gruppo muscolare':'Frequency per muscle group','ultime 4 settimane':'last 4 weeks','Sessioni':'Sessions','Ultima volta':'Last time','Completa il volume cumulativo: dice se un gruppo è trascurato di recente.':'Complements cumulative volume: shows whether a group has been neglected recently.',
-'Coppia':'Pair','Forza':'Strength','Giorno':'Day','Mostra tutte le 12 settimane':'Show all 12 weeks','WO sett.':'WO wk',
+'Coppia':'Pair','Giorno':'Day','Mostra tutte le 12 settimane':'Show all 12 weeks','WO sett.':'WO wk',
 /* --- gestione --- */
 'Stock':'Stock','Orari':'Schedule','Alimenti':'Foods','Convertitore · U-100':'Converter · U-100','Personalizzato':'Custom','Vial · mg':'Vial · mg','BAC · mL':'BAC · mL','Dose · mcg':'Dose · mcg','Da prelevare':'To draw',
 'dose intera, un’iniezione':'full dose, one injection','dose intera, un\'iniezione':'full dose, one injection','Ricostituzione e vial in uso':'Reconstitution & vials in use',
@@ -11108,7 +11108,7 @@ const EN_DICT = {
 'modifica mg o BAC: le unità si ricalcolano':'edit mg or BAC: units are recalculated','Composto':'Compound','Vial mg':'Vial mg','BAC ml':'BAC mL','Concentr.':'Concentr.','Ricostituito':'Reconstituted','Scade':'Expires',
 'UI = dose ÷ concentrazione × 100 · IGF-1 DES è bilaterale: metà per lato':'UI = dose ÷ concentration × 100 · IGF-1 DES is bilateral: half per side','Vial in uso · dosi e vita residua':'Vials in use · doses and remaining life',
 'dosi contate dalle iniezioni registrate dal giorno di ricostituzione':'doses counted from injections logged since the day of reconstitution','Scorte per composto':'Supplies per compound','Intatti':'Intact','Finiti':'Finished','Persi':'Lost','Copre fino al':'Covers until',
-'scorta · aggiornala a mano':'stock · update by hand','Intatti':'Intact','Oggi è Allenamento · Mer':'Today is Workout · Wed','Allenamento (mattina)':'Workout (morning)',
+'scorta · aggiornala a mano':'stock · update by hand','Oggi è Allenamento · Mer':'Today is Workout · Wed','Allenamento (mattina)':'Workout (morning)',
 /* --- oggi (residui) --- */
 'sera':'evening','mattina':'morning','pomeriggio':'afternoon','con caffè':'with coffee','con shaker':'with shaker','dopo colazione':'after breakfast','in ufficio':'at the office','immediato post-WO':'immediately post-WO','fino alle 21:00':'until 21:00',
 'A più riprese':'Intermittent','Tutte le misure, dalla più recente':'All measurements, newest first','Alfa-1':'Alpha-1','Alfa-2':'Alpha-2','Sottotitolo':'Subtitle',
