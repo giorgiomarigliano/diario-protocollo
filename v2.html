@@ -7166,8 +7166,8 @@ ${d < START ? `<div class="an-note">La card in Oggi si attiva dal 12/10. Le voci
     return { bad, warn, coh };
   }
   function inboxHTML() {
-    const items = inb(); if (!items.length && !inbMsg) return '';
-    const open = !!flt.inb, n = items.length;
+    const items = inb();
+    const open = !!flt.inb, n = items.length, pOpen = !!flt.inbp;
     const nOk = items.filter(it => { const c = inbCheck(it); return !c.bad.length && !c.warn.length; }).length;
     const rows = items.map(it => {
       const c = inbCheck(it), L = LV[it.ver || ''] || LV[''], per = it.u === 'pz' ? 'per pezzo' : 'per 100 ' + (it.ul || 'g');
@@ -7180,6 +7180,8 @@ ${d < START ? `<div class="an-note">La card in Oggi si attiva dal 12/10. Le voci
     }).join('');
     return `<section class="an-card fx-c12" style="border:1.5px solid var(--accent,var(--ink3))"><div class="an-head" style="cursor:pointer" onclick="FOOD.g.inbToggle()"><span class="an-title">${n ? n + (n === 1 ? ' alimento in arrivo' : ' alimenti in arrivo') + ' da Claude' : 'Coda alimenti'}</span><span class="an-sub">${n ? 'da controllare · ' + (open ? 'chiudi ▴' : 'controlla ▾') : ''}</span></div>
 ${inbMsg ? `<div class="fx-soft" style="padding:6px 10px"><span style="font-size:var(--fs-sm);font-weight:600">${esc(inbMsg)}</span></div>` : ''}
+<div class="fxc-hint" style="cursor:pointer;margin-top:4px" onclick="FOOD.g.inbPasteToggle()">${pOpen ? '▾' : '▸'} Incolla da Claude</div>
+${pOpen ? `<textarea id="inbPaste" rows="5" spellcheck="false" placeholder='Incolla qui il JSON che ti dà Claude: {"v":1,"items":[…]}' style="width:100%;box-sizing:border-box;font:11px monospace;margin-top:4px"></textarea><div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="fx-ghost fx-pri" style="flex:1" onclick="FOOD.g.inbPasteAdd()">Aggiungi alla coda</button></div>` : ''}
 ${open && n ? rows + `<div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="fx-ghost" style="flex:0 0 auto" onclick="FOOD.g.inbDiscardAll()">Scarta tutti</button><button type="button" class="fx-ghost fx-pri" style="flex:1"${nOk ? '' : ' disabled'} onclick="FOOD.g.inbConfirm()">Conferma ${nOk} ${nOk === 1 ? 'alimento' : 'alimenti'}</button></div><div class="an-note">Le voci con ✕ o ⚠ restano in coda (le ⚠ si confermano una per una). Dopo “Conferma” entrano in libreria con fonte e livello indicati.</div>` : ''}</section>`;
   }
   /* scrittura atomica di piu' chiavi: segno tutte sporche e faccio un solo sync (read-modify-write unico) */
@@ -7187,6 +7189,25 @@ ${open && n ? rows + `<div style="display:flex;gap:8px;margin-top:8px"><button t
   function inbSet(items) { return { v: 1, items }; }
   const inbApi = {
     inbToggle() { flt.inb = !flt.inb; reGest(); },
+    inbPasteToggle() { flt.inbp = !flt.inbp; reGest(); },
+    inbPasteAdd() {
+      const ta = document.getElementById('inbPaste'), raw = ta ? ta.value.trim() : '';
+      if (!raw) { inbMsg = 'Niente da aggiungere: il campo è vuoto.'; return reGest(); }
+      let j; try { j = JSON.parse(raw); } catch (e) { inbMsg = 'JSON non valido: ' + e.message; return reGest(); }
+      const arr = Array.isArray(j) ? j : (j && Array.isArray(j.items) ? j.items : (j && typeof j === 'object' ? [j] : []));
+      if (!arr.length) { inbMsg = 'Nessun alimento trovato nel testo incollato.'; return reGest(); }
+      const cur = inb().slice(), KEYS = ['id', 'n', 'cat', 'u', 'ref', 'k', 'p', 'c', 'g', 'ver', 'fonte', 'note', 'ul', 'bar', 'flags']; let add = 0, skip = 0;
+      arr.forEach(r => {
+        if (!r || typeof r !== 'object' || Array.isArray(r)) { skip++; return; }
+        const it = {}; KEYS.forEach(k => { if (r[k] !== undefined) it[k] = r[k]; });
+        let id = String(it.id || '').trim() || (slug(it.n) ? 'i_' + slug(it.n) : uid('i')); const base = id; let i = 2;
+        while (cur.some(x => x.id === id)) id = base + '-' + (i++);
+        it.id = id; cur.push(it); add++;
+      });
+      setKey('food_inbox', inbSet(cur));
+      inbMsg = 'Aggiunti in coda: ' + add + (skip ? ' · ' + skip + ' voci ignorate (formato non valido)' : '') + '. Controllali e premi Conferma.';
+      flt.inb = true; flt.inbp = false; reGest();
+    },
     inbDiscard(id) {
       if (!confirm('Scartare questo alimento dalla coda?')) return;
       const items = inb().filter(x => x.id !== id); setKey('food_inbox', inbSet(items)); inbMsg = 'Scartato.'; reGest();
