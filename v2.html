@@ -220,11 +220,11 @@
   .day-meta{font-size:var(--fs-md);color:var(--ink2);}
   .day-badge{font-size:var(--fs-sm);font-weight:600;padding:5px 12px;border-radius:var(--r-pill);background:var(--accent-soft);color:var(--accent-ink);white-space:nowrap;}
   .day-badge.overridden{background:var(--warn);color:var(--warn-ink);}
-  .wo-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
-  .wo-chip{border:1px solid var(--line);background:var(--surf2);color:var(--ink2);font:inherit;font-size:var(--fs-xs);font-weight:600;border-radius:var(--r-sm);padding:6px 10px;cursor:pointer;}
+  .wo-chips{display:flex;flex-wrap:wrap;align-items:center;gap:4px;}
+  .wo-chip{border:1px solid var(--line);background:var(--surf2);color:var(--ink2);font:inherit;font-size:var(--fs-2xs);font-weight:600;border-radius:var(--r-sm);padding:4px 7px;cursor:pointer;white-space:nowrap;}
   .wo-chip.on{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--accent);}
   .wo-chip.ovr{background:var(--warn);color:var(--warn-ink);border-color:var(--warn);}
-  .wo-chip-hint{flex:1 1 100%;font-size:var(--fs-2xs);color:var(--ink3);}
+  .wo-chip-hint{flex:1 1 100%;font-size:var(--fs-2xs);color:var(--ink3);line-height:1.2;}
   .day-hdr + .wo-chips{padding:10px 22px;border-bottom:1px solid var(--line);}
   .day-override-sel{font-size:var(--fs-sm);color:var(--ink2);background:var(--surf2);border:1px solid var(--line);border-radius:var(--r-md);padding:4px 8px;}
 
@@ -1816,7 +1816,7 @@ function woChips(day, defaultType, curType) {
     const on = o === curType;
     return '<button type="button" class="wo-chip' + (on ? (ov ? ' ovr' : ' on') : '') + '" onclick="patch(selDate,\'wo_override\',\'' + (o === defaultType ? '' : o) + '\')">' + o + '</button>';
   }).join('');
-  const hint = ov ? '<span class="wo-chip-hint">' + (it ? 'Modificato \u00b7 predefinito: ' : 'Changed \u00b7 default: ') + defaultType + (it ? ' \u00b7 tocca per ripristinare' : ' \u00b7 tap it to restore') + '</span>' : '';
+  const hint = ov ? '<span class="wo-chip-hint">' + (it ? 'Predefinito: ' : 'Default: ') + defaultType + (it ? ' \u00b7 toccalo per ripristinare' : ' \u00b7 tap to restore') + '</span>' : '';
   return '<div class="wo-chips">' + chips + hint + '</div>';
 }
 
@@ -9606,9 +9606,6 @@ function renderOggiFull() {
       <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
         <span style="${lbl}">${L.training}</span>
         <a href="${CFG.OLD_APP}" style="text-decoration:none;padding:4px 9px;border-radius:var(--r-sm);background:${exList ? 'var(--accent-soft)' : 'var(--surf2)'};color:${exList ? 'var(--accent)' : 'var(--ink3)'};font-size:var(--fs-2xs);font-weight:600;">${exList ? (LANG === 'it' ? 'Log Motra importato' : 'Motra log imported') : (LANG === 'it' ? 'Importa da Motra…' : 'Import from Motra…')}</a>
-      </div>
-      <div style="flex:0 0 auto;display:flex;align-items:center;gap:7px;">
-        <span style="padding:3px 9px;border-radius:var(--r-sm);background:${isOverridden ? 'var(--warn)' : 'var(--surf2)'};color:${isOverridden ? 'var(--on-warn)' : 'var(--ink2)'};font-size:var(--fs-2xs);font-weight:700;text-transform:uppercase;">${esc(wo.type)}</span>
       </div>
       ${woChips(day, defaultType, wo.type)}
       ${rest ? `<div style="font-size:var(--fs-sm);color:var(--ink2);">${L.restDay}</div>` : `
