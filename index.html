@@ -939,6 +939,7 @@ canvas.mini-chart { width: 100%; height: 64px; display: block; }
 .badge-legs  { background: #fff5e6; color: #e8590c; }
 .badge-upper     { background: #f5eeff; color: #8522c0; }
 .badge-upper-dom { background: #e8f1fb; color: #0058b0; }
+.badge-total { background: #ffe9ef; color: #c4153c; }
 .badge-rest  { background: #f5f5f7; color: #aeaeb2; }
 .badge-bkk   { background: #e8f1fb; color: var(--blue); }
 
@@ -1972,7 +1973,7 @@ const SPLIT = {
   3:{type:'Pull',      badge:'badge-pull',  label:'PULL'},
   4:{type:'Riposo',    badge:'badge-rest',  label:'RIPOSO'},
   5:{type:'Legs',      badge:'badge-legs',  label:'LEGS'},
-  6:{type:'Upper Sab', badge:'badge-upper', label:'UPPER SAB'},
+  6:{type:'Upper A', badge:'badge-upper', label:'UPPER A'},
 };
 
 const SENTINELS = [
@@ -2008,9 +2009,11 @@ const SESSION_SENTINELS = {
   'Push':       ['bench','incbench','pecfly','cablefly','bbohp','dbpress','dblateral','tridown','triover'],
   'Pull':       ['lat','tbar','bbrow','dbcurl','hammercurl'],
   'Legs':       ['legext','legpress','rdl','calf','hipthrust','legcurl'],
-  'Upper Sab':  ['bbohp','dbpress','dblateral','dbcurl','hammercurl','tridown','triover'],
-  'Upper Dom':  ['bench','incbench','pecfly','cablefly','lat','tbar','bbrow','bbohp','dblateral'],
+  'Upper A':  ['bbohp','dbpress','dblateral','dbcurl','hammercurl','tridown','triover'],
+  'Upper B':  ['bench','incbench','pecfly','cablefly','lat','tbar','bbrow','bbohp','dblateral'],
   'Upper Body': ['bench','incbench','pecfly','cablefly','bbohp','dblateral','tridown','triover'],
+  /* Total Body (16/10/2026): 1 sentinel per gruppo muscolare (petto, dorso, spalle, bicipiti, tricipiti, gambe) */
+  'Total Body': ['bench','lat','bbohp','dbcurl','tridown','legpress'],
 };
 
 const SESSION_EXERCISES = {
@@ -2033,14 +2036,14 @@ const SESSION_EXERCISES = {
     'Seated Calf Raise','Standing Calf Raise','RDL','Deadlift',
     'Goblet Squat','Walking Lunges',
   ],
-  'Upper Sab': [
+  'Upper A': [
     'Military Press (BB)','DB Shoulder Press','Machine Shoulder Press',
     'DB Lateral Raise','Cable Lateral Raise','Cable Upright Row','Front Raise','Cable Rope Face Pull',
     'DB Incline Curl','DB Curl','DB Hammer Curl','EZ Bar Curl','Cable Curl (Bar)','Cable Curl (Rope)',
     'Cable Rope Tricep Pushdown / Extension','Cable Tricep Pushdown (Bar)',
     'Cable Rope Overhead Tricep Extension High','Dip Machine',
   ],
-  'Upper Dom': [
+  'Upper B': [
     'BB Bench Press','Machine Incline Bench Press','DB Bench Press','DB Incline Press','Machine Chest Press','Machine Fly (Pec Dec)','Cable Fly',
     'Lat Pulldown (Wide)','Lat Pulldown (Close)','Barbell Row','Seated Cable Row','Machine Row',
     'Military Press (BB)','DB Shoulder Press','DB Lateral Raise','Cable Lateral Raise',
@@ -2050,6 +2053,14 @@ const SESSION_EXERCISES = {
     'Military Press (BB)','DB Shoulder Press','DB Lateral Raise',
     'Lat Pulldown (Wide)','Seated Cable Row',
     'Cable Rope Tricep Pushdown / Extension','Cable Rope Overhead Tricep Extension High',
+  ],
+  'Total Body': [
+    'BB Bench Press','Machine Incline Bench Press','DB Bench Press',
+    'Lat Pulldown (Wide)','Seated Cable Row','Barbell Row',
+    'Military Press (BB)','DB Shoulder Press',
+    'DB Curl','DB Hammer Curl',
+    'Cable Rope Tricep Pushdown / Extension',
+    'Leg Press','Machine Leg Extension','RDL','Machine Leg Curl',
   ],
   'BKK_FREE': [
     'Smith Bench','Smith Incline','Smith Shoulder Press','Smith RDL','Smith Bent Row',
@@ -2175,8 +2186,9 @@ function getDotColor(type){
   if(type==='Push')return '#ff3b30';
   if(type==='Pull')return '#34c759';
   if(type==='Legs')return '#ff9500';
-  if(type==='Upper Sab')return '#af52de';
-  if(type==='Upper Dom')return '#0071e3';
+  if(type==='Upper A')return '#af52de';
+  if(type==='Upper B')return '#0071e3';
+  if(type==='Total Body')return '#ff2d55';
   if(type.includes('Upper'))return '#af52de';
   if(type==='BKK_FREE')return '#0071e3';
   return '#aeaeb2';
@@ -2187,7 +2199,7 @@ function getWorkout(i){
   const dow=d.getDay();
   if(isBKK(i)) return {type:'BKK_FREE', badge:'badge-bkk', label:'BKK'};
   if(dow===4) return {type:'Riposo', badge:'badge-rest', label:'RIPOSO'};
-  if(dow===0) return {type:'Upper Dom', badge:'badge-upper-dom', label:'UPPER DOM'};
+  if(dow===0) return {type:'Upper B', badge:'badge-upper-dom', label:'UPPER B'};
   return SPLIT[dow];
 }
 
@@ -5758,8 +5770,8 @@ function getComplianceData() {
     if (allChecked) stackDone++;
   }
   // Per-type breakdown
-  const woCounts = { Push:0, Pull:0, Legs:0, 'Upper Sab':0, 'Upper Dom':0 };
-  const woDones  = { Push:0, Pull:0, Legs:0, 'Upper Sab':0, 'Upper Dom':0 };
+  const woCounts = { Push:0, Pull:0, Legs:0, 'Upper A':0, 'Upper B':0, 'Total Body':0 };
+  const woDones  = { Push:0, Pull:0, Legs:0, 'Upper A':0, 'Upper B':0, 'Total Body':0 };
   for (let i = 0; i <= elapsed && i < TOTAL_DAYS; i++) {
     const wo2 = getWorkout(i);
     if (wo2.type in woCounts) {
@@ -6438,7 +6450,7 @@ function getWeeklyVolume(weeks) {
   const fromWeek = Math.max(0, currentWeek - (weeks - 1));
   const result = [];
   for (let w = fromWeek; w <= currentWeek; w++) {
-    const entry = { week: w + 1, push: 0, pull: 0, legs: 0, upperSab: 0, upperDom: 0, total: 0 };
+    const entry = { week: w + 1, push: 0, pull: 0, legs: 0, upperSab: 0, upperDom: 0, totalBody: 0, total: 0 };
     for (let d = w * 7; d < (w + 1) * 7 && d < TOTAL_DAYS; d++) {
       const id = 'day_' + d;
       const wo = getWorkout(d);
@@ -6449,8 +6461,9 @@ function getWeeklyVolume(weeks) {
       if (wo.type === 'Push') entry.push += vol;
       else if (wo.type === 'Pull') entry.pull += vol;
       else if (wo.type === 'Legs') entry.legs += vol;
-      else if (wo.type === 'Upper Sab') entry.upperSab += vol;
-      else if (wo.type === 'Upper Dom' || wo.type === 'Upper Body') entry.upperDom += vol;
+      else if (wo.type === 'Upper A') entry.upperSab += vol;
+      else if (wo.type === 'Upper B' || wo.type === 'Upper Body') entry.upperDom += vol;
+      else if (wo.type === 'Total Body') entry.totalBody += vol;
     }
     result.push(entry);
   }
@@ -6462,8 +6475,8 @@ function getWorkoutBreakdown() {
   const today = new Date(); today.setHours(0,0,0,0);
   const start = new Date(START); start.setHours(0,0,0,0);
   const elapsed = Math.floor((today - start) / 86400000);
-  const counts = { Push:0, Pull:0, Legs:0, 'Upper Sab':0, 'Upper Dom':0, BKK_FREE:0 };
-  const done   = { Push:0, Pull:0, Legs:0, 'Upper Sab':0, 'Upper Dom':0, BKK_FREE:0 };
+  const counts = { Push:0, Pull:0, Legs:0, 'Upper A':0, 'Upper B':0, 'Total Body':0, BKK_FREE:0 };
+  const done   = { Push:0, Pull:0, Legs:0, 'Upper A':0, 'Upper B':0, 'Total Body':0, BKK_FREE:0 };
   for (let i = 0; i <= elapsed && i < TOTAL_DAYS; i++) {
     const wo = getWorkout(i);
     if (wo.type === 'Riposo') continue;
@@ -6596,7 +6609,7 @@ function drawBarChart(canvasId, bars, options = {}) {
 }
 
 function drawStackedBarChart(canvasId, weeks, options = {}) {
-  // weeks: [{week, push, pull, legs, upperSab, upperDom, total}]
+  // weeks: [{week, push, pull, legs, upperSab (= Upper A), upperDom (= Upper B), totalBody, total}]
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -6616,7 +6629,7 @@ function drawStackedBarChart(canvasId, weeks, options = {}) {
   const labelH = 16, barAreaH = H - labelH - 4;
   const bw = Math.max(4, (W - 8) / weeks.length - 4);
   const gap = (W - 8 - bw * weeks.length) / Math.max(weeks.length - 1, 1);
-  const colors = { push:'#ff3b30', pull:'#34c759', legs:'#ff9500', upperSab:'#af52de', upperDom:'#0071e3' };
+  const colors = { push:'#ff3b30', pull:'#34c759', legs:'#ff9500', upperSab:'#af52de', upperDom:'#0071e3', totalBody:'#ff2d55' };
 
   // Grid lines
   ctx.strokeStyle = 'rgba(0,0,0,0.05)'; ctx.lineWidth = 1;
@@ -6628,7 +6641,7 @@ function drawStackedBarChart(canvasId, weeks, options = {}) {
   weeks.forEach((wk, i) => {
     const x = 4 + i * (bw + gap);
     let yOffset = barAreaH + 2;
-    ['push','pull','legs','upperSab','upperDom'].forEach(type => {
+    ['push','pull','legs','upperSab','upperDom','totalBody'].forEach(type => {
       const v = wk[type] || 0;
       if (!v) return;
       const bh = Math.max(1, (v / maxV) * (barAreaH - 4));
@@ -8025,8 +8038,9 @@ function buildDashboard() {
             <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--red)"></span>Push</span>
             <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--green)"></span>Pull</span>
             <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--orange)"></span>Legs</span>
-            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--purple)"></span>Upper Sab</span>
-            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--blue)"></span>Upper Dom</span>
+            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--purple)"></span>Upper A</span>
+            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:var(--blue)"></span>Upper B</span>
+            <span class="chart-legend-item"><span class="chart-legend-dot" style="background:#ff2d55"></span>Total Body</span>
           </div>
           <canvas class="dash-chart" id="dc-vol" height="120"></canvas>
         </div>
@@ -8169,8 +8183,8 @@ function renderSettimanaTipo() {
     if (!types.length) {
       woEl.innerHTML = '<p style="font-size: var(--fs-xs);color:var(--muted)">Nessun dato ancora.</p>';
     } else {
-      const badgeClass = { Push:'badge-push', Pull:'badge-pull', Legs:'badge-legs', 'Upper Sab':'badge-upper', 'Upper Dom':'badge-upper-dom' };
-      const barColor = { Push:T_PALETTE.red, Pull:T_PALETTE.green, Legs:T_PALETTE.orange, 'Upper Sab':T_PALETTE.purple, 'Upper Dom':T_PALETTE.blue };
+      const badgeClass = { Push:'badge-push', Pull:'badge-pull', Legs:'badge-legs', 'Upper A':'badge-upper', 'Upper B':'badge-upper-dom','Total Body':'badge-total' };
+      const barColor = { Push:T_PALETTE.red, Pull:T_PALETTE.green, Legs:T_PALETTE.orange, 'Upper A':T_PALETTE.purple, 'Upper B':T_PALETTE.blue,'Total Body':T_PALETTE.pink };
       woEl.innerHTML = types.map(t => {
         const { done, total } = woByType[t];
         const pct = total ? Math.round(done / total * 100) : 0;
@@ -8320,7 +8334,7 @@ function refreshDashCharts() {
     const volBars = sessions.filter(s=>s.volume).map(s=>({
       label: s.date.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}),
       value: s.volume/1000,
-      color: {Push:T_PALETTE.red,Pull:T_PALETTE.green,Legs:T_PALETTE.orange,'Upper Sab':T_PALETTE.purple,'Upper Dom':T_PALETTE.blue}[s.type]||'#aeaeb2'
+      color: {Push:T_PALETTE.red,Pull:T_PALETTE.green,Legs:T_PALETTE.orange,'Upper A':T_PALETTE.purple,'Upper B':T_PALETTE.blue,'Total Body':T_PALETTE.pink}[s.type]||'#aeaeb2'
     }));
     if(volBars.length) drawBarChart('dc-vol', volBars, {height:120, unit:'t'});
 
@@ -8335,7 +8349,7 @@ function refreshDashCharts() {
     sessions.filter(s=>s.volume!==null).forEach(s=>{breakdown[s.type]=(breakdown[s.type]||0)+1;});
     const bdEl = document.getElementById('dc-breakdown');
     if(bdEl){
-      const colors={Push:T_PALETTE.red,Pull:T_PALETTE.green,Legs:T_PALETTE.orange,'Upper Sab':T_PALETTE.purple,'Upper Dom':T_PALETTE.blue};
+      const colors={Push:T_PALETTE.red,Pull:T_PALETTE.green,Legs:T_PALETTE.orange,'Upper A':T_PALETTE.purple,'Upper B':T_PALETTE.blue,'Total Body':T_PALETTE.pink};
       const tot=Object.values(breakdown).reduce((a,b)=>a+b,0);
       bdEl.innerHTML=Object.entries(breakdown).map(([type,n])=>`
         <div class="comp-bar-row">
@@ -8361,7 +8375,7 @@ function refreshDashCharts() {
       .reverse();
     const tblEl = document.getElementById('dc-scatter-table');
     if (tblEl) {
-      const C = {Push:T_PALETTE.red,Pull:T_PALETTE.green,Legs:T_PALETTE.orange,'Upper Sab':T_PALETTE.purple,'Upper Dom':T_PALETTE.blue};
+      const C = {Push:T_PALETTE.red,Pull:T_PALETTE.green,Legs:T_PALETTE.orange,'Upper A':T_PALETTE.purple,'Upper B':T_PALETTE.blue,'Total Body':T_PALETTE.pink};
       tblEl.innerHTML = sessionRows.length ? `<table style="width:100%;border-collapse:collapse;font-size: var(--fs-sm)">
         <thead><tr style="color:var(--muted);font-size: var(--fs-2xs);border-bottom:1px solid var(--border)">
           <th style="text-align:left;padding:4px 6px">Data</th><th style="text-align:left;padding:4px 6px">Tipo</th>
@@ -9223,7 +9237,7 @@ function getWorkout2(dayIdx) {
   const d = new Date(START2); d.setDate(d.getDate()+dayIdx);
   const id = 'p2_day_' + dayIdx;
   const rec = (typeof _lastData2 !== 'undefined' && _lastData2 && _lastData2[id]) || {};
-  const badges = {Riposo:'badge-rest',Push:'badge-push',Pull:'badge-pull',Legs:'badge-legs','Upper Sab':'badge-upper','Upper Dom':'badge-upper-dom','Allenamento BKK':'badge-bkk'};
+  const badges = {Riposo:'badge-rest',Push:'badge-push',Pull:'badge-pull',Legs:'badge-legs','Upper A':'badge-upper','Upper B':'badge-upper-dom','Total Body':'badge-total','Allenamento BKK':'badge-bkk'};
 
   // Override manuale generale (09/09/2026): permette di segnare esplicitamente
   // un giorno come un tipo diverso da quello che il calendario assegnerebbe
@@ -9248,7 +9262,7 @@ function getWorkout2(dayIdx) {
     return { type:'Allenamento BKK', badge:'badge-bkk', label:'BKK' };
   }
   const dow = d.getDay(); // 0=dom
-  const map = {0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
+  const map = {0:'Upper B',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper A'};
   const type = map[dow]||'Riposo';
   return {type, badge:badges[type]||'badge-rest', label:type.toUpperCase()};
 }
@@ -9305,7 +9319,7 @@ function resolveDay(date) {
 }
 
 function getDotColor2(type) {
-  const m = {Push:T_PALETTE.red,Pull:T_PALETTE.green,Legs:T_PALETTE.orange,'Upper Sab':T_PALETTE.purple,'Upper Dom':T_PALETTE.blue,Riposo:'#c7c7cc','Allenamento BKK':'#c0392b'};
+  const m = {Push:T_PALETTE.red,Pull:T_PALETTE.green,Legs:T_PALETTE.orange,'Upper A':T_PALETTE.purple,'Upper B':T_PALETTE.blue,'Total Body':T_PALETTE.pink,Riposo:'#c7c7cc','Allenamento BKK':'#c0392b'};
   return m[type]||'#c7c7cc';
 }
 
@@ -9704,7 +9718,7 @@ function buildProtoHeader2(container) {
 // Settimana tipo (13/08/2026, richiesta esplicita dopo mockup): aggrega i
 // giorni del ciclo v2 trascorsi finora per giorno della settimana (HRV,
 // sonno, energia/recupero/umore) e per tipo di allenamento (% completamento
-// Push/Pull/Legs/Upper Sab/Upper Dom, solo periodo pre-BKK dato che durante
+// Push/Pull/Legs/Upper A/Upper B/Total Body, solo periodo pre-BKK dato che durante
 // la trasferta lo split fisso non si applica). L'idea di guardare per tipo
 // di giornata invece che genericamente "per giorno" viene dal fatto che con
 // lo split fisso i due sono quasi la stessa cosa (Lun=Riposo, Mar=Push...).
@@ -10507,10 +10521,10 @@ function buildProtoV2() {
           // etichettare correttamente l'opzione (getWorkout2 restituirebbe
           // già il valore forzato se chiamato ora, non il default originale).
           const dowLbl = new Date(d).getDay();
-          const mapLbl = {0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
+          const mapLbl = {0:'Upper B',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper A'};
           const defaultType = isBkkDate(d) ? 'Allenamento BKK' : (mapLbl[dowLbl]||'Riposo');
           const current = (_lastData2[id] && _lastData2[id].wo_override) || '';
-          const opts = ['Riposo','Push','Pull','Legs','Upper Sab','Upper Dom'];
+          const opts = ['Riposo','Push','Pull','Legs','Upper A','Upper B','Total Body'];
           return `
         <div style="background:var(--bg-secondary,#f5f5f7);border-radius:10px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <span style="font-size: var(--fs-xs);font-weight: var(--fw-semi);color:var(--text-secondary);white-space:nowrap">Tipo giornata</span>
@@ -12797,7 +12811,7 @@ function buildHistoryTab() {
   const muscleVol = (_lastData && _lastData.muscle_volume_summary) || [];
 
   const TYPE_COLOR = {
-    Push:T_PALETTE.red, Pull:T_PALETTE.green, Legs:T_PALETTE.orange, 'Upper Sab':T_PALETTE.purple, 'Upper Dom':T_PALETTE.blue,
+    Push:T_PALETTE.red, Pull:T_PALETTE.green, Legs:T_PALETTE.orange, 'Upper A':T_PALETTE.purple, 'Upper B':T_PALETTE.blue,'Total Body':T_PALETTE.pink,
     Riposo:T_PALETTE.gray, 'Allenamento BKK':T_PALETTE.teal, BKK_FREE:T_PALETTE.teal
   };
   // Euristica sul titolo tenuta SOLO come fallback per le sessioni pre-8/6/2026
@@ -12813,8 +12827,8 @@ function buildHistoryTab() {
     if (t.includes('gambe') || t.includes('glute')) return 'Legs';
     if ((t.includes('dorso') || t.includes('schiena')) && t.includes('bicip') && !t.includes('petto')) return 'Pull';
     if (t.includes('petto') && t.includes('tricip')) return 'Push';
-    if (t.includes('sabato')) return 'Upper Sab';
-    if (t.includes('mattina') && (t.includes('spalle') || t.includes('parte superiore'))) return 'Upper Dom';
+    if (t.includes('sabato')) return 'Upper A';
+    if (t.includes('mattina') && (t.includes('spalle') || t.includes('parte superiore'))) return 'Upper B';
     return 'Altro';
   }
   function sessionType(s) {

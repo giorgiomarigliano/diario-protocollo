@@ -120,10 +120,10 @@ blocksRun++; console.log('═══ 1. Split settimanale (getWorkout / getWorkou
   assertEqual(ctx.getWorkout(39).type, 'Legs', 'day_39 (17/7, venerdì, ultimo warm-up) = Legs');
   assertEqual(ctx.getWorkout2(0).type, 'Riposo', 'p2_day_0 (20/7, lunedì) = Riposo');
   assertEqual(ctx.getWorkout2(4).type, 'Legs', 'p2_day_4 (24/7, venerdì) = Legs');
-  assertEqual(ctx.getWorkout2(5).type, 'Upper Sab', 'p2_day_5 (25/7, sabato) = Upper Sab');
-  assertEqual(ctx.getWorkout2(6).type, 'Upper Dom', 'p2_day_6 (26/7, domenica) = Upper Dom');
-  assertEqual(ctx.getWorkout2(-2).type, 'Upper Sab', 'dayIdx -2 (18/7 via indici negativi) = Upper Sab');
-  assertEqual(ctx.getWorkout2(-1).type, 'Upper Dom', 'dayIdx -1 (19/7 via indici negativi) = Upper Dom');
+  assertEqual(ctx.getWorkout2(5).type, 'Upper A', 'p2_day_5 (25/7, sabato) = Upper A');
+  assertEqual(ctx.getWorkout2(6).type, 'Upper B', 'p2_day_6 (26/7, domenica) = Upper B');
+  assertEqual(ctx.getWorkout2(-2).type, 'Upper A', 'dayIdx -2 (18/7 via indici negativi) = Upper A');
+  assertEqual(ctx.getWorkout2(-1).type, 'Upper B', 'dayIdx -1 (19/7 via indici negativi) = Upper B');
 }
 
 blocksRun++; console.log('\n═══ 2. Buco Test Protocollo in getSessionsAll ═══');
@@ -237,7 +237,7 @@ blocksRun++; console.log('\n═══ 4. resolveDay() coerente con getWorkout/ge
   `, ctx);
 
   assertEqual(ctx.resolveDay('2026-07-18').id, 'test_proto_0', "resolveDay('18/7') = test_proto_0");
-  assertEqual(ctx.resolveDay('2026-07-18').workout.type, 'Upper Sab', "resolveDay('18/7').workout = Upper Sab");
+  assertEqual(ctx.resolveDay('2026-07-18').workout.type, 'Upper A', "resolveDay('18/7').workout = Upper A");
   assertEqual(ctx.resolveDay('2026-07-20').id, 'p2_day_0', "resolveDay('20/7') = p2_day_0");
   assertEqual(ctx.resolveDay('2026-06-08').id, 'day_0', "resolveDay('8/6') = day_0");
 }

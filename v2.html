@@ -220,6 +220,12 @@
   .day-meta{font-size:var(--fs-md);color:var(--ink2);}
   .day-badge{font-size:var(--fs-sm);font-weight:600;padding:5px 12px;border-radius:var(--r-pill);background:var(--accent-soft);color:var(--accent-ink);white-space:nowrap;}
   .day-badge.overridden{background:var(--warn);color:var(--warn-ink);}
+  .wo-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;}
+  .wo-chip{border:1px solid var(--line);background:var(--surf2);color:var(--ink2);font:inherit;font-size:var(--fs-xs);font-weight:600;border-radius:var(--r-sm);padding:6px 10px;cursor:pointer;}
+  .wo-chip.on{background:var(--accent-soft);color:var(--accent-ink);border-color:var(--accent);}
+  .wo-chip.ovr{background:var(--warn);color:var(--warn-ink);border-color:var(--warn);}
+  .wo-chip-hint{flex:1 1 100%;font-size:var(--fs-2xs);color:var(--ink3);}
+  .day-hdr + .wo-chips{padding:10px 22px;border-bottom:1px solid var(--line);}
   .day-override-sel{font-size:var(--fs-sm);color:var(--ink2);background:var(--surf2);border:1px solid var(--line);border-radius:var(--r-md);padding:4px 8px;}
 
   .section{padding:16px 22px;}
@@ -1801,6 +1807,19 @@ const MIRROR_INDEX = [
   'parseSonnoHours'   // conversione notazione H.MM → ore decimali vere
 ];
 
+/* 16/10/2026: tipi di allenamento selezionabili (override del giorno). Upper A = ex Upper Sab, Upper B = ex Upper Dom; Total Body = 1 esercizio per gruppo muscolare. */
+const WO_TYPES = ['Riposo', 'Push', 'Pull', 'Legs', 'Upper A', 'Upper B', 'Total Body'];
+/* Chip di scelta del tipo allenamento. Toccare il tipo predefinito del giorno toglie l'override (wo_override = ''). */
+function woChips(day, defaultType, curType) {
+  const ov = !!(day && day.wo_override), it = LANG === 'it';
+  const chips = WO_TYPES.map(o => {
+    const on = o === curType;
+    return '<button type="button" class="wo-chip' + (on ? (ov ? ' ovr' : ' on') : '') + '" onclick="patch(selDate,\'wo_override\',\'' + (o === defaultType ? '' : o) + '\')">' + o + '</button>';
+  }).join('');
+  const hint = ov ? '<span class="wo-chip-hint">' + (it ? 'Modificato \u00b7 predefinito: ' : 'Changed \u00b7 default: ') + defaultType + (it ? ' \u00b7 tocca per ripristinare' : ' \u00b7 tap it to restore') + '</span>' : '';
+  return '<div class="wo-chips">' + chips + hint + '</div>';
+}
+
 // MIRROR · getWorkout2 — verbatim da index.html (Bangkok non gestito qui:
 // v2 migra solo Oggi, il Ciclo v2 non è più in trasferta al 08/09/2026).
 // Aggiornata il 09/09/2026 insieme alla produzione: override manuale del
@@ -1819,7 +1838,7 @@ function getWorkout2(dayIdx) {
     return { type: 'Allenamento BKK' };
   }
   const dow = d.getDay(); // 0=dom
-  const map = {0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
+  const map = {0:'Upper B',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper A'};
   const type = map[dow] || 'Riposo';
   return { type };
 }
@@ -1836,7 +1855,7 @@ function woSessDone(rec) { const kcal = parseFloat(rec.wo_kcal), rpe = parseFloa
 function woBase(idx) {
   const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + idx);
   if (idx >= 0 && isBkkDate(d)) return { type: woRecAt(idx).bkk_riposo === '1' ? 'Riposo' : 'Allenamento BKK', bkk: true, dow: d.getDay() };
-  return { type: {0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'}[d.getDay()] || 'Riposo', bkk: false, dow: d.getDay() };
+  return { type: {0:'Upper B',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper A'}[d.getDay()] || 'Riposo', bkk: false, dow: d.getDay() };
 }
 /* 06/10 REGOLA B per le settimane (lun-dom) che toccano la trasferta BKK (decisione di Giorgio: allenamenti irregolari per gli spostamenti e piu' di 5 a
    settimana per il tempo a disposizione). Obiettivo della settimana = 5 meno i giorni segnati "riposo in trasferta" (bkk_riposo = giorni di viaggio escusati).
@@ -3683,7 +3702,7 @@ function buildWorkout(root){
     if (d._done || d._cov){ byType[k].done++; byType[k].vol+=(d._done ? (num(d.wo_volume)||0) : (num(d._covVol)||0)); }
   });
   /* extra (sedute fuori piano non usate per recuperare un saltato): volume e conteggio "+N" sotto il loro tipo. Secondo passaggio: il tipo puo' comparire
-     nei previsti DOPO l'extra (es. Upper Dom: extra del 23/08, primo previsto in finestra il 30/08). */
+     nei previsti DOPO l'extra (es. Upper Dom, ora Upper B: extra del 23/08, primo previsto in finestra il 30/08). */
   w.slice.forEach(function(d, ii){
     if (d && d._done && !d._planned && !usedExtra[w.from+ii]) { var ke=d._type||"\u2014"; if (byType[ke]) { byType[ke].vol+=(num(d.wo_volume)||0); byType[ke].extra=(byType[ke].extra||0)+1; } }
   });
@@ -6432,7 +6451,7 @@ const START=new Date(2026,5,8);
 const WD=['DOM','LUN','MAR','MER','GIO','VEN','SAB'];
 const WDL=['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
 const MON=['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
-const PLAN={0:'Upper Dom',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper Sab'};
+const PLAN={0:'Upper B',1:'Riposo',2:'Push',3:'Pull',4:'Riposo',5:'Legs',6:'Upper A'};
 const SUPPS=[['d3','D3 + K2'],['omega','Omega-3'],['creat','Creatina'],['zinc','Zinco'],['b12','B12'],['norm','Normocis'],['mag','Magnesio'],['gly','Glicina'],['melatonina','Melatonina']];
 const LIFTS={bench:'Panca piana',incbench:'Panca inclinata',dbpress:'Distensioni manubri',pecfly:'Pectoral fly',legpress:'Leg Press',legext:'Leg Extension',legcurl:'Leg Curl',rdl:'RDL',hipthrust:'Hip Thrust',calf:'Calf',lat:'Lat Machine',bbrow:'Rematore bilanciere',tbar:'T-Bar Row',bbohp:'Military Press',dblateral:'Alzate laterali',dbcurl:'Curl manubri',hammercurl:'Hammer Curl',tridown:'Pushdown tricipiti',triover:'French Press'};
 let N=0, WEEKS=0, DAYS=[], status='idle';
@@ -6520,7 +6539,7 @@ function adh(d){
   const wp=pl?Math.min(100,Math.round(dn/pl*100)):0,fp=Math.round(fl2/fn*100);
   const sd=suppDay(d),df=filled(d),dd=WD[dt(d.i).getDay()].charAt(0)+WD[dt(d.i).getDay()].slice(1).toLowerCase()+' '+dt(d.i).getDate();
   const col=(t,c,txt,sub,s2,tc)=>`<div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:0">${ring(t,c,txt)}<div style="font-size:var(--fs-md);font-weight:600">${sub[0]}</div><div style="font-size:var(--fs-xs);font-weight:500;color:var(--ink2)">${sub[1]}</div><div style="width:100%;max-width:167px;height:3px;border-radius:2px;background:${c}"></div><div style="font-size:var(--fs-xs);font-weight:700;color:${tc||c}">${s2}</div></div>`;
-  const strip=Array.from({length:7},(_,k)=>{const i=a+k;if(i>=N)return `<div class="pc-tile" style="opacity:.35"><b style="font-size:var(--fs-sm)">·</b><span>${WD[dt(i).getDay()]}</span></div>`;const pl2=plan(i),done=isWO(DAYS[i]),rest=pl2==='Riposo';const c=done?'var(--wo)':(rest?'var(--idle)':'var(--bad)');return `<div class="pc-tile" style="${i===d.i?'outline:2px solid var(--accent);':''}"><b style="font-size:var(--fs-sm);color:${c}">${done?'✓':rest?'–':'✕'}</b><span>${WD[dt(i).getDay()]}<br>${pl2.replace('Upper ','Up ')}</span></div>`}).join('');
+  const strip=Array.from({length:7},(_,k)=>{const i=a+k;if(i>=N)return `<div class="pc-tile" style="opacity:.35"><b style="font-size:var(--fs-sm)">·</b><span>${WD[dt(i).getDay()]}</span></div>`;const pl2=plan(i),done=isWO(DAYS[i]),rest=pl2==='Riposo';const c=done?'var(--wo)':(rest?'var(--idle)':'var(--bad)');return `<div class="pc-tile" style="${i===d.i?'outline:2px solid var(--accent);':''}"><b style="font-size:var(--fs-sm);color:${c}">${done?'✓':rest?'–':'✕'}</b><span>${WD[dt(i).getDay()]}<br>${pl2.replace('Upper ','Up ').replace('Total Body','Total')}</span></div>`}).join('');
   return `<section class="pc-card pc-adh" style="padding:14px 18px;gap:10px"><div class="pc-lbl">Aderenza · PW${w+1} (${dlab(a)} – ${dlab(b)})</div>
   <div style="display:flex;gap:10px;justify-content:space-around;padding-top:4px">
   ${col(sp,'var(--ok)',sp+'%',['Integratori',s.a+'/'+s.t],dd+' '+sd.a+'/'+sd.t)}
@@ -8907,9 +8926,9 @@ function renderOggiFull() {
   const weekN = Math.floor(dayIdx / 7) + 1;
   const isOverridden = !!day.wo_override;
   const dowLbl = new Date(selDate + 'T00:00:00').getDay();
-  const mapLbl = { 0: 'Upper Dom', 1: 'Riposo', 2: 'Push', 3: 'Pull', 4: 'Riposo', 5: 'Legs', 6: 'Upper Sab' };
+  const mapLbl = { 0: 'Upper B', 1: 'Riposo', 2: 'Push', 3: 'Pull', 4: 'Riposo', 5: 'Legs', 6: 'Upper A' };
   const defaultType = mapLbl[dowLbl] || 'Riposo';
-  const overrideOpts = ['Riposo', 'Push', 'Pull', 'Legs', 'Upper Sab', 'Upper Dom'];
+  const overrideOpts = WO_TYPES;
   const dayMetaTxt = `${LANG === 'it' ? 'giorno' : 'day'} ${cycleDayNo(dayIdx)} ${LANG === 'it' ? 'di' : 'of'} ${CFG.CYCLE_DAYS} · WK${weekN} · ${wo.type}`;
 
   const heroHtml = `
@@ -9239,6 +9258,7 @@ function renderOggiFull() {
           <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${L.training} · ${esc(wo.type)}</span>
           <a href="${CFG.OLD_APP}" style="text-decoration:none;padding:5px 10px;border-radius:var(--r-sm);background:${exList ? 'var(--accent-soft)' : 'var(--surf2)'};color:${exList ? 'var(--accent)' : 'var(--ink3)'};font-size:var(--fs-xs);font-weight:600;">${exList ? (LANG === 'it' ? 'Log Motra importato' : 'Motra log imported') : (LANG === 'it' ? 'Importa da Motra…' : 'Import from Motra…')}</a>
         </div>
+        ${woChips(day, defaultType, wo.type)}
         ${rest ? `<div style="font-size:var(--fs-sm);color:var(--ink2);">${L.restDay}</div>` : `
         <div style="display:flex;gap:7px;">
           ${WO_FIELDS_M.map(([label, key]) => `
@@ -9589,11 +9609,8 @@ function renderOggiFull() {
       </div>
       <div style="flex:0 0 auto;display:flex;align-items:center;gap:7px;">
         <span style="padding:3px 9px;border-radius:var(--r-sm);background:${isOverridden ? 'var(--warn)' : 'var(--surf2)'};color:${isOverridden ? 'var(--on-warn)' : 'var(--ink2)'};font-size:var(--fs-2xs);font-weight:700;text-transform:uppercase;">${esc(wo.type)}</span>
-        <select onchange="patch(selDate,'wo_override',this.value)" style="border:1px solid var(--line);background:var(--surf);color:var(--ink2);font-size:var(--fs-xs);border-radius:var(--r-sm);padding:3px 6px;flex:1 1 auto;min-width:0;">
-          <option value="" ${!isOverridden ? 'selected' : ''}>${LANG === 'it' ? 'Scegli' : 'Choose'} (${defaultType})</option>
-          ${overrideOpts.map(o => `<option value="${o}" ${day.wo_override === o ? 'selected' : ''}>${o}</option>`).join('')}
-        </select>
       </div>
+      ${woChips(day, defaultType, wo.type)}
       ${rest ? `<div style="font-size:var(--fs-sm);color:var(--ink2);">${L.restDay}</div>` : `
       <div style="flex:0 0 auto;display:flex;gap:7px;">
         ${WO_FIELDS.map(([label, key]) => `
@@ -9671,9 +9688,9 @@ function renderOggiSections() {
   const isOverridden = !!day.wo_override;
 
   const dowLbl = new Date(selDate + 'T00:00:00').getDay();
-  const mapLbl = { 0: 'Upper Dom', 1: 'Riposo', 2: 'Push', 3: 'Pull', 4: 'Riposo', 5: 'Legs', 6: 'Upper Sab' };
+  const mapLbl = { 0: 'Upper B', 1: 'Riposo', 2: 'Push', 3: 'Pull', 4: 'Riposo', 5: 'Legs', 6: 'Upper A' };
   const defaultType = mapLbl[dowLbl] || 'Riposo';
-  const overrideOpts = ['Riposo', 'Push', 'Pull', 'Legs', 'Upper Sab', 'Upper Dom'];
+  const overrideOpts = WO_TYPES;
 
   const sonnoTot = parseSonnoHours(day.ore_sonno);
   const sonnoTxt = isNaN(sonnoTot) ? '—' : Math.floor(sonnoTot) + 'h' + Math.round((sonnoTot % 1) * 60);
@@ -9688,12 +9705,9 @@ function renderOggiSections() {
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="day-badge ${isOverridden ? 'overridden' : ''}">${wo.type.toUpperCase()}</span>
-        <select class="day-override-sel" onchange="patch(selDate,'wo_override',this.value)">
-          <option value="" ${!isOverridden ? 'selected' : ''}>${L.choose} (${defaultType})</option>
-          ${overrideOpts.map(o => `<option value="${o}" ${day.wo_override === o ? 'selected' : ''}>${o}</option>`).join('')}
-        </select>
       </div>
-    </div>`;
+    </div>
+    ${woChips(day, defaultType, wo.type)}`;
 
   const biometria = `
     <div class="section">
@@ -11305,7 +11319,7 @@ const EN_DICT = {
 'Scegli o scatta una foto':'Choose or take a photo','Data e luogo dall’EXIF, se presenti':'Date and place from EXIF, if present','Data':'Date','Peso (kg)':'Weight (kg)','Luogo':'Place','Nota':'Note','Registra scatto':'Save shot',
 'Tipo':'Type','Fatte / previste':'Done / planned','Sedute fatte su previste dal piano settimanale. Fatta = calorie, volume o RPE presenti; il giorno in corso non conta come saltato.':'Sessions done out of those planned in the weekly plan. Done = calories, volume or RPE present; the current day does not count as skipped.',
 'Aderenza allenamenti':'Workout adherence','su tutti i giorni':'over all days','streak attuale':'current streak','streak record':'record streak','media/sett.':'avg/wk','allenato':'trained','non allenato':'not trained','riposo pianificato':'planned rest',
-'Durata':'Duration','Fase':'Phase','Sedute':'Sessions','Lun':'Mon','Mar':'Tue','Mer':'Wed','Gio':'Thu','Ven':'Fri','Sab':'Sat','Dom':'Sun','Upper Dom':'Upper Sun','Upper Sab':'Upper Sat',
+'Durata':'Duration','Fase':'Phase','Sedute':'Sessions','Lun':'Mon','Mar':'Tue','Mer':'Wed','Gio':'Thu','Ven':'Fri','Sab':'Sat','Dom':'Sun',
 'Volume medio per giorno della settimana, in tonnellate. n sempre visibile.':'Average volume per weekday, in tonnes. n always shown.','20 esercizi sentinella in 6 gruppi. Δ = ultimo carico meno il primo registrato.':'20 sentinel exercises in 6 groups. Δ = latest load minus the first recorded.',
 'Muscolo':'Muscle','Quota':'Share','Dorso (lat)':'Back (lats)','Quadricipiti':'Quadriceps','Glutei':'Glutes','Trapezi':'Traps','Femorali':'Hamstrings','Polpacci':'Calves','Lombari':'Lower back',
 'Volume cumulativo per muscolo, dal riepilogo del diario V1: non dipende dall\'intervallo.':'Cumulative volume per muscle, from the V1 diary summary: independent of the range.','Progressione esercizi':'Exercise progression','soglia 2 sessioni':'2-session threshold',
