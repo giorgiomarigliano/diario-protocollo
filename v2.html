@@ -6436,6 +6436,9 @@ let pesoRange = 30; // finestra corrente del grafico peso: 7 | 14 | 30 | 60 gior
 // portata dal mockup — un solo menù aperto alla volta, si chiude cliccando
 // altrove (vedi listener in fondo al file).
 let openMenu = null;
+/* 16/10: espande/comprime gli esercizi Motra nascosti nella card Allenamento (desktop, con tracker alimentare attivo) */
+let woExAll = false;
+function woExToggle() { woExAll = !woExAll; render(); }
 // Soglia desktop: sopra i 1024px la card giorno diventa una griglia a bande
 // (mockup "Mac 1340x852"), sotto resta la card singola verificata su mobile.
 let isDesktop = window.innerWidth >= 1024;
@@ -9618,7 +9621,7 @@ function renderOggiFull() {
       </div>
       <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:3px;">
         <span style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink2);">${L.exercises}</span>
-        ${exList ? exList.slice(0, FOOD.on() ? 3 : 99).map(e => {
+        ${exList ? exList.slice(0, FOOD.on() && !woExAll ? 3 : 99).map(e => {
           const sm = setsSummary(e.sets);
           return `
             <div style="display:flex;align-items:center;gap:8px;padding:2px 0;">
@@ -9626,7 +9629,7 @@ function renderOggiFull() {
               <span style="flex:0 0 38px;text-align:right;font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${sm.reps}</span>
               <span style="flex:0 1 auto;min-width:0;text-align:right;font-size:var(--fs-xs);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sm.kg}</span>
             </div>`;
-        }).join('') + (FOOD.on() && exList.length > 3 ? `<span style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);">+ ${exList.length - 3} altri esercizi</span>` : '') : `<span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink2);">—</span>`}
+        }).join('') + (FOOD.on() && exList.length > 3 ? `<button type="button" onclick="woExToggle()" style="background:none;border:none;padding:2px 0;text-align:left;cursor:pointer;font:inherit;font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);">${woExAll ? (LANG === 'it' ? '\u2212 mostra meno' : '\u2212 show less') : '+ ' + (exList.length - 3) + (LANG === 'it' ? ' altri esercizi' : ' more exercises')}</button>` : '') : `<span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink2);">—</span>`}
       </div>`}
     </section>`;
 
