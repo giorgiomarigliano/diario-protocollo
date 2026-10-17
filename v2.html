@@ -895,6 +895,8 @@
   #app span:has(> input[data-f]){height:auto !important;min-height:44px;}
   #app span:has(> input[data-f]) > input[data-f]{align-self:stretch;min-height:44px;}
   #app input[data-f]{min-height:44px;}
+  /* peso (card dedicata, 17/10): numeri grandi, il 16px globale qui non serve (>=16px evita comunque lo zoom iOS) */
+  #app input[data-f="peso"]{font-size:var(--fs-hero) !important;min-height:56px;}
   /* residui: categorie alimenti, modalita' confronto, "mostra tutte", select date, righe giorno della settimana */
   /* viste Foto: con il testo a 11 px le tessere dati e le righe non devono sforare la card */
   #app .an-ftiles{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
@@ -9074,8 +9076,8 @@ function renderOggiFull() {
           <div style="display:flex;flex-direction:column;gap:3px;">
             <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${L.weight}</span>
             <div style="display:flex;align-items:baseline;gap:6px;">
-              <input data-f="peso" value="${esc(day.peso || '')}" placeholder="—" inputmode="decimal" style="border:none;outline:none;font-size:var(--fs-6xl);line-height:1.05;letter-spacing:-.03em;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;width:104px;background:var(--surf2);border-radius:var(--r-md);padding:3px 10px;">
-              <span style="font-size:var(--fs-md);font-weight:500;color:var(--ink2);">kg</span>
+              <input data-f="peso" value="${esc(day.peso || '')}" placeholder="—" inputmode="decimal" style="border:none;outline:none;font-size:var(--fs-hero);line-height:1.05;letter-spacing:-.03em;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;width:164px;background:var(--surf2);border-radius:var(--r-md);padding:6px 14px;">
+              <span style="font-size:var(--fs-xl);font-weight:500;color:var(--ink2);">kg</span>
             </div>
           </div>
         </div>
