@@ -78,9 +78,18 @@
     '#dpa .e{color:#ff3b30;font-size:12px;min-height:16px}' +
     '#dpc{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;padding:20px 16px calc(28px + env(safe-area-inset-bottom));font:11px/1.2 -apple-system,system-ui,sans-serif;color:#6e6e73}' +
     '#dpc button{font:600 11px/1 -apple-system,system-ui,sans-serif;border:1px solid #c7c7cc;border-radius:99px;min-height:36px;padding:0 14px;background:transparent;color:#6e6e73;cursor:pointer}';
-  function el(tag, attrs, html) { var e = document.createElement(tag); if (attrs) for (var k in attrs) e.setAttribute(k, attrs[k]); if (html != null) e.innerHTML = html; return e; }
+  /* EN: la lingua sta in localStorage ('dp2.lang'); l'accesso compare prima dell'app, quindi traduce da solo */
+  var LN = false; try { LN = localStorage.getItem('dp2.lang') === 'en'; } catch (e) {}
+  var M = [['Accedi con password', 'Sign in with password'], ['Accedi per vedere e salvare i tuoi dati.', 'Sign in to view and save your data.'], ['Accedi con passkey', 'Sign in with passkey'], ['Usa la password', 'Use password'],
+    ['Una sola volta per dispositivo: la sessione resta attiva.', 'Once per device: the session stays active.'], ['Più tardi', 'Later'], ['← Torna alla passkey', '← Back to passkey'], ['>Accedi<', '>Sign in<'],
+    ['Inserisci email e password.', 'Enter email and password.'], ['Accesso in corso…', 'Signing in…'], ['Email o password non corretta.', 'Wrong email or password.'], ['Accesso non riuscito.', 'Sign-in failed.'],
+    ['Passkey non disponibile', 'Passkey not available'], ['Prova con la password.', 'Try the password.'], ['Aggiungi una passkey su questo dispositivo', 'Add a passkey on this device'],
+    ['Passkey non registrata: ', 'Passkey not registered: '], ['Passkey registrata su questo dispositivo.', 'Passkey registered on this device.'], ['Libreria di accesso non caricata', 'Sign-in library not loaded']];
+  function tx(t) { if (!LN || typeof t !== 'string') return t; for (var i = 0; i < M.length; i++) t = t.split(M[i][0]).join(M[i][1]); return t; }
+  function alert(m) { window.alert(tx(m)); }
+  function el(tag, attrs, html) { var e = document.createElement(tag); if (attrs) for (var k in attrs) e.setAttribute(k, tx(attrs[k])); if (html != null) e.innerHTML = html === 'Esci' ? (LN ? 'Sign out' : html) : html === 'Accesso attivo' ? (LN ? 'Signed in' : html) : tx(html); return e; }
   function ensureCss() { if (!document.getElementById('dpa-css')) { var s = el('style', { id: 'dpa-css' }); s.textContent = CSS; document.head.appendChild(s); } }
-  function say(msg) { var e = document.getElementById('dpa-err'); if (e) e.textContent = msg || ''; }
+  function say(msg) { var e = document.getElementById('dpa-err'); if (e) e.textContent = tx(msg || ''); }
   function msgOf(err) { var m = (err && err.message) || ''; return /invalid login/i.test(m) ? 'Email o password non corretta.' : (m || 'Accesso non riuscito.'); }
 
   function showLogin(pw) {
@@ -117,7 +126,7 @@
     ensureCss(); if (chip) chip.remove();
     chip = el('div', { id: 'dpc' });
     var out = el('button', { type: 'button' }, 'Esci'); out.onclick = function () { client().then(function (c) { return c.auth.signOut(); }).then(function () { location.reload(); }); };
-    var pk = el('button', { type: 'button' }, '+ Passkey'); pk.title = 'Aggiungi una passkey su questo dispositivo';
+    var pk = el('button', { type: 'button' }, '+ Passkey'); pk.title = tx('Aggiungi una passkey su questo dispositivo');
     pk.onclick = function () { client().then(function (c) { return c.auth.registerPasskey(); }).then(function (r) { alert(r && r.error ? 'Passkey non registrata: ' + r.error.message : 'Passkey registrata su questo dispositivo.'); }).catch(function (e) { alert('Passkey non registrata: ' + e.message); }); };
     chip.appendChild(el('span', null, 'Accesso attivo')); chip.appendChild(pk); chip.appendChild(out); document.body.appendChild(chip);
   }
@@ -11755,6 +11764,25 @@ EN_RULES.unshift(...EN_FOOD_RE.map(([re, en]) => [re, (m, ...g) => en.replace(/\
 EN_RULES.push([/^.+(?: \u00b7 | \u2192 |, ).+$/s, function enList(m) { for (const sep of [' \u00b7 ', ' \u2192 ', ', ']) { if (m.indexOf(sep) < 0) continue; const ps = m.split(sep), ts = ps.map(p => { const c = p.trim(), r = c ? (enPiece(c) ?? (/(?: \u00b7 | \u2192 |, )/.test(c) ? enList(c) : null)) : null; return r == null ? p : r; }); if (ts.some((t, k) => t !== ps[k])) return ts.join(sep); } return null; }]);
 /* confirm()/alert() e altri testi fuori dal DOM */
 function enTr(s) { return (typeof LANG !== 'undefined' && LANG === 'en') ? enTranslate(s) : s; }
+/* ---- 17/10 sera: residui fuori dall'alimentazione (scorte, orari, etichette) ---- */
+Object.assign(EN_DICT, {
+ "Cambia foto": "Change photo", "Nessun vial in uso": "No vial in use", "Caricamento dati scorte…": "Loading stock data…",
+ "Intensa": "Intense", "Moderata": "Moderate", "Lieve": "Mild", "Marcata": "Marked", "Assente": "None", "Normale": "Normal",
+ "Pasto post-WO — albumi + verdure (no grassi)": "Post-WO meal — egg whites + vegetables (no fat)",
+ "Cena — pesce/carne magra + verdure + max 4-5 Wasa": "Dinner — fish/lean meat + vegetables + max 4-5 Wasa",
+ "low-fat per Tesa": "low-fat for Tesa", "no grassi aggiunti": "no added fat",
+ "2h30 post-pasto light": "2h30 after a light meal", "Mg bisglicinato + Glicina 3g + Melatonina 1mg": "Mg bisglycinate + Glycine 3g + Melatonin 1mg",
+ "Creatina 5g": "Creatine 5g", "Creatina 5g · Omega-3 ×1 · Zinco 15mg": "Creatine 5g · Omega-3 ×1 · Zinc 15mg",
+ "Omega-3 ×1 · Zinco bisglicinato 15mg": "Omega-3 ×1 · Zinc bisglycinate 15mg", "D3+K2 · B12+folato": "D3+K2 · B12+folate",
+ "Caffè Nespresso Vertuo + Alpro": "Nespresso Vertuo coffee + Alpro", "Gelato previsto": "Planned ice cream"
+});
+EN_RULES.unshift(
+ [/^(\d+h(?:\d+)?\+?) post-(pranzo|cena)$/i, (m, t, w) => t + ' after ' + (w.toLowerCase() === 'pranzo' ? 'lunch' : 'dinner')],
+ [/^NO carbs (\d+h\d*)(?: post IGF-1)?$/i, (m, t) => 'NO carbs ' + t + (/IGF-1/.test(m) ? ' after IGF-1' : '')],
+ [/^(\d+) intatti disponibili(?: · ricostituisci il prossimo)?$/i, (m, n) => n + ' intact available' + (/ricostituisci/.test(m) ? ' · reconstitute the next one' : '')],
+ [/^Nessun vial in uso · (\d+) intatti disponibili$/i, (m, n) => 'No vial in use · ' + n + ' intact available'],
+ [/^(\d{2}\/\d{2}) · (Intensa|Moderata|Lieve|Marcata)$/i, (m, d, w) => d + ' · ' + enTranslate(w)]
+);
 const EN_LOW = {};
 Object.keys(EN_DICT).forEach(k => { EN_LOW[k.toLowerCase().replace(/\s+/g, ' ').trim()] = EN_DICT[k]; });
 function enShape(out, src) {
