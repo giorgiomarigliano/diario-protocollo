@@ -3175,7 +3175,7 @@ function buildStock(root){
 function buildFood(root){
   var host=ch(root,"food.rows"); if(!host) return;
   if (typeof FOOD==="undefined" || !FOOD.periodStats){ host.innerHTML='<span class="an-sub">Caricamento\u2026</span>'; return; }
-  var r=FOOD.periodStats(14), f=function(v){return Math.round(v).toLocaleString("it-IT");};
+  var r=FOOD.periodStats(14), f=function(v){return LANG==="en"?String(Math.round(v)):Math.round(v).toLocaleString("it-IT");};
   var row=function(l,a,b){return '<div class="an-trow" style="grid-template-columns:1fr 72px 72px"><span>'+l+'</span><strong class="an-num">'+a+'</strong><strong class="an-num">'+b+'</strong></div>';};
   setB(root,"food.sub",r.all.d?r.all.d+" di "+r.n+" giorni chiusi":"");
   if (!r.all.d){
@@ -3196,9 +3196,9 @@ function buildFood(root){
    Colori: SOLO i token semantici pieni (--ok verde, --warn giallo, --warn-ink arancio, --bad rosso, --off viola per i giorni fuori piano). Soglie (decise il 13/10): kcal verde <= obiettivo, giallo <= +10%, rosso oltre; proteine verde >= obiettivo, giallo >= 90%, rosso sotto; saldo verde <= -150, grigio entro +-150 (non distinguibile da zero), arancio >= +150. */
 var FH_T2={date:CAL.T2,lo:71.5,hi:73,lab:"7/11"};  /* peso T2 sulla scala DEXA, fissato il 21/09/2026; la bilancia di casa legge circa 1 kg in meno (un solo confronto) */
 var FH_ZERO=150, FH_KCAL_KG=7700;
-function fhF(v){ return Math.round(v).toLocaleString("it-IT"); }
+function fhF(v){ return LANG==="en" ? String(Math.round(v)) : Math.round(v).toLocaleString("it-IT"); }
 function fhSg(v){ return (v>0?"+":v<0?"−":"")+fhF(Math.abs(v)); }
-function fhD(v,d){ return v.toLocaleString("it-IT",{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fhD(v,d){ return v.toLocaleString(LANG==="en"?"en-GB":"it-IT",{minimumFractionDigits:d,maximumFractionDigits:d,useGrouping:LANG!=="en"}); }
 function fhColK(k,t){ return !t?"var(--accent)":(k<=t?"var(--ok)":(k<=t*1.1?"var(--warn)":"var(--bad)")); }
 function fhColP(p,t){ return !t?"var(--accent)":(p>=t?"var(--ok)":(p>=t*0.9?"var(--warn)":"var(--bad)")); }
 function fhColS(s){ return s<=-FH_ZERO?"var(--ok)":(s<FH_ZERO?"var(--ink3)":"var(--warn-ink)"); }
@@ -3345,7 +3345,7 @@ function buildFoodHist(root){
   var noT=T.kcal?'':'<span class="an-note">Obiettivo kcal non impostato: si modifica in Gestione › Alimenti › Obiettivi e il grafico si aggiorna.</span>';
   var head='<div class="fh-th"><span>Data</span><span>kcal</span><span>Fabbisogno</span><span>Saldo</span><span>P g</span><span>C g</span><span>G g</span><span>Stato</span></div>';
   var body=rows.slice().reverse().map(function(r){
-    var dt=new Date(r.d+"T00:00:00"), lab=dt.toLocaleDateString("it-IT",{weekday:"short",day:"2-digit",month:"2-digit"}); lab=lab.charAt(0).toUpperCase()+lab.slice(1);
+    var dt=new Date(r.d+"T00:00:00"), lab=dt.toLocaleDateString(LANG==="en"?"en-GB":"it-IT",{weekday:"short",day:"2-digit",month:"2-digit"}); lab=lab.charAt(0).toUpperCase()+lab.slice(1);
     var has=r.n||r.inc, pills="";
     if (r.today) pills+='<span class="food-src s-l">in corso</span>';
     if (r.off) pills+='<span class="food-src s-o">fuori piano</span>';
@@ -6938,7 +6938,7 @@ const FOOD = (function () {
   function openGT() { const dow = new Date(selDate + 'T00:00:00').getDay(); sh = { m: 'gt', gt: (dow === 0 || dow === 6) ? 'gt_we' : 'gt_fer' }; msg = ''; ensureOv(); drawSheet(); }
   function ensureOv() {
     let ov = document.getElementById('food-ov');
-    if (!ov) { ov = document.createElement('div'); ov.id = 'food-ov'; ov.onclick = e => { if (e.target === ov) close(); }; ov.innerHTML = '<div id="food-sheet"></div>'; document.body.appendChild(ov); }
+    if (!ov) { ov = document.createElement('div'); ov.id = 'food-ov'; ov.onclick = e => { if (e.target === ov) close(); }; ov.innerHTML = '<div id="food-sheet"></div>'; document.body.appendChild(ov); if (typeof _enObs !== 'undefined' && _enObs) { _enObs.observe(ov, { childList: true, subtree: true, characterData: true }); if (typeof enSchedule === 'function') enSchedule(); } }
     ov.style.display = 'flex';
   }
   function close() { sh = null; const ov = document.getElementById('food-ov'); if (ov) ov.style.display = 'none'; }
@@ -6980,7 +6980,7 @@ const FOOD = (function () {
       let tb = '';
       if (sh.tab === 'cmb') tb = comboRows(slot) + '<div style="font-size:10px;color:var(--ink3)">Un tap = voce completa, con i numeri della libreria.</div>';
       else if (sh.tab === 'ali') tb = `<input placeholder="Cerca nella libreria…" value="${esc(sh.q)}" oninput="FOOD.q(this.value)" style="${inp}"><div id="food-list">${listFoods()}</div><div style="font-size:10px;color:var(--ink3)">Se cambi la quantità la voce risulta “pesato”, altrimenti “libreria” (porzione standard).</div>`;
-      else if (sh.tab === 'foto') tb = `<div style="font-size:12px;line-height:1.5">1 · Manda a Claude in chat la foto del piatto (o dell'etichetta), dicendo i pesi e l'olio che conosci.<br>2 · Incolla qui il blocco della risposta: righe <code>nome;porzione;kcal;P;C;G</code> e, se c'è, <code>#range;min-max</code>. Diventa <b>una</b> voce di <b>${esc(name)}</b> marcata “≈ stima”.</div><input id="ph_n" placeholder="Nome del piatto (es. Pranzo fuori casa)" style="${inp}"><textarea id="ph_t" placeholder="tonno sgocciolato;90 g;100;22;0;1&#10;#range;380-600" style="${inp};min-height:110px;padding:10px;font:12px ui-monospace,Menlo,monospace"></textarea><button style="${btn}" onclick="FOOD.importPhoto('${slot}')">Importa in ${esc(name)}</button>`;
+      else if (sh.tab === 'foto') tb = `<div style="font-size:12px;line-height:1.5">1 · Manda a Claude in chat la foto del piatto (o dell'etichetta), dicendo i pesi e l'olio che conosci.<br>${LANG === 'en' ? `2 · Paste the reply block here: rows <code>name;portion;kcal;P;C;F</code> and, if present, <code>#range;min-max</code>. It becomes <b>one</b> entry in <b>${esc(name)}</b>, marked “≈ estimate”.` : `2 · Incolla qui il blocco della risposta: righe <code>nome;porzione;kcal;P;C;G</code> e, se c'è, <code>#range;min-max</code>. Diventa <b>una</b> voce di <b>${esc(name)}</b> marcata “≈ stima”.`}</div><input id="ph_n" placeholder="Nome del piatto (es. Pranzo fuori casa)" style="${inp}"><textarea id="ph_t" placeholder="tonno sgocciolato;90 g;100;22;0;1&#10;#range;380-600" style="${inp};min-height:110px;padding:10px;font:12px ui-monospace,Menlo,monospace"></textarea><button style="${btn}" onclick="FOOD.importPhoto('${slot}')">Importa in ${esc(name)}</button>`;
       else tb = `<input id="mn_n" placeholder="Nome (es. gelato fuori casa)" style="${inp}"><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="mn_k" type="number" inputmode="decimal" step="any" placeholder="kcal" style="${inp}"><input id="mn_p" type="number" inputmode="decimal" step="any" placeholder="Proteine g" style="${inp}"><input id="mn_c" type="number" inputmode="decimal" step="any" placeholder="Carboidrati g" style="${inp}"><input id="mn_g" type="number" inputmode="decimal" step="any" placeholder="Grassi g" style="${inp}"></div><select id="mn_s" onchange="document.getElementById('mn_r').style.display=this.value==='s'?'grid':'none'" style="${inp}"><option value="e">Da etichetta / valori noti</option><option value="s">È una stima mia</option></select><div id="mn_r" style="display:none;grid-template-columns:1fr 1fr;gap:8px"><input id="mn_lo" type="number" inputmode="decimal" placeholder="kcal minime" style="${inp}"><input id="mn_hi" type="number" inputmode="decimal" placeholder="kcal massime" style="${inp}"></div><button style="${btn}" onclick="FOOD.addManual('${slot}')">Aggiungi a ${esc(name)}</button>`;
       const isO = !!offOf(day(selDate))[slot], noLive = !live(day(selDate), slot).length;
       const tog = `<div class="food-tog" role="switch" aria-checked="${isO}" tabindex="0" onclick="FOOD.togOff('${slot}')" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();FOOD.togOff('${slot}')}"><div><b>Pasto fuori piano</b><span>${isO ? 'Attivo: conta nei totali (valore centrale e range). Nelle statistiche compare a parte.' : 'Attivalo se qui hai mangiato fuori dal piano (ristorante, evento, viaggio).'}</span></div><i class="food-sw${isO ? ' on' : ''}"></i></div>${isO && noLive ? '<div class="food-warn">Incompleto: nessuna voce in questo slot. Il giorno resta fuori dalle statistiche finché non aggiungi una stima (scheda Foto o Manuale).</div>' : ''}`;
@@ -7000,7 +7000,7 @@ const FOOD = (function () {
       const filled = o.s[id].some(e => !e.plan);
       return `<div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;min-height:40px;border-bottom:1px solid var(--line2)"><div><div style="font-size:12px;font-weight:600">${n}${filled ? '<span class="food-src s-w">già compilato</span>' : ''}</div><div style="font-size:11px;color:${c ? 'var(--ink2)' : 'var(--ink3)'}">${c ? esc(c.n) + ' · ' + esc(comboText(c)) : 'libero (a mano o foto)'}</div></div><b style="font-size:12px">${v ? r0(v.k) + ' kcal' : ''}</b></div>`;
     }).join('');
-    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">Giornata tipo</b><span onclick="FOOD.close()" style="font-size:22px;padding:6px 10px;cursor:pointer">✕</span></div><div style="display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;overflow-x:auto">${gts.map(x => `<button class="food-tab ${g.id === x.id ? 'on' : ''}" onclick="FOOD.setGT('${x.id}')">${esc(x.n)}</button>`).join('')}</div>${rows}<div style="font-size:12px;font-weight:600">Totale previsto: ${r0(tk)} kcal · P ${fmt(tp, 1)} g</div><button style="${btn}" onclick="FOOD.applyGT('${g.id}')">Applica agli slot vuoti</button><div style="font-size:11px;color:var(--accent-ink);font-weight:600;min-height:14px">${esc(msg)}</div><div style="font-size:10px;color:var(--ink3);line-height:1.4">Le voci entrano come <b>previsto</b> e non contano nei totali finché non le confermi (✓ per slot o “Conferma tutto”). Gli slot già compilati non vengono mai sovrascritti. Le giornate si modificano in Gestione › Alimenti.</div>`;
+    el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">Giornata tipo</b><span onclick="FOOD.close()" style="font-size:22px;padding:6px 10px;cursor:pointer">✕</span></div><div style="display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px;overflow-x:auto">${gts.map(x => `<button class="food-tab ${g.id === x.id ? 'on' : ''}" onclick="FOOD.setGT('${x.id}')">${esc(x.n)}</button>`).join('')}</div>${rows}<div style="font-size:12px;font-weight:600">Totale previsto: ${r0(tk)} kcal · P ${fmt(tp, 1)} g</div><button style="${btn}" onclick="FOOD.applyGT('${g.id}')">Applica agli slot vuoti</button><div style="font-size:11px;color:var(--accent-ink);font-weight:600;min-height:14px">${esc(msg)}</div><div style="font-size:10px;color:var(--ink3);line-height:1.4">${LANG === 'en' ? `Entries go in as <b>planned</b> and don\u2019t count in the totals until you confirm them (✓ per slot or “Confirm all”). Slots that are already filled are never overwritten. Typical days are edited in Logistics › Food.` : `Le voci entrano come <b>previsto</b> e non contano nei totali finché non le confermi (✓ per slot o “Conferma tutto”). Gli slot già compilati non vengono mai sovrascritti. Le giornate si modificano in Gestione › Alimenti.`}</div>`;
   }
   function addCombo(slot, cid) { const c = combo(cid); if (!c) return; addEntry(slot, entryFromCombo(c, false)); close(); }
   function addFood(slot, fid) {
@@ -7114,7 +7114,7 @@ const FOOD = (function () {
   }
   function todayCard() {
     const d = td(), o = day(d), t = totals(d);
-    const dl = new Date(d + 'T00:00:00').toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+    const dl = new Date(d + 'T00:00:00').toLocaleDateString(LANG === 'en' ? 'en-GB' : 'it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
     let rows = '';
     SL.forEach(([id, n]) => {
       const it = o.s[id]; if (!it.length) { if (skipOf(o)[id]) rows += `<div class="fxc-sh" style="color:var(--ink3)"><span>${n}</span><span>saltato · 0 kcal</span></div>`; return; }
@@ -7233,11 +7233,11 @@ ${open && n ? rows + `<div style="display:flex;gap:8px;margin-top:8px"><button t
       flt.inb = true; flt.inbp = false; reGest();
     },
     inbDiscard(id) {
-      if (!confirm('Scartare questo alimento dalla coda?')) return;
+      if (!confirm(enTr('Scartare questo alimento dalla coda?'))) return;
       const items = inb().filter(x => x.id !== id); setKey('food_inbox', inbSet(items)); inbMsg = 'Scartato.'; reGest();
     },
     inbDiscardAll() {
-      if (!confirm('Scartare tutta la coda?')) return;
+      if (!confirm(enTr('Scartare tutta la coda?'))) return;
       setKey('food_inbox', inbSet([])); inbMsg = 'Coda svuotata.'; flt.inb = false; reGest();
     },
     inbConfirm(only) {
@@ -7381,13 +7381,13 @@ ${open && n ? rows + `<div style="display:flex;gap:8px;margin-top:8px"><button t
     },
     ver2(id, v) {
       const f = food(id); if (!f) return; v = ['A', 'B', 'C'].includes(v) ? v : '';
-      if ((v === 'A' || v === 'B') && !String(f.fonte || '').trim()) { alert('Per segnare la voce come ' + (v === 'A' ? 'etichetta' : 'banca dati') + ' scrivi prima la fonte (es. “etichetta + data” oppure “CREA/USDA + riferimento”).'); return reGest(); }
+      if ((v === 'A' || v === 'B') && !String(f.fonte || '').trim()) { alert(enTr('Per segnare la voce come ' + (v === 'A' ? 'etichetta' : 'banca dati') + ' scrivi prima la fonte (es. “etichetta + data” oppure “CREA/USDA + riferimento”).')); return reGest(); }
       f.ver = v; f.ok = v === 'A' || v === 'B'; saveLib(); reGest();
     },
     delF(id) {
       const used = lib().combos.filter(c => c.items.some(it => it.f === id)).map(c => c.n);
-      if (used.length && !confirm('Questo alimento è usato nelle combo: ' + used.join(', ') + '. Nelle combo resterà il valore salvato (fuori libreria). Eliminare?')) return;
-      if (!used.length && !confirm('Eliminare l\'alimento?')) return;
+      if (used.length && !confirm(enTr('Questo alimento è usato nelle combo: ' + used.join(', ') + '. Nelle combo resterà il valore salvato (fuori libreria). Eliminare?'))) return;
+      if (!used.length && !confirm(enTr('Eliminare l\'alimento?'))) return;
       const f = food(id);
       lib().combos.forEach(c => c.items.forEach(it => { if (it.f === id) { it.s = fv(f, it.q); it.n = f.n; delete it.f; } }));
       lib().foods = lib().foods.filter(x => x.id !== id); saveLib(); reGest();
@@ -7407,14 +7407,14 @@ ${open && n ? rows + `<div style="display:flex;gap:8px;margin-top:8px"><button t
     delI(id, i) { const c = combo(id); if (c) { c.items.splice(i, 1); saveLib(); reGest(); } },
     addI(id) { const c = combo(id), fid = document.getElementById('ci_' + id).value, f = food(fid); if (c && f) { c.items.push({ f: fid, q: f.ref }); saveLib(); reGest(); } },
     delC(id) {
-      if (!confirm('Eliminare la combo? Le voci già registrate nei giorni restano con i valori salvati.')) return;
+      if (!confirm(enTr('Eliminare la combo? Le voci già registrate nei giorni restano con i valori salvati.'))) return;
       lib().gts.forEach(g => Object.keys(g.m).forEach(k => { if (g.m[k] === id) delete g.m[k]; }));
       lib().combos = lib().combos.filter(x => x.id !== id); saveLib(); reGest();
     },
     newC() { lib().combos.push({ id: uid('c'), n: 'Nuova combo', slot: 'col', items: [] }); saveLib(); reGest(); },
     gn(id, v) { const g = lib().gts.find(x => x.id === id); v = String(v).trim(); if (g && v) { g.n = v; saveLib(); } reGest(); },
     gm(id, slot, v) { const g = lib().gts.find(x => x.id === id); if (!g) return; if (v) g.m[slot] = v; else delete g.m[slot]; saveLib(); reGest(); },
-    delG(id) { if (lib().gts.length <= 1) { flash('Serve almeno una giornata tipo.'); return reGest(); } if (!confirm('Eliminare la giornata tipo?')) return; lib().gts = lib().gts.filter(x => x.id !== id); saveLib(); reGest(); },
+    delG(id) { if (lib().gts.length <= 1) { flash('Serve almeno una giornata tipo.'); return reGest(); } if (!confirm(enTr('Eliminare la giornata tipo?'))) return; lib().gts = lib().gts.filter(x => x.id !== id); saveLib(); reGest(); },
     newG() { lib().gts.push({ id: uid('gt'), n: 'Nuova giornata', m: {} }); saveLib(); reGest(); },
     enSet(k, v) {
       const T = lib().targets; v = String(v).trim();
@@ -11500,6 +11500,261 @@ const EN_RULES = [
 const EN_SUB = [[/snapshot conservati/g, 'snapshots kept'], [/affidabilità (\d+)gg/g, 'reliability $1d'], [/su gg\. previsti/g, 'on planned days'],
   [/\bcellule\/µL/g, 'cells/µL'], [/mg\/g cre\b/g, 'mg/g creat'], [/\bkg\/kg magra\b/g, 'kg/kg lean mass']];
 /* ---- motore ---- */
+/* ---- Alimentazione (17/10): voci esatte + modelli con segnaposto. Nei modelli {*} cattura testo (tradotto a sua volta), {#} un numero, {~} qualsiasi testo; nell'inglese si richiamano come {1},{2}. Nell'inglese niente separatore delle migliaia ("7700"): enPost trasformerebbe "7,700" in "7.700". ---- */
+Object.assign(EN_DICT, {
+ "entro il limite": "within limit",
+ "Caffè mattina": "Morning coffee",
+ "Caffè mat.": "Morn. coffee",
+ "Spuntino mattina": "Mid-morning snack",
+ "Spuntino mat.": "AM snack",
+ "Spuntino pomeriggio": "Afternoon snack",
+ "Spuntino pom.": "PM snack",
+ "Extra / dopo cena": "Extra / after dinner",
+ "⚖ pesato": "⚖ weighed",
+ "▤ libreria": "▤ library",
+ "🏷 etichetta": "🏷 label",
+ "≈ stima": "≈ estimate",
+ "Alimentazione": "Nutrition",
+ "▦ Giornata tipo": "▦ Typical day",
+ "+ Aggiungi": "+ Add",
+ "proteine: obiettivo raggiunto": "protein: target reached",
+ "Obiettivi non impostati (Gestione › Alimenti › Obiettivi).": "Targets not set (Logistics › Food › Targets).",
+ "Nessuna voce registrata oggi.": "No entries logged today.",
+ "Saltato volontariamente: 0 kcal dichiarate": "Skipped on purpose: 0 kcal declared",
+ "✓ Conferma tutto": "✓ Confirm all",
+ "✓ Tutto": "✓ All",
+ "Svuota": "Clear",
+ "saldo a fine giornata": "end-of-day balance",
+ "in corso": "in progress",
+ "Incompleto": "Incomplete",
+ "saldo n.d.": "balance n/a",
+ "Nessun dato": "No data",
+ "In pareggio stimato": "Estimated break-even",
+ "Deficit stimato": "Estimated deficit",
+ "Surplus stimato": "Estimated surplus",
+ "saltato · 0 kcal": "skipped · 0 kcal",
+ "previsto": "planned",
+ "nessuna voce": "no entries",
+ "Registrato oggi": "Logged today",
+ "Ancora niente. Aggiungi una combo, un pasto o una giornata tipo; per un piatto fuori libreria manda la foto a Claude e incolla il risultato in Oggi › + › Foto.": "Nothing yet. Add a combo, a meal or a typical day; for a dish outside the library send the photo to Claude and paste the result in Today › + › Photo.",
+ "La card in Oggi si attiva dal 12/10. Le voci di oggi sono già salvate e le vedi qui.": "The Today card is active from 12/10. Today’s entries are already saved and you can see them here.",
+ "Elimina": "Delete",
+ "Rimuovi": "Remove",
+ "Dettagli": "Details",
+ "scegli lo slot": "choose the slot",
+ "Combo": "Combos",
+ "Manuale": "Manual",
+ "Pasto fuori piano": "Off-plan meal",
+ "Pasto saltato volontariamente": "Meal skipped on purpose",
+ "Attivalo se qui hai mangiato fuori dal piano (ristorante, evento, viaggio).": "Turn it on if you ate off plan here (restaurant, event, trip).",
+ "Attivo: conta nei totali (valore centrale e range). Nelle statistiche compare a parte.": "On: counts in the totals (central value and range). Shown separately in the statistics.",
+ "Non disponibile: questo pasto ha già delle voci.": "Not available: this meal already has entries.",
+ "Già in questo slot": "Already in this slot",
+ "Un tap = voce completa, con i numeri della libreria.": "One tap = full entry, with the library values.",
+ "Se cambi la quantità la voce risulta “pesato”, altrimenti “libreria” (porzione standard).": "If you change the quantity the entry counts as “weighed”, otherwise as “library” (standard portion).",
+ "da verificare": "to verify",
+ "stima": "estimate",
+ "Cerca nella libreria…": "Search the library…",
+ "Nessuna combo. Creale in Gestione › Alimenti › Combo.": "No combos. Create them in Logistics › Food › Combos.",
+ "Nessun alimento. Aggiungilo in Gestione › Alimenti › Libreria o usa Manuale.": "No foods. Add one in Logistics › Food › Library or use Manual.",
+ "✓ Confermo, l'ho mangiato": "✓ Confirm, I ate it",
+ "Non l'ho mangiato": "I didn't eat it",
+ "1 · Manda a Claude in chat la foto del piatto (o dell'etichetta), dicendo i pesi e l'olio che conosci.": "1 · Send Claude the photo of the dish (or of the label) in chat, with the weights and the oil you know.",
+ "Nome del piatto (es. Pranzo fuori casa)": "Dish name (e.g. Lunch out)",
+ "Da etichetta / valori noti": "From label / known values",
+ "È una stima mia": "It’s my own estimate",
+ "Nome (es. gelato fuori casa)": "Name (e.g. ice cream out)",
+ "kcal minime": "min kcal",
+ "kcal massime": "max kcal",
+ "Proteine g": "Protein g",
+ "Carboidrati g": "Carbs g",
+ "Grassi g": "Fat g",
+ "Servono almeno nome e kcal.": "At least a name and kcal are required.",
+ "Per una stima servono kcal minime ≤ kcal ≤ massime.": "For an estimate you need min kcal ≤ kcal ≤ max kcal.",
+ "Quantità non valida.": "Invalid quantity.",
+ "Piatto (foto)": "Dish (photo)",
+ "Nessuna riga da importare.": "No rows to import.",
+ "Il pasto ha già voci: rimuovile prima di segnarlo come saltato.": "This meal already has entries: remove them before marking it as skipped.",
+ "⚠ non salvato, riprovo": "⚠ not saved, retrying",
+ "Giornata tipo": "Typical day",
+ "Feriale": "Weekday",
+ "già compilato": "already filled",
+ "libero (a mano o foto)": "free (manual or photo)",
+ "Totale previsto": "Planned total",
+ "Applica agli slot vuoti": "Apply to empty slots",
+ "Nessuna giornata tipo: creala in Gestione › Alimenti.": "No typical day: create one in Logistics › Food.",
+ "Nessuno slot vuoto da riempire.": "No empty slot to fill.",
+ "In attesa del primo giorno completo": "Waiting for the first complete day",
+ "in attesa del primo giorno completo": "waiting for the first complete day",
+ "Il diario alimentare parte il 12/10 e il giorno in corso non conta. Qui compariranno le medie degli ultimi 14 giorni chiusi, con e senza i pasti fuori piano.": "The food diary starts on 12/10 and the current day doesn’t count. Here you’ll see the averages of the last 14 closed days, with and without off-plan meals.",
+ "Il diario alimentare parte il 12/10; il giorno in corso non conta.": "The food diary starts on 12/10; the current day doesn’t count.",
+ "(pasto fuori piano senza stima).": "(off-plan meal without an estimate).",
+ "In piano": "On plan",
+ "in piano": "on plan",
+ "Tutto": "All",
+ "Giorni conteggiati": "Days counted",
+ "kcal medie (valore centrale)": "avg kcal (central value)",
+ "Proteine medie (g)": "Avg protein (g)",
+ "Giorni con pasti fuori piano": "Days with off-plan meals",
+ "Proteine": "Protein",
+ "Bilancio": "Balance",
+ "Saldo": "Balance",
+ "kcal/giorno · deficit": "kcal/day · deficit",
+ "kcal/giorno · surplus": "kcal/day · surplus",
+ "kcal/giorno · in pareggio stimato": "kcal/day · estimated break-even",
+ "saldo solo per giorni chiusi, con voci e completi": "balance only for closed days that have entries and are complete",
+ "senza fabbisogno": "no energy needs",
+ "peso non disponibile": "weight not available",
+ "peso già nella fascia o sotto": "weight already within the band or below",
+ "Compliance": "Compliance",
+ "giorni kcal + P in obiettivo": "days with kcal + P on target",
+ "Giorno in obiettivo = kcal ≤ obiettivo e proteine ≥ obiettivo, entrambi nello stesso giorno chiuso e completo": "Day on target = kcal ≤ target and protein ≥ target, both in the same closed, complete day",
+ "Energia · kcal": "Energy · kcal",
+ "giorni chiusi + oggi": "closed days + today",
+ "obiettivo": "target",
+ "≥ obiettivo": "≥ target",
+ "sotto obiettivo": "below target",
+ "sotto": "below",
+ "│ range delle stime": "│ estimate range",
+ "tratteggio = incompleto": "dashed = incomplete",
+ "Proteine · g": "Protein · g",
+ "Saldo · kcal": "Balance · kcal",
+ "+ surplus / − deficit": "+ surplus / − deficit",
+ "deficit": "deficit",
+ "surplus": "surplus",
+ "con pasto fuori piano": "with off-plan meal",
+ "fuori piano": "off plan",
+ "fabbisogno": "needs",
+ "kcal per giorno": "kcal per day",
+ "proteine per giorno": "protein per day",
+ "saldo per giorno": "balance per day",
+ "Giorno per giorno": "Day by day",
+ "Nessun dato alimentare in questo intervallo.": "No food data in this range.",
+ "Obiettivo kcal non impostato: si modifica in Gestione › Alimenti › Obiettivi e il grafico si aggiorna.": "kcal target not set: change it in Logistics › Food › Targets and the chart updates.",
+ "Fabbisogno": "Needs",
+ "Stato": "Status",
+ "nessun dato": "no data",
+ "Una riga per giorno, solo totali (non i singoli pasti). I valori sono centrali; il range indica le stime. “Incompleto” = pasto fuori piano senza voci: escluso dalle medie. “Nessun dato” non è uno zero. L’app non può sapere se hai registrato tutti i pasti. Tocca una riga per aprire quel giorno in Oggi.": "One row per day, totals only (not individual meals). Values are central; the range reflects estimates. “Incomplete” = off-plan meal with no entries: excluded from the averages. “No data” is not a zero. The app can’t know whether you logged every meal. Tap a row to open that day in Today.",
+ "Libreria": "Library",
+ "Giornate tipo": "Typical days",
+ "Obiettivi": "Targets",
+ "Oggi · kcal": "Today · kcal",
+ "Oggi · proteine g": "Today · protein g",
+ "Verificati": "Verified",
+ "Da verificare": "To verify",
+ "Totale pasto": "Meal total",
+ "Grassi": "Fat",
+ "Carbo": "Carbs",
+ "Nessun alimento trovato.": "No food found.",
+ "Nessun alimento trovato nel testo incollato.": "No food found in the pasted text.",
+ "Salva come combo": "Save as combo",
+ "+ Aggiungi a oggi": "+ Add to today",
+ "Poi rinomina la combo e scegli lo slot in Combo.": "Then rename the combo and pick the slot in Combos.",
+ "Coda alimenti": "Food queue",
+ "▸ Incolla da Claude": "▸ Paste from Claude",
+ "▾ Incolla da Claude": "▾ Paste from Claude",
+ "Alimento": "Food",
+ "Unità": "Unit",
+ "Porz.": "Port.",
+ "Livello": "Level",
+ "Etichetta": "Label",
+ "Banca dati": "Database",
+ "Stima": "Estimate",
+ "Dettaglio": "Details",
+ "+ Nuovo": "+ New",
+ "Nuovo alimento": "New food",
+ "Porzione": "Portion",
+ "Nome": "Name",
+ "Categoria": "Category",
+ "Elimina alimento": "Delete food",
+ "Fonte (obbligatoria per Etichetta / Banca dati)": "Source (required for Label / Database)",
+ "es. etichetta + data; CREA / USDA + riferimento": "e.g. label + date; CREA / USDA + reference",
+ "Se cambi kcal o macro la voce torna “da verificare”; la correzione si propaga a combo e storico.": "If you change kcal or macros the entry goes back to “to verify”; the correction propagates to combos and history.",
+ "Nome, categoria, livello, nota": "Name, category, level, note",
+ "Compare come “da verificare” finché non aggiungi la fonte.": "Shows as “to verify” until you add the source.",
+ "Registrato di recente": "Recently logged",
+ "Tutti gli alimenti sono verificati.": "All foods are verified.",
+ "Più usati · 7 giorni": "Most used · 7 days",
+ "Nessun dato negli ultimi 7 giorni.": "No data in the last 7 days.",
+ "Copertura per categoria": "Coverage by category",
+ "Mai registrato come singolo alimento.": "Never logged as a single food.",
+ "per pezzo": "per piece",
+ "per 100": "per 100",
+ "+ oggi": "+ today",
+ "alimento in arrivo": "food incoming",
+ "alimenti in arrivo": "foods incoming",
+ "da Claude": "from Claude",
+ "da controllare": "to check",
+ "chiudi ▴": "close ▴",
+ "controlla ▾": "review ▾",
+ "Aggiungi alla coda": "Add to queue",
+ "Scarta tutti": "Discard all",
+ "Conferma comunque": "Confirm anyway",
+ "Conferma": "Confirm",
+ "Aggiungi": "Add",
+ "Le voci con ✕ o ⚠ restano in coda (le ⚠ si confermano una per una). Dopo “Conferma” entrano in libreria con fonte e livello indicati.": "Entries with ✕ or ⚠ stay in the queue (⚠ ones are confirmed one by one). After “Confirm” they go into the library with the source and level shown.",
+ "nome mancante": "name missing",
+ "unità non valida": "invalid unit",
+ "porzione non valida": "invalid portion",
+ "mancante o illeggibile": "missing or unreadable",
+ "livello non valido": "invalid level",
+ "fonte mancante": "source missing",
+ "da rivedere:": "to review:",
+ "kcal dichiarate": "declared kcal",
+ "Niente da aggiungere: il campo è vuoto.": "Nothing to add: the field is empty.",
+ "Scartato.": "Discarded.",
+ "Coda svuotata.": "Queue emptied.",
+ "Niente da confermare: le voci in coda hanno problemi.": "Nothing to confirm: the queued entries have problems.",
+ "+ Nuova combo": "+ New combo",
+ "Nuova combo": "New combo",
+ "Nessuna combo ancora.": "No combos yet.",
+ "+ aggiungi alimento…": "+ add food…",
+ "contiene stime / da verificare": "contains estimates / to verify",
+ "tutti verificati": "all verified",
+ "Nome vuoto o già usato.": "Name empty or already used.",
+ "Valore non valido.": "Invalid value.",
+ "Data non valida.": "Invalid date.",
+ "Compila nome, porzione, kcal, P, C, G (numeri ≥ 0).": "Fill in name, portion, kcal, P, C, F (numbers ≥ 0).",
+ "Esiste già un alimento con questo nome.": "A food with this name already exists.",
+ "Prevedi oggi": "Plan today",
+ "— libero —": "— free —",
+ "nessuna combo scelta": "no combo chosen",
+ "+ Nuova giornata tipo": "+ New typical day",
+ "Nuova giornata": "New day",
+ "“Prevedi oggi” inserisce le combo come previsto: contano solo dopo la conferma e non toccano gli slot già compilati. “+ oggi” aggiunge subito quella combo come mangiata.": "“Plan today” enters the combos as planned: they only count after you confirm and don’t touch slots that are already filled. “+ today” adds that combo straight away as eaten.",
+ "Serve almeno una giornata tipo.": "At least one typical day is required.",
+ "Obiettivi giornalieri": "Daily targets",
+ "usati dalla card di Oggi": "used by the Today card",
+ "Se un campo è vuoto la card di Oggi mostra solo i totali, senza barra di avanzamento.": "If a field is empty the Today card shows only the totals, with no progress bar.",
+ "Fabbisogno energetico": "Energy needs",
+ "saldo deficit/surplus": "deficit/surplus balance",
+ "Altezza · cm": "Height · cm",
+ "Nascita": "Birth",
+ "Attività ×": "Activity ×",
+ "Oggi finora": "Today so far",
+ "dai dati registrati": "from logged data",
+ "Serve almeno un peso registrato negli ultimi 14 giorni.": "At least one weight logged in the last 14 days is required.",
+ "Scartare questo alimento dalla coda?": "Discard this food from the queue?",
+ "Scartare tutta la coda?": "Discard the whole queue?",
+ "Eliminare l'alimento?": "Delete this food?",
+ "Eliminare la combo? Le voci già registrate nei giorni restano con i valori salvati.": "Delete the combo? Entries already logged on past days keep their saved values.",
+ "Eliminare la giornata tipo?": "Delete the typical day?",
+ "Per segnare la voce come etichetta scrivi prima la fonte (es. “etichetta + data” oppure “CREA/USDA + riferimento”).": "To mark the entry as label, write the source first (e.g. “label + date” or “CREA/USDA + reference”).",
+ "Per segnare la voce come banca dati scrivi prima la fonte (es. “etichetta + data” oppure “CREA/USDA + riferimento”).": "To mark the entry as database, write the source first (e.g. “label + date” or “CREA/USDA + reference”).",
+ "salt.": "skip.",
+ "Fascia 71,5–73 kg sulla scala DEXA (fissata il 21/09); la bilancia di casa legge circa 1 kg in meno. Ritmo = (obiettivo kcal − fabbisogno) × 7 / 7.700: regola empirica, il peso include l'acqua.": "Band 71.5–73 kg on the DEXA scale (set on 21/09); the home scale reads about 1 kg less. Pace = (kcal target − needs) × 7 / 7700: rule of thumb, weight includes water.",
+ "Serve almeno un peso registrato negli ultimi 14 giorni. Il fabbisogno non è salvato: si ricalcola dal peso del giorno, quindi cambiare un parametro aggiorna anche i giorni passati. Margine ~±10%; ×1,3 è un'ipotesi (nessun dato sui passi), le kcal di Motra non sono verificabili (attive o totali).": "At least one weight logged in the last 14 days is required. Needs are not stored: they are recalculated from the day’s weight, so changing a parameter updates past days too. Margin ~±10%; ×1.3 is an assumption (no step data), Motra kcal can’t be verified (active or total).",
+ "Hai un solo giorno registrato: le medie valgono solo per quello.": "Only one day logged: the averages apply to that day only.",
+ "Scarta": "Discard",
+ "Incolla qui il JSON che ti dà Claude: {\"v\":1,\"items\":[…]}": "Paste the JSON Claude gives you here: {\"v\":1,\"items\":[…]}"
+});
+const EN_FOOD_PT = [["Fabbisogno = basale (Mifflin–St Jeor: 10·peso + 6,25·altezza − 5·età + 5, peso del giorno dalla bilancia) × {*} + kcal dell’allenamento (Motra: non verificabile se attive o totali). Margine ~±10%: un saldo entro ±{*} kcal non è distinguibile da zero. Il saldo si calcola solo per i giorni chiusi con voci e non incompleti; oggi è “in corso”. Parametri in Gestione › Alimenti › Obiettivi: cambiandoli si ricalcola anche il passato.","Needs = basal (Mifflin–St Jeor: 10·weight + 6.25·height − 5·age + 5, weight of the day from the scale) × {1} + training kcal (Motra: can’t verify whether active or total). Margin ~±10%: a balance within ±{2} kcal is indistinguishable from zero. The balance is only computed for closed days that have entries and aren’t incomplete; today is “in progress”. Parameters in Logistics › Food › Targets: changing them recalculates the past too."],["Colori (soglie fisse): kcal verde ≤ obiettivo, giallo fino a +10%, rosso oltre; proteine verde ≥ obiettivo, giallo ≥ 90%, rosso sotto; saldo verde ≤ −{*}, grigio entro ±{*}, arancio da +{*}. Obiettivo T2: peso {*}–{*} kg sulla scala DEXA (fissato il 21/09); il ritmo del piano è (obiettivo kcal − fabbisogno) × 7 / 7.700, regola empirica, e il peso include l’acqua.","Colours (fixed thresholds): kcal green ≤ target, yellow up to +10%, red above; protein green ≥ target, yellow ≥ 90%, red below; balance green ≤ −{1}, grey within ±{2}, orange from +{3}. T2 target: weight {4}–{5} kg on the DEXA scale (set on 21/09); plan pace is (kcal target − needs) × 7 / 7700, rule of thumb, and weight includes water."],["Oggi: basale {*} (Mifflin–St Jeor, {*} kg, {*} cm, {*} anni) × {*} + allenamento {*} = {*} kcal. Il fabbisogno non è salvato: si ricalcola dal peso del giorno, quindi cambiare un parametro aggiorna anche i giorni passati. Margine ~±10%; ×1,3 è un'ipotesi (nessun dato sui passi), le kcal di Motra non sono verificabili (attive o totali).","Today: basal {1} (Mifflin–St Jeor, {2} kg, {3} cm, {4} years) × {5} + training {6} = {7} kcal. Needs are not stored: they are recalculated from the day’s weight, so changing a parameter updates past days too. Margin ~±10%; ×1.3 is an assumption (no step data), Motra kcal can’t be verified (active or total)."],["“In piano” esclude i giorni con almeno un pasto fuori piano. Esclusi da entrambe le colonne: {*} (pasto fuori piano senza stima) e {*} senza voci. L’app non può sapere se hai registrato tutti i pasti; le stime pesano ±25–40%, quindi differenze piccole fra le due colonne non sono significative.","“On plan” excludes days with at least one off-plan meal. Excluded from both columns: {1} (off-plan meal without an estimate) and {2} with no entries. The app can’t know whether you logged every meal; estimates weigh ±25–40%, so small differences between the two columns are not significant."],["“In piano” esclude i giorni con almeno un pasto fuori piano. Esclusi da entrambe le colonne: {*} e {*} senza voci. L’app non può sapere se hai registrato tutti i pasti; le stime pesano ±25–40%, quindi differenze piccole fra le due colonne non sono significative.","“On plan” excludes days with at least one off-plan meal. Excluded from both columns: {1} and {2} with no entries. The app can’t know whether you logged every meal; estimates weigh ±25–40%, so small differences between the two columns are not significant."],["Fascia {*}–{*} kg sulla scala DEXA (fissata il 21/09); la bilancia di casa legge circa 1 kg in meno. Ritmo = (obiettivo kcal − fabbisogno) × 7 / 7.700: regola empirica, il peso include l'acqua.","Band {1}–{2} kg on the DEXA scale (set on 21/09); the home scale reads about 1 kg less. Pace = (kcal target − needs) × 7 / 7700: rule of thumb, weight includes water."],["Tocca + sull'alimento · Regola la quantità con − e + · Il totale si aggiorna a destra · Qui solo alimenti verificati ({*}); altri {*} in Libreria › Da verificare","Tap + on a food · Adjust the quantity with − and + · The total updates on the right · Verified foods only ({1}); {2} more in Library › To verify"],["Tocca + sull'alimento · Regola la quantità con − e + · Il totale si aggiorna in alto · Qui solo alimenti verificati ({*}); altri {*} in Libreria › Da verificare","Tap + on a food · Adjust the quantity with − and + · The total updates at the top · Verified foods only ({1}); {2} more in Library › To verify"],["Basale {*} (Mifflin–St Jeor, {*} kg, {*} cm, {*} anni) + attività quotidiana {*} (×{*}) + allenamento {*} = {*} kcal (±10% sulla parte basale)","Basal {1} (Mifflin–St Jeor, {2} kg, {3} cm, {4} years) + daily activity {5} (×{6}) + training {7} = {8} kcal (±10% on the basal part)"],["Tocca + sull'alimento · Regola la quantità con − e + · Il totale si aggiorna a destra · Qui solo alimenti verificati ({*})","Tap + on a food · Adjust the quantity with − and + · The total updates on the right · Verified foods only ({1})"],["Tocca + sull'alimento · Regola la quantità con − e + · Il totale si aggiorna in alto · Qui solo alimenti verificati ({*})","Tap + on a food · Adjust the quantity with − and + · The total updates at the top · Verified foods only ({1})"],["Saldo = kcal − fabbisogno; la fascia chiara ±{*} non è distinguibile da zero; l'asta bianca è l'intervallo delle stime","Balance = kcal − needs; the light band ±{1} is indistinguishable from zero; the white bar is the estimate range"],["Questo alimento è usato nelle combo: {*}. Nelle combo resterà il valore salvato (fuori libreria). Eliminare?","This food is used in combos: {1}. In the combos the saved value will remain (outside the library). Delete?"],["Oggi: basale {*} (Mifflin–St Jeor, {*} kg, {*} cm, {*} anni) × {*} + allenamento {*} = {*} kcal.","Today: basal {1} (Mifflin–St Jeor, {2} kg, {3} cm, {4} years) × {5} + training {6} = {7} kcal."],["kcal dichiarate {*} · calcolate dai macro {*} (4P+4C+9G; fibre/alcol/arrotondamenti possibili)","declared kcal {1} · calculated from macros {2} (4P+4C+9F; fibre/alcohol/rounding possible)"],["{*} giorni su {*} in obiettivo · {*} con pasti fuori piano · kcal medie in piano {*}.","{1} of {2} days on target · {3} with off-plan meals · average kcal on plan {4}."],["✕ {*}: resta in coda finché non lo scarti o lo faccio correggere a Claude","✕ {1}: stays in the queue until you discard it or have Claude fix it"],["✕ {~}: resta in coda finché non lo scarti o lo faccio correggere a Claude","✕ {1}: stays in the queue until you discard it or have Claude fix it"],["○ {*} pasto saltato volontariamente ({*}): 0 kcal dichiarate","○ {1} meal skipped on purpose ({2}): 0 kcal declared"],["○ {*} pasti saltati volontariamente ({*}): 0 kcal dichiarate","○ {1} meals skipped on purpose ({2}): 0 kcal declared"],["{*} giorni incompleti (pasto fuori piano senza stima)","{1} incomplete days (off-plan meal without an estimate)"],["{*} giorno incompleto (pasto fuori piano senza stima)","{1} incomplete day (off-plan meal without an estimate)"],["{*} giorni: deficit medio di {*} kcal, proteine {*} g","{1} days: average deficit of {2} kcal, protein {3} g"],["{*} giorni: surplus medio di {*} kcal, proteine {*} g","{1} days: average surplus of {2} kcal, protein {3} g"],["Previsti {*} slot (non contano finché non confermi).","{1} slots planned (they don’t count until you confirm)."],["basale {*} + attività {*} (×{*}) + allenamento {*}","basal {1} + activity {2} (×{3}) + training {4}"],["kcal dichiarate {*} vs {*} da macro (scarto {*}%)","declared kcal {1} vs {2} from macros (gap {3}%)"],["{*} giorni: in pareggio stimato, proteine {*} g","{1} days: estimated break-even, protein {2} g"],["✓ coerenza kcal ≈ 4P+4C+9G (scarto {*}%)","✓ kcal consistent with ≈ 4P+4C+9F (gap {1}%)"],["{*} / {*} g proteine · mancano {*} kcal","{1} / {2} g protein · {3} kcal to go"],["kcal {*} · proteine {*} · deficit {*}","kcal {1} · protein {2} · deficit {3}"],["{*} slot già compilati: non toccati.","{1} slots already filled: left untouched."],["Servirebbero {*} kg a settimana. {~}","It would take {1} kg per week. {2}"],["Totale previsto: {*} kcal · P {*} g","Planned total: {1} kcal · P {2} g"],["● {*} pasto fuori piano oggi ({*})","● {1} off-plan meal today ({2})"],["● {*} pasti fuori piano oggi ({*})","● {1} off-plan meals today ({2})"],["{*} incompleto: totale per difetto","{1} incomplete: total is a lower bound"],["{*} incompleti: totale per difetto","{1} incomplete: total is a lower bound"],["valore {*} mancante o illeggibile","value {1} missing or unreadable"],["{*} kcal su valori da verificare","{1} kcal on values to verify"],["Servirebbero {*} kg a settimana.","It would take {1} kg per week."],["{*} alimento in arrivo da Claude","{1} food incoming from Claude"],["{*} alimenti in arrivo da Claude","{1} foods incoming from Claude"],["{*} giorni su {*} in obiettivo","{1} of {2} days on target"],["mancano {*} kg in {*} giorni","{1} kg to go in {2} days"],["{*} alla porzione standard","{1} per standard portion"],["totale tra {*} e {*} kcal","total between {1} and {2} kcal"],["{*} di {*} giorni ≥ {*} g","{1} of {2} days ≥ {3} g"],["{*} di {*} giorni chiusi","{1} of {2} closed days"],["Oggi · proteine g / {*}","Today · protein g / {1}"],["{*} kcal da verificare","{1} kcal to verify"],["Registrato oggi · {*}","Logged today · {1}"],["Aggiunto a oggi · {*}","Added to today · {1}"],["Righe non valide: {*}","Invalid rows: {1}"],["{*} giorno incompleto","{1} incomplete day"],["{*} giorni incompleti","{1} incomplete days"],["{*} giorni senza voci","{1} days with no entries"],["{*} giorno senza voci","{1} day with no entries"],["ritmo del piano ≈ {*}","plan pace ≈ {1}"],["{*} verificati su {*}","{1} verified of {2}"],["{*} verificati su {*}","{1} verified of {2}"],["Conferma {*} alimento","Confirm {1} food"],["Conferma {*} alimenti","Confirm {1} foods"],["Non stimato {*} kcal","Not estimated {1} kcal"],["JSON non valido: {*}","Invalid JSON: {1}"],["Alimentazione · {*}","Nutrition · {1}"],["{*} giorni completi","{1} complete days"],["{*} giorno completo","{1} complete day"],["Da completare · {*}","To complete · {1}"],["{*} (da verificare)","{1} (to verify)"],["Previsto +{*} kcal","Planned +{1} kcal"],["Obiettivo T2 · {*}","T2 target · {1}"],["Totale pasto · {*}","Meal total · {1}"],["⚠ kcal≠macro ({*})","⚠ kcal≠macros ({1})"],["{*} giorni chiusi","{1} closed days"],["{*} giorno chiuso","{1} closed day"],["cumulato {*} kcal","cumulative {1} kcal"],["Oggi · kcal / {*}","Today · kcal / {1}"],["Da verificare {*}","To verify {1}"],["oltre di {*} kcal","over by {1} kcal"],["stimato {*} kcal","estimated {1} kcal"],["Conferma {*} {*}","Confirm {1} {2}"],["mancano {*} kcal","{1} kcal to go"],["mancano {*} g P","{1} g P to go"],["g · media / {*}","g · average / {1}"],["stima {*} / {*}","estimate {1} / {2}"],["{*}× · {*} kcal","{1}× · {2} kcal"],["· obiettivo {*}","· target {1}"],["Fabbisogno {*}","Energy needs {1}"],["fabbisogno {*}","needs {1}"],["Aggiungi · {*}","Add · {1}"],["Aggiungi a {*}","Add to {1}"],["Importa in {*}","Import into {1}"],["Aggiunto: {*}.","Added: {1}."],["Alimenti · {*}","Foods · {1}"],["Verificati {*}","Verified {1}"],["{*} · {*} kcal","{1} · {2} kcal"],["mancano {*} kg","{1} kg to go"],["{*} g proteine","{1} g protein"],["obiettivo {*}","target {1}"],["Aggiunto: {*}","Added: {1}"],["porzione {*}","portion {1}"],["{*} alimento","{1} food"],["±{*} = zero","±{1} = zero"],["≈ stima {*}","≈ estimate {1}"],["{*} saltato","{1} skipped"],["{*} saltati","{1} skipped"],["per 100 {*}","per 100 {1}"],["Fonte: {*}","Source: {1}"],["{*} giorni","{1} days"],["{*} giorno","{1} day"],["stima {*}","estimate {1}"],["Tutti {*}","All {1}"],["Stime {*}","Estimates {1}"],["{*} voce","{1} entry"],["{*} voci","{1} entries"],["G {#}","F {1}"],["⚠ {~}","⚠ {1}"]];
+const EN_FOOD_RE = EN_FOOD_PT.map(([it, en]) => [new RegExp('^' + it.split(/(\{\*\}|\{#\}|\{~\})/).map(x => x === '{*}' ? '((?:(?! \u00b7 | \u2192 ).)+?)' : x === '{~}' ? '(.+?)' : x === '{#}' ? '([\u2212+-]?[\\d.,]+)' : x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('') + '$', 's'), en]);
+EN_RULES.unshift(...EN_FOOD_RE.map(([re, en]) => [re, (m, ...g) => en.replace(/\{(\d)\}/g, (_, i) => enTranslate(g[+i - 1]).trim())]));
+/* elenchi separati da ', ' o ' → ': traduce le parti note, lascia le altre (alimenti, note) */
+EN_RULES.push([/^.+(?: \u00b7 | \u2192 |, ).+$/s, function enList(m) { for (const sep of [' \u00b7 ', ' \u2192 ', ', ']) { if (m.indexOf(sep) < 0) continue; const ps = m.split(sep), ts = ps.map(p => { const c = p.trim(), r = c ? (enPiece(c) ?? (/(?: \u00b7 | \u2192 |, )/.test(c) ? enList(c) : null)) : null; return r == null ? p : r; }); if (ts.some((t, k) => t !== ps[k])) return ts.join(sep); } return null; }]);
+/* confirm()/alert() e altri testi fuori dal DOM */
+function enTr(s) { return (typeof LANG !== 'undefined' && LANG === 'en') ? enTranslate(s) : s; }
 const EN_LOW = {};
 Object.keys(EN_DICT).forEach(k => { EN_LOW[k.toLowerCase().replace(/\s+/g, ' ').trim()] = EN_DICT[k]; });
 function enShape(out, src) {
@@ -11512,7 +11767,7 @@ function enShape(out, src) {
 function enPiece(core) {
   const key = core.toLowerCase().replace(/\s+/g, ' ').trim();
   if (Object.prototype.hasOwnProperty.call(EN_LOW, key)) return enShape(EN_LOW[key], core);
-  for (const [re, fn] of EN_RULES) { const m = core.match(re); if (m) return fn.apply(null, m); }
+  for (const [re, fn] of EN_RULES) { const m = core.match(re); if (m) { const r = fn.apply(null, m); if (r != null) return r; } }
   const pre = core.match(/^([^A-Za-zÀ-ú0-9]+)(.*[A-Za-zÀ-ú].*)$/);   // freccia / emoji iniziale
   if (pre) { const r = enPiece(pre[2]); if (r != null) return pre[1] + r; }
   return null;
@@ -11565,7 +11820,7 @@ function enApply() {
   if (typeof LANG === 'undefined' || LANG !== 'en') return;
   const root = document.getElementById('app'); if (!root) return;
   _enBusy = true;
-  try { enWalk(root); } finally { _enBusy = false; if (_enObs) _enObs.takeRecords(); }
+  try { enWalk(root); const fo = document.getElementById('food-ov'); if (fo) enWalk(fo); } finally { _enBusy = false; if (_enObs) _enObs.takeRecords(); }
 }
 function enSchedule() { if (_enRaf) return; _enRaf = requestAnimationFrame(() => { _enRaf = 0; enApply(); }); }
 function enRevert() {
