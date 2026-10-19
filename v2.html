@@ -6442,7 +6442,7 @@ let today = isoLocal(new Date());
 // reale odierna (serve altrove); 'selDate' è quella che l'utente sta guardando.
 let selDate = today;
 let oggiViewMode = 'day'; // 'day' | 'week' — toggle Giorno/Settimana (settimana: vista minima, da rifinire)
-let pesoRange = 30; // finestra corrente del grafico peso: 7 | 14 | 30 | 60 giorni
+let pesoRange = 30; // finestra corrente del grafico peso: 7 | 14 | 30 | 60 giorni, oppure 'ciclo' (dal 20/07 al giorno visualizzato)
 // Menù a comparsa (sede iniezione / valore categorico) nella vista desktop
 // portata dal mockup — un solo menù aperto alla volta, si chiude cliccando
 // altrove (vedi listener in fondo al file).
@@ -7704,6 +7704,9 @@ const PESO_EVENTS = [
   { iso: CAL.T1, it: 'DEXA T1', en: 'DEXA T1' },
   { iso: '2026-10-16', it: 'Total Body', en: 'Total Body' }
 ];
+/* 19/10: 'ciclo' = tutti i giorni dall'inizio del ciclo peptidico (indice 0) fino al giorno visualizzato; i numeri passano invariati. */
+function pesoDays(r) { return r === 'ciclo' ? Math.max(2, dayIdxFromISO(selDate) + 1) : r; }
+function pesoRangeLabel(r) { return r === 'ciclo' ? (LANG === 'it' ? 'Ciclo' : 'Cycle') : r + 'g'; }
 function pesoAt(i) {
   const rec = (store.blob && store.blob['p2_day_' + i]) || {};
   const v = parseFloat(rec.peso);
@@ -7789,7 +7792,7 @@ function pesoChartHTML(days, anchorISO) {
         ${evLbl}${bandLbl}${tips}${dotRaw}${dotMa}
         <div style="position:absolute;left:0;right:0;bottom:-15px;height:12px;">${xLbl}</div>
       </div>
-      <div style="flex:0 0 auto;display:flex;flex-wrap:wrap;gap:4px 14px;padding:2px 0 0 30px;font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);">
+      <div style="flex:0 0 auto;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px;padding:2px 0 2px 30px;font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);">
         ${leg('var(--ink3)', 3, IT ? 'Peso giornaliero' : 'Daily weight')}
         ${leg('var(--accent)', 3, (IT ? 'Media mobile 7g' : '7-day moving avg') + (maLast != null ? ' (' + nf(maLast) + ')' : ''))}
         ${showBand ? leg('rgba(34,160,90,.45)', 8, IT ? 'Banda T2' : 'T2 band') : ''}
@@ -7815,14 +7818,14 @@ function pesoDowHTML(selISO) {
   const isToday = selISO === today;
   const sub = (diff != null ? (IT ? (isToday ? 'Oggi ' : 'Quel giorno ') + sg(diff) + ' kg ' + (diff >= 0 ? 'sopra' : 'sotto') + ' la media 7g · ' : (isToday ? 'Today ' : 'That day ') + sg(diff) + ' kg ' + (diff >= 0 ? 'above' : 'below') + ' the 7-day avg · ')
                            : '') + (IT ? `indicativo · ${eff.n[wd]} settimane di dati per questo giorno` : `indicative · ${eff.n[wd]} weeks of data for this weekday`);
-  const chips = eff.dev.map((v, k) => `<div style="width:42px;padding:3px 0;text-align:center;border-radius:var(--r-sm);${k === wd ? 'background:var(--surf);box-shadow:0 0 0 2px var(--accent);' : ''}"><div style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink2);">${SH[k]}</div><div style="font-size:var(--fs-xs);font-weight:700;color:${eff.n[k] >= 8 ? col(v) : 'var(--ink3)'};font-variant-numeric:tabular-nums;">${eff.n[k] >= 8 && v != null ? sg(v) : '—'}</div></div>`).join('');
+  const chips = eff.dev.map((v, k) => `<div style="padding:5px 0;text-align:center;border-radius:var(--r-sm);${k === wd ? 'background:var(--surf);box-shadow:0 0 0 2px var(--accent);' : ''}"><div style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink2);">${SH[k]}</div><div style="font-size:var(--fs-xs);font-weight:700;color:${eff.n[k] >= 8 ? col(v) : 'var(--ink3)'};font-variant-numeric:tabular-nums;">${eff.n[k] >= 8 && v != null ? sg(v) : '—'}</div></div>`).join('');
   return `
-    <div style="flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 14px;background:var(--surf2);border-radius:var(--r-md);padding:9px 12px;">
-      <div style="min-width:0;flex:1 1 220px;">
+    <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:stretch;gap:9px;background:var(--surf2);border-radius:var(--r-md);padding:11px 14px 10px;">
+      <div style="text-align:center;min-width:0;">
         <div style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);"><span style="color:${col(dev)};">${NAMES[wd]}</span> ${head}</div>
         <div style="font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);margin-top:2px;">${sub}</div>
       </div>
-      <div style="display:flex;gap:4px;">${chips}</div>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;">${chips}</div>
     </div>`;
 }
 
@@ -9038,7 +9041,7 @@ function renderWeekFull() {
 function renderOggiFull() {
   const L = t();
   const a = adherence(store.blob);
-  const wHist = weightHistory(pesoRange, selDate);
+  const wHist = weightHistory(pesoDays(pesoRange), selDate);
   const wTrend = weeklyTrend(wHist);
   const hrvHist = (() => {
     const dIdx = dayIdxFromISO(selDate), from = Math.max(0, dIdx - 13);
@@ -9057,7 +9060,7 @@ function renderOggiFull() {
 
   const lastPeso = wHist.filter(v => v !== null).pop();
   const pesoDelta = (lastPeso !== undefined) ? (lastPeso - T0_PESO) : null;
-  const trendTxt = wTrend === null ? '—' : `${wTrend >= 0 ? '+' : ''}${wTrend.toFixed(2)} kg / sett. su ${pesoRange}gg`;
+  const trendTxt = wTrend === null ? '—' : `${wTrend >= 0 ? '+' : ''}${wTrend.toFixed(2)} kg / sett. su ${pesoDays(pesoRange)}gg`;
 
   const s = renderOggiSections();
 
@@ -9100,7 +9103,7 @@ function renderOggiFull() {
       <div class="weight-foot">
         <span class="weight-trend-note">${trendTxt}</span>
         <div class="range-btns">
-          ${[7, 14, 30, 60].map(r => `<button class="${pesoRange === r ? 'active' : ''}" onclick="pesoRange=${r}; render();">${r}g</button>`).join('')}
+          ${[7, 14, 30, 60, 'ciclo'].map(r => `<button class="${pesoRange === r ? 'active' : ''}" onclick="pesoRange=${typeof r === 'number' ? r : "'" + r + "'"}; render();">${pesoRangeLabel(r)}</button>`).join('')}
         </div>
       </div>
       ${s.biometriaChips}
@@ -9197,7 +9200,7 @@ function renderOggiFull() {
     // helper del desktop (splitDose, siteLabel, ENUM_LABELS, ecc.).
     // ============================================================
     const micro = 'border:none;outline:none;font-size:var(--fs-sm);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;';
-    const pesoSm = weightHistory(pesoRange, selDate);
+    const pesoSm = weightHistory(pesoDays(pesoRange), selDate);
     const plSm = svgPath(pesoSm, 320, 54, 4);
     const slopeSm = weeklyTrend(pesoSm);
 
@@ -9227,9 +9230,9 @@ function renderOggiFull() {
           <circle cx="${plSm.lastX}" cy="${plSm.lastY}" r="3.4" fill="var(--accent)"></circle>
         </svg>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${slopeSm === null ? '—' : (slopeSm > 0 ? '+' : '') + nf(slopeSm, 2) + ' ' + L.perWeekOver(pesoRange)}</span>
+          <span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${slopeSm === null ? '—' : (slopeSm > 0 ? '+' : '') + nf(slopeSm, 2) + ' ' + L.perWeekOver(pesoDays(pesoRange))}</span>
           <div style="display:flex;gap:2px;background:var(--surf2);border-radius:var(--r-md);padding:3px;">
-            ${[7, 14, 30, 60].map(n => `<span data-range="${n}" style="padding:5px 10px;border-radius:var(--r-sm);font-size:var(--fs-xs);font-weight:600;cursor:pointer;background:${n === pesoRange ? 'var(--accent)' : 'transparent'};color:${n === pesoRange ? 'var(--white)' : 'var(--ink2)'};border:1px solid ${n === pesoRange ? 'var(--accent)' : 'transparent'};">${n}g</span>`).join('')}
+            ${[7, 14, 30, 60, 'ciclo'].map(n => `<span data-range="${n}" style="padding:5px 10px;border-radius:var(--r-sm);font-size:var(--fs-xs);font-weight:600;cursor:pointer;background:${n === pesoRange ? 'var(--accent)' : 'transparent'};color:${n === pesoRange ? 'var(--white)' : 'var(--ink2)'};border:1px solid ${n === pesoRange ? 'var(--accent)' : 'transparent'};">${pesoRangeLabel(n)}</span>`).join('')}
           </div>
         </div>
       </div>`;
@@ -9499,7 +9502,7 @@ function renderOggiFull() {
     [`${LANG === 'it' ? 'Fase 4' : 'Phase 4'} · ${L.phases.mantenimento}`, 84, 111]
   ];
 
-  const pesoS = weightHistory(pesoRange, selDate);
+  const pesoS = weightHistory(pesoDays(pesoRange), selDate);
   const slopeD = weeklyTrend(pesoS);
   const firstP = pesoS.find(x => x != null);
   const lastP = [...pesoS].reverse().find(x => x != null);
@@ -9632,12 +9635,12 @@ function renderOggiFull() {
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
           <div style="display:flex;gap:2px;background:var(--surf2);border-radius:var(--r-md);padding:3px;">
-            ${[7, 14, 30, 60].map(n => `<button data-range="${n}" style="border:none;cursor:pointer;padding:4px 9px;border-radius:var(--r-sm);font-size:var(--fs-xs);font-weight:600;background:${n === pesoRange ? 'var(--accent)' : 'transparent'};color:${n === pesoRange ? 'var(--white)' : 'var(--ink2)'};">${n}g</button>`).join('')}
+            ${[7, 14, 30, 60, 'ciclo'].map(n => `<button data-range="${n}" style="border:none;cursor:pointer;padding:4px 9px;border-radius:var(--r-sm);font-size:var(--fs-xs);font-weight:600;background:${n === pesoRange ? 'var(--accent)' : 'transparent'};color:${n === pesoRange ? 'var(--white)' : 'var(--ink2)'};">${pesoRangeLabel(n)}</button>`).join('')}
           </div>
-          <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${slopeD === null ? '—' : (slopeD > 0 ? '+' : '') + nf(slopeD, 2) + ' ' + L.perWeekOver(pesoRange)}</span>
+          <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${slopeD === null ? '—' : (slopeD > 0 ? '+' : '') + nf(slopeD, 2) + ' ' + L.perWeekOver(pesoDays(pesoRange))}</span>
         </div>
       </div>
-      ${pesoChartHTML(pesoRange, selDate)}
+      ${pesoChartHTML(pesoDays(pesoRange), selDate)}
       <div style="flex:0 0 auto;display:grid;grid-template-columns:repeat(8,1fr);gap:8px;padding-top:9px;border-top:1px solid var(--line2);">
         ${TILES_HTML.join('')}
       </div>
@@ -10114,7 +10117,7 @@ function bindOggi() {
     el.onchange = () => patch(selDate, el.dataset.f, el.value);
   });
   app.querySelectorAll('[data-range]').forEach(el => {
-    el.onclick = () => { pesoRange = +el.dataset.range; render(); };
+    el.onclick = () => { pesoRange = el.dataset.range === 'ciclo' ? 'ciclo' : +el.dataset.range; render(); };
   });
   app.querySelectorAll('[data-week]').forEach(el => {
     el.onclick = () => jumpToWeek(+el.dataset.week);
