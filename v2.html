@@ -7782,6 +7782,36 @@ function pesoChartHTML(days, anchorISO) {
     </div>`;
 }
 
+/* 19/10 · tile della card Peso su MOBILE: media 7g (vs 7g precedenti) e distanza dalla banda T2 (indicativa, vedi T2_BAND).
+   Ritmo necessario = (media 7g - bordo alto banda) / settimane mancanti al T2; mostrato solo se > 0 e se il T2 è futuro. */
+function pesoMobileTilesHTML(anchorISO) {
+  const IT = LANG === 'it';
+  const i = dayIdxFromISO(anchorISO);
+  const ma = pesoMA(i), maPrev = pesoMA(i - 7);
+  const tile = (k, v, u, n) => `<div style="background:var(--surf2);border-radius:var(--r-md);padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0;">
+      <span style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink2);">${k}</span>
+      <span style="font-size:var(--fs-xl);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap;">${v}${u ? ' <span style="font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);">' + u + '</span>' : ''}</span>
+      <span style="font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);">${n}</span></div>`;
+  if (ma == null) return '';
+  let d7 = '—';
+  if (maPrev != null) {
+    const dl = ma - maPrev;
+    d7 = `<b style="color:${dl <= 0 ? 'var(--ok)' : 'var(--warn)'};">${(dl > 0 ? '+' : dl < 0 ? '−' : '') + nf(Math.abs(dl))}</b> ${IT ? 'vs 7g prec.' : 'vs prev. 7d'} (${nf(maPrev)})`;
+  }
+  const dT2 = Math.round((new Date(CAL.T2 + 'T00:00:00') - new Date(anchorISO + 'T00:00:00')) / 86400000);
+  let bandNote;
+  if (ma <= T2_BAND.hi) bandNote = IT ? 'Media 7g nella banda o sotto' : '7d avg in or below the band';
+  else {
+    const gLo = ma - T2_BAND.hi, gHi = ma - T2_BAND.lo;
+    bandNote = (IT ? 'Media a ' : '7d avg ') + `<b>${nf(gLo)}–${nf(gHi)} kg</b>` + (IT ? ' dalla banda' : ' from the band');
+    if (dT2 > 0) bandNote += ` · ${IT ? 'ritmo ≥' : 'pace ≥'} ${nf(gLo / (dT2 / 7))}${IT ? '/sett.' : '/wk'}`;
+  }
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+    ${tile(IT ? 'Media 7 giorni' : '7-day average', nf(ma), 'kg', d7)}
+    ${tile(IT ? 'Banda T2 (indicativa)' : 'T2 band (indicative)', nf(T2_BAND.lo) + '–' + nf(T2_BAND.hi), 'kg', bandNote)}
+  </div>`;
+}
+
 // MIRROR · drawComplianceRing — verbatim da index.html (riga 6183).
 function drawComplianceRing(canvasId, pct, color) {
   const canvas = document.getElementById(canvasId);
@@ -9154,7 +9184,8 @@ function renderOggiFull() {
     // ============================================================
     const micro = 'border:none;outline:none;font-size:var(--fs-sm);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;';
     const pesoSm = weightHistory(pesoDays(pesoRange), selDate);
-    const plSm = svgPath(pesoSm, 320, 54, 4);
+    const firstPm = pesoSm.find(x => x != null);
+    const lastPm = [...pesoSm].reverse().find(x => x != null);
     const slopeSm = weeklyTrend(pesoSm);
 
     const heroM = `
@@ -9168,8 +9199,8 @@ function renderOggiFull() {
       </div>`;
 
     const pesoM = `
-      <div style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:10px;">
-        <div style="display:flex;align-items:flex-end;justify-content:space-between;">
+      <div style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;">
           <div style="display:flex;flex-direction:column;gap:3px;">
             <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${L.weight}</span>
             <div style="display:flex;align-items:baseline;gap:6px;">
@@ -9177,17 +9208,16 @@ function renderOggiFull() {
               <span style="font-size:var(--fs-lg);font-weight:500;color:var(--ink2);">kg</span>
             </div>
           </div>
-        </div>
-        <svg viewBox="0 0 320 54" preserveAspectRatio="none" style="width:100%;height:48px;display:block;overflow:visible;">
-          <path d="${plSm.d}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-          <circle cx="${plSm.lastX}" cy="${plSm.lastY}" r="3.4" fill="var(--accent)"></circle>
-        </svg>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-          <span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${slopeSm === null ? '—' : (slopeSm > 0 ? '+' : '') + nf(slopeSm, 2) + ' ' + L.perWeekOver(pesoDays(pesoRange))}</span>
-          <div style="display:flex;gap:2px;background:var(--surf2);border-radius:var(--r-md);padding:3px;">
-            ${[7, 14, 30, 60, 'ciclo'].map(n => `<span data-range="${n}" style="padding:5px 10px;border-radius:var(--r-sm);font-size:var(--fs-xs);font-weight:600;cursor:pointer;background:${n === pesoRange ? 'var(--accent)' : 'transparent'};color:${n === pesoRange ? 'var(--white)' : 'var(--ink2)'};border:1px solid ${n === pesoRange ? 'var(--accent)' : 'transparent'};">${pesoRangeLabel(n)}</span>`).join('')}
+          <div style="text-align:right;display:flex;flex-direction:column;gap:2px;">
+            <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ok);font-variant-numeric:tabular-nums;white-space:nowrap;">${firstPm != null && lastPm != null ? (lastPm - firstPm > 0 ? '+' : '') + nf(lastPm - firstPm) + ' ' + L.inPeriod : ''}</span>
+            <span style="font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);font-variant-numeric:tabular-nums;">${slopeSm === null ? '—' : (slopeSm > 0 ? '+' : '') + nf(slopeSm, 2) + ' ' + L.perWeekOver(pesoDays(pesoRange))}</span>
           </div>
         </div>
+        ${pesoChartHTML(pesoDays(pesoRange), selDate)}
+        <div style="display:flex;gap:2px;background:var(--surf2);border-radius:var(--r-md);padding:3px;">
+          ${[7, 14, 30, 60, 'ciclo'].map(n => `<span data-range="${n}" style="flex:1 1 0;text-align:center;padding:6px 0;border-radius:var(--r-sm);font-size:var(--fs-xs);font-weight:600;cursor:pointer;background:${n === pesoRange ? 'var(--accent)' : 'transparent'};color:${n === pesoRange ? 'var(--white)' : 'var(--ink2)'};border:1px solid ${n === pesoRange ? 'var(--accent)' : 'transparent'};">${pesoRangeLabel(n)}</span>`).join('')}
+        </div>
+        ${pesoMobileTilesHTML(selDate)}
       </div>`;
 
     const ringsM = (() => {
