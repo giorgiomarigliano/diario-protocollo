@@ -1151,6 +1151,7 @@
 .oggi-grid.food-on>:nth-child(1) [style*="font-size:var(--fs-4xl)"]{font-size:20px!important}
 .oggi-grid.food-on>:nth-child(2){grid-column:5/10!important;grid-row:1!important;padding:12px 16px!important;gap:3px!important}
 .oggi-grid.food-on>:nth-child(2) svg:not(.peso-ch){height:58px!important}   /* 19/10: il grafico annotato del peso (.peso-ch) tiene la sua altezza */
+.oggi-grid.food-on .food-card .food-bal{margin-top:auto}   /* 19/10: con più altezza disponibile il saldo di fine giornata scende in fondo alla card (le 3 card in alto restano bilanciate) */
 .oggi-grid.food-on>:nth-child(3){grid-column:1/7!important;grid-row:2!important;gap:4px!important}
 .oggi-grid.food-on>:nth-child(3)>div:nth-child(2){display:none!important}
 .oggi-grid.food-on>:nth-child(3) [style*="height:34px"]{height:28px!important}
@@ -7694,11 +7695,11 @@ function weeklyTrend(values) {
   return slope * 7;
 }
 
-/* ══ 19/10/2026 — card Peso (desktop): grafico annotato + scostamento per giorno della settimana ══
-   Solo lettura dei pesi già in p2_day_N.peso: nessun campo nuovo, nessuna scrittura. Mockup approvato da Giorgio il 19/10 ("vai in produzione").
+/* ══ 19/10/2026 — card Peso (desktop): grafico annotato con media mobile, banda T2 e marker ══
+   Solo lettura dei pesi già in p2_day_N.peso: nessun campo nuovo, nessuna scrittura. Approvata da Giorgio il 19/10.
    - Media mobile 7g: finestra trailing di 7 giorni di calendario, giorno stesso incluso; serve almeno 4 pesate nella finestra.
    - Banda T2: obiettivo 71,5–73 kg sulla scala DEXA (note del 21/09) meno ~1 kg per la bilancia di casa (UN solo confronto, 12/09: 72,2 contro 73,27) → INDICATIVA.
-   - Effetto giorno: media di (peso del giorno − media della sua settimana lun–dom) su tutte le settimane complete (≥5 pesate, domenica già trascorsa); mostrato solo con ≥8 osservazioni per quel giorno. */
+   (19/10, ore 16:30: la riga "effetto giorno della settimana" è stata tolta su richiesta di Giorgio per bilanciare le 3 card di Oggi.) */
 const T2_BAND = { lo: 70.5, hi: 72.0 };
 const PESO_EVENTS = [
   { iso: CAL.T1, it: 'DEXA T1', en: 'DEXA T1' },
@@ -7718,26 +7719,6 @@ function pesoMA(i) {
   return n >= 4 ? s / n : null;
 }
 function idxDate(i) { const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + i); return d; }
-function pesoDowEffect() {
-  const b = store.blob || {};
-  const weeks = {};
-  Object.keys(b).forEach(k => {
-    const m = /^p2_day_(\d+)$/.exec(k); if (!m) return;
-    const i = +m[1], v = pesoAt(i); if (v == null) return;
-    const wd = (idxDate(i).getDay() + 6) % 7;
-    const wk = i - wd;
-    (weeks[wk] = weeks[wk] || []).push({ wd, v });
-  });
-  const todayIdx = dayIdxFromISO(today);
-  const sum = [0, 0, 0, 0, 0, 0, 0], n = [0, 0, 0, 0, 0, 0, 0];
-  Object.keys(weeks).forEach(k => {
-    const arr = weeks[k];
-    if (arr.length < 5 || (+k) + 6 > todayIdx) return;
-    const mean = arr.reduce((a, x) => a + x.v, 0) / arr.length;
-    arr.forEach(x => { sum[x.wd] += x.v - mean; n[x.wd]++; });
-  });
-  return { dev: sum.map((x, i) => n[i] ? x / n[i] : null), n };
-}
 function pesoChartHTML(days, anchorISO) {
   const IT = LANG === 'it';
   const aIdx = dayIdxFromISO(anchorISO);
@@ -7798,34 +7779,6 @@ function pesoChartHTML(days, anchorISO) {
         ${showBand ? leg('rgba(34,160,90,.45)', 8, IT ? 'Banda T2' : 'T2 band') : ''}
         ${evs.length ? leg('var(--warn)', 3, IT ? 'Evento' : 'Event') : ''}
       </div>
-    </div>`;
-}
-function pesoDowHTML(selISO) {
-  const IT = LANG === 'it';
-  const eff = pesoDowEffect();
-  const selIdx = dayIdxFromISO(selISO), wd = (idxDate(selIdx).getDay() + 6) % 7;
-  const dev = eff.dev[wd];
-  if (dev == null || eff.n[wd] < 8) return '';
-  const NAMES = IT ? ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'] : ['Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays', 'Sundays'];
-  const SH = IT ? ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'] : ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
-  const sg = v => (v >= 0 ? '+' : '−') + nf(Math.abs(v));
-  const col = v => v == null ? 'var(--ink3)' : v >= 0.15 ? 'var(--warn)' : v <= -0.15 ? 'var(--ok)' : 'var(--ink)';
-  const head = IT
-    ? (dev >= 0.15 ? `di solito ${sg(dev)} kg sopra la media della settimana` : dev <= -0.15 ? `di solito ${sg(dev)} kg sotto la media della settimana` : 'di solito in linea con la media della settimana')
-    : (dev >= 0.15 ? `typically ${sg(dev)} kg above the week's average` : dev <= -0.15 ? `typically ${sg(dev)} kg below the week's average` : "typically in line with the week's average");
-  const p = pesoAt(selIdx), m = pesoMA(selIdx);
-  const diff = p != null && m != null ? p - m : null;
-  const isToday = selISO === today;
-  const sub = (diff != null ? (IT ? (isToday ? 'Oggi ' : 'Quel giorno ') + sg(diff) + ' kg ' + (diff >= 0 ? 'sopra' : 'sotto') + ' la media 7g · ' : (isToday ? 'Today ' : 'That day ') + sg(diff) + ' kg ' + (diff >= 0 ? 'above' : 'below') + ' the 7-day avg · ')
-                           : '') + (IT ? `indicativo · ${eff.n[wd]} settimane di dati per questo giorno` : `indicative · ${eff.n[wd]} weeks of data for this weekday`);
-  const chips = eff.dev.map((v, k) => `<div style="padding:5px 0;text-align:center;border-radius:var(--r-sm);${k === wd ? 'background:var(--surf);box-shadow:0 0 0 2px var(--accent);' : ''}"><div style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink2);">${SH[k]}</div><div style="font-size:var(--fs-xs);font-weight:700;color:${eff.n[k] >= 8 ? col(v) : 'var(--ink3)'};font-variant-numeric:tabular-nums;">${eff.n[k] >= 8 && v != null ? sg(v) : '—'}</div></div>`).join('');
-  return `
-    <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:stretch;gap:9px;background:var(--surf2);border-radius:var(--r-md);padding:11px 14px 10px;">
-      <div style="text-align:center;min-width:0;">
-        <div style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);"><span style="color:${col(dev)};">${NAMES[wd]}</span> ${head}</div>
-        <div style="font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);margin-top:2px;">${sub}</div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;">${chips}</div>
     </div>`;
 }
 
@@ -9624,18 +9577,18 @@ function renderOggiFull() {
 
   const pesoCard = `
     <section style="grid-column:6 / 13;grid-row:1 / 2;${card}padding:16px 20px;display:flex;flex-direction:column;gap:6px;overflow:hidden;">
-      <div style="flex:0 0 auto;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;">
+      <div style="flex:0 0 auto;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:6px 14px;">
         <div style="display:flex;flex-direction:column;gap:3px;">
           <span style="${lbl}">${L.weight}</span>
           <div style="display:flex;align-items:baseline;gap:7px;">
             <input data-f="peso" value="${esc(day.peso || '')}" placeholder="—" inputmode="decimal" style="border:none;outline:none;font-size:var(--fs-6xl);line-height:1.05;letter-spacing:-.03em;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;width:112px;background:var(--surf2);border-radius:var(--r-md);padding:3px 10px;">
             <span style="font-size:var(--fs-base);font-weight:500;color:var(--ink2);">kg</span>
-            <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ok);font-variant-numeric:tabular-nums;margin-left:3px;">${firstP != null && lastP != null ? (lastP - firstP > 0 ? '+' : '') + nf(lastP - firstP) + ' ' + L.inPeriod : ''}</span>
+            <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ok);font-variant-numeric:tabular-nums;margin-left:3px;white-space:nowrap;">${firstP != null && lastP != null ? (lastP - firstP > 0 ? '+' : '') + nf(lastP - firstP) + ' ' + L.inPeriod : ''}</span>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
           <div style="display:flex;gap:2px;background:var(--surf2);border-radius:var(--r-md);padding:3px;">
-            ${[7, 14, 30, 60, 'ciclo'].map(n => `<button data-range="${n}" style="border:none;cursor:pointer;padding:4px 9px;border-radius:var(--r-sm);font-size:var(--fs-xs);font-weight:600;background:${n === pesoRange ? 'var(--accent)' : 'transparent'};color:${n === pesoRange ? 'var(--white)' : 'var(--ink2)'};">${pesoRangeLabel(n)}</button>`).join('')}
+            ${[7, 14, 30, 60, 'ciclo'].map(n => `<button data-range="${n}" style="border:none;cursor:pointer;padding:4px 8px;border-radius:var(--r-sm);font-size:var(--fs-xs);font-weight:600;background:${n === pesoRange ? 'var(--accent)' : 'transparent'};color:${n === pesoRange ? 'var(--white)' : 'var(--ink2)'};">${pesoRangeLabel(n)}</button>`).join('')}
           </div>
           <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${slopeD === null ? '—' : (slopeD > 0 ? '+' : '') + nf(slopeD, 2) + ' ' + L.perWeekOver(pesoDays(pesoRange))}</span>
         </div>
@@ -9644,7 +9597,6 @@ function renderOggiFull() {
       <div style="flex:0 0 auto;display:grid;grid-template-columns:repeat(8,1fr);gap:8px;padding-top:9px;border-top:1px solid var(--line2);">
         ${TILES_HTML.join('')}
       </div>
-      ${pesoDowHTML(selDate)}
     </section>`;
 
   const iniezioniCard = `
