@@ -4244,13 +4244,27 @@ function photoDayWeekLabel(p){
 /* PORTING 26/09: quota allenamenti della settimana, congelata alla data dello scatto (non a
    oggi) -- stesso identico criterio (AN_dayAdh) gia' usato ovunque, letto giorno per giorno
    dall'inizio della settimana fino al giorno della foto. */
-function photoWorkoutWeekLabel(p){
+function photoWorkoutWeekInfo(p){
+  /* 24/10 (richiesta di Giorgio): standard FISSO di 5 allenamenti a settimana (lun-dom), per tutte le settimane del ciclo e anche in trasferta (BKK
+     compresa: nessuna "regola B" qui). Conta le sedute REALI (history_sessions oppure calorie/volume/RPE nel diario) fino al giorno dello scatto, extra
+     compresi. Formato "fatte/5"; sopra 5 = "+N" subito; sotto 5 il "-N" compare solo nella foto della domenica (settimana chiusa); settimana in corso = "in corso". */
   var i = photoDayIndex(p);
   if (i < 0) return null;
-  var wkStart = Math.floor(i / 7) * 7, tot = 0, done = 0;
-  for (var k = wkStart; k <= i; k++) { var x = AN_dayAdh(k); tot += x.woTot; done += x.woDone; }
-  return tot > 0 ? (done + "/" + tot) : null;
+  var dates = {}; HISTORY_SESSIONS.forEach(function(s){ dates[s.date] = true; });
+  var wkStart = Math.floor(i / 7) * 7, n = 0;
+  for (var k = wkStart; k <= i; k++) {
+    var d = new Date(CFG.CYCLE_START + "T00:00:00"); d.setDate(d.getDate() + k);
+    if (dates[isoLocal(d)] || woSessDone(woRecAt(k))) n++;
+  }
+  var todayIdx = dayIdxFromISO(today), closed = (i === wkStart + 6), cur = (todayIdx >= wkStart && todayIdx <= wkStart + 6 && !closed);
+  var txt = n + "/5", col = "";
+  if (n > 5) { txt += " \u00b7 +" + (n - 5); col = "var(--warn-ink)"; }
+  else if (closed && n < 5) { txt += " \u00b7 \u2212" + (5 - n); col = "var(--warn-ink)"; }
+  else if (n === 5) col = "var(--ok)";
+  if (cur && n <= 5 && !(n === 5)) txt += " \u00b7 in corso";
+  return { txt: txt, col: col };
 }
+function photoWorkoutWeekLabel(p){ var w = photoWorkoutWeekInfo(p); return w ? w.txt : null; }
 /* PORTING 26/09: la pillola ora renderizza sempre, anche senza dato -- un trattino invece di
    una cella vuota. Prima una cella nulla lasciava un buco nella griglia 3x2 (visto sul 21/09,
    primo giorno della settimana: "WO sett." a 0/0 spariva del tutto invece di mostrare "0/0"
@@ -4313,7 +4327,7 @@ function photoMetaLinesHTML(p, i, m){
   if (m.supp!=null) sub.push('<span style="color:'+pctColor(m.supp)+'">Integr '+m.supp+'%</span>');
   /* FIX 08/10: m.workout non esiste piu' (vedi photoMetrics): Griglia e Per settimana non mostravano mai il "WO". */
   var woWk = photoWorkoutWeekLabel(p);
-  if (woWk) sub.push("WO "+esc(woWk));
+  if (woWk){ var woI = photoWorkoutWeekInfo(p); sub.push(woI && woI.col ? '<span style="color:'+woI.col+'">WO '+esc(woWk)+'</span>' : "WO "+esc(woWk)); }
   var html='<span class="an-fdate">'+fmtDM(dateOfDay(i))+(p.luogo?" \u00b7 "+esc(p.luogo):"")+'</span>'+
     '<span class="an-fsub">'+photoDayWeekLabel(p)+'</span>';
   sub.forEach(function(x){ html += '<span class="an-fsub">'+x+'</span>'; });
