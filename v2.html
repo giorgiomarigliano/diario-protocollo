@@ -1153,7 +1153,7 @@
 .oggi-grid.food-on>:nth-child(2) svg:not(.peso-ch){height:58px!important}   /* 19/10: il grafico annotato del peso (.peso-ch) tiene la sua altezza */
 .oggi-grid.food-on .food-card .food-bal{margin-top:auto}   /* 19/10: con più altezza disponibile il saldo di fine giornata scende in fondo alla card (le 3 card in alto restano bilanciate) */
 .oggi-grid.food-on>:nth-child(3){grid-column:1/7!important;grid-row:2!important;gap:4px!important}
-.oggi-grid.food-on>:nth-child(3)>div:nth-child(2){display:none!important}
+.oggi-grid.food-on>:nth-child(3)>.ctx-note{display:none!important}
 .oggi-grid.food-on>:nth-child(3) [style*="height:34px"]{height:28px!important}
 .oggi-grid.food-on>:nth-child(3) [style*="min-height"]{min-height:30px!important}
 .oggi-grid.food-on>:nth-child(4){grid-column:7/13!important;grid-row:2!important;padding:12px 16px!important;gap:6px!important}
@@ -1590,6 +1590,86 @@ function dayIdxFromISO(dateISO) {
 function cycleDayNo(idx) { return idx + 1; }
 function dayKeyFromISO(dateISO) { return 'p2_day_' + dayIdxFromISO(dateISO); }
 
+/* ===== PAUSA PEPTIDI / POST-PROTOCOLLO (26/10/2026, decisione di Giorgio) =====
+   Il protocollo attuale va finito (BPC-157 e TB-500 compresi), poi i peptidi si fermano almeno fino a dopo BKK.
+   Config in blob.proto_pausa = { on:'1'|'0', dal:'AAAA-MM-GG' (primo giorno SENZA iniezioni), al:'AAAA-MM-GG' (opz.: primo giorno di ripresa) }.
+   Default: on, dal 11/11/2026. Il ciclo dura 16 settimane (fino all'8/11). Fasi del giorno: 'ciclo' (indice <= 111), 'residuo' (Post-protocollo, dosi rimaste: SOLO BPC-157 e TB-500
+   per finire i vial; dal 9/11 alla vigilia della pausa), 'pausa' (pausa completa da tutti i peptidi: nessuna iniezione, nessun allarme scorte, non contano come saltate).
+   Dal 9/11 il diario e' in 'Post-protocollo' e le settimane si chiamano Post-protocollo · settimana 1, 2...
+   Lo storico non cambia: le chiavi p2_day_N gia' scritte restano. */
+const PAUSA_DEFAULT_DAL = '2026-11-11';
+function protoPausa() {
+  const p = (store && store.blob && store.blob.proto_pausa) || {};
+  return { on: !(p.on === '0' || p.on === 0 || p.on === false), dal: p.dal || PAUSA_DEFAULT_DAL, al: p.al || '' };
+}
+function protoPauseIdx() { const p = protoPausa(); return p.on ? dayIdxFromISO(p.dal) : null; }
+function protoPhase(idx) {
+  const pi = protoPauseIdx();
+  if (pi != null && idx >= pi) {
+    const al = protoPausa().al;
+    if (!(al && idx >= dayIdxFromISO(al))) return 'pausa';
+  }
+  return (pi != null && idx > CAL.DAYS - 1) ? 'residuo' : 'ciclo';
+}
+/* ultimo giorno (indice) in cui il protocollo e' attivo: serve a copertura scorte e giorni alla fine */
+function protoFineIdx() { const pi = protoPauseIdx(); return pi == null ? CAL.DAYS - 1 : Math.max(CAL.DAYS - 1, pi - 1); }
+/* quanti giorni mostrare nel selettore: ciclo + estensione + fino a oggi */
+function navDays() { return Math.max(CAL.DAYS, dayIdxFromISO(today) + 1, protoFineIdx() + 1); }
+function cycleDayLabel(idx, cap) {
+  const it = LANG === 'it', ph = protoPhase(idx);
+  let t;
+  if (ph === 'pausa' || ph === 'residuo') { const k = idx - CAL.DAYS + 1; t = it ? ('Post-protocollo \u00b7 giorno ' + k) : ('Post-protocol \u00b7 day ' + k); }
+  else t = (it ? 'giorno ' : 'day ') + cycleDayNo(idx) + (it ? ' di ' : ' of ') + CAL.DAYS;
+  return cap ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+}
+/* Etichetta settimana: W1..W16 nel ciclo, P1.. dopo (Post-protocollo, settimana 1 = 9-15/11) */
+function weekTag(w) { return w >= Math.ceil(CAL.DAYS / 7) ? 'P' + (w - Math.ceil(CAL.DAYS / 7) + 1) : 'W' + (w + 1); }
+function weekTagLong(w) { const it = LANG === 'it', n = Math.ceil(CAL.DAYS / 7); return w >= n ? (it ? 'Post-protocollo \u00b7 sett. ' : 'Post-protocol \u00b7 wk ') + (w - n + 1) : (it ? 'Settimana ' : 'Week ') + (w + 1); }
+function protoDmy(iso) { return iso ? (iso.slice(8, 10) + '/' + iso.slice(5, 7)) : ''; }
+const PROTO_COMP_KEYS = [['frag', /^Fragment/], ['bpc', /^BPC-157/], ['tb', /^TB-500/], ['tesa', /^Tesamorelin/], ['ipa', /^Ipamorelin/], ['igf', /^IGF-1/]];
+function protoCompKey(field) { const m = PROTO_COMP_KEYS.find(x => x[1].test(field)); return m ? m[0] : ''; }
+/* Composti attivi nel Post-protocollo (dosi rimaste): default BPC-157 e TB-500; ognuno si attiva/disattiva con un interruttore sulla card Iniezioni */
+function protoActive() { const p = (store && store.blob && store.blob.proto_pausa) || {}; const v = (p.attivi === undefined || p.attivi === null) ? 'bpc,tb' : String(p.attivi); return v.split(',').map(x => x.trim()).filter(Boolean); }
+function protoCompToggle(ck) { const a = protoActive(), i = a.indexOf(ck); if (i >= 0) a.splice(i, 1); else a.push(ck); patchKey('proto_pausa', 'attivi', a.join(',') || '-'); render(); }
+/* Slot per la card Iniezioni: nel Post-protocollo mostra TUTTI i composti, quelli non attivi (e tutti in pausa) in grigio (s.off) */
+function getInjectionSlotsUI(dayIdx) {
+  const ph = protoPhase(dayIdx);
+  if (ph === 'ciclo') return getInjectionSlots2(dayIdx);
+  const act = protoActive();
+  return getInjectionSlotsFull(dayIdx).map(sl => { const off = {}; sl.fields.forEach(f => { if (ph === 'pausa' || act.indexOf(protoCompKey(f)) < 0) off[f] = true; }); return Object.assign({}, sl, { off }); });
+}
+function protoSwitchHtml(fd) {
+  if (protoPhase(dayIdxFromISO(selDate)) !== 'residuo') return '';
+  const on = !fd.off, it = LANG === 'it';
+  return '<span onclick="event.stopPropagation();protoCompToggle(\'' + fd.ck + '\')" style="flex:0 0 auto;cursor:pointer;font-size:var(--fs-2xs);font-weight:700;padding:3px 9px;border-radius:var(--r-pill);border:1px solid ' + (on ? 'transparent' : 'var(--line)') + ';background:' + (on ? 'var(--ok)' : 'var(--surf2)') + ';color:' + (on ? 'var(--on-ok)' : 'var(--ink2)') + ';opacity:1;">' + (on ? (it ? 'attivo' : 'on') : (it ? 'non attivo' : 'off')) + '</span>';
+}
+function protoCardTag(dayIdx) {
+  const ph = protoPhase(dayIdx), it = LANG === 'it';
+  if (ph === 'residuo') return ' <span style="color:var(--warn-ink);">\u00b7 ' + (it ? 'dosi residue' : 'residual doses') + '</span>';
+  if (ph === 'pausa') return ' <span style="color:var(--ink3);">\u00b7 ' + (it ? 'protocollo sospeso' : 'protocol paused') + '</span> <span onclick="protoPausaSet(\'on\',\'0\')" style="cursor:pointer;color:var(--accent-ink);font-weight:600;">' + (it ? 'Riattiva' : 'Resume') + '</span>';
+  return '';
+}
+function protoPausaSet(field, value) { patchKey('proto_pausa', field, value); render(); if (typeof GST_renderStock === 'function' && document.querySelector('[data-gst-view="stock"]')) { try { GST_mount && GST_renderAll && GST_renderAll(); } catch (e) {} } }
+/* Card che sostituisce le iniezioni nei giorni di pausa */
+function protoPausaCardHtml(mobile) {
+  const it = LANG === 'it', p = protoPausa();
+  const box = (mobile ? 'flex:0 0 auto;border-radius:var(--r-2xl);' : 'grid-column:1 / 7;grid-row:2 / 3;border-radius:var(--r-card);') + 'background:var(--surf);box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;gap:6px;box-shadow:inset 4px 0 0 var(--idle), var(--shadow);';
+  return '<section style="' + box + '"><span style="font-size:var(--fs-lg);font-weight:700;color:var(--ink);">' + (it ? 'Protocollo sospeso' : 'Protocol paused') + '</span>' +
+    '<span style="font-size:var(--fs-sm);color:var(--ink2);">' + (it ? 'Pausa completa da tutti i peptidi dal ' : 'Full pause from all peptides since ') + protoDmy(p.dal) + (it ? ': restano integrazione, allenamento, dieta e parametri. Le iniezioni non contano come saltate.' : ': supplements, training, diet and vitals continue. Injections are not counted as missed.') + '</span>' +
+    '<span><button type="button" onclick="protoPausaSet(\'on\',\'0\')" style="border:none;background:var(--accent-soft);color:var(--accent-ink);font:inherit;font-size:var(--fs-sm);font-weight:600;padding:6px 14px;border-radius:var(--r-pill);cursor:pointer;margin-top:4px;">' + (it ? 'Riattiva protocollo' : 'Resume protocol') + '</button></span></section>';
+}
+/* Gestione: impostazioni della pausa */
+function protoPausaSettingsHtml() {
+  const it = LANG === 'it', p = protoPausa();
+  const inp = (f, v) => '<input type="date" value="' + (v || '') + '" onchange="protoPausaSet(\'' + f + '\', this.value)" style="font:inherit;font-size:var(--fs-sm);border:1px solid var(--line);border-radius:var(--r-md);background:var(--surf2);color:var(--ink);padding:4px 8px;">';
+  const row = (l, c) => '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line2);"><span style="font-size:var(--fs-base);color:var(--ink);">' + l + '</span>' + c + '</div>';
+  return '<section class="an-card" style="grid-column:1 / -1"><div class="an-head"><span class="an-title">' + (it ? 'Pausa protocollo' : 'Protocol pause') + '</span><span class="an-sub">' + (p.on ? (it ? 'attiva dal ' : 'on from ') + protoDmy(p.dal) : (it ? 'disattivata: il protocollo continua' : 'off: protocol continues')) + '</span></div>' +
+    row(it ? 'Pausa attiva' : 'Pause on', '<button type="button" onclick="protoPausaSet(\'on\',\'' + (p.on ? '0' : '1') + '\')" style="border:none;background:var(--accent-soft);color:var(--accent-ink);font:inherit;font-size:var(--fs-sm);font-weight:600;padding:6px 14px;border-radius:var(--r-pill);cursor:pointer;">' + (p.on ? (it ? 'Riattiva protocollo' : 'Resume protocol') : (it ? 'Sospendi dal giorno scelto' : 'Pause from chosen day')) + '</button>') +
+    row(it ? 'Inizio pausa completa (nessun peptide)' : 'Full pause starts (no peptides)', inp('dal', p.dal)) +
+    row(it ? 'Ripresa (facoltativa)' : 'Resume on (optional)', inp('al', p.al)) +
+    '<div style="font-size:var(--fs-xs);color:var(--ink2);padding-top:6px;">' + (it ? 'Dal 9/11 (Post-protocollo) restano solo BPC-157 e TB-500 per finire i vial; la pausa completa parte alla data indicata, stimata sulla fine dei vial (dosi rimaste non verificate): modificala a mano se serve. Lo storico non cambia.' : 'Date estimated from the end of the BPC-157 and TB-500 vials; edit by hand if needed.') + '</div></section>';
+}
+
 // Bug reale trovato il 10/09/2026: ".toISOString().slice(0,10)" converte
 // SEMPRE in UTC — a mezzanotte locale in Italia (UTC+1/+2) questo fa
 // scivolare la data indietro di un giorno. In Node (dove giravano i miei
@@ -1925,6 +2005,15 @@ function getPlannedWorkout2(idx) {
 // nei giorni di allenamento si INSERISCE uno slot Post-WO (IGF-1 DES)
 // e lo slot Sera CAMBIA numero (da n:3 a n:4) — non è una lista fissa.
 function getInjectionSlots2(dayIdx) {
+  const ph = protoPhase(dayIdx);
+  if (ph === 'pausa') return []; // pausa completa dai peptidi: nessuna iniezione prevista
+  if (ph === 'residuo') { // Post-protocollo, dosi rimaste: solo BPC-157 e TB-500 (gli altri composti si fermano a fine ciclo)
+    const act = protoActive();
+    return getInjectionSlotsFull(dayIdx).map(s => Object.assign({}, s, { fields: s.fields.filter(f => act.indexOf(protoCompKey(f)) >= 0) })).filter(s => s.fields.length);
+  }
+  return getInjectionSlotsFull(dayIdx);
+}
+function getInjectionSlotsFull(dayIdx) {
   const wo = getWorkout2(dayIdx);
   const isTraining = wo.type !== 'Riposo';
   const slots = [
@@ -5533,7 +5622,7 @@ function CLIN_HTML() {
 
 function CLIN_cycleText() {
   var d = dayIdxFromISO(today);
-  return 'Ciclo 1 \u00b7 giorno ' + Math.max(1, Math.min(CAL.DAYS, cycleDayNo(d))) + ' di ' + CAL.DAYS;
+  return protoPhase(d) === 'pausa' ? ('Protocollo sospeso dal ' + protoDmy(protoPausa().dal)) : (protoPhase(d) === 'residuo' ? ('Post-protocollo \u00b7 giorno ' + (d - CAL.DAYS + 1)) : ('Ciclo 1 \u00b7 giorno ' + Math.max(1, Math.min(CAL.DAYS, cycleDayNo(d))) + ' di ' + CAL.DAYS));
 }
 
 function CLIN_renderAll() {
@@ -7962,14 +8051,14 @@ function dayHasAnyData(dayIdx) {
 function renderDayNav() {
   const L = t();
   const selIdx = dayIdxFromISO(selDate);
-  const totalWeeks = Math.ceil(CFG.CYCLE_DAYS / 7);
+  const totalWeeks = Math.ceil(navDays() / 7);
   const selWeek = Math.floor(selIdx / 7); // 0-based
   const todayIdx = dayIdxFromISO(today);
 
   const weekStartIdx = selWeek * 7;
   const dowNames = LANG === 'it' ? ['LUN','MAR','MER','GIO','VEN','SAB','DOM'] : ['MON','TUE','WED','THU','FRI','SAT','SUN'];
   const dayPills = Array.from({ length: 7 }, (_, i) => weekStartIdx + i).map((dIdx, i) => {
-    if (dIdx < 0 || dIdx >= CFG.CYCLE_DAYS) return `<div></div>`;
+    if (dIdx < 0 || dIdx >= navDays()) return `<div></div>`;
     const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + dIdx);
     const iso = isoLocal(d);
     const isFuture = dIdx > todayIdx;
@@ -7994,7 +8083,7 @@ function renderDayNav() {
     // 16 stanno comunque su una riga sola senza mai attivare lo scroll.
     const weekTabsReal = Array.from({ length: totalWeeks }, (_, w) => w).map(w => `
       <span onclick="jumpToWeek(${w})" style="flex:0 0 auto;padding:5px 10px;border-radius:var(--r-sm);font-size:var(--fs-sm);font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;
-        background:${w === selWeek ? 'var(--accent)' : 'var(--surf2)'};color:${w === selWeek ? 'var(--white)' : 'var(--ink2)'};border:1px solid ${w === selWeek ? 'var(--accent)' : 'var(--line)'};">W${w + 1}</span>
+        background:${w === selWeek ? 'var(--accent)' : 'var(--surf2)'};color:${w === selWeek ? 'var(--white)' : 'var(--ink2)'};border:1px solid ${w === selWeek ? 'var(--accent)' : 'var(--line)'};">${weekTag(w)}</span>
     `).join('');
 
     const weekStart = new Date(CFG.CYCLE_START + 'T00:00:00'); weekStart.setDate(weekStart.getDate() + weekStartIdx);
@@ -8005,7 +8094,7 @@ function renderDayNav() {
     const rangeLabel = `${weekStart.getDate()} ${months[weekStart.getMonth()]} – ${weekEnd.getDate()} ${months[weekEnd.getMonth()]}`;
 
     const dayPillsReal = Array.from({ length: 7 }, (_, i) => weekStartIdx + i).map((dIdx, i) => {
-      if (dIdx < 0 || dIdx >= CFG.CYCLE_DAYS) return `<span style="flex:1 1 0;"></span>`;
+      if (dIdx < 0 || dIdx >= navDays()) return `<span style="flex:1 1 0;"></span>`;
       const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + dIdx);
       const iso = isoLocal(d);
       const isSel = iso === selDate;
@@ -8051,11 +8140,11 @@ function renderDayNav() {
 
   const weekTabsM = Array.from({ length: totalWeeks }, (_, w) => w).map(w => `
     <span onclick="jumpToWeek(${w})" style="flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;box-sizing:border-box;padding:0 13px;border-radius:var(--r-pill);font-size:var(--fs-sm);font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;
-      background:${w === selWeek ? 'var(--accent)' : 'var(--surf2)'};color:${w === selWeek ? 'var(--white)' : 'var(--ink2)'};border:1px solid ${w === selWeek ? 'var(--accent)' : 'var(--line)'};">W${w + 1}</span>
+      background:${w === selWeek ? 'var(--accent)' : 'var(--surf2)'};color:${w === selWeek ? 'var(--white)' : 'var(--ink2)'};border:1px solid ${w === selWeek ? 'var(--accent)' : 'var(--line)'};">${weekTag(w)}</span>
   `).join('');
 
   const dayPillsM = Array.from({ length: 7 }, (_, i) => weekStartIdx + i).map((dIdx, i) => {
-    if (dIdx < 0 || dIdx >= CFG.CYCLE_DAYS) return `<span style="flex:1 1 0;"></span>`;
+    if (dIdx < 0 || dIdx >= navDays()) return `<span style="flex:1 1 0;"></span>`;
     const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + dIdx);
     const iso = isoLocal(d);
     const isSel = iso === selDate;
@@ -8085,12 +8174,12 @@ function renderDayNav() {
   const phaseIdxM = weekStartIdx <= 27 ? 0 : weekStartIdx <= 55 ? 1 : weekStartIdx <= 83 ? 2 : 3;
   const titleBlockM = oggiViewMode === 'week' ? `
       <div style="display:flex;flex-direction:column;gap:1px;min-width:0;">
-        <span style="font-size:var(--fs-3xl);line-height:1.1;letter-spacing:-.02em;font-weight:600;color:var(--ink);white-space:nowrap;">${LANG === 'it' ? 'Settimana' : 'Week'} ${selWeek + 1}</span>
+        <span style="font-size:var(--fs-3xl);line-height:1.1;letter-spacing:-.02em;font-weight:600;color:var(--ink);white-space:nowrap;">${weekTagLong(selWeek)}</span>
         <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${weekRangeM} · ${PHASE_NAMES_SHORT[phaseIdxM]}</span>
       </div>` : `
       <div style="display:flex;flex-direction:column;gap:1px;min-width:0;">
         <span style="font-size:var(--fs-3xl);line-height:1.1;letter-spacing:-.02em;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${dateHeaderTxt}</span>
-        <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${L.day} ${cycleDayNo(selIdx)} ${LANG === 'it' ? 'di' : 'of'} ${CFG.CYCLE_DAYS} · WK${selWeek + 1}</span>
+        <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${cycleDayLabel(selIdx, true)} · ${weekTag(selWeek)}</span>
       </div>`;
 
   return `
@@ -8108,7 +8197,7 @@ function renderDayNav() {
 function jumpToWeek(w) {
   // Porta selDate al lunedì della settimana scelta, mantenendo il giorno
   // della settimana se possibile (semplice: vai al primo giorno valido).
-  const targetIdx = Math.min(Math.max(w * 7, 0), CFG.CYCLE_DAYS - 1);
+  const targetIdx = Math.min(Math.max(w * 7, 0), navDays() - 1);
   const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + targetIdx);
   selDate = isoLocal(d);
   render();
@@ -8335,7 +8424,7 @@ function renderWeekFull() {
   const L = t();
   const selIdx = dayIdxFromISO(selDate);
   const weekIdx = Math.floor(selIdx / 7);
-  const totalWeeks = Math.ceil(CFG.CYCLE_DAYS / 7);
+  const totalWeeks = Math.ceil(navDays() / 7);
   const wk = weekAggregate(weekIdx);
   const nf = (v, d = 1) => v == null || isNaN(v) ? '—' : (LANG === 'it' ? Number(v).toFixed(d).replace('.', ',') : Number(v).toFixed(d));
   const deltaTxt = (cur, prev, unit, invert) => {
@@ -9102,14 +9191,14 @@ function renderOggiFull() {
   const dayIdx = dayIdxFromISO(selDate);
   const wo = getWorkout2(dayIdx);
   const rest = wo.type === 'Riposo';
-  const slots = getInjectionSlots2(dayIdx);
+  const slots = getInjectionSlotsUI(dayIdx);
   const weekN = Math.floor(dayIdx / 7) + 1;
   const isOverridden = !!day.wo_override;
   const dowLbl = new Date(selDate + 'T00:00:00').getDay();
   const mapLbl = { 0: 'Upper B', 1: 'Riposo', 2: 'Push', 3: 'Pull', 4: 'Riposo', 5: 'Legs', 6: 'Upper A' };
   const defaultType = mapLbl[dowLbl] || 'Riposo';
   const overrideOpts = WO_TYPES;
-  const dayMetaTxt = `${LANG === 'it' ? 'giorno' : 'day'} ${cycleDayNo(dayIdx)} ${LANG === 'it' ? 'di' : 'of'} ${CFG.CYCLE_DAYS} · WK${weekN} · ${wo.type}`;
+  const dayMetaTxt = `${cycleDayLabel(dayIdx)} · ${weekTag(weekN - 1)} · ${wo.type}`;
 
   const heroHtml = `
     <div class="hero-card">
@@ -9366,7 +9455,7 @@ function renderOggiFull() {
     slots.forEach(s => {
       const isIgf = s.igfMuscle !== undefined;
       s.fields.forEach(f => flatDosesM.push({
-        label: s.label, name: f, via: isIgf ? 'IM' : 'SC', isIgf,
+        label: s.label, name: f, via: isIgf ? 'IM' : 'SC', isIgf, off: !!(s.off && s.off[f]), ck: protoCompKey(f),
         stateKey: 'inj_' + s.n + '_' + fieldKey(f),
         siteKey: isIgf ? ('inj_' + s.n + '_distretto') : ('inj_' + s.n + '_' + fieldKey(f) + '_sito'),
         siteOpts: isIgf ? ['Petto', 'Bicipiti', 'Deltoidi', 'Tricipiti', 'Quadricipiti'] : SITES_SC
@@ -9376,8 +9465,8 @@ function renderOggiFull() {
     const iniezioniM = `
       <div style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);">
         <div style="padding:12px 16px 8px;display:flex;align-items:baseline;justify-content:space-between;">
-          <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${L.injections}</span>
-          <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;">${injDoneM}/${flatDosesM.length}</span>
+          <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${L.injections}${protoCardTag(dayIdx)}</span>
+          <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;">${injDoneM}/${flatDosesM.filter(x => !x.off).length}</span>
         </div>
         ${flatDosesM.map((fd, k) => {
           const st = doseLook(day[fd.stateKey]);
@@ -9386,13 +9475,13 @@ function renderOggiFull() {
           const open = openMenu === 'site-' + k;
           const { name: compName, dose } = splitDose(fd.name);
           return `
-          <div style="display:flex;align-items:center;gap:9px;padding:8px 16px;border-top:1px solid var(--line2);min-height:48px;">
-            <span data-injdose="${k}" style="width:26px;height:26px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:var(--fs-sm);font-weight:700;color:${st.ink};background:${st.bg};border:1.5px solid ${st.border};cursor:pointer;">${st.mark}</span>
+          <div style="${fd.off ? 'opacity:.5;' : ''}display:flex;align-items:center;gap:9px;padding:8px 16px;border-top:1px solid var(--line2);min-height:48px;">
+            <span ${fd.off ? 'data-injoff="1"' : 'data-injdose="' + k + '"'} style=""width:26px;height:26px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:var(--fs-sm);font-weight:700;color:${st.ink};background:${st.bg};border:1.5px solid ${st.border};cursor:pointer;">${st.mark}</span>
             <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px;">
               <span style="font-size:var(--fs-md);font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(compName)}</span>
               <span style="font-size:var(--fs-2xs);color:var(--ink2);white-space:nowrap;">${(L.slotLabels[fd.label] || fd.label).toLowerCase()}${dose ? ' · ' + esc(dose.replace(/(\d)([a-zA-Z])/, '$1 $2')) : ''} · ${fd.via}</span>
             </div>
-            <div style="flex:0 0 108px;position:relative;">
+            ${protoSwitchHtml(fd)}<div style="flex:0 0 108px;position:relative;${fd.off ? 'display:none;' : ''}">
               <span data-injmenu="site-${k}" style="display:flex;align-items:center;justify-content:space-between;gap:5px;min-height:32px;padding:0 9px;border-radius:var(--r-sm);background:${hasSite ? 'var(--accent-soft)' : 'transparent'};border:1px solid ${hasSite ? 'transparent' : 'var(--line)'};cursor:pointer;">
                 <span style="font-size:var(--fs-2xs);font-weight:600;color:${hasSite ? 'var(--accent-ink)' : 'var(--ink2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${hasSite ? siteLabel(siteVal) : L.choose}</span>
                 <span style="font-size:var(--fs-2xs);color:var(--ink2);">${open ? '▴' : '▾'}</span>
@@ -9611,7 +9700,7 @@ function renderOggiFull() {
     const isIgf = s.igfMuscle !== undefined;
     s.fields.forEach(f => {
       flatDoses.push({
-        label: s.label, name: f, via: isIgf ? 'IM' : 'SC', isIgf,
+        label: s.label, name: f, via: isIgf ? 'IM' : 'SC', isIgf, off: !!(s.off && s.off[f]), ck: protoCompKey(f),
         stateKey: 'inj_' + s.n + '_' + fieldKey(f),
         siteKey: isIgf ? ('inj_' + s.n + '_distretto') : ('inj_' + s.n + '_' + fieldKey(f) + '_sito'),
         siteOpts: isIgf ? MUSCLE_OPTS : SITES_SC,
@@ -9626,7 +9715,7 @@ function renderOggiFull() {
       <div style="display:flex;flex-direction:column;gap:9px;">
         <span style="display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);font-weight:600;color:rgba(255,255,255,.62);">
           <span style="width:7px;height:7px;border-radius:50%;flex:0 0 auto;background:${VD.dot};"></span>
-          ${VD.label} · ${L.day} ${cycleDayNo(dayIdx)} / ${CFG.CYCLE_DAYS} · WK${weekN}
+          ${VD.label} · ${cycleDayLabel(dayIdx, true)} · ${weekTag(weekN - 1)}
         </span>
         <span style="font-size:var(--fs-4xl);line-height:1.13;letter-spacing:-.024em;font-weight:600;color:var(--white);text-wrap:pretty;">${esc(VD_TEXT[0])}</span>
       </div>
@@ -9680,11 +9769,11 @@ function renderOggiFull() {
   const iniezioniCard = `
     <section style="grid-column:1 / 7;grid-row:2 / 3;${card}display:flex;flex-direction:column;">
       <div style="flex:0 0 auto;padding:11px 15px 7px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
-        <span style="${lbl}">${L.injections}</span>
+        <span style="${lbl}">${L.injections}${protoCardTag(dayIdx)}</span>
         <div style="display:flex;gap:14px;align-items:baseline;">
           <span style="display:flex;align-items:baseline;gap:5px;font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);"><span style="font-size:var(--fs-2xs);font-weight:700;color:var(--accent-ink);">SC</span>${L.injLegendSC.replace(/^SC /, '')}</span>
           <span style="display:flex;align-items:baseline;gap:5px;font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);"><span style="font-size:var(--fs-2xs);font-weight:700;color:var(--bad);">IM</span>${L.injLegendIM.replace(/^IM /, '')}</span>
-          <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;">${injDoneCount}/${flatDoses.length}</span>
+          <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;">${injDoneCount}/${flatDoses.filter(x => !x.off).length}</span>
         </div>
       </div>
       <div style="flex:1 1 auto;display:grid;grid-template-columns:repeat(2,1fr);border-top:1px solid var(--line2);">
@@ -9695,14 +9784,14 @@ function renderOggiFull() {
           const open = openMenu === 'site-' + k;
           const { name: compName, dose } = splitDose(fd.name);
           return `
-          <div style="min-height:34px;display:flex;align-items:center;gap:9px;padding:3px 15px;border-bottom:1px solid var(--line2);">
-            <span data-injdose="${k}" style="width:18px;height:18px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:var(--fs-2xs);font-weight:700;color:${st.ink};background:${st.bg};border:1.5px solid ${st.border};cursor:pointer;">${st.mark}</span>
+          <div style="${fd.off ? 'opacity:.5;' : ''}min-height:34px;display:flex;align-items:center;gap:9px;padding:3px 15px;border-bottom:1px solid var(--line2);">
+            <span ${fd.off ? 'data-injoff="1"' : 'data-injdose="' + k + '"'} style=""width:18px;height:18px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;font-size:var(--fs-2xs);font-weight:700;color:${st.ink};background:${st.bg};border:1.5px solid ${st.border};cursor:pointer;">${st.mark}</span>
             <div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column;">
               <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(compName)}</span>
               <span style="font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);white-space:nowrap;">${(L.slotLabels[fd.label] || fd.label).toLowerCase()}${dose ? ' · ' + esc(dose.replace(/(\d)([a-zA-Z])/, '$1 $2')) : ''}</span>
             </div>
             <span style="flex:0 0 16px;font-size:var(--fs-2xs);font-weight:700;color:${fd.via === 'IM' ? 'var(--bad)' : 'var(--accent-ink)'};">${fd.via}</span>
-            <div style="flex:0 0 116px;position:relative;">
+            ${protoSwitchHtml(fd)}<div style="flex:0 0 116px;position:relative;${fd.off ? 'display:none;' : ''}">
               <span data-injmenu="site-${k}" style="display:flex;align-items:center;justify-content:space-between;gap:4px;height:22px;padding:0 6px;border-radius:var(--r-sm);background:${hasSite ? 'var(--accent-soft)' : 'transparent'};border:1px solid ${hasSite ? 'transparent' : 'var(--line)'};cursor:pointer;">
                 <span style="font-size:var(--fs-2xs);font-weight:600;color:${hasSite ? 'var(--accent-ink)' : 'var(--ink2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${hasSite ? siteLabel(siteVal) : L.choose}</span>
                 <span style="font-size:var(--fs-2xs);color:var(--ink2);">${open ? '▴' : '▾'}</span>
@@ -9848,7 +9937,7 @@ function renderOggiSections() {
   const day = getDay(selDate);
   const dayIdx = dayIdxFromISO(selDate);
   const wo = getWorkout2(dayIdx);
-  const slots = getInjectionSlots2(dayIdx);
+  const slots = getInjectionSlotsUI(dayIdx);
   const weekN = Math.floor(dayIdx / 7) + 1;
   const isOverridden = !!day.wo_override;
 
@@ -9866,7 +9955,7 @@ function renderOggiSections() {
     <div class="day-hdr">
       <div class="day-hdr-left">
         <div class="day-date">${dateLabel[0].toUpperCase() + dateLabel.slice(1)}</div>
-        <div class="day-meta">${L.day} ${cycleDayNo(dayIdx)}/${CFG.CYCLE_DAYS} · ${L.week} ${weekN}</div>
+        <div class="day-meta">${cycleDayLabel(dayIdx, true)} · ${weekTagLong(weekN - 1)}</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="day-badge ${isOverridden ? 'overridden' : ''}">${wo.type.toUpperCase()}</span>
@@ -10158,7 +10247,7 @@ function bindOggi() {
       // ricostruita qui invece di richiamare renderOggiFull: ci serve solo
       // la stessa lista appiattita di dosi per risalire alla stateKey di k.
       const dayIdx2 = dayIdxFromISO(selDate);
-      const slots2 = getInjectionSlots2(dayIdx2);
+      const slots2 = getInjectionSlotsUI(dayIdx2);
       const flat = [];
       slots2.forEach(s => { const isIgf = s.igfMuscle !== undefined; s.fields.forEach(f => flat.push({ n: s.n, f, isIgf })); });
       const fd = flat[k];
@@ -10173,7 +10262,7 @@ function bindOggi() {
       e.stopPropagation();
       const [k, site] = el.dataset.injsite.split('|');
       const dayIdx2 = dayIdxFromISO(selDate);
-      const slots2 = getInjectionSlots2(dayIdx2);
+      const slots2 = getInjectionSlotsUI(dayIdx2);
       const flat = [];
       slots2.forEach(s => { const isIgf = s.igfMuscle !== undefined; s.fields.forEach(f => flat.push({ n: s.n, f, isIgf })); });
       const fd = flat[+k];
@@ -10434,8 +10523,9 @@ function gstCopertura(c, vd, todayStr){
 }
 
 // ── testata comune (spec §0) ──
-function gstE(){ return Math.max(0, Math.min(111, dayIdxFromISO(today))); }
-function gstGiorniAllaFine(){ return 111 - gstE(); }
+function gstE(){ return Math.max(0, Math.min(protoFineIdx(), dayIdxFromISO(today))); }
+/* 26/10: la fine del protocollo e' l'ultimo giorno prima della pausa (default 10/11), non piu' fissa a 111; in pausa = 0 e nessun allarme */
+function gstGiorniAllaFine(){ return protoFineIdx() - gstE(); }
 
 // ── 1.7 materiali di consumo ──
 // PORTING 25/09: nuovo campo (decisione #1), seminato ai valori oggi fissi in V1.
@@ -10446,7 +10536,7 @@ function gstConsumabili(){
 }
 // giorni di allenamento rimasti da domani a fine ciclo (mar,mer,ven,sab,dom -- tipo settimana reale, non isBkkDate)
 function gstGiorniWoRimasti(){
-  var t = dayIdxFromISO(today), fine = 111, n = 0;
+  var t = dayIdxFromISO(today), fine = protoFineIdx(), n = 0;
   for (var i = t+1; i <= fine; i++){ if (getWorkout2(i).type !== "Riposo") n++; }
   return n;
 }
@@ -10611,7 +10701,7 @@ function GST_mount(){
   var root = document.querySelector('[data-gst-view="stock"]') ? document.body : null;
   root = document.body;
   var cycleEl = document.querySelector('[data-gst-cycle]');
-  if (cycleEl) cycleEl.textContent = "Ciclo 1 \u00b7 giorno "+(gstE()+1)+" di "+CAL.DAYS+" \u00b7 "+gstGiorniAllaFine()+" giorni alla fine";
+  if (cycleEl) cycleEl.textContent = (protoPhase(dayIdxFromISO(today))==="pausa") ? ("Protocollo sospeso dal "+protoDmy(protoPausa().dal)) : ("Ciclo 1 \u00b7 giorno "+(gstE()+1)+" di "+CAL.DAYS+" \u00b7 "+gstGiorniAllaFine()+" giorni alla fine");
   document.querySelectorAll('[data-gst-tab]').forEach(function(b){
     if (b.dataset.bound) return; b.dataset.bound = "1";
     b.addEventListener("click", function(){
@@ -10673,7 +10763,7 @@ function GST_renderStock(){
   if (!isDesktop) { GST_renderStockMobile(host); return; }
   var vd = GST_V1.stock_v2_vials || {};
   var todayStr = today;
-  var html = GST_stockHero();
+  var html = GST_stockHero() + protoPausaSettingsHtml();
 
   /* PORTING 26/09: riscritta per rispecchiare esattamente il layout del mockup approvato --
      griglia a 12 colonne con span espliciti (Convertitore + Ricostituzione affiancate,
@@ -10862,7 +10952,7 @@ function gstTagInk(tag){
   return "var(--ink3)";
 }
 function GST_renderStockMobile(host){
-  var vd = GST_V1.stock_v2_vials || {}, todayStr = today, html = GST_stockHero();
+  var vd = GST_V1.stock_v2_vials || {}, todayStr = today, html = GST_stockHero() + protoPausaSettingsHtml();
   var CARD = "border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);";
   var LBL = "font-size:var(--fs-xs);font-weight:600;color:var(--ink2);text-transform:uppercase;";
   var FLD = "width:100%;min-width:0;height:44px;box-sizing:border-box;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surf2);text-align:center;font-size:var(--fs-lg);font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);";
