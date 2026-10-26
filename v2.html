@@ -1407,7 +1407,7 @@ const BKK_START = new Date('2026-08-07');
 const BKK_END = new Date('2026-08-21');
 /* 26/10/2026: seconda trasferta a Bangkok, 4-14/12 (partenza da Malpensa la sera del 4/12, arrivo 5/12; ritorno la sera del 13/12, arrivo 14/12).
    Stesso trattamento di agosto: allenamento ogni giorno di default, "riposo in trasferta" (bkk_riposo) sui giorni di viaggio. Cade dopo la fine del ciclo,
-   in Post-protocollo e pausa peptidi: nessuna iniezione, nessun kit di viaggio da calcolare. */
+   in Post-ciclo e pausa peptidi: nessuna iniezione, nessun kit di viaggio da calcolare. */
 const BKK_TRIPS = [['2026-08-07', '2026-08-21'], ['2026-12-04', '2026-12-14']];
 function isBkkDate(d) {
   const dd = new Date(d); dd.setHours(0, 0, 0, 0);
@@ -1599,9 +1599,9 @@ function dayKeyFromISO(dateISO) { return 'p2_day_' + dayIdxFromISO(dateISO); }
 /* ===== PAUSA PEPTIDI / POST-PROTOCOLLO (26/10/2026, decisione di Giorgio) =====
    Il protocollo attuale va finito (BPC-157 e TB-500 compresi), poi i peptidi si fermano almeno fino a dopo BKK.
    Config in blob.proto_pausa = { on:'1'|'0', dal:'AAAA-MM-GG' (primo giorno SENZA iniezioni), al:'AAAA-MM-GG' (opz.: primo giorno di ripresa) }.
-   Default: on, dal 11/11/2026. Il ciclo dura 16 settimane (fino all'8/11). Fasi del giorno: 'ciclo' (indice <= 111), 'residuo' (Post-protocollo, dosi rimaste: SOLO BPC-157 e TB-500
+   Default: on, dal 11/11/2026. Il ciclo dura 16 settimane (fino all'8/11). Fasi del giorno: 'ciclo' (indice <= 111), 'residuo' (Post-ciclo, dosi rimaste: SOLO BPC-157 e TB-500
    per finire i vial; dal 9/11 alla vigilia della pausa), 'pausa' (pausa completa da tutti i peptidi: nessuna iniezione, nessun allarme scorte, non contano come saltate).
-   Dal 9/11 il diario e' in 'Post-protocollo' e le settimane si chiamano Post-protocollo · settimana 1, 2...
+   Dal 9/11 il diario e' in 'Post-ciclo' e le settimane si chiamano Post-ciclo · settimana 1, 2...
    Lo storico non cambia: le chiavi p2_day_N gia' scritte restano. */
 const PAUSA_DEFAULT_DAL = '2026-11-11';
 function protoPausa() {
@@ -1625,20 +1625,20 @@ function navDays() { const need = Math.max(CAL.DAYS, dayIdxFromISO(today) + 1, p
 function cycleDayLabel(idx, cap) {
   const it = LANG === 'it', ph = protoPhase(idx);
   let t;
-  if (ph === 'pausa' || ph === 'residuo') { const k = idx - CAL.DAYS + 1; t = it ? ('Post-protocollo \u00b7 giorno ' + k) : ('Post-protocol \u00b7 day ' + k); }
+  if (ph === 'pausa' || ph === 'residuo') { const k = idx - CAL.DAYS + 1; t = it ? ('Post-ciclo \u00b7 giorno ' + k) : ('Post-cycle \u00b7 day ' + k); }
   else t = (it ? 'giorno ' : 'day ') + cycleDayNo(idx) + (it ? ' di ' : ' of ') + CAL.DAYS;
   return cap ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 }
-/* Etichetta settimana: W1..W16 nel ciclo, P1.. dopo (Post-protocollo, settimana 1 = 9-15/11) */
+/* Etichetta settimana: W1..W16 nel ciclo, P1.. dopo (Post-ciclo, settimana 1 = 9-15/11) */
 function weekTag(w) { return w >= Math.ceil(CAL.DAYS / 7) ? 'P' + (w - Math.ceil(CAL.DAYS / 7) + 1) : 'W' + (w + 1); }
-function weekTagLong(w) { const it = LANG === 'it', n = Math.ceil(CAL.DAYS / 7); return w >= n ? (it ? 'Post-protocollo \u00b7 sett. ' : 'Post-protocol \u00b7 wk ') + (w - n + 1) : (it ? 'Settimana ' : 'Week ') + (w + 1); }
+function weekTagLong(w) { const it = LANG === 'it', n = Math.ceil(CAL.DAYS / 7); return w >= n ? (it ? 'Post-ciclo \u00b7 sett. ' : 'Post-cycle \u00b7 wk ') + (w - n + 1) : (it ? 'Settimana ' : 'Week ') + (w + 1); }
 function protoDmy(iso) { return iso ? (iso.slice(8, 10) + '/' + iso.slice(5, 7)) : ''; }
 const PROTO_COMP_KEYS = [['frag', /^Fragment/], ['bpc', /^BPC-157/], ['tb', /^TB-500/], ['tesa', /^Tesamorelin/], ['ipa', /^Ipamorelin/], ['igf', /^IGF-1/]];
 function protoCompKey(field) { const m = PROTO_COMP_KEYS.find(x => x[1].test(field)); return m ? m[0] : ''; }
-/* Composti attivi nel Post-protocollo (dosi rimaste): default BPC-157 e TB-500; ognuno si attiva/disattiva con un interruttore sulla card Iniezioni */
+/* Composti attivi nel Post-ciclo (dosi rimaste): default BPC-157 e TB-500; ognuno si attiva/disattiva con un interruttore sulla card Iniezioni */
 function protoActive() { const p = (store && store.blob && store.blob.proto_pausa) || {}; const v = (p.attivi === undefined || p.attivi === null) ? 'bpc,tb' : String(p.attivi); return v.split(',').map(x => x.trim()).filter(Boolean); }
 function protoCompToggle(ck) { const a = protoActive(), i = a.indexOf(ck); if (i >= 0) a.splice(i, 1); else a.push(ck); patchKey('proto_pausa', 'attivi', a.join(',') || '-'); render(); }
-/* Slot per la card Iniezioni: nel Post-protocollo mostra TUTTI i composti, quelli non attivi (e tutti in pausa) in grigio (s.off) */
+/* Slot per la card Iniezioni: nel Post-ciclo mostra TUTTI i composti, quelli non attivi (e tutti in pausa) in grigio (s.off) */
 function getInjectionSlotsUI(dayIdx) {
   const ph = protoPhase(dayIdx);
   if (ph === 'ciclo') return getInjectionSlots2(dayIdx);
@@ -1674,7 +1674,7 @@ function protoPausaSettingsHtml() {
     row(it ? 'Pausa attiva' : 'Pause on', '<button type="button" onclick="protoPausaSet(\'on\',\'' + (p.on ? '0' : '1') + '\')" style="border:none;background:var(--accent-soft);color:var(--accent-ink);font:inherit;font-size:var(--fs-sm);font-weight:600;padding:6px 14px;border-radius:var(--r-pill);cursor:pointer;">' + (p.on ? (it ? 'Riattiva protocollo' : 'Resume protocol') : (it ? 'Sospendi dal giorno scelto' : 'Pause from chosen day')) + '</button>') +
     row(it ? 'Inizio pausa completa (nessun peptide)' : 'Full pause starts (no peptides)', inp('dal', p.dal)) +
     row(it ? 'Ripresa (facoltativa)' : 'Resume on (optional)', inp('al', p.al)) +
-    '<div style="font-size:var(--fs-xs);color:var(--ink2);padding-top:6px;">' + (it ? 'Dal 9/11 (Post-protocollo) restano solo BPC-157 e TB-500 per finire i vial; la pausa completa parte alla data indicata, stimata sulla fine dei vial (dosi rimaste non verificate): modificala a mano se serve. Lo storico non cambia.' : 'Date estimated from the end of the BPC-157 and TB-500 vials; edit by hand if needed.') + '</div></section>';
+    '<div style="font-size:var(--fs-xs);color:var(--ink2);padding-top:6px;">' + (it ? 'Dal 9/11 (Post-ciclo) restano solo BPC-157 e TB-500 per finire i vial; la pausa completa parte alla data indicata, stimata sulla fine dei vial (dosi rimaste non verificate): modificala a mano se serve. Lo storico non cambia.' : 'Date estimated from the end of the BPC-157 and TB-500 vials; edit by hand if needed.') + '</div></section>';
 }
 
 // Bug reale trovato il 10/09/2026: ".toISOString().slice(0,10)" converte
@@ -2014,7 +2014,7 @@ function getPlannedWorkout2(idx) {
 function getInjectionSlots2(dayIdx) {
   const ph = protoPhase(dayIdx);
   if (ph === 'pausa') return []; // pausa completa dai peptidi: nessuna iniezione prevista
-  if (ph === 'residuo') { // Post-protocollo, dosi rimaste: solo BPC-157 e TB-500 (gli altri composti si fermano a fine ciclo)
+  if (ph === 'residuo') { // Post-ciclo, dosi rimaste: solo BPC-157 e TB-500 (gli altri composti si fermano a fine ciclo)
     const act = protoActive();
     return getInjectionSlotsFull(dayIdx).map(s => Object.assign({}, s, { fields: s.fields.filter(f => act.indexOf(protoCompKey(f)) >= 0) })).filter(s => s.fields.length);
   }
@@ -2120,7 +2120,7 @@ function dayAdherence(dateISO, blobArg) {
   }
   /* 24/10: woSess = seduta REALE nel diario di quel giorno (calorie/volume/RPE), indipendente dal "coperto" (woDone include i previsti recuperati da un extra) */
   const r = { injDone: 0, injTot: 0, suppDone: 0, suppTot: 0, woPlanned: false, woDone: false, woType: '', woSess: woSessDone(rec) };
-  /* 26/10 (Giorgio): la % di aderenza delle iniezioni si chiude con la settimana 16 (idx 111, 8/11): le dosi del Post-protocollo non sono dovute ne' contate */
+  /* 26/10 (Giorgio): la % di aderenza delle iniezioni si chiude con la settimana 16 (idx 111, 8/11): le dosi del Post-ciclo non sono dovute ne' contate */
   (woIdx > 111 ? [] : getInjectionSlots2(woIdx)).forEach(s => {
     s.fields.forEach(f => {
       const v = rec['inj_' + s.n + '_' + fieldKey(f)] || '';
@@ -5388,7 +5388,7 @@ var CTX = (function () {
         if (cs.display === 'flex' && cs.flexDirection === 'row') card.style.flexWrap = 'wrap';
         note.style.cssText = 'flex:0 0 100%;width:100%;box-sizing:border-box;margin:0;padding:8px 6px 0;';
         card.appendChild(note); }, txt: function () {
-      var post = typeof dayIdxFromISO === 'function' && dayIdxFromISO(selDate) >= 112;   /* 26/10: dal Post-protocollo l'anello Proteine sostituisce Iniezioni, conteggio dal 9/11 */
+      var post = typeof dayIdxFromISO === 'function' && dayIdxFromISO(selDate) >= 112;   /* 26/10: dal Post-ciclo l'anello Proteine sostituisce Iniezioni, conteggio dal 9/11 */
       return IT() ? 'Dal 18/07: fatte su previste \u00b7 barra sotto = giorno mostrato.' + (post ? ' Proteine: giorni in obiettivo dal 9/11 (iniezioni chiuse al 8/11, vedi Andamento).' : '') : 'Since 18 Jul: done of planned \u00b7 bar below = day shown.' + (post ? ' Protein: days on target since 9 Nov (injections closed on 8 Nov, see Andamento).' : ''); } },
     { id: 'inj', leaf: leafCard(function (t) { return /^iniezioni e distretto$/i.test(t) || /^injections (and|&) (site|district)$/i.test(t); }), place: function (el, note) {
         var head = el.leaf.parentElement || el.leaf; head.insertAdjacentElement('afterend', note);
@@ -5633,7 +5633,7 @@ function CLIN_HTML() {
 
 function CLIN_cycleText() {
   var d = dayIdxFromISO(today);
-  return protoPhase(d) === 'pausa' ? ('Protocollo sospeso dal ' + protoDmy(protoPausa().dal)) : (protoPhase(d) === 'residuo' ? ('Post-protocollo \u00b7 giorno ' + (d - CAL.DAYS + 1)) : ('Ciclo 1 \u00b7 giorno ' + Math.max(1, Math.min(CAL.DAYS, cycleDayNo(d))) + ' di ' + CAL.DAYS));
+  return protoPhase(d) === 'pausa' ? ('Protocollo sospeso dal ' + protoDmy(protoPausa().dal)) : (protoPhase(d) === 'residuo' ? ('Post-ciclo \u00b7 giorno ' + (d - CAL.DAYS + 1)) : ('Ciclo 1 \u00b7 giorno ' + Math.max(1, Math.min(CAL.DAYS, cycleDayNo(d))) + ' di ' + CAL.DAYS));
 }
 
 function CLIN_renderAll() {
@@ -6656,7 +6656,7 @@ function chipsTop(){
   const days=Array.from({length:7},(_,k)=>{const i=a+k;const ok=i<N;const d=ok?dt(i):dt(i);
     return `<div class="pc-dchip ${i===selDay?'sel':''} ${ok?'':'off'}" ${ok?`onclick="PRE.sel(${i})"`:''}><span>${WD[d.getDay()]}</span><span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink2)">${d.getDate()}</span>${ok?`<span class="pc-dot ${DAYS[i].peso?'':'n'}"></span>`:''}</div>`;}).join('');
   return `<div style="margin-bottom:12px;border-radius:var(--r-card);overflow:hidden;border:1px solid var(--line)">
-  <div class="pc-top1" style="background:var(--surf);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px"><span class="pc-lbl" style="flex:0 0 auto">Pre ciclo</span><div style="flex:1 1 auto;min-width:0;display:flex;gap:4px;overflow-x:auto">${wkChips}</div><span onclick="PRE.close()" style="flex:0 0 auto;border:1px solid var(--line);background:var(--surf);border-radius:var(--r-sm);padding:5px 10px;font-size:var(--fs-sm);font-weight:600;cursor:pointer">Ciclo 1 →</span></div>
+  <div class="pc-top1" style="background:var(--surf);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px">${phaseSwitchHtml("pre", innerWidth < 700)}<div style="flex:1 1 auto;min-width:0;display:flex;gap:4px;overflow-x:auto">${wkChips}</div></div>
   <div class="pc-top2" style="background:var(--surf2);display:flex;align-items:center;gap:7px"><span class="pc-lbl pc-dl" style="flex:0 0 auto">${dlab(a)} – ${dlab(b)}</span>${days}</div></div>`;
 }
 function hero(d){
@@ -8064,6 +8064,7 @@ function renderDayNav() {
   const selIdx = dayIdxFromISO(selDate);
   const totalWeeks = Math.ceil(navDays() / 7);
   const selWeek = Math.floor(selIdx / 7); // 0-based
+  PHASE_LAST[phaseOfWeek(selWeek)] = selWeek;
   const todayIdx = dayIdxFromISO(today);
 
   const weekStartIdx = selWeek * 7;
@@ -8092,7 +8093,7 @@ function renderDayNav() {
     // mockup sono a larghezza naturale (flex:0 0 auto) con overflow-x:auto
     // di sicurezza — alle dimensioni reali (padding 5px 10px, 11.5px) le
     // 16 stanno comunque su una riga sola senza mai attivare lo scroll.
-    const weekTabsReal = Array.from({ length: totalWeeks }, (_, w) => w).map(w => `
+    const weekTabsReal = weeksOfPhase(phaseOfWeek(selWeek), totalWeeks).map(w => `
       <span onclick="jumpToWeek(${w})" style="flex:0 0 auto;padding:5px 10px;border-radius:var(--r-sm);font-size:var(--fs-sm);font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;
         background:${w === selWeek ? 'var(--accent)' : 'var(--surf2)'};color:${w === selWeek ? 'var(--white)' : 'var(--ink2)'};border:1px solid ${w === selWeek ? 'var(--accent)' : 'var(--line)'};">${weekTag(w)}</span>
     `).join('');
@@ -8123,9 +8124,9 @@ function renderDayNav() {
     return `
       <div class="oggi-top" style="max-width:none;margin-bottom:12px;">
         <div style="flex:0 0 auto;background:var(--surf);border-bottom:1px solid var(--line);padding:8px 20px;display:flex;align-items:center;gap:12px;">
-          <span style="flex:0 0 auto;font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${LANG === 'it' ? 'Ciclo 1' : 'Cycle 1'}</span>
+          ${phaseSwitchHtml(phaseOfWeek(selWeek), false)}
+          <span style="flex:0 0 1px;height:20px;background:var(--line);"></span>
           <div style="flex:1 1 auto;min-width:0;display:flex;gap:4px;overflow-x:auto;">${weekTabsReal}</div>
-          <span onclick="PRE.open()" style="flex:0 0 auto;padding:5px 11px;border-radius:var(--r-sm);font-size:var(--fs-xs);font-weight:600;color:var(--ink2);border:1px solid var(--line);cursor:pointer;">${LANG === 'it' ? 'Mostra pre-ciclo' : 'Show pre-cycle'}</span>
         </div>
         ${oggiViewMode === 'week' ? '' : `
         <div style="flex:0 0 auto;background:var(--surf2);border-bottom:1px solid var(--line);padding:7px 20px;display:flex;align-items:center;gap:7px;">
@@ -8149,7 +8150,7 @@ function renderDayNav() {
     ? `${dowFullIt[selD.getDay()]} ${selD.getDate()} ${monthsIt[selD.getMonth()]}`
     : `${dowFullEn[selD.getDay()]} ${monthsEn[selD.getMonth()]} ${selD.getDate()}`;
 
-  const weekTabsM = Array.from({ length: totalWeeks }, (_, w) => w).map(w => `
+  const weekTabsM = weeksOfPhase(phaseOfWeek(selWeek), totalWeeks).map(w => `
     <span onclick="jumpToWeek(${w})" style="flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;box-sizing:border-box;padding:0 13px;border-radius:var(--r-pill);font-size:var(--fs-sm);font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;
       background:${w === selWeek ? 'var(--accent)' : 'var(--surf2)'};color:${w === selWeek ? 'var(--white)' : 'var(--ink2)'};border:1px solid ${w === selWeek ? 'var(--accent)' : 'var(--line)'};">${weekTag(w)}</span>
   `).join('');
@@ -8201,10 +8202,32 @@ function renderDayNav() {
         <span onclick="oggiViewMode='week'; render();" style="display:inline-flex;align-items:center;min-height:40px;box-sizing:border-box;padding:0 13px;border-radius:var(--r-sm);font-size:var(--fs-sm);font-weight:600;cursor:pointer;background:${oggiViewMode === 'week' ? 'var(--accent)' : 'transparent'};color:${oggiViewMode === 'week' ? 'var(--white)' : 'var(--ink2)'};">${LANG === 'it' ? 'Settimana' : 'Week'}</span>
       </div>
     </div>
-    <div style="flex:0 0 auto;padding:0 18px 7px;display:flex;gap:5px;overflow-x:auto;">${weekTabsM}</div>
+    <div style="flex:0 0 auto;padding:0 18px 7px;display:flex;align-items:center;gap:8px;">${phaseSwitchHtml(phaseOfWeek(selWeek), true)}<div style="flex:1 1 auto;min-width:0;display:flex;gap:5px;overflow-x:auto;">${weekTabsM}</div></div>
     ${oggiViewMode === 'week' ? '' : `<div style="flex:0 0 auto;padding:0 18px 9px;display:flex;gap:4px;">${dayPillsM}</div>`}
   `;
 }
+/* 26/10: interruttore a tre fasi (Pre-ciclo | Ciclo 1 | Post-ciclo) al posto di "Mostra pre-ciclo" / "Ciclo 1 ->". La fase attiva mostra solo le sue settimane;
+   il punto blu marca la fase che contiene oggi. Un eventuale "Ciclo 2" sara' una quarta voce. */
+const PHASE_LAST = {};
+function phaseOfWeek(w) { return w >= Math.ceil(CAL.DAYS / 7) ? 'post' : 'ciclo'; }
+function weeksOfPhase(ph, total) { const n = Math.ceil(CAL.DAYS / 7); return Array.from({ length: Math.max(total, 0) }, (_, w) => w).filter(w => ph === 'post' ? w >= n : w < n); }
+function gotoPhase(ph) {
+  if (ph === 'pre') { PRE.open(); return; }
+  if (PRE.active()) PRE.close();
+  const n = Math.ceil(CAL.DAYS / 7), selW = Math.floor(dayIdxFromISO(selDate) / 7);
+  let w;
+  if (phaseOfWeek(selW) === ph) w = selW;
+  else if (PHASE_LAST[ph] != null) w = PHASE_LAST[ph];
+  else { const tw = Math.floor(dayIdxFromISO(today) / 7); w = phaseOfWeek(tw) === ph ? tw : (ph === 'ciclo' ? n - 1 : n); }
+  jumpToWeek(w);
+}
+function phaseSwitchHtml(active, mob) {
+  const it = LANG === 'it', todayPh = phaseOfWeek(Math.floor(dayIdxFromISO(today) / 7));
+  const lab = { pre: mob ? 'Pre' : (it ? 'Pre-ciclo' : 'Pre-cycle'), ciclo: it ? 'Ciclo 1' : 'Cycle 1', post: mob ? 'Post' : (it ? 'Post-ciclo' : 'Post-cycle') };
+  return '<span style="flex:0 0 auto;display:inline-flex;gap:2px;background:var(--surf2);border:1px solid var(--line);border-radius:var(--r-md);padding:2px;">' +
+    ['pre', 'ciclo', 'post'].map(ph => `<span onclick="gotoPhase('${ph}')" style="position:relative;display:inline-flex;align-items:center;${mob ? 'min-height:40px;padding:0 12px;' : 'padding:5px 12px;'}border-radius:var(--r-sm);font-size:var(--fs-sm);font-weight:600;white-space:nowrap;cursor:pointer;background:${ph === active ? 'var(--surf)' : 'transparent'};color:${ph === active ? 'var(--ink)' : 'var(--ink2)'};${ph === active ? 'box-shadow:var(--shadow-sm);' : ''}">${lab[ph]}${ph === todayPh ? '<span style="position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--accent);"></span>' : ''}</span>`).join('') + '</span>';
+}
+
 function jumpToWeek(w) {
   // Porta selDate al lunedì della settimana scelta, mantenendo il giorno
   // della settimana se possibile (semplice: vai al primo giorno valido).
@@ -8249,7 +8272,7 @@ function injCellState(dayIdx, rec, row) {
   return { state: v || 'vuoto' };
 }
 
-/* 26/10 (Giorgio): dal Post-protocollo (settimana 17+, weekIdx >= 16) l'anello Iniezioni lascia il posto a PROTEINE. Giorno valutabile = chiuso e con almeno il 50% delle kcal del target
+/* 26/10 (Giorgio): dal Post-ciclo (settimana 17+, weekIdx >= 16) l'anello Iniezioni lascia il posto a PROTEINE. Giorno valutabile = chiuso e con almeno il 50% delle kcal del target
    registrate (altrimenti il diario e' quasi certamente incompleto: ne' riuscito ne' fallito). Riuscito = proteine (minimo del range per le voci stimate) >= 90% del target.
    Target unico (food_lib.targets). Le kcal medie sono SOLO informative: media dei giorni valutabili, nessuna soglia, fuori dall'aderenza complessiva. */
 const PROT_FROM_WEEK = 16, PROT_TOL = 0.9, PROT_MIN_KCAL = 0.5;
@@ -8269,7 +8292,7 @@ function protCalc(idxFrom, idxTo) {   /* giorni del ciclo idxFrom..idxTo-1 (indi
   return { val, ok, closed, pct: val ? Math.round(ok / val * 100) : 0, kMean: val ? Math.round(kSum / val) : null, kDelta: val ? Math.round(kSum / val - T.kcal) : null, kPct: val ? Math.round((kSum / val / T.kcal - 1) * 100) : null, est, tgtP: T.p, tgtK: T.kcal };
 }
 function protAdh(weekIdx) { return weekIdx < PROT_FROM_WEEK ? null : protCalc(weekIdx * 7, weekIdx * 7 + 7); }
-/* 26/10: vista GIORNO dal Post-protocollo (indice >= 112). Anello = proteine cumulative dal 9/11 (giorni chiusi fino a ieri); barra "oggi" = proteine del giorno selezionato. */
+/* 26/10: vista GIORNO dal Post-ciclo (indice >= 112). Anello = proteine cumulative dal 9/11 (giorni chiusi fino a ieri); barra "oggi" = proteine del giorno selezionato. */
 const PROT_FROM_IDX = PROT_FROM_WEEK * 7;
 function protDayInfo(iso) {
   if (typeof FOOD === 'undefined' || !FOOD.dailyRows) return null;
@@ -8365,7 +8388,7 @@ function weekAggregate(weekIdx) {
   const pct = (done, tot) => tot ? Math.round(done / tot * 100) : 0;
   const injPct = pct(injDoneTot, injApplTot), suppPct = pct(suppDoneTot, suppApplTot), woPct = pct(woDone, woTot);
   const woExtra = Math.max(0, woReal - WO_WEEK_TARGET);   /* sedute oltre le 5 (extra) */
-  /* 26/10: in pausa/Post-protocollo non ci sono iniezioni dovute (0/0): la componente esce dalla media, non vale 0% */
+  /* 26/10: in pausa/Post-ciclo non ci sono iniezioni dovute (0/0): la componente esce dalla media, non vale 0% */
   const overallParts = [suppPct, woPct]; if (injApplTot > 0) overallParts.push(injPct);
   const overall = Math.round(overallParts.reduce((a, b) => a + b, 0) / overallParts.length);
 
