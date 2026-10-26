@@ -2120,7 +2120,8 @@ function dayAdherence(dateISO, blobArg) {
   }
   /* 24/10: woSess = seduta REALE nel diario di quel giorno (calorie/volume/RPE), indipendente dal "coperto" (woDone include i previsti recuperati da un extra) */
   const r = { injDone: 0, injTot: 0, suppDone: 0, suppTot: 0, woPlanned: false, woDone: false, woType: '', woSess: woSessDone(rec) };
-  getInjectionSlots2(woIdx).forEach(s => {
+  /* 26/10 (Giorgio): la % di aderenza delle iniezioni si chiude con la settimana 16 (idx 111, 8/11): le dosi del Post-protocollo non sono dovute ne' contate */
+  (woIdx > 111 ? [] : getInjectionSlots2(woIdx)).forEach(s => {
     s.fields.forEach(f => {
       const v = rec['inj_' + s.n + '_' + fieldKey(f)] || '';
       if (v === 'skip' || v === 'na') return;
@@ -7000,7 +7001,7 @@ const FOOD = (function () {
       if (iso < START) continue;
       const t = totals(iso);
       const en = energy(iso), okS = !!en && iso < last && t.n > 0 && !t.inc;
-      rows.push({ d: iso, k: t.k, p: t.p, c: t.c, g: t.g, est: t.est, lo: t.k + t.lo, hi: t.k + t.hi, n: t.n, off: t.off, skip: t.skip, inc: t.inc, today: iso === last, e: en, sd: okS ? t.k - en.need : null, slo: okS ? t.k + t.lo - en.need : null, shi: okS ? t.k + t.hi - en.need : null });
+      rows.push({ d: iso, k: t.k, p: t.p, plo: t.p + t.plo, c: t.c, g: t.g, est: t.est, lo: t.k + t.lo, hi: t.k + t.hi, n: t.n, off: t.off, skip: t.skip, inc: t.inc, today: iso === last, e: en, sd: okS ? t.k - en.need : null, slo: okS ? t.k + t.lo - en.need : null, shi: okS ? t.k + t.hi - en.need : null });
     }
     return { rows, targets: { kcal: T.kcal || null, p: T.p || null, en: enP() } };
   }
@@ -7014,14 +7015,14 @@ const FOOD = (function () {
     const c = combo(e.ref.id); return !!c && c.items.some(it => { const f = it.f && food(it.f); return !!f && !vok(f); });
   }
   function totals(d) {
-    const o = day(d), t = { k: 0, p: 0, c: 0, g: 0, est: 0, lo: 0, hi: 0, pk: 0, n: 0, unv: 0, off: 0, inc: 0, offN: [], skip: 0, skipN: [] };
+    const o = day(d), t = { k: 0, p: 0, c: 0, g: 0, est: 0, lo: 0, hi: 0, plo: 0, pk: 0, n: 0, unv: 0, off: 0, inc: 0, offN: [], skip: 0, skipN: [] };
     SL.forEach(([id]) => {
       o.s[id].forEach(e => {
         const v = vals(e);
         if (e.plan) { t.pk += v.k; return; }
         t.n++; t.k += v.k; t.p += v.p; t.c += v.c; t.g += v.g;
         if (unvE(e)) t.unv += v.k;
-        if (e.src === 's') { t.est += v.k; if (e.r) { t.lo += e.r[0] - v.k; t.hi += e.r[1] - v.k; } }
+        if (e.src === 's') { t.est += v.k; if (e.r) { t.lo += e.r[0] - v.k; t.hi += e.r[1] - v.k; if (v.k > 0) t.plo += v.p * (e.r[0] / v.k) - v.p; /* 26/10: proteine minime = proteine x (kcal minime / kcal): stima proporzionale, il range salvato e' solo sulle kcal */ } }
       });
     });
     /* pasto fuori piano: flag per slot (o.off). Non cambia i totali; segnala solo gli slot marcati e quelli ancora senza voci (= incompleti). */
@@ -8182,7 +8183,7 @@ function renderDayNav() {
   const phaseIdxM = weekStartIdx <= 27 ? 0 : weekStartIdx <= 55 ? 1 : weekStartIdx <= 83 ? 2 : 3;
   const titleBlockM = oggiViewMode === 'week' ? `
       <div style="display:flex;flex-direction:column;gap:1px;min-width:0;">
-        <span style="font-size:var(--fs-3xl);line-height:1.1;letter-spacing:-.02em;font-weight:600;color:var(--ink);white-space:nowrap;">${weekTagLong(selWeek)}</span>
+        <span style="font-size:var(--fs-3xl);line-height:1.1;letter-spacing:-.02em;font-weight:600;color:var(--ink);white-space:normal;">${weekTagLong(selWeek).replace(' \u00b7 ', '<br>')}</span>
         <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${weekRangeM} · ${PHASE_NAMES_SHORT[phaseIdxM]}</span>
       </div>` : `
       <div style="display:flex;flex-direction:column;gap:1px;min-width:0;">
@@ -8239,11 +8240,31 @@ const CANON_INJ_ROWS = [
 // timing giusto in quel giorno specifico (gli slot REALI di quel
 // giorno, non un elenco fisso) e leggendo inj_{n}_{fieldKey}.
 function injCellState(dayIdx, rec, row) {
-  const slots = getInjectionSlots2(dayIdx);
+  const slots = dayIdx > 111 ? [] : getInjectionSlots2(dayIdx);   /* 26/10: dopo la sett. 16 le iniezioni non entrano nell'aderenza */
   const slot = slots.find(s => s.label === row.timing && s.fields.includes(row.field));
   if (!slot) return { state: 'non-prevista' }; // IGF in un giorno di riposo
   const v = rec['inj_' + slot.n + '_' + fieldKey(row.field)] || '';
   return { state: v || 'vuoto' };
+}
+
+/* 26/10 (Giorgio): dal Post-protocollo (settimana 17+, weekIdx >= 16) l'anello Iniezioni lascia il posto a PROTEINE. Giorno valutabile = chiuso e con almeno il 50% delle kcal del target
+   registrate (altrimenti il diario e' quasi certamente incompleto: ne' riuscito ne' fallito). Riuscito = proteine (minimo del range per le voci stimate) >= 90% del target.
+   Target unico (food_lib.targets). Le kcal medie sono SOLO informative: media dei giorni valutabili, nessuna soglia, fuori dall'aderenza complessiva. */
+const PROT_FROM_WEEK = 16, PROT_TOL = 0.9, PROT_MIN_KCAL = 0.5;
+function protAdh(weekIdx) {
+  if (weekIdx < PROT_FROM_WEEK || typeof FOOD === 'undefined' || !FOOD.dailyRows) return null;
+  const R = FOOD.dailyRows(0), T = R.targets; if (!T || !(T.p > 0) || !(T.kcal > 0)) return null;
+  const byD = {}; R.rows.forEach(r => { byD[r.d] = r; });
+  let val = 0, ok = 0, kSum = 0, est = 0, closed = 0;
+  for (let i = 0; i < 7; i++) {
+    const idx = weekIdx * 7 + i, d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + idx); const iso = isoLocal(d);
+    if (iso >= today) continue;   /* oggi e futuro: non ancora chiusi */
+    closed++;
+    const r = byD[iso]; if (!r || r.inc || !(r.k >= PROT_MIN_KCAL * T.kcal)) continue;
+    val++; kSum += r.k; if (r.est > 0) est++;
+    if (r.plo >= PROT_TOL * T.p) ok++;
+  }
+  return { val, ok, closed, pct: val ? Math.round(ok / val * 100) : 0, kMean: val ? Math.round(kSum / val) : null, kDelta: val ? Math.round(kSum / val - T.kcal) : null, kPct: val ? Math.round((kSum / val / T.kcal - 1) * 100) : null, est, tgtP: T.p, tgtK: T.kcal };
 }
 
 function weekAggregate(weekIdx) {
@@ -8313,7 +8334,9 @@ function weekAggregate(weekIdx) {
   const pct = (done, tot) => tot ? Math.round(done / tot * 100) : 0;
   const injPct = pct(injDoneTot, injApplTot), suppPct = pct(suppDoneTot, suppApplTot), woPct = pct(woDone, woTot);
   const woExtra = Math.max(0, woReal - WO_WEEK_TARGET);   /* sedute oltre le 5 (extra) */
-  const overall = Math.round((injPct + suppPct + woPct) / 3);
+  /* 26/10: in pausa/Post-protocollo non ci sono iniezioni dovute (0/0): la componente esce dalla media, non vale 0% */
+  const overallParts = [suppPct, woPct]; if (injApplTot > 0) overallParts.push(injPct);
+  const overall = Math.round(overallParts.reduce((a, b) => a + b, 0) / overallParts.length);
 
   // ---- Confronto con la settimana precedente (solo se non è la prima) ----
   let prevOverall = null, prevInjPct = null;
@@ -8396,7 +8419,8 @@ function weekAggregateShallow(weekIdx) {
   woDone = Math.min(woWeekReal(weekIdx), WO_WEEK_TARGET); woTot = WO_WEEK_TARGET;   /* 24/10: standard 5/settimana */
   const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
   const injPct = pct(injDone, injTot), suppPct = pct(suppDone, suppTot), woPct = pct(woDone, woTot);
-  return { overall: Math.round((injPct + suppPct + woPct) / 3), injPct, suppPct, woPct };
+  const parts = [suppPct, woPct]; if (injTot > 0) parts.push(injPct);   /* 26/10: senza iniezioni dovute (pausa) la componente non entra nella media */
+  return { overall: Math.round(parts.reduce((a, b) => a + b, 0) / parts.length), injPct: injTot > 0 ? injPct : null, suppPct, woPct };
 }
 
 /* ------------------------------------------------------------
@@ -8523,7 +8547,7 @@ function renderWeekFull() {
     return { tiles, grid, T };
   })();
   const fhF = window.FH_API ? window.FH_API.fhF : (v => v);
-  const foodTitle = `${LANG === 'it' ? 'Alimentazione' : 'Nutrition'} · ${LANG === 'it' ? 'settimana' : 'week'} ${weekIdx + 1}`;
+  const foodTitle = `${LANG === 'it' ? 'Alimentazione' : 'Nutrition'} · ${weekTagLong(weekIdx).toLowerCase()}`;
   const foodCard = foodCardHtml ? `
     <div style="grid-column:1 / 13;grid-row:3 / 4;border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
       <div style="display:flex;align-items:baseline;justify-content:space-between;">
@@ -8556,8 +8580,8 @@ function renderWeekFull() {
     recapTone = wk.overall >= 85 ? 'good' : wk.overall >= 65 ? 'warn' : 'bad';
     recapTitle = LANG === 'it' ? 'Per ora nessuno scivolone.' : 'No slip-ups so far.';
     recapText = LANG === 'it'
-      ? `Nei primi ${wk.elapsed} giorni: iniezioni ${wk.injPct}%, integratori ${wk.suppPct}%, allenamenti ${wk.woPct}%. Il confronto con le settimane chiuse non regge ancora.`
-      : `In the first ${wk.elapsed} days: injections ${wk.injPct}%, supplements ${wk.suppPct}%, workouts ${wk.woPct}%. Comparison with closed weeks doesn't hold yet.`;
+      ? `Nei primi ${wk.elapsed} giorni: iniezioni ${wk.injApplTot ? wk.injPct + '%' : '—'}, integratori ${wk.suppPct}%, allenamenti ${wk.woPct}%. Il confronto con le settimane chiuse non regge ancora.`
+      : `In the first ${wk.elapsed} days: injections ${wk.injApplTot ? wk.injPct + '%' : '—'}, supplements ${wk.suppPct}%, workouts ${wk.woPct}%. Comparison with closed weeks doesn't hold yet.`;
   } else {
     recapTone = wk.overall >= 85 ? 'good' : wk.overall >= 65 ? 'warn' : 'bad';
     recapTitle = recapTone === 'good'
@@ -8593,7 +8617,7 @@ function renderWeekFull() {
           <span style="font-size:var(--fs-xl);font-weight:700;color:var(--white);font-variant-numeric:tabular-nums;letter-spacing:-.01em;">${fmtFn(val)}</span>
           ${dt ? `<span style="font-size:var(--fs-xs);font-weight:600;color:${dt.color};font-variant-numeric:tabular-nums;">${dt.txt}</span>` : ''}
         </div>
-        ${weekIdx > 0 ? `<span style="font-size:var(--fs-2xs);font-weight:500;color:rgba(255,255,255,.42);">vs W${weekIdx}</span>` : ''}
+        ${weekIdx > 0 ? `<span style="font-size:var(--fs-2xs);font-weight:500;color:rgba(255,255,255,.42);">vs ${weekTag(weekIdx - 1)}</span>` : ''}
       </div>`;
   };
 
@@ -8741,7 +8765,7 @@ function renderWeekFull() {
               <circle cx="42" cy="42" r="34" fill="none" stroke="var(--line2)" stroke-width="8"></circle>
               <circle cx="42" cy="42" r="34" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(213.63 * pct / 100).toFixed(1)} 213.63"></circle>
             </svg>
-            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--fs-3xl);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;">${pct}%</div>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--fs-3xl);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;">${String(sub).endsWith('/0') ? '—' : pct + '%'}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;gap:1px;">
             <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);">${label}</span>
@@ -8755,9 +8779,14 @@ function renderWeekFull() {
     const d = pct - prevPct;
     const color = Math.abs(d) < 1 ? 'var(--ink3)' : d > 0 ? 'var(--ok)' : 'var(--warn-ink)';
     const txt = Math.abs(d) < 1 ? '=' : (d > 0 ? '+' : '') + d;
-    return `<span style="font-size:var(--fs-2xs);font-weight:600;color:${color};font-variant-numeric:tabular-nums;">${txt} vs W${weekIdx}</span>`;
+    return `<span style="font-size:var(--fs-2xs);font-weight:600;color:${color};font-variant-numeric:tabular-nums;">${txt} vs ${weekTag(weekIdx - 1)}</span>`;
   };
   const prevShallow = weekIdx > 0 ? weekAggregateShallow(weekIdx - 1) : null;
+  /* 26/10: dalla P1 l'anello Proteine sostituisce Iniezioni; sotto, kcal medie dei giorni valutabili (informative, nessuna soglia) */
+  const protW = protAdh(weekIdx), protPrev = weekIdx > PROT_FROM_WEEK ? protAdh(weekIdx - 1) : null;
+  const protKcalLine = (protW && protW.val > 0)
+    ? `<span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink3);text-align:center;font-variant-numeric:tabular-nums;">${LANG === 'it' ? 'kcal medie' : 'avg kcal'} <b style="color:var(--ink2);">${protW.kMean.toLocaleString(LANG === 'it' ? 'it-IT' : 'en-US')}</b> \u00b7 ${protW.kPct > 0 ? '+' : ''}${protW.kPct}% ${LANG === 'it' ? 'sul target' : 'vs target'} (${protW.kDelta > 0 ? '+' : ''}${protW.kDelta})${protW.est ? ` \u00b7 ${protW.est} ${LANG === 'it' ? (protW.est === 1 ? 'giorno con stime' : 'giorni con stime') : 'days with estimates'}` : ''}</span>`
+    : '';
 
   // 16 barre — fondo scala 50%, la barra della settimana corrente tratteggiata se in corso
   const barsHtml = Array.from({ length: totalWeeks }, (_, w) => {
@@ -8789,14 +8818,15 @@ function renderWeekFull() {
   const adherenceCard = `
     <div style="grid-column:8 / 13;grid-row:2 / 3;border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:14px 18px;display:flex;flex-direction:column;gap:10px;overflow:hidden;">
       <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
-        <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Aderenza · settimana' : 'Adherence · week'} ${weekIdx + 1}</span>
+        <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Aderenza' : 'Adherence'} · ${weekTagLong(weekIdx).toLowerCase()}</span>
         <span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink3);">${wk.isClosed ? (LANG === 'it' ? 'settimana chiusa' : 'closed week') : wk.isFutureWeek ? (LANG === 'it' ? 'non iniziata' : 'not started') : `${wk.elapsed} ${LANG === 'it' ? 'giorni su 7 · in corso' : 'of 7 days · in progress'}`}</span>
       </div>
       <div style="flex:0 0 auto;display:flex;justify-content:space-around;">
-        ${ring(wk.injPct, 'var(--accent)', L.injectionsRing, `${wk.injDoneTot}/${wk.injApplTot}`, ringDelta(wk.injPct, prevShallow && prevShallow.injPct))}
+        ${protW ? ring(protW.pct, 'var(--h-yellow)', LANG === 'it' ? 'Proteine' : 'Protein', `${protW.ok}/${protW.val}`, ringDelta(protW.pct, protPrev && protPrev.val > 0 && protW.val > 0 ? protPrev.pct : null)) : ring(wk.injPct, 'var(--accent)', L.injectionsRing, `${wk.injDoneTot}/${wk.injApplTot}`, ringDelta(wk.injPct, wk.injApplTot > 0 && prevShallow ? prevShallow.injPct : null))}
         ${ring(wk.suppPct, 'var(--ok)', L.supplements, `${wk.suppDoneTot}/${wk.suppApplTot}`, ringDelta(wk.suppPct, prevShallow && prevShallow.suppPct))}
         ${ring(wk.woPct, 'var(--wo)', L.workoutsRing, `${wk.woDone}/${wk.woTot}`, ringDelta(wk.woPct, prevShallow && prevShallow.woPct))}
       </div>
+      ${protKcalLine}
       <div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:7px;padding-top:10px;border-top:1px solid var(--line);">
         <span style="flex:0 0 auto;font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Le 16 settimane, la stessa misura' : 'All 16 weeks, same measure'}</span>
         <div style="flex:1 1 auto;min-height:0;display:flex;align-items:flex-end;gap:3px;">${barsHtml}</div>
@@ -8970,7 +9000,7 @@ function renderWeekFull() {
               <circle cx="42" cy="42" r="34" fill="none" stroke="var(--line2)" stroke-width="8"></circle>
               <circle cx="42" cy="42" r="34" fill="none" stroke="${color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(213.63 * pct / 100).toFixed(1)} 213.63"></circle>
             </svg>
-            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--fs-2xl);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;">${pct}%</div>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--fs-2xl);font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;">${String(sub).endsWith('/0') ? '—' : pct + '%'}</div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;">
             <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);">${label}</span>
@@ -8981,10 +9011,11 @@ function renderWeekFull() {
   const adherenceCardM = `
     <div style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:16px 12px 14px;display:flex;flex-direction:column;gap:12px;">
       <div style="display:flex;justify-content:space-around;">
-        ${ringM(wk.injPct, 'var(--accent)', L.injectionsRing, `${wk.injDoneTot}/${wk.injApplTot}`, ringDelta(wk.injPct, prevShallow && prevShallow.injPct))}
+        ${protW ? ringM(protW.pct, 'var(--h-yellow)', LANG === 'it' ? 'Proteine' : 'Protein', `${protW.ok}/${protW.val}`, ringDelta(protW.pct, protPrev && protPrev.val > 0 && protW.val > 0 ? protPrev.pct : null)) : ringM(wk.injPct, 'var(--accent)', L.injectionsRing, `${wk.injDoneTot}/${wk.injApplTot}`, ringDelta(wk.injPct, wk.injApplTot > 0 && prevShallow ? prevShallow.injPct : null))}
         ${ringM(wk.suppPct, 'var(--ok)', L.supplements, `${wk.suppDoneTot}/${wk.suppApplTot}`, ringDelta(wk.suppPct, prevShallow && prevShallow.suppPct))}
         ${ringM(wk.woPct, 'var(--wo)', L.workoutsRing, `${wk.woDone}/${wk.woTot}`, ringDelta(wk.woPct, prevShallow && prevShallow.woPct))}
       </div>
+      ${protKcalLine}
       <div style="display:flex;flex-direction:column;gap:6px;padding:0 6px;">
         <span style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Le 16 settimane' : 'All 16 weeks'}</span>
         <div style="height:46px;display:flex;align-items:flex-end;gap:3px;">${barsHtml}</div>
