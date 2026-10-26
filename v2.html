@@ -5352,7 +5352,8 @@ var CTX = (function () {
       : 'Bar = progress toward the goal \u00b7 weight and volume: ' + sc() + ' \u00b7 HRV: last 14 d vs first 14 \u00b7 adherence: since 18 Jul.'; } },
     { id: 'recomp', find: byClass('c-recomp'), kind: 'sub', txt: function () { return sc(); } },
     { id: 'load', find: byClass('c-load'), place: underHead, txt: function () { return IT() ? 'Per settimana \u00b7 colonne = volume, linea = HRV.' : 'Per week \u00b7 columns = volume, line = HRV.'; } },
-    { id: 'adh', find: byClass('c-adh'), place: underHead, txt: function () { return IT() ? 'Dal 18/07 a oggi \u00b7 colonne = settimane: \u226590% verde, 75\u201389% giallo, <75% rosso.' : 'Since 18 Jul \u00b7 columns = weeks: \u226590% green, 75\u201389% yellow, <75% red.'; } },
+    { id: 'adh', find: byClass('c-adh'), place: underHead, txt: function () { var post = dayIdxFromISO(today) >= 112;   /* 26/10: iniezioni chiuse a fine W16 (8/11): questo e' il posto dello storico del ciclo */
+      return IT() ? 'Dal 18/07 a oggi \u00b7 colonne = settimane: \u226590% verde, 75\u201389% giallo, <75% rosso.' + (post ? ' Iniezioni: ciclo concluso all\u20198/11, valore finale.' : '') : 'Since 18 Jul \u00b7 columns = weeks: \u226590% green, 75\u201389% yellow, <75% red.' + (post ? ' Injections: cycle closed on 8 Nov, final value.' : ''); } },
     { id: 'clin', find: byClass('c-clin'), place: underHead, txt: function () { return IT() ? 'T0 \u2192 T1 \u00b7 pallino: verde = migliora, arancio = peggiora, grigio = invariato (non \u00e8 il range).' : 'T0 \u2192 T1 \u00b7 dot: green = better, orange = worse, grey = unchanged (not the range).'; } },
     /* ---- Andamento > Insights ---- */
     { id: 'subja', find: byClass('c-subja'), kind: 'sub', txt: function () { return (IT() ? 'scala 1\u201310 \u00b7 ' : 'scale 1\u201310 \u00b7 ') + sc(); } },
@@ -5387,7 +5388,8 @@ var CTX = (function () {
         if (cs.display === 'flex' && cs.flexDirection === 'row') card.style.flexWrap = 'wrap';
         note.style.cssText = 'flex:0 0 100%;width:100%;box-sizing:border-box;margin:0;padding:8px 6px 0;';
         card.appendChild(note); }, txt: function () {
-      return IT() ? 'Dal 18/07: fatte su previste \u00b7 barra sotto = giorno mostrato.' : 'Since 18 Jul: done of planned \u00b7 bar below = day shown.'; } },
+      var post = typeof dayIdxFromISO === 'function' && dayIdxFromISO(selDate) >= 112;   /* 26/10: dal Post-protocollo l'anello Proteine sostituisce Iniezioni, conteggio dal 9/11 */
+      return IT() ? 'Dal 18/07: fatte su previste \u00b7 barra sotto = giorno mostrato.' + (post ? ' Proteine: giorni in obiettivo dal 9/11 (iniezioni chiuse al 8/11, vedi Andamento).' : '') : 'Since 18 Jul: done of planned \u00b7 bar below = day shown.' + (post ? ' Protein: days on target since 9 Nov (injections closed on 8 Nov, see Andamento).' : ''); } },
     { id: 'inj', leaf: leafCard(function (t) { return /^iniezioni e distretto$/i.test(t) || /^injections (and|&) (site|district)$/i.test(t); }), place: function (el, note) {
         var head = el.leaf.parentElement || el.leaf; head.insertAdjacentElement('afterend', note);
         var off = Math.max(0, Math.round(el.leaf.getBoundingClientRect().left - el.card.getBoundingClientRect().left));
@@ -8251,13 +8253,13 @@ function injCellState(dayIdx, rec, row) {
    registrate (altrimenti il diario e' quasi certamente incompleto: ne' riuscito ne' fallito). Riuscito = proteine (minimo del range per le voci stimate) >= 90% del target.
    Target unico (food_lib.targets). Le kcal medie sono SOLO informative: media dei giorni valutabili, nessuna soglia, fuori dall'aderenza complessiva. */
 const PROT_FROM_WEEK = 16, PROT_TOL = 0.9, PROT_MIN_KCAL = 0.5;
-function protAdh(weekIdx) {
-  if (weekIdx < PROT_FROM_WEEK || typeof FOOD === 'undefined' || !FOOD.dailyRows) return null;
+function protCalc(idxFrom, idxTo) {   /* giorni del ciclo idxFrom..idxTo-1 (indice diario), solo chiusi */
+  if (typeof FOOD === 'undefined' || !FOOD.dailyRows) return null;
   const R = FOOD.dailyRows(0), T = R.targets; if (!T || !(T.p > 0) || !(T.kcal > 0)) return null;
   const byD = {}; R.rows.forEach(r => { byD[r.d] = r; });
   let val = 0, ok = 0, kSum = 0, est = 0, closed = 0;
-  for (let i = 0; i < 7; i++) {
-    const idx = weekIdx * 7 + i, d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + idx); const iso = isoLocal(d);
+  for (let idx = idxFrom; idx < idxTo; idx++) {
+    const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + idx); const iso = isoLocal(d);
     if (iso >= today) continue;   /* oggi e futuro: non ancora chiusi */
     closed++;
     const r = byD[iso]; if (!r || r.inc || !(r.k >= PROT_MIN_KCAL * T.kcal)) continue;
@@ -8265,6 +8267,35 @@ function protAdh(weekIdx) {
     if (r.plo >= PROT_TOL * T.p) ok++;
   }
   return { val, ok, closed, pct: val ? Math.round(ok / val * 100) : 0, kMean: val ? Math.round(kSum / val) : null, kDelta: val ? Math.round(kSum / val - T.kcal) : null, kPct: val ? Math.round((kSum / val / T.kcal - 1) * 100) : null, est, tgtP: T.p, tgtK: T.kcal };
+}
+function protAdh(weekIdx) { return weekIdx < PROT_FROM_WEEK ? null : protCalc(weekIdx * 7, weekIdx * 7 + 7); }
+/* 26/10: vista GIORNO dal Post-protocollo (indice >= 112). Anello = proteine cumulative dal 9/11 (giorni chiusi fino a ieri); barra "oggi" = proteine del giorno selezionato. */
+const PROT_FROM_IDX = PROT_FROM_WEEK * 7;
+function protDayInfo(iso) {
+  if (typeof FOOD === 'undefined' || !FOOD.dailyRows) return null;
+  const R = FOOD.dailyRows(0), T = R.targets; if (!T || !(T.p > 0) || !(T.kcal > 0)) return null;
+  const r = R.rows.find(x => x.d === iso) || null;
+  const closed = iso < today, enough = !!r && !r.inc && r.k >= PROT_MIN_KCAL * T.kcal;
+  return { p: r ? Math.round(r.p) : 0, plo: r ? r.plo : 0, k: r ? r.k : 0, closed, valid: enough, ok: enough && r.plo >= PROT_TOL * T.p, est: !!(r && r.est > 0), tgtP: T.p };
+}
+function protDayRing(wide) {
+  const idx = dayIdxFromISO(selDate); if (idx < PROT_FROM_IDX) return null;
+  const c = protCalc(PROT_FROM_IDX, dayIdxFromISO(today));   /* cumulativo fino a ieri, come gli altri anelli del ciclo */
+  if (!c) return null;
+  const it = LANG === 'it', di = protDayInfo(selDate);
+  const lab = selDate === today ? (it ? 'Oggi' : 'Today') : (() => { const x = new Date(selDate + 'T00:00:00').toLocaleDateString(it ? 'it-IT' : 'en-GB', { weekday: 'short', day: 'numeric' }); return x.charAt(0).toUpperCase() + x.slice(1); })();
+  let bar = '', txt = '';
+  if (di) {
+    if (!di.closed) { txt = `${lab} ${di.p}/${di.tgtP} g`; bar = Math.min(100, Math.round(di.p / di.tgtP * 100)); }
+    else if (!di.valid) txt = `${lab}: ${it ? 'non valutabile' : 'not assessable'}`;
+    else { txt = `${lab} ${di.p}/${di.tgtP} g${di.ok ? ' \u2713' : ''}`; bar = Math.min(100, Math.round(di.p / di.tgtP * 100)); }
+  }
+  const w = wide ? CAL.DAYS : 84;
+  const today_ = di ? `<div data-oggi-bar="prot" style="display:flex;flex-direction:column;align-items:center;gap:3px;margin-top:3px;width:${w}px;min-height:36px;justify-content:flex-start;">` +
+    (bar !== '' ? `<div style="width:100%;height:5px;border-radius:var(--r-pill);background:var(--line2);overflow:hidden;"><div style="height:100%;width:${bar}%;background:var(--h-yellow);border-radius:var(--r-pill);"></div></div>` : '<div style="height:5px;"></div>') +
+    `<span style="font-size:var(--fs-xs);font-weight:700;line-height:1.2;color:${bar !== '' ? 'var(--ink)' : 'var(--ink3)'};font-variant-numeric:tabular-nums;text-align:center;">${txt}</span>` +
+    (di.est ? `<span style="font-size:var(--fs-2xs);font-weight:500;line-height:1.2;color:var(--ink3);text-align:center;">${it ? 'con stime' : 'with estimates'}</span>` : '') + `</div>` : '';
+  return { label: it ? 'Proteine' : 'Protein', pct: c.pct, sub: `${c.ok}/${c.val}`, color: 'var(--h-yellow)', dash: c.val === 0, today: today_ };
 }
 
 function weekAggregate(weekIdx) {
@@ -9399,7 +9430,7 @@ function renderOggiFull() {
     const ringsM = (() => {
       const dAdh = dayAdherence(selDate);
       const RINGS = [
-        { label: L.injectionsRing, pct: a.inj, sub: `${a.injDone}/${a.injTot}`, color: 'var(--accent)', today: todayBarHtml('inj', dAdh, false) },
+        protDayRing(false) || { label: L.injectionsRing, pct: a.inj, sub: `${a.injDone}/${a.injTot}`, color: 'var(--accent)', today: todayBarHtml('inj', dAdh, false) },
         { label: L.supplements,    pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)', today: todayBarHtml('supp', dAdh, false) },
         { label: L.workoutsRing,   pct: a.wo,  sub: `${a.woDone}/${a.woTot}${a.woExtra ? ' +' + a.woExtra : ''}`,  color: 'var(--wo)', today: todayBarHtml('wo', dAdh, false) } /* rosso (--wo), 28/09 */
       ];
@@ -9412,7 +9443,7 @@ function renderOggiFull() {
                 <circle cx="42" cy="42" r="34" fill="none" stroke="var(--line2)" stroke-width="8"></circle>
                 <circle cx="42" cy="42" r="34" fill="none" stroke="${r.color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(213.63 * r.pct / 100).toFixed(1)} 213.63"></circle>
               </svg>
-              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--fs-lg);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${r.pct}%</div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--fs-lg);font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;">${r.dash ? '\u2014' : r.pct + '%'}</div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:center;">
               <span style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);">${r.label}</span>
@@ -9714,7 +9745,7 @@ function renderOggiFull() {
 
   const dAdh = dayAdherence(selDate);
   const RINGS = [
-    { label: L.injectionsRing,       pct: a.inj,  sub: `${a.injDone}/${a.injTot}`,   color: 'var(--accent)', today: todayBarHtml('inj', dAdh, true) },
+    protDayRing(true) || { label: L.injectionsRing,       pct: a.inj,  sub: `${a.injDone}/${a.injTot}`,   color: 'var(--accent)', today: todayBarHtml('inj', dAdh, true) },
     { label: L.supplements,          pct: a.supp, sub: `${a.suppDone}/${a.suppTot}`, color: 'var(--ok)', today: todayBarHtml('supp', dAdh, true) },
     { label: L.workoutsRing, pct: a.wo,   sub: `${a.woDone}/${a.woTot}${a.woExtra ? ' +' + a.woExtra : ''}`,     color: 'var(--wo)', today: todayBarHtml('wo', dAdh, true) } /* rosso (--wo), 28/09 */
   ];
@@ -9862,7 +9893,7 @@ function renderOggiFull() {
                 <circle cx="42" cy="42" r="34" fill="none" stroke="var(--line2)" stroke-width="8"></circle>
                 <circle cx="42" cy="42" r="34" fill="none" stroke="${r.color}" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(213.63 * r.pct / 100).toFixed(1)} 213.63"></circle>
               </svg>
-              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--fs-3xl);font-weight:600;color:var(--ink);letter-spacing:-.024em;font-variant-numeric:tabular-nums;">${r.pct}%</div>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--fs-3xl);font-weight:600;color:var(--ink);letter-spacing:-.024em;font-variant-numeric:tabular-nums;">${r.dash ? '\u2014' : r.pct + '%'}</div>
             </div>
             <div style="display:flex;flex-direction:column;align-items:center;">
               <span style="font-size:var(--fs-md);font-weight:600;color:var(--ink);">${r.label}</span>
