@@ -1620,7 +1620,8 @@ function protoPhase(idx) {
 /* ultimo giorno (indice) in cui il protocollo e' attivo: serve a copertura scorte e giorni alla fine */
 function protoFineIdx() { const pi = protoPauseIdx(); return pi == null ? CAL.DAYS - 1 : Math.max(CAL.DAYS - 1, pi - 1); }
 /* quanti giorni mostrare nel selettore: ciclo + estensione + fino a oggi */
-function navDays() { return Math.max(CAL.DAYS, dayIdxFromISO(today) + 1, protoFineIdx() + 1); }
+/* 26/10: il selettore arriva fino a fine Bangkok di dicembre (14/12), a settimane intere lun-dom, cosi' P1, P2... sono sempre visibili e navigabili */
+function navDays() { const need = Math.max(CAL.DAYS, dayIdxFromISO(today) + 1, protoFineIdx() + 1, dayIdxFromISO(BKK_TRIPS[BKK_TRIPS.length - 1][1]) + 1); return Math.ceil(need / 7) * 7; }
 function cycleDayLabel(idx, cap) {
   const it = LANG === 'it', ph = protoPhase(idx);
   let t;
