@@ -8225,7 +8225,7 @@ function phaseSwitchHtml(active, mob) {
   const it = LANG === 'it', todayPh = phaseOfWeek(Math.floor(dayIdxFromISO(today) / 7));
   const lab = { pre: mob ? 'Pre' : (it ? 'Pre-ciclo' : 'Pre-cycle'), ciclo: it ? 'Ciclo 1' : 'Cycle 1', post: mob ? 'Post' : (it ? 'Post-ciclo' : 'Post-cycle') };
   return '<span style="flex:0 0 auto;display:inline-flex;gap:2px;background:var(--surf2);border:1px solid var(--line);border-radius:var(--r-md);padding:2px;">' +
-    ['pre', 'ciclo', 'post'].map(ph => `<span onclick="gotoPhase('${ph}')" style="position:relative;display:inline-flex;align-items:center;${mob ? 'min-height:40px;padding:0 12px;' : 'padding:5px 12px;'}border-radius:var(--r-sm);font-size:var(--fs-sm);font-weight:600;white-space:nowrap;cursor:pointer;background:${ph === active ? 'var(--surf)' : 'transparent'};color:${ph === active ? 'var(--ink)' : 'var(--ink2)'};${ph === active ? 'box-shadow:var(--shadow-sm);' : ''}">${lab[ph]}${ph === todayPh ? '<span style="position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--accent);"></span>' : ''}</span>`).join('') + '</span>';
+    ['pre', 'ciclo', 'post'].map(ph => `<span onclick="gotoPhase('${ph}')" style="position:relative;display:inline-flex;align-items:center;${mob ? 'min-height:40px;padding:0 12px;' : 'padding:5px 12px;'}border-radius:var(--r-sm);font-size:var(--fs-sm);font-weight:600;white-space:nowrap;cursor:pointer;background:${ph === active ? 'var(--accent)' : 'transparent'};color:${ph === active ? 'var(--on-accent)' : 'var(--ink2)'};${ph === active ? 'box-shadow:var(--shadow-sm);' : ''}">${lab[ph]}${ph === todayPh ? '<span style="position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:' + (ph === active ? 'var(--on-accent)' : 'var(--accent)') + ';"></span>' : ''}</span>`).join('') + '</span>';
 }
 
 function jumpToWeek(w) {
@@ -12234,8 +12234,8 @@ function exportRows() {
   const start = new Date(TEST_PROTO_START + 'T00:00:00');
   const tEnd = new Date(start); tEnd.setDate(tEnd.getDate() + TEST_PROTO_DAYS - 1);
   const end = new Date(todayISO + 'T00:00:00');
-  const bio = [['data', 'giorno_ciclo', 'settimana', 'peso_kg', 'bp_sys', 'bp_dia', 'hrv_ms_media', 'hrv_min', 'hrv_max', 'hrv_centro_intervallo', 'hrv_tipo', 'rhr_bpm', 'ore_sonno_decimali', 'sonno_veglia_min', 'sonno_rem_min', 'sonno_principale_min', 'sonno_profondo_min', 'sonno_risvegli']];
-  const proto = [['data', 'giorno_ciclo', 'ader_iniezioni_pct', 'ader_integratori_pct', 'iniezioni_fatte', 'iniezioni_dovute', 'integratori_fatti', 'integratori_dovuti']];
+  const bio = [['data', 'giorno_ciclo', 'settimana', 'peso_kg', 'bp_sys', 'bp_dia', 'hrv_ms_media', 'hrv_min', 'hrv_max', 'hrv_centro_intervallo', 'hrv_tipo', 'rhr_bpm', 'ore_sonno_decimali', 'sonno_veglia_min', 'sonno_rem_min', 'sonno_principale_min', 'sonno_profondo_min', 'sonno_risvegli', 'settimana_tag', 'fase']];
+  const proto = [['data', 'giorno_ciclo', 'ader_iniezioni_pct', 'ader_integratori_pct', 'iniezioni_fatte', 'iniezioni_dovute', 'integratori_fatti', 'integratori_dovuti', 'fase', 'proteine_g', 'proteine_target_g', 'proteine_esito']];
   const wo = [['data', 'giorno_ciclo', 'workout_fatto', 'wo_tipo', 'wo_durata_min', 'wo_volume_kg', 'wo_kcal']];
   /* Alimentazione (dal START del diario alimentare): una riga per giorno, solo totali, derivati da food_AAAAMMGG tramite FOOD.dailyRows */
   const food = [['data', 'kcal', 'kcal_min', 'kcal_max', 'proteine_g', 'carboidrati_g', 'grassi_g', 'basale_kcal', 'attivita_quotidiana_kcal', 'allenamento_kcal', 'fabbisogno_kcal', 'saldo_kcal', 'quota_stimata_pct', 'pasti_fuori_piano', 'pasti_saltati', 'incompleto', 'stato']];
@@ -12247,13 +12247,14 @@ function exportRows() {
   });
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const iso = isoLocal(d);
-    let rec, label, week, woIdx;
+    let rec, label, week, woIdx, wtag = '', fase = 'rodaggio', idx = null;
     if (d <= tEnd) {
       const t = Math.round((d - start) / 86400000);
       rec = blob['test_proto_' + t] || {}; label = 'TP' + (t + 1); week = ''; woIdx = t - TEST_PROTO_DAYS;
     } else {
-      const idx = dayIdxFromISO(iso);
+      idx = dayIdxFromISO(iso);
       rec = blob['p2_day_' + idx] || {}; label = idx + 1; week = Math.floor(idx / 7) + 1; woIdx = idx;
+      wtag = weekTag(Math.floor(idx / 7)); fase = protoPhase(idx);
     }
     const sleep = parseSonnoHours(rec.ore_sonno);
     /* HRV: fino al 14/09 Salute dava una media giornaliera (rec.hrv); dal 15/09 dà solo un intervallo (min-max).
@@ -12263,12 +12264,18 @@ function exportRows() {
     const hCenter = (hMin !== '' && hMax !== '') ? Math.round((hMin + hMax) / 2 * 10) / 10 : '';
     const hType = hMean !== '' ? (hMin !== '' && hMax !== '' ? 'media+intervallo' : 'media') : ((hMin !== '' && hMax !== '') ? 'intervallo' : '');
     bio.push([iso, label, week, expNum(rec.peso, 2), expNum(rec.bp_sys), expNum(rec.bp_dia), hMean, hMin, hMax, hCenter, hType, expNum(rec.rhr),
-      Number.isFinite(sleep) ? Math.round(sleep * 100) / 100 : '', expNum(rec.sonno_veglia_min), expNum(rec.sonno_rem_min), expNum(rec.sonno_principale_min), expNum(rec.sonno_profondo_min), expNum(rec.sonno_risvegli)]);
+      Number.isFinite(sleep) ? Math.round(sleep * 100) / 100 : '', expNum(rec.sonno_veglia_min), expNum(rec.sonno_rem_min), expNum(rec.sonno_principale_min), expNum(rec.sonno_profondo_min), expNum(rec.sonno_risvegli), wtag, fase]);
     const a = dayAdherence(iso);
     const isToday = iso === todayISO;
     const ip = (!isToday && a && a.injTot > 0) ? Math.round(a.injDone / a.injTot * 100) : '';
     const sp = (!isToday && a && a.suppTot > 0) ? Math.round(a.suppDone / a.suppTot * 100) : '';
-    proto.push([iso, label, ip, sp, a ? a.injDone : '', a ? a.injTot : '', a ? a.suppDone : '', a ? a.suppTot : '']);
+    /* Proteine (dal 9/11, Post-ciclo): stesso criterio dell'anello. Giorno valutabile solo se chiuso e con kcal >= 50% del target; in obiettivo se proteine (minimo del range per le stime) >= 90% del target */
+    let pg = '', pt = '', pe = '';
+    if (idx !== null && idx >= PROT_FROM_IDX && typeof protDayInfo === 'function') {
+      const di = protDayInfo(iso);
+      if (di) { pg = di.p; pt = di.tgtP; pe = !di.closed ? 'in_corso' : !di.valid ? 'non_valutabile' : di.ok ? 'in_obiettivo' : 'sotto'; }
+    }
+    proto.push([iso, label, ip, sp, a ? a.injDone : '', a ? a.injTot : '', a ? a.suppDone : '', a ? a.suppTot : '', fase, pg, pt, pe]);
     const type = (a && a.woPlanned) ? a.woType : getWorkout2(woIdx).type;
     const vol = getWorkoutVolume2(rec);
     wo.push([iso, label, (a && ((a.woPlanned && a.woDone) || a.woExtra)) ? 1 : 0, type === 'Riposo' ? '' : type, expNum(rec.wo_durata), vol !== null ? vol : expNum(rec.wo_volume), expNum(rec.wo_kcal)]);
@@ -12284,6 +12291,10 @@ function exportRows() {
     ['hrv_centro_intervallo', '(hrv_min + hrv_max) / 2. NON e la media giornaliera: e solo il centro dell\'intervallo, utile per vedere l\'andamento con una serie continua. Non confrontarla con hrv_ms_media'],
     ['hrv_tipo', 'media = solo media; intervallo = solo min-max; media+intervallo = entrambi (giorni di transizione)'],
     ['ader_iniezioni_pct / ader_integratori_pct', 'dosi fatte su dovute; dosi saltate o non applicabili escluse; vuoto per il giorno in corso'],
+    ['settimana_tag (Biometria)', 'W1-W16 = settimane del ciclo (112 giorni); P1... = Post-ciclo (P1 = 9-15/11/2026). La colonna "settimana" resta il numero progressivo'],
+    ['fase', 'rodaggio = TP1-TP2; ciclo = protocollo attivo (giorni 1-112); residuo = 9-10/11, dosi rimaste di BPC-157/TB-500; pausa = peptidi sospesi (dall\'11/11, data stimata finche non confermata)'],
+    ['ader_iniezioni_pct (chiusura)', 'la % delle iniezioni si chiude con la W16 (giorno 112): dopo, dosi dovute = 0 e la cella resta vuota. Allenamenti (5 a settimana) e integratori continuano come prima'],
+    ['proteine_esito (Protocollo)', 'solo dal 9/11/2026 (Post-ciclo). non_valutabile = giorno chiuso con kcal registrate < 50% del target; in_obiettivo = proteine >= 90% del target (per le voci stimate si usa il minimo del range); sotto = altrimenti; in_corso = oggi. Target unico da Gestione > Alimenti > Obiettivi (oggi 180 g, 1800 kcal), non storicizzato: se cambia, cambia anche per i giorni passati'],
     ['workout_fatto', '1 se sono presenti calorie, volume o RPE; vuoto il tipo nei giorni di riposo'],
     ['wo_volume_kg', 'volume totale della seduta (kg), dal campo volume o dal log Motra'],
     ['Alimentazione', 'foglio dal 12/10/2026 (inizio del diario alimentare): una riga per giorno, solo totali, valori centrali. kcal_min/kcal_max = intervallo delle voci stimate (uguali al valore se non ci sono stime); quota_stimata_pct = kcal da voci stimate sul totale del giorno'],
