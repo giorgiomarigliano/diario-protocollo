@@ -1405,11 +1405,17 @@ const CFG = {
 // periodo — causa principale dello scarto segnalato da Giorgio (91% vs 98%).
 const BKK_START = new Date('2026-08-07');
 const BKK_END = new Date('2026-08-21');
+/* 26/10/2026: seconda trasferta a Bangkok, 4-14/12 (partenza da Malpensa la sera del 4/12, arrivo 5/12; ritorno la sera del 13/12, arrivo 14/12).
+   Stesso trattamento di agosto: allenamento ogni giorno di default, "riposo in trasferta" (bkk_riposo) sui giorni di viaggio. Cade dopo la fine del ciclo,
+   in Post-protocollo e pausa peptidi: nessuna iniezione, nessun kit di viaggio da calcolare. */
+const BKK_TRIPS = [['2026-08-07', '2026-08-21'], ['2026-12-04', '2026-12-14']];
 function isBkkDate(d) {
-  const s = new Date(BKK_START); s.setHours(0, 0, 0, 0);
-  const e = new Date(BKK_END); e.setHours(0, 0, 0, 0);
   const dd = new Date(d); dd.setHours(0, 0, 0, 0);
-  return dd >= s && dd <= e;
+  return BKK_TRIPS.some(function (t) {
+    const s = new Date(t[0]); s.setHours(0, 0, 0, 0);
+    const e = new Date(t[1]); e.setHours(0, 0, 0, 0);
+    return dd >= s && dd <= e;
+  });
 }
 
 /* ============================================================
@@ -2287,6 +2293,7 @@ var PHASES = [
 ];
 var EVENTS = [
   { kind:"band", label:"Bangkok",  from:{y:2026,m:8,d:7},   to:{y:2026,m:8,d:21} },
+  { kind:"band", label:"Bangkok",  from:{y:2026,m:12,d:4},  to:{y:2026,m:12,d:14} },
   { kind:"band", label:"Mallorca", from:{y:2026,m:10,d:20}, to:{y:2026,m:10,d:22} },
   { kind:"mark", label:"T1", at:{y:2026,m:9,d:12} },
   { kind:"mark", label:"T2", at:{y:2026,m:11,d:7} }
