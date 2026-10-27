@@ -4830,6 +4830,8 @@ function buildFotoEvals(root){
    {base}/photo-upload (stesso Edge Function diario-proxy), poi fetch fresco + append a
    photo_log + PATCH sul record V1 -- stesso read-modify-write di sempre. */
 var AN_PHOTO_PENDING = null;
+var AN_PHOTO_LAST_ENTRY = null;
+var AN_PHOTO_LAST = null;   /* ultima foto salvata: i campi restano modificabili e ogni modifica aggiorna la sua voce in photo_log */
 function AN_photoIsHeic(file){
   return /heic|heif/i.test(file.type || "") || /\.(heic|heif)$/i.test(file.name || "");
 }
@@ -4892,6 +4894,7 @@ function AN_photoFileSelected(root, file){
   var previewWrap = root.querySelector("[data-an-photo-preview]");
   var btn = root.querySelector("[data-an-photo-submit]");
   AN_PHOTO_PENDING = null;
+  if (AN_PHOTO_LAST) { AN_PHOTO_LAST = null; ['date','luogo','peso','rating','note'].forEach(function(f){ var e = root.querySelector('[data-an-photo="' + f + '"]'); if (e) e.value = ''; }); AN_photoUiSync(root); }
   if (btn) btn.disabled = true;
   if (previewWrap) previewWrap.style.display = "block";
   if (statusEl) statusEl.textContent = "Elaborazione in corso\u2026";
@@ -4917,22 +4920,28 @@ function AN_photoFileSelected(root, file){
         });
       }
     })
+    /* 27/10: salvataggio automatico appena la foto e' pronta (prima serviva premere "Registra scatto").
+       Data e luogo arrivano dall'EXIF; rating, note e peso, se gia' compilati, vengono salvati insieme.
+       Se il salvataggio fallisce il pulsante resta attivo per riprovare. */
+    .then(function(){ if (AN_PHOTO_PENDING) AN_photoUploadAndSave(root); })
     .catch(function(e){ if (statusEl) statusEl.textContent = "Errore nella preparazione della foto: " + e.message; });
 }
 function AN_photoUploadAndSave(root){
   var statusEl = root.querySelector("[data-an-photo-status]");
   var btn = root.querySelector("[data-an-photo-submit]");
   if (!AN_PHOTO_PENDING) { if (statusEl) statusEl.textContent = "Seleziona prima una foto."; return; }
+  var pend = AN_PHOTO_PENDING;   /* copia locale: una nuova selezione durante l'upload non deve annullarla */
+  if (pend.saving) return; pend.saving = true;
   var g = function(f){ var e = root.querySelector('[data-an-photo="' + f + '"]'); return e ? e.value.trim() : ""; };
-  var date = g("date") || AN_PHOTO_PENDING.filename.slice(0, 10);
+  var date = g("date") || pend.filename.slice(0, 10);
   var luogo = g("luogo") || null, note = g("note") || null, pesoManual = g("peso") || null;
   var ratingRaw = g("rating"), rating = ratingRaw ? parseInt(ratingRaw, 10) : null;
   if (btn) { btn.disabled = true; btn.textContent = "Caricamento\u2026"; }
   if (statusEl) statusEl.textContent = "";
   var base = CFG.PROXY_URL.replace(/\/rest\/v1\/diary$/, ""), qs = "?user_id=eq.giorgio_protocollo_2026";
   var form = new FormData();
-  form.append("file", AN_PHOTO_PENDING.blob, AN_PHOTO_PENDING.filename);
-  form.append("filename", AN_PHOTO_PENDING.filename);
+  form.append("file", pend.blob, pend.filename);
+  form.append("filename", pend.filename);
   fetch(base + "/photo-upload", { method: "POST", headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY }, body: form })
     .then(function(upRes){
       if (!upRes.ok) return upRes.text().then(function(t){ throw new Error("Upload fallito: " + t); });
@@ -4942,7 +4951,7 @@ function AN_photoUploadAndSave(root){
     .then(function(rows){
       var freshData = (rows[0] && rows[0].data) || {};
       if (!Array.isArray(freshData.photo_log)) freshData.photo_log = [];
-      var entry = { filename: AN_PHOTO_PENDING.filename, date: date, time: null, luogo: luogo, note: note };
+      var entry = { filename: pend.filename, date: date, time: null, luogo: luogo, note: note };
       if (pesoManual) entry.peso_manual = pesoManual;
       if (rating) entry.rating = rating;
       freshData.photo_log.push(entry);
@@ -4952,22 +4961,51 @@ function AN_photoUploadAndSave(root){
         body: JSON.stringify({ data: freshData })
       }).then(function(patchRes){
         if (!patchRes.ok) throw new Error("Salvataggio riferimento foto fallito (HTTP " + patchRes.status + ")");
-        PHOTO_LOG.push(entry);
+        PHOTO_LOG.push(entry); AN_PHOTO_LAST_ENTRY = entry;
       });
     })
     .then(function(){
-      AN_PHOTO_PENDING = null;
-      if (statusEl) statusEl.textContent = "Foto caricata e salvata correttamente.";
+      if (AN_PHOTO_PENDING === pend) AN_PHOTO_PENDING = null;
+      AN_PHOTO_LAST = { filename: pend.filename, entry: AN_PHOTO_LAST_ENTRY };
+      if (statusEl) statusEl.textContent = "Foto salvata automaticamente (" + date + "). Data, luogo, peso, valutazione e note si possono ancora modificare: si salvano da soli.";
       if (btn) { btn.disabled = true; btn.textContent = "Registra scatto"; }
       var fileIn = root.querySelector("[data-an-photo-file]"); if (fileIn) fileIn.value = "";
-      var prev = root.querySelector("[data-an-photo-preview]"); if (prev) prev.style.display = "none";
-      ["date","luogo","peso","rating","note"].forEach(function(f){ var e = root.querySelector('[data-an-photo="' + f + '"]'); if (e) e.value = ""; }); AN_photoUiSync(root);
       AN_refresh(); renderAll();
     })
     .catch(function(e){
+      pend.saving = false;
       if (statusEl) statusEl.textContent = "Errore: " + e.message;
       if (btn) { btn.disabled = false; btn.textContent = "Registra scatto"; }
     });
+}
+var AN_PHOTO_UPD_T = null;
+function AN_photoSchedUpdate(root){ if (!AN_PHOTO_LAST) return; clearTimeout(AN_PHOTO_UPD_T); AN_PHOTO_UPD_T = setTimeout(function(){ AN_photoUpdateLast(root); }, 700); }
+function AN_photoUpdateLast(root){
+  var last = AN_PHOTO_LAST; if (!last) return;
+  var statusEl = root.querySelector("[data-an-photo-status]");
+  var g = function(f){ var e = root.querySelector('[data-an-photo="' + f + '"]'); return e ? e.value.trim() : ""; };
+  var vals = { date: g("date") || last.filename.slice(0, 10), luogo: g("luogo") || null, note: g("note") || null, peso: g("peso") || null, rating: g("rating") ? parseInt(g("rating"), 10) : null };
+  var qs = "?user_id=eq.giorgio_protocollo_2026";
+  if (statusEl) statusEl.textContent = "Salvataggio modifiche\u2026";
+  fetch(CFG.PROXY_URL + qs + "&select=data", { headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY } })
+    .then(function(r){ return r.json(); })
+    .then(function(rows){
+      var fd = (rows[0] && rows[0].data) || {};
+      var e = (fd.photo_log || []).filter(function(x){ return x.filename === last.filename; })[0];
+      if (!e) throw new Error("foto non trovata nel registro");
+      e.date = vals.date; e.luogo = vals.luogo; e.note = vals.note;
+      if (vals.peso) e.peso_manual = vals.peso; else delete e.peso_manual;
+      if (vals.rating) e.rating = vals.rating; else delete e.rating;
+      return fetch(CFG.PROXY_URL + qs, { method: "PATCH", headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" }, body: JSON.stringify({ data: fd }) })
+        .then(function(res){ if (!res.ok) throw new Error("HTTP " + res.status); });
+    })
+    .then(function(){
+      var le = last.entry;
+      if (le) { le.date = vals.date; le.luogo = vals.luogo; le.note = vals.note; if (vals.peso) le.peso_manual = vals.peso; else delete le.peso_manual; if (vals.rating) le.rating = vals.rating; else delete le.rating; }
+      if (statusEl) statusEl.textContent = "Modifiche salvate.";
+      AN_refresh(); renderAll();
+    })
+    .catch(function(e){ if (statusEl) statusEl.textContent = "Errore nel salvare le modifiche: " + e.message + " (modifica di nuovo un campo per riprovare)."; });
 }
 function AN_photoUiSync(root){
   var r = root.querySelector('[data-an-photo="rating"]'), v = r ? r.value : "";
@@ -4983,7 +5021,7 @@ function bindFotoNew(root){
       var b = ev.target.closest("[data-an-star]"); if (!b) return;
       var r = root.querySelector('[data-an-photo="rating"]'); if (!r) return;
       r.value = (r.value === b.getAttribute("data-an-star")) ? "" : b.getAttribute("data-an-star");
-      AN_photoUiSync(root);
+      AN_photoUiSync(root); AN_photoSchedUpdate(root);
     });
   }
   var fileIn = root.querySelector("[data-an-photo-file]");
@@ -4994,6 +5032,10 @@ function bindFotoNew(root){
       if (f) AN_photoFileSelected(root, f);
     });
   }
+  ['date','luogo','peso','note'].forEach(function(f){
+    var e = root.querySelector('[data-an-photo="' + f + '"]');
+    if (e && !e.dataset.bound) { e.dataset.bound = '1'; e.addEventListener('change', function(){ AN_photoSchedUpdate(root); }); }
+  });
   var btn = root.querySelector("[data-an-photo-submit]");
   if (btn && !btn.dataset.bound) {
     btn.dataset.bound = "1";
