@@ -9756,7 +9756,10 @@ function computeSettimanaTipo() {
       // giorno risulta "migliore/peggiore" nella tabella Insights). Stessa
       // fonte canonica (parseSonnoHours) già usata correttamente in
       // getPhaseAverages() per lo stesso identico calcolo.
-      const v = key === 'ore_sonno' ? parseSonnoHours(rec[key]) : (key === 'hrv' ? hrvMeanN(rec) : parseFloat(rec[key]));
+      // 28/10/2026: per l'HRV si usa hrvLine (media storica, oppure punto medio
+      // dell'intervallo): hrvMeanN scarta i giorni con intervallo e, dopo il
+      // backfill del 21/09, lasciava la riga HRV vuota (n=0) per tutti i giorni.
+      const v = key === 'ore_sonno' ? parseSonnoHours(rec[key]) : (key === 'hrv' ? (() => { const h = hrvLine(rec); return h === null ? NaN : h; })() : parseFloat(rec[key]));
       if (!isNaN(v)) byWd[wd][key].push(v);
     });
 
