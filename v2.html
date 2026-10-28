@@ -8474,7 +8474,7 @@ function weekAggregate(weekIdx) {
   const hrvLastRangeText = (lastHrvDay.hrv_min || lastHrvDay.hrv_max)
     ? `${lastHrvDay.hrv_min || '?'}–${lastHrvDay.hrv_max || '?'}` : null;
   /* 28/10: giorni vuoti/futuri e "0" (non registrato, es. volo) escono come NaN, non come 0 ore: così non abbassano la media (stessa regola di sleepH nell'Andamento) */
-  const sonnoArr = days.map(d => { const v = sleepH(d.rec.ore_sonno); return v == null ? NaN : v; });
+  const sonnoArr = days.map(d => { const raw = d.rec.ore_sonno; const v = (raw === "0" || raw === "0.00") ? null : parseSonnoHours(raw); return v == null ? NaN : v; });
   const rhrArr = days.map(d => parseFloat(d.rec.rhr));
   const remArr = days.map(d => parseFloat(d.rec.sonno_rem_min));
   const profArr = days.map(d => parseFloat(d.rec.sonno_profondo_min));
