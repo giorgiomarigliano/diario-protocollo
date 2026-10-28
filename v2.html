@@ -8674,7 +8674,8 @@ function renderWeekFull() {
     recapTitle = LANG === 'it' ? 'Settimana non ancora iniziata.' : 'Week not started yet.';
     recapText = LANG === 'it' ? `Comincia il ${rangeTxt}.` : `Starts ${rangeTxt}.`;
   } else if (!wk.isClosed) {
-    recapTone = wk.overall >= 85 ? 'good' : wk.overall >= 65 ? 'warn' : 'bad';
+    /* 28/10: settimana aperta = pallino neutro "In corso". Gli allenamenti sono su 5/sett. interi mentre iniezioni e integratori sono sui giorni trascorsi: il punteggio complessivo non è confrontabile finché la settimana non chiude */
+    recapTone = 'neutral';
     recapTitle = LANG === 'it' ? 'Per ora nessuno scivolone.' : 'No slip-ups so far.';
     recapText = LANG === 'it'
       ? `Nei primi ${wk.elapsed} giorni: iniezioni ${wk.injApplTot ? wk.injPct + '%' : '—'}, integratori ${wk.suppPct}%, allenamenti ${wk.woPct}%. Il confronto con le settimane chiuse non regge ancora.`
@@ -8695,7 +8696,7 @@ function renderWeekFull() {
       : `Overall adherence ${wk.overall}%${deltaOvTxt}. Cycle average ${cycAvg}%.`;
   }
   const recapDot = recapTone === 'good' ? 'var(--ok)' : recapTone === 'warn' ? 'var(--warn)' : recapTone === 'bad' ? 'var(--bad)' : 'var(--idle)';
-  const recapLabel = recapTone === 'good' ? (LANG === 'it' ? 'In linea' : 'On track') : recapTone === 'warn' ? (LANG === 'it' ? "Da tenere d'occhio" : 'Worth watching') : recapTone === 'bad' ? (LANG === 'it' ? 'Sotto soglia' : 'Below threshold') : (LANG === 'it' ? 'In attesa' : 'Upcoming');
+  const recapLabel = recapTone === 'good' ? (LANG === 'it' ? 'In linea' : 'On track') : recapTone === 'warn' ? (LANG === 'it' ? "Da tenere d'occhio" : 'Worth watching') : recapTone === 'bad' ? (LANG === 'it' ? 'Sotto soglia' : 'Below threshold') : wk.isFutureWeek ? (LANG === 'it' ? 'In attesa' : 'Upcoming') : (LANG === 'it' ? 'In corso' : 'In progress');
 
   // ---- Recap: 3 mini-metriche (peso/HRV/sonno) vs settimana precedente ----
   const pesoAvgCur = wk.avg(wk.pesoArr), hrvAvgCur = wk.avg(wk.hrvArr), sonnoAvgCur = wk.avg(wk.sonnoArr);
