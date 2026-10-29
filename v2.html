@@ -1435,7 +1435,7 @@ const SUBJ_PALETTE = {
 
 const FIELDS = {
   // biometria
-  peso:'num', bp_sys:'num', bp_dia:'num', hrv:'num', hrv_min:'num', hrv_max:'num', rhr:'num',
+  peso:'num', bp_sys:'num', bp_dia:'num', hrv:'num', hrv_min:'num', hrv_max:'num', rhr:'num', passi:'num',
   ore_sonno:'sonno_hmm',              // notazione H.MM (es. "5.18"=5h18m), MAI decimale puro — vedi parseSonnoHours
   sonno_veglia_min:'num', sonno_rem_min:'num', sonno_principale_min:'num',
   sonno_profondo_min:'num', sonno_risvegli:'num',
@@ -10126,6 +10126,10 @@ function renderOggiSections() {
         <input class="field-value" type="number" value="${day.rhr || ''}" placeholder="—" oninput="patch(selDate,'rhr',this.value)"><span class="field-value-unit">bpm</span>
       </div>
       <div class="field-row">
+        <div class="field-label" title="${LANG === 'it' ? 'Passi del giorno, da Apple Watch Ultra 3 (sottostima ~1–2%: i minuti di ricarica non sono contati)' : 'Daily steps from Apple Watch Ultra 3 (~1–2% underestimate: charging minutes not counted)'}">${LANG === 'it' ? 'Passi' : 'Steps'}</div>
+        <input class="field-value" style="width:64px" type="number" value="${day.passi || ''}" placeholder="—" oninput="patch(selDate,'passi',this.value)"><span class="field-value-unit">${LANG === 'it' ? 'passi' : 'steps'}</span>
+      </div>
+      <div class="field-row">
         <div class="field-label">${LANG === 'it' ? 'Sonno' : 'Sleep'}</div>
         <div style="text-align:right">
           <input class="field-value" style="width:70px" type="text" value="${day.ore_sonno || ''}" placeholder="5.18" oninput="patch(selDate,'ore_sonno',this.value)">
@@ -10145,6 +10149,7 @@ function renderOggiSections() {
       <div class="biometria-chip"><span class="biometria-chip-label">Risvegli</span><span class="biometria-chip-value">${day.sonno_risvegli || '—'}</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">HRV</span><span class="biometria-chip-value">${(day.hrv_min || day.hrv_max) ? `${day.hrv_min || '?'}–${day.hrv_max || '?'} ms` : day.hrv ? day.hrv + ' ms' : '—'}</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">Freq. a riposo</span><span class="biometria-chip-value">${day.rhr || '—'} bpm</span></div>
+      <div class="biometria-chip"><span class="biometria-chip-label">${LANG === 'it' ? 'Passi' : 'Steps'}</span><span class="biometria-chip-value">${day.passi ? Number(day.passi).toLocaleString('it-IT') : '—'}</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">${L.tile.sonno}</span><span class="biometria-chip-value">${sonnoTxt}</span></div>
       <div class="biometria-chip"><span class="biometria-chip-label">REM</span><span class="biometria-chip-value">${day.sonno_rem_min || '—'}m</span></div>
     </div>`;
