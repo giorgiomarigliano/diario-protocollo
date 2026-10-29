@@ -9561,6 +9561,7 @@ function renderOggiFull() {
         </div>
         ${hrvRow}
         ${bioRow(LANG === 'it' ? 'Freq. a riposo' : 'Resting HR', 'rhr', 'bpm')}
+        ${bioRow(LANG === 'it' ? 'Passi' : 'Steps', 'passi', LANG === 'it' ? 'passi' : 'steps')}
         <div style="display:flex;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid var(--line2);">
           <span style="flex:1 1 auto;font-size:var(--fs-base);font-weight:500;color:var(--ink2);">${L.tile.pressione}</span>
           <span style="${BIO_PAIR}">
@@ -9807,7 +9808,8 @@ function renderOggiFull() {
   const TILES_HTML = [
     hrvTile, simpleTile(LANG === 'it' ? 'Freq. riposo' : 'Resting HR', 'rhr'), bpTile, sonnoTile,
     simpleTile(L.tile.rem, 'sonno_rem_min'), simpleTile(L.tile.profondo, 'sonno_profondo_min'), simpleTile(L.tile.risvegli, 'sonno_risvegli'),
-    simpleTile(L.tile.girovita, 'girovita_cm')
+    simpleTile(L.tile.girovita, 'girovita_cm'),
+    simpleTile(LANG === 'it' ? 'Passi' : 'Steps', 'passi')
   ];
 
   const dAdh = dayAdherence(selDate);
@@ -9898,7 +9900,7 @@ function renderOggiFull() {
         </div>
       </div>
       ${pesoChartHTML(pesoDays(pesoRange), selDate)}
-      <div style="flex:0 0 auto;display:grid;grid-template-columns:repeat(8,1fr);gap:8px;padding-top:9px;border-top:1px solid var(--line2);">
+      <div style="flex:0 0 auto;display:grid;grid-template-columns:repeat(9,1fr);gap:8px;padding-top:9px;border-top:1px solid var(--line2);">
         ${TILES_HTML.join('')}
       </div>
     </section>`;
