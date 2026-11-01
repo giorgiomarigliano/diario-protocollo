@@ -3784,8 +3784,10 @@ function buildInsights(root){
     [["peso",T().peso,1,null,"neutral"],["hrv",T().hrv,0,null,"up"],["rhr",T().rhr,0,null,"down"],
      ["ore_sonno",T().sonno,0,sleepH,"up"],["energia","Energia",1,null,"up"],["wo_volume",T().volume,0,null,"up"]]
     .forEach(function(c){
-      var A=meanOf(rec.map(function(d){return d?(c[3]?c[3](d[c[0]]):num(d[c[0]])):null;}));
-      var B=meanOf(bef.map(function(d){return d?(c[3]?c[3](d[c[0]]):num(d[c[0]])):null;}));
+      /* 01/11: HRV a intervallo (hrv_min/hrv_max, la norma dal cambio iOS26): la riga leggeva solo la vecchia media singola e restava vuota. Punto medio dell'intervallo, come nel confronto HRV del Cruscotto (non e' una media misurata). */
+      var val=function(d){ if(!d) return null; if(c[0]==="hrv"){ var lo=num(d.hrv_min), hi=num(d.hrv_max); if(lo!=null&&hi!=null) return (lo+hi)/2; } return c[3]?c[3](d[c[0]]):num(d[c[0]]); };
+      var A=meanOf(rec.map(val));
+      var B=meanOf(bef.map(val));
       var dl=(A!=null&&B!=null)?A-B:null;
       var col="var(--ink2)";
       if (dl!=null&&c[4]!=="neutral") col=(Math.abs(dl)<0.05)?"var(--ink3)":(((c[4]==="down")?dl<0:dl>0)?"var(--ok)":"var(--warn-ink)");
