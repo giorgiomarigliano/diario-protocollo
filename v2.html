@@ -1104,6 +1104,14 @@
 .food-chip{display:flex;flex-direction:column;align-items:flex-start;gap:1px;max-width:100%;min-height:44px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surf2);color:var(--ink);cursor:pointer;text-align:left;font:inherit}
 .food-chip .n{font-size:var(--fs-sm);font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .food-chip small{font-size:var(--fs-xs);color:var(--ink2);font-variant-numeric:tabular-nums}
+/* desktop: la card Alimentazione sta in una riga di griglia con hero e grafico, che si allungano con lei: la striscia "Ora" deve restare su UNA riga (scorre in orizzontale) per non spostare il layout */
+.food-sug.dsk{flex-direction:row;align-items:center;gap:8px;min-width:0}
+.food-sug.dsk .food-sugh{flex:0 0 auto;white-space:nowrap}
+.food-sug.dsk .food-chips{flex:1 1 auto;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px;min-width:0}
+.food-sug.dsk .food-chips::-webkit-scrollbar{display:none}
+.food-sug.dsk .food-chip{flex:0 0 auto;flex-direction:row;align-items:center;gap:6px;min-height:28px;padding:2px 8px;white-space:nowrap;border-radius:var(--r-sm,8px)}
+.food-sug.dsk .food-chip .n{max-width:150px;font-size:var(--fs-xs)}
+.food-sug.dsk .food-chip small{font-size:var(--fs-2xs)}
 .food-chip:active{background:var(--accent);color:var(--on-accent)}.food-chip:active small{color:var(--on-accent)}
 .food-star{flex:0 0 auto;width:36px;height:36px;border:0;background:transparent;color:var(--ink3);font-size:var(--fs-2xl);line-height:1;cursor:pointer}
 .food-star.on{color:var(--warn-ink)}
@@ -7309,9 +7317,9 @@ const FOOD = (function () {
     return out.sort((a, b) => b.sc - a.sc || (b.last > a.last ? 1 : b.last < a.last ? -1 : 0) || (a.label < b.label ? -1 : 1));
   }
   const chipHTML = (slot, c) => `<button type="button" class="food-chip" onclick="FOOD.sug('${slot}','${c.key}')"><span class="n">${c.fav ? '★ ' : ''}${esc(c.label)}</span><small>${r0(c.k)} kcal · P ${fmt(c.p, 0)}${c.est ? ' · ≈ stima' : ''}${c.days ? ' · ' + c.days + ' gg' : ''}</small></button>`;
-  function sugBlock(slot, max, ttl) {
+  function sugBlock(slot, max, ttl, compact) {
     const cs = sugList(slot).slice(0, max); if (!cs.length) return '';
-    return `<div class="food-sug"><div class="food-sugh">${esc(ttl)}</div><div class="food-chips">${cs.map(c => chipHTML(slot, c)).join('')}</div></div>`;
+    return `<div class="food-sug${compact ? ' dsk' : ''}"><div class="food-sugh">${esc(ttl)}</div><div class="food-chips">${cs.map(c => chipHTML(slot, c)).join('')}</div></div>`;
   }
   function addSug(slot, key) {
     const c = sugList(slot).find(x => x.key === key);
@@ -7437,7 +7445,7 @@ const FOOD = (function () {
     const pr = T.p ? (t.p >= T.p ? 'proteine: obiettivo raggiunto' : 'mancano ' + fmt(T.p - t.p) + ' g P') : 'P ' + fmt(t.p) + ' g';
     return `<div style="display:flex;justify-content:space-between;align-items:flex-end"><div>${kc}</div><span style="font-size:11px;font-weight:700;color:var(--accent-ink)">${pr}</span></div>${bar('Proteine', t.p, T.p, 'var(--accent)')}`;
   }
-  function nowStrip() { const cs = curSlot(); return cs ? sugBlock(cs, 3, 'Ora · ' + slotName(cs)) : ''; }
+  function nowStrip() { const cs = curSlot(); return cs ? sugBlock(cs, 3, 'Ora · ' + (isDesktop ? (SL.find(x => x[0] === cs) || [])[2] || slotName(cs) : slotName(cs)), isDesktop) : ''; }
   function cardHTML() {
     const o = day(selDate), t = totals(selDate), T = lib().targets;
     const noT = (!T.kcal && !T.p) ? `<div style="font-size:10px;color:var(--ink3);font-weight:500">Obiettivi non impostati (Gestione › Alimenti › Obiettivi).</div>` : '';
