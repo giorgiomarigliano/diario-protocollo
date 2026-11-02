@@ -724,6 +724,17 @@
 /* 30/09: ".an-root button{color:inherit}" (specificita' 0,1,1) batteva ".an-btn" (0,1,0): testo scuro su fondo blu in tutti i pulsanti principali (Dettaglio per settimana, Registra scatto, Scarica Excel). */
 .an-root .an-btn{color:var(--white);}
 .an-root .an-btn:disabled{opacity:.55;}
+.an-cy-x{display:flex;flex-direction:column;gap:8px;margin-top:6px;border-top:1px solid var(--line2);padding-top:10px}
+.an-cy-t{font-size:var(--fs-xs);font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.03em}
+.an-cy-n{display:flex;justify-content:space-between;gap:8px;font-size:var(--fs-xs);color:var(--ink3)}
+.an-cy-ph{height:58px}
+.an-cy-open{background:linear-gradient(90deg,var(--c-ph4) 0,var(--c-ph4) 85%,transparent 100%)}
+.an-cy-eval{background:var(--ink3);opacity:.7}.an-cy-eval-l{color:var(--ink3);transform:translateX(-100%)!important}
+.an-cy-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.an-cy-tile{display:flex;flex-direction:column;gap:2px;background:var(--surf2);border-radius:var(--r-md);padding:8px 10px}
+.an-cy-l{font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase}
+.an-cy-tile b{font-size:var(--fs-2xl);font-weight:700;color:var(--ink)}.an-cy-tile b small{font-size:var(--fs-xs);font-weight:500;color:var(--ink3)}
+.an-cy-s{font-size:var(--fs-xs);color:var(--ink2)}
 @media (min-width:1024px){
 .an-view.is-active{grid-template-columns:repeat(12,1fr);}
 .an-hero-r{grid-template-columns:repeat(5,1fr);}
@@ -2239,7 +2250,7 @@ var AN_I18N = {
   it: {
     tabs: { cruscotto:"Cruscotto", insights:"Insights", foto:"Foto", workout:"Workout", alimenti:"Alimenti" },
     range: "Intervallo", cycle: "ciclo", theme: "Scuro", themeLight: "Chiaro",
-    cycleState:"Stato del ciclo", heroTitle:"Il ciclo in una riga",
+    cycleState:"Stato del percorso", heroTitle:"Il ciclo in una riga",
     recomp:"Ricomposizione", load:"Carico e recupero", adherence:"Aderenza nel ciclo",
     clinical:"Marker clinici", stock:"Copertura scorte", narrative:"Commento del periodo",
     subjA:"Energia, recupero, umore", subjB:"Appetito, sonno percepito, chiarezza, libido",
@@ -2270,7 +2281,7 @@ var AN_I18N = {
   en: {
     tabs: { cruscotto:"Overview", insights:"Insights", foto:"Photos", workout:"Workout", alimenti:"Food" },
     range: "Range", cycle: "cycle", theme: "Dark", themeLight: "Light",
-    cycleState:"Cycle status", heroTitle:"The cycle in one line",
+    cycleState:"Pathway status", heroTitle:"The cycle in one line",
     recomp:"Recomposition", load:"Load and recovery", adherence:"Cycle adherence",
     clinical:"Clinical markers", stock:"Supply coverage", narrative:"Period comment",
     subjA:"Energy, recovery, mood", subjB:"Appetite, perceived sleep, clarity, libido",
@@ -2996,15 +3007,68 @@ function buildCycle(root){
       var ml=document.createElement("div"); ml.className="an-pmark-l"; ml.style.left=(x/tot*100)+"%"; ml.textContent=e.label; host.appendChild(ml);
     }
   });
-  var n=document.createElement("div"); n.className="an-pnow"; n.style.left=(TODAY()/tot*100)+"%"; host.appendChild(n);
+  if (TODAY()<=tot-1){ var n=document.createElement("div"); n.className="an-pnow"; n.style.left=(TODAY()/tot*100)+"%"; host.appendChild(n); }
   var lg=$(root,".an-phase-legend");
   if (lg){ lg.innerHTML=""; PHASES.forEach(function(p){
     var i=document.createElement("span"); i.className="an-legend-item";
     i.innerHTML='<span class="an-sw" style="height:10px;width:10px;border-radius:var(--r-xs);background:'+p.color+'"></span>'+p.label;
     lg.appendChild(i); }); }
-  setB(root,"cycle.day","g"+cycleDayNo(TODAY())+" / "+CYCLE.days);
+  /* 02/11/2026: dal 9/11 il Ciclo 1 e' concluso ma il percorso no: niente "g116 / 112", si conta la settimana di Post Ciclo 1 (aperta, senza denominatore) */
+  setB(root,"cycle.day", TODAY()<tot ? "g"+cycleDayNo(TODAY())+" / "+CYCLE.days : "Ciclo 1 concluso \u00b7 Post Ciclo 1 \u00b7 settimana "+(Math.floor((TODAY()-tot)/7)+1));
   setB(root,"cycle.week","W"+(Math.floor(TODAY()/7)+1));
   setB(root,"cycle.date",fmtDM(dateOfDay(TODAY())));
+  cyExtras(root);
+}
+/* Percorso di ricomposizione (02/11/2026, decisioni di Giorgio): il Ciclo 1 (peptidi) finisce l'8/11, il percorso no.
+   Post Ciclo 1 = finestra senza composti dal 9/11 (prime settimane di gennaio 2027 "da valutare"), APERTA: nessuna data di fine.
+   Ciclo 2: da valutare, nessuna data ne' composto. Obiettivi = quelli finali fissati il 21/09 (scala DEXA, indicativi). */
+var CY_GOALS={ lean:[60,61], fat:[10.5,12], peso:[70.5,72.5] };
+function cyLastNum(field){
+  var blob=(typeof store!=="undefined"&&store.blob)||{}, t=dayIdxFromISO(today);
+  for (var i=t;i>=Math.max(0,t-60);i--){ var r=blob["p2_day_"+i], v=r?num(r[field]):null; if (v!=null) return {v:v,idx:i}; }
+  return null;
+}
+function cyRange(v,r,unit,dec){
+  if (v==null) return "";
+  if (v<r[0]) return it(r[0]-v,dec)+" "+unit+" sotto il range";
+  if (v>r[1]) return it(v-r[1],dec)+" "+unit+" sopra il range";
+  return "nel range";
+}
+function cyExtras(root){
+  var card=$(root,".c-cycle"); if(!card) return;
+  var old=card.querySelector(".an-cy-x"); if(old) old.remove();
+  var oc=card.querySelector(".an-cy-c1"); if(oc) oc.remove();
+  var ph0=card.querySelector(".an-phases:not(.an-cy-ph)");
+  if (ph0){ var c1=document.createElement("div"); c1.className="an-cy-t an-cy-c1"; c1.textContent="Ciclo 1 \u00b7 peptidi \u00b7 20/07 \u2192 08/11"+(TODAY()>=CYCLE.days?" \u00b7 concluso":""); ph0.parentNode.insertBefore(c1,ph0); }
+  var tot=CYCLE.days, d=TODAY(), post=d>=tot, x=document.createElement("div"); x.className="an-cy-x";
+  var h="";
+  if (post){
+    var pi=d-tot, N=Math.floor(pi/7)+1, Wk=Math.max(8,N), span=Wk*7, pc=function(v){ return (v/span*100)+"%"; };
+    h+='<div class="an-cy-t">Post Ciclo 1 \u00b7 senza composti \u00b7 aperto</div><div class="an-phases an-cy-ph"><div class="an-ptrack"><div class="an-pseg an-cy-open" style="width:100%"></div></div>';
+    EVENTS.forEach(function(e){
+      if (e.kind!=="band") return;
+      var a=dayOfCycle(mkDate(e.from))-tot, b=dayOfCycle(mkDate(e.to))-tot;
+      if (b<0||a>span-1) return;
+      h+='<div class="an-pband" style="left:'+pc(Math.max(0,a))+';width:'+Math.max(.6,(Math.min(span-1,b)-Math.max(0,a))/span*100)+'%"></div><div class="an-pband-l" style="left:'+pc((Math.max(0,a)+Math.min(span-1,b))/2)+'">'+e.label+'</div>';
+    });
+    h+='<div class="an-pmark an-cy-eval" style="left:'+pc(56)+'"></div><div class="an-pmark-l an-cy-eval-l" style="left:'+pc(56)+'">gen \u00b7 valuti Ciclo 2</div>';
+    h+='<div class="an-pnow" style="left:'+pc(pi)+'"></div></div>';
+    h+='<div class="an-cy-n"><span>P1 \u00b7 9/11</span><span>settimana '+N+(N>8?'':' di 8 di riferimento')+'</span></div>';
+  } else {
+    h+='<div class="an-cy-n">Dal 9/11 \u00b7 Post Ciclo 1: finestra senza composti, aperta.</div>';
+  }
+  h+='<div class="an-cy-n">Ciclo 2: da valutare \u00b7 nessuna data n\u00e9 composti definiti.</div>';
+  /* obiettivi */
+  var dx=DEXA.length?DEXA[DEXA.length-1]:null, pe=cyLastNum("peso"), wa=WAIST.filter(function(q){ return q.cm!=null; });
+  var tile=function(l,v,u,sub){ return '<div class="an-cy-tile"><span class="an-cy-l">'+l+'</span><b>'+(v==null?"\u2014":v)+'<small> '+u+'</small></b><span class="an-cy-s">'+sub+'</span></div>'; };
+  h+='<div class="an-cy-t">Percorso di ricomposizione \u00b7 in corso</div><div class="an-cy-g">'+
+    tile("Massa magra",dx&&dx.lean_kg!=null?it(dx.lean_kg,1):null,"kg","obiettivo "+it(CY_GOALS.lean[0],0)+"\u2013"+it(CY_GOALS.lean[1],0)+" \u00b7 "+(dx&&dx.lean_kg!=null?cyRange(dx.lean_kg,CY_GOALS.lean,"kg",1):"DEXA mancante"))+
+    tile("% grasso",dx&&dx.fat_pct!=null?it(dx.fat_pct,1):null,"%","obiettivo "+it(CY_GOALS.fat[0],1)+"\u2013"+it(CY_GOALS.fat[1],0)+" \u00b7 "+(dx&&dx.fat_pct!=null?cyRange(dx.fat_pct,CY_GOALS.fat,"pt",1):"DEXA mancante"))+
+    tile("Peso",pe?it(pe.v,1):null,"kg","obiettivo "+it(CY_GOALS.peso[0],1)+"\u2013"+it(CY_GOALS.peso[1],1)+" (scala DEXA)")+
+    tile("Girovita",wa.length?it(wa[wa.length-1].cm,1):null,"cm",wa.length>1?itSigned(wa[wa.length-1].cm-wa[0].cm,1)+" cm dalla prima misura \u00b7 nessun obiettivo fissato":"nessun obiettivo fissato")+
+    '</div><div class="an-cy-n">Obiettivi finali del 21/09, scala DEXA, indicativi. Massa magra e % grasso: ultima DEXA'+(dx?' ('+fmtDM(mkDate(dx.date))+')':'')+'. La bilancia di casa legge circa 1 kg in meno (un solo confronto).</div>';
+  x.innerHTML=h;
+  var warn=card.querySelector(".an-warn"); card.insertBefore(x,warn||null);
 }
 
 /* Hero: 5 KPI. La barra si disegna SOLO se esiste un target.
