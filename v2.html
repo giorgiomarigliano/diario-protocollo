@@ -724,17 +724,52 @@
 /* 30/09: ".an-root button{color:inherit}" (specificita' 0,1,1) batteva ".an-btn" (0,1,0): testo scuro su fondo blu in tutti i pulsanti principali (Dettaglio per settimana, Registra scatto, Scarica Excel). */
 .an-root .an-btn{color:var(--white);}
 .an-root .an-btn:disabled{opacity:.55;}
-.an-cy-x{display:flex;flex-direction:column;gap:8px;margin-top:6px;border-top:1px solid var(--line2);padding-top:10px}
+.an-cy-x{display:flex;flex-direction:column;gap:12px;margin-top:6px;border-top:1px solid var(--line2);padding-top:12px}
 .an-cy-t{font-size:var(--fs-xs);font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.03em}
 .an-cy-n{display:flex;justify-content:space-between;gap:8px;font-size:var(--fs-xs);color:var(--ink3)}
-.an-cy-ph{height:58px}
-.an-cy-open{background:linear-gradient(90deg,var(--c-ph4) 0,var(--c-ph4) 85%,transparent 100%)}
-.an-cy-end{background:var(--ink3);opacity:.5;width:1px}.an-cy-eval{background:var(--ink3);opacity:.7}.an-cy-eval-l{color:var(--ink3);transform:translateX(-100%)!important}
+.c-cycle{--cy-c1:var(--accent);--cy-post:var(--wo);--cy-trip:#ffd21f}
+.an-cy-now{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.an-cy-now b{font-size:var(--fs-2xl);font-weight:700;color:var(--cy-c1);letter-spacing:-.01em}
+.an-cy-now.is-post b{color:var(--cy-post)}
+.an-cy-now span{font-size:var(--fs-sm);color:var(--ink2);font-weight:500}
+.c-cycle .an-phases{height:124px;margin-top:2px}
+.an-cy-trk{position:absolute;left:0;right:0;top:36px;height:30px;border-radius:8px;overflow:hidden;display:flex;gap:2px;background:var(--surf2)}
+.an-cy-seg{height:100%;display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden}
+.an-cy-seg span{font-size:var(--fs-2xs);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px;color:var(--white)}
+.an-cy-adatt{background:color-mix(in srgb,var(--cy-c1) 30%,var(--surf2))}.an-cy-adatt span{color:var(--accent-ink)}
+.an-cy-costr{background:color-mix(in srgb,var(--cy-c1) 58%,var(--surf2))}
+.an-cy-peak{background:var(--cy-c1)}
+.an-cy-mant{background:color-mix(in srgb,var(--cy-c1) 72%,#000 8%)}
+.an-cy-fine{background:color-mix(in srgb,var(--cy-c1) 42%,var(--surf2))}.an-cy-fine span{color:var(--accent-ink)}
+.an-cy-post{background:var(--cy-post);-webkit-mask-image:linear-gradient(90deg,#000 0,#000 78%,transparent 100%);mask-image:linear-gradient(90deg,#000 0,#000 78%,transparent 100%)}
+.an-cy-evb{position:absolute;top:34px;height:34px;border-radius:6px;background:color-mix(in srgb,var(--cy-trip) 26%,transparent);border-top:3px solid var(--cy-trip);border-bottom:3px solid var(--cy-trip);box-sizing:border-box}
+.an-cy-evr{position:absolute;top:18px;height:8px;border-radius:4px;background:var(--cy-trip)}
+.an-cy-evl{position:absolute;top:0;transform:translateX(-50%);font-size:var(--fs-2xs);font-weight:700;color:var(--ink);white-space:nowrap}
+.an-cy-mk{position:absolute;top:30px;width:3px;height:42px;margin-left:-1.5px;background:var(--ink);border-radius:2px;opacity:.8}
+.an-cy-mkl{position:absolute;top:68px;transform:translateX(-50%);font-size:var(--fs-2xs);font-weight:800;color:var(--ink);background:var(--surf);padding:0 3px}
+.an-cy-end{position:absolute;top:30px;width:2px;height:42px;margin-left:-1px;background:var(--ink);opacity:.55;border-radius:1px}
+.an-cy-tick{position:absolute;top:70px;width:1px;height:6px;background:var(--ink3);opacity:.6}
+.an-cy-mo{position:absolute;top:84px;transform:translateX(-50%);font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase}
+.an-cy-gen{position:absolute;top:84px;right:0;font-size:var(--fs-2xs);font-weight:700;color:var(--cy-post);white-space:nowrap}
+.an-cy-now-b{position:absolute;top:26px;width:4px;height:74px;margin-left:-2px;background:var(--ink);border-radius:2px;box-shadow:0 0 0 2px var(--surf)}
+.an-cy-now-l{position:absolute;top:100px;transform:translateX(-50%);background:var(--ink);color:var(--surf);font-size:var(--fs-2xs);font-weight:800;padding:2px 7px;border-radius:var(--r-pill);text-transform:uppercase;letter-spacing:.03em}
+.an-cy-pills{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+.an-cy-pill{display:flex;gap:9px;align-items:flex-start;border:1.5px solid var(--line2);border-radius:var(--r-md);padding:8px 10px}
+.an-cy-pill i{width:12px;height:12px;border-radius:4px;flex:0 0 auto;margin-top:2px}
+.an-cy-pill b{display:block;font-size:var(--fs-sm);color:var(--ink)}.an-cy-pill span{font-size:var(--fs-xs);color:var(--ink2)}
+.an-cy-pill.p1 i{background:var(--cy-c1)}.an-cy-pill.pp i{background:var(--cy-post)}.an-cy-pill.p2 i{background:transparent;border:1.5px dashed var(--ink3)}
+.an-cy-pill.is-cur{border-color:var(--ink);background:var(--surf2)}.an-cy-pill.is-done{opacity:.75}.an-cy-pill.p2{border-style:dashed}
 .an-cy-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
-.an-cy-tile{display:flex;flex-direction:column;gap:2px;background:var(--surf2);border-radius:var(--r-md);padding:8px 10px}
+.an-cy-tile{display:flex;flex-direction:column;gap:3px;background:var(--surf2);border-radius:var(--r-md);padding:10px 12px}
 .an-cy-l{font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase}
-.an-cy-tile b{font-size:var(--fs-2xl);font-weight:700;color:var(--ink)}.an-cy-tile b small{font-size:var(--fs-xs);font-weight:500;color:var(--ink3)}
+.an-cy-tile b{font-size:var(--fs-3xl);font-weight:700;color:var(--ink);line-height:1.1}.an-cy-tile b small{font-size:var(--fs-xs);font-weight:500;color:var(--ink3)}
 .an-cy-s{font-size:var(--fs-xs);color:var(--ink2)}
+.an-cy-d{font-size:var(--fs-xs);font-weight:700;color:var(--ink)}.an-cy-d.ok{color:var(--ok)}.an-cy-d.mut{font-weight:500;color:var(--ink3)}
+.an-cy-gz{position:relative;height:8px;border-radius:4px;background:var(--line2);margin:5px 0 3px}
+.an-cy-gb{position:absolute;top:0;bottom:0;border-radius:4px;background:color-mix(in srgb,var(--ok) 55%,transparent)}
+.an-cy-gd{position:absolute;top:-3px;width:4px;height:14px;margin-left:-2px;border-radius:2px;background:var(--ink)}.an-cy-gd.ok{background:var(--ok)}
+.c-cycle .an-phase-legend{display:none}
+@media (max-width:640px){.c-cycle .an-phase-legend{display:flex;flex-wrap:wrap;gap:6px 14px}.an-cy-mo{display:none}.an-cy-seg span{display:none}.an-cy-trk{height:34px}.an-cy-evl i{display:none}.an-cy-evl,.an-cy-mkl{font-size:10px}.an-cy-lgtr{flex-basis:100%}}
 @media (min-width:1024px){
 .an-view.is-active{grid-template-columns:repeat(12,1fr);}
 .an-hero-r{grid-template-columns:repeat(5,1fr);}
@@ -2990,35 +3025,41 @@ function hrvHead(days){
 function buildCycle(root){
   var host=$(root,".an-phases"); if(!host) return;
   host.innerHTML="";
-  /* 02/11/2026: la linea e' quella del PERCORSO: Ciclo 1 (112 g) + Post Ciclo 1 aperto (almeno 9 settimane di riferimento, cresce se serve) */
-  var cyc=CYCLE.days, pw=Math.max(63,(Math.floor(Math.max(0,TODAY()-cyc)/7)+2)*7), tot=cyc+pw, tr=document.createElement("div"); tr.className="an-ptrack";
-  PHASES.forEach(function(p){ var s=document.createElement("div"); s.className="an-pseg";
-    s.style.width=(p.weeks*7/tot*100)+"%"; s.style.background=p.color; tr.appendChild(s); });
-  var po=document.createElement("div"); po.className="an-pseg an-cy-open"; po.style.width=(pw/tot*100)+"%"; tr.appendChild(po);
-  host.appendChild(tr);
-  var ce=document.createElement("div"); ce.className="an-pmark an-cy-end"; ce.style.left=(cyc/tot*100)+"%"; host.appendChild(ce);
-  var gv=document.createElement("div"); gv.className="an-pmark an-cy-eval"; gv.style.left=((cyc+56)/tot*100)+"%"; host.appendChild(gv);
-  var gvl=document.createElement("div"); gvl.className="an-pmark-l an-cy-eval-l"; gvl.style.left=((cyc+56)/tot*100)+"%"; gvl.textContent="gen \u00b7 valuti Ciclo 2"; host.appendChild(gvl);
+  /* 02/11/2026: la linea e' quella del PERCORSO: Ciclo 1 (112 g) + Post Ciclo 1 aperto (almeno 9 settimane di riferimento, cresce se serve).
+     Etichette direttamente sui segmenti, mesi sotto, "oggi" ben visibile, eventi sopra. */
+  var cyc=CYCLE.days, pw=Math.max(63,(Math.floor(Math.max(0,TODAY()-cyc)/7)+2)*7), tot=cyc+pw;
+  var pc=function(v){ return (v/tot*100)+"%"; }, E=function(c,st,tx){ var e=document.createElement("div"); e.className=c; if(st) e.style.cssText=st; if(tx!=null) e.textContent=tx; host.appendChild(e); return e; };
+  var tr=E("an-cy-trk",""), PS={adatt:"Adatt.",costr:"Costruzione",peak:"Peak",mant:"Mantenim.",fine:"Fine ciclo"};
+  PHASES.forEach(function(p){ var sg=document.createElement("div"); sg.className="an-cy-seg an-cy-"+p.id; sg.style.width=pc(p.weeks*7); sg.title=p.label; sg.innerHTML="<span>"+(PS[p.id]||p.label)+"</span>"; tr.appendChild(sg); });
+  var po=document.createElement("div"); po.className="an-cy-seg an-cy-post"; po.style.width=pc(pw); po.title="Post Ciclo 1"; po.innerHTML="<span>Post Ciclo 1 \u00b7 senza composti</span>"; tr.appendChild(po);
+  var bk=0, trips=[];
   EVENTS.forEach(function(e){
     if (e.kind==="band"){
-      var a=dayOfCycle(mkDate(e.from)),b=dayOfCycle(mkDate(e.to));
-      var el=document.createElement("div"); el.className="an-pband";
-      el.style.left=(a/tot*100)+"%"; el.style.width=Math.max(.6,(b-a)/tot*100)+"%"; host.appendChild(el);
-      var l=document.createElement("div"); l.className="an-pband-l";
-      l.style.left=((a+b)/2/tot*100)+"%"; l.textContent=e.label; host.appendChild(l);
+      var a=dayOfCycle(mkDate(e.from)),b=dayOfCycle(mkDate(e.to))+1;
+      var nm=e.label==="Bangkok"?"BKK "+(++bk):e.label, f=e.from, t=e.to, dt=f.d+(f.m===t.m?"":"/"+f.m)+"\u2013"+t.d+"/"+t.m;
+      E("an-cy-evr","left:"+pc(a)+";width:"+pc(Math.max(1.5,b-a))); var lb=E("an-cy-evl","left:"+pc((a+b)/2)); lb.innerHTML=nm+"<i> \u00b7 "+dt+"</i>"; trips.push({a:a,t:nm+" "+dt});
     } else {
-      var x=dayOfCycle(mkDate(e.at));
-      var m=document.createElement("div"); m.className="an-pmark"; m.style.left=(x/tot*100)+"%"; host.appendChild(m);
-      var ml=document.createElement("div"); ml.className="an-pmark-l"; ml.style.left=(x/tot*100)+"%"; ml.textContent=e.label; host.appendChild(ml);
+      var x=dayOfCycle(mkDate(e.at))+.5;
+      E("an-cy-mk","left:"+pc(x)); E("an-cy-mkl","left:"+pc(x),e.label);
     }
   });
-  { var n=document.createElement("div"); n.className="an-pnow"; n.style.left=(Math.min(TODAY(),tot-1)/tot*100)+"%"; host.appendChild(n); }
+  /* mesi sotto la linea */
+  [[2026,7],[2026,8],[2026,9],[2026,10],[2026,11],[2026,12],[2027,1]].forEach(function(m,i,arr){
+    var a=Math.max(0,dayOfCycle(mkDate({y:m[0],m:m[1],d:1}))), nx=arr[i+1]?dayOfCycle(mkDate({y:arr[i+1][0],m:arr[i+1][1],d:1})):tot, b=Math.min(tot,nx);
+    if (b<=a) return;
+    E("an-cy-tick","left:"+pc(a)); if (m[1]===1&&m[0]===2027) return;
+    E("an-cy-mo","left:"+pc((a+b)/2),["lug","ago","set","ott","nov","dic","gen"][m[1]===1?6:m[1]-7]);
+  });
+  E("an-cy-gen","","gen \u00b7 valuti Ciclo 2");
+  E("an-cy-end","left:"+pc(cyc));
+  E("an-cy-now-l","left:"+pc(Math.min(TODAY(),tot-1)+.5),"oggi"); E("an-cy-now-b","left:"+pc(Math.min(TODAY(),tot-1)+.5));
   var lg=$(root,".an-phase-legend");
   if (lg){ lg.innerHTML=""; PHASES.forEach(function(p){
     var i=document.createElement("span"); i.className="an-legend-item";
-    i.innerHTML='<span class="an-sw" style="height:10px;width:10px;border-radius:var(--r-xs);background:'+p.color+'"></span>'+p.label;
+    i.innerHTML='<span class="an-sw an-cy-'+p.id+'" style="height:10px;width:10px;border-radius:var(--r-xs)"></span>'+p.label;
     lg.appendChild(i); });
-    var ip=document.createElement("span"); ip.className="an-legend-item"; ip.innerHTML='<span class="an-sw an-cy-open" style="height:10px;width:10px;border-radius:var(--r-xs)"></span>Post Ciclo 1 \u00b7 aperto'; lg.appendChild(ip); }
+    var ip=document.createElement("span"); ip.className="an-legend-item"; ip.innerHTML='<span class="an-sw" style="height:10px;width:10px;border-radius:var(--r-xs);background:var(--cy-post)"></span>Post Ciclo 1'; lg.appendChild(ip);
+    var it2=document.createElement("span"); it2.className="an-legend-item an-cy-lgtr"; it2.innerHTML='<span class="an-sw" style="height:10px;width:10px;border-radius:var(--r-xs);background:var(--cy-trip)"></span>Viaggi: '+trips.sort(function(x,y){return x.a-y.a;}).map(function(q){return q.t;}).join(" \u00b7 "); lg.appendChild(it2); }
   /* 02/11/2026: dal 9/11 il Ciclo 1 e' concluso ma il percorso no: niente "g116 / 112", si conta la settimana di Post Ciclo 1 (aperta, senza denominatore) */
   setB(root,"cycle.day", TODAY()<cyc ? "g"+cycleDayNo(TODAY())+" / "+CYCLE.days : "Ciclo 1 concluso \u00b7 Post Ciclo 1 \u00b7 settimana "+(Math.floor((TODAY()-cyc)/7)+1));
   setB(root,"cycle.week","W"+(Math.floor(TODAY()/7)+1));
@@ -3043,27 +3084,35 @@ function cyRange(v,r,unit,dec){
 function cyExtras(root){
   var card=$(root,".c-cycle"); if(!card) return;
   var old=card.querySelector(".an-cy-x"); if(old) old.remove();
-  var oc=card.querySelector(".an-cy-c1"); if(oc) oc.remove();
-  var ph0=card.querySelector(".an-phases:not(.an-cy-ph)");
-  if (ph0){ var c1=document.createElement("div"); c1.className="an-cy-t an-cy-c1"; c1.textContent="Ciclo 1 \u00b7 peptidi \u00b7 20/07 \u2192 08/11"+(TODAY()>=CYCLE.days?" \u00b7 concluso":"")+" \u00b7 poi Post Ciclo 1 senza composti, aperto"; ph0.parentNode.insertBefore(c1,ph0); }
-  var tot=CYCLE.days, d=TODAY(), post=d>=tot, x=document.createElement("div"); x.className="an-cy-x";
-  var h="";
-  if (post){
-    var pi=d-tot, N=Math.floor(pi/7)+1;
-    h+='<div class="an-cy-n"><span>Post Ciclo 1 \u00b7 dal 9/11 \u00b7 senza composti</span><span>settimana '+N+(N>8?'':' di 8 di riferimento')+'</span></div>';
-  } else {
-    h+='<div class="an-cy-n">Dal 9/11 \u00b7 Post Ciclo 1: finestra senza composti, aperta.</div>';
-  }
-  h+='<div class="an-cy-n">Ciclo 2: da valutare \u00b7 nessuna data n\u00e9 composti definiti.</div>';
-  /* obiettivi */
+  var oc=card.querySelector(".an-cy-now"); if(oc) oc.remove();
+  var ph0=card.querySelector(".an-phases");
+  var cyc=CYCLE.days, d=TODAY(), post=d>=cyc, x=document.createElement("div"); x.className="an-cy-x";
+  /* striscia "adesso": cosa sono oggi, in grande */
+  var cum=0, fase=null; PHASES.forEach(function(p){ if(fase===null && d<cum+p.weeks*7) fase=p.label; cum+=p.weeks*7; });
+  var now=document.createElement("div"); now.className="an-cy-now"+(post?" is-post":"");
+  if (post){ var N=Math.floor((d-cyc)/7)+1; now.innerHTML='<b>Post Ciclo 1</b><span>settimana '+N+(N>8?'':' di 8 di riferimento')+' \u00b7 senza composti \u00b7 aperto</span>'; }
+  else { var left=cyc-1-d; now.innerHTML='<b>'+(fase||"Ciclo 1")+'</b><span>giorno '+cycleDayNo(d)+' di '+cyc+' \u00b7 '+(left>0?'mancano '+left+(left===1?' giorno':' giorni')+' all\u20198/11':'ultimo giorno')+' \u00b7 poi Post Ciclo 1</span>'; }
+  if (ph0) ph0.parentNode.insertBefore(now,ph0);
+  var h='<div class="an-cy-pills">'+
+    '<div class="an-cy-pill p1'+(post?' is-done':' is-cur')+'"><i></i><div><b>Ciclo 1 \u00b7 peptidi</b><span>20/07 \u2192 08/11 \u00b7 '+(post?'concluso':'in corso')+'</span></div></div>'+
+    '<div class="an-cy-pill pp'+(post?' is-cur':'')+'"><i></i><div><b>Post Ciclo 1</b><span>dal 9/11 \u00b7 senza composti \u00b7 aperto</span></div></div>'+
+    '<div class="an-cy-pill p2"><i></i><div><b>Ciclo 2</b><span>da valutare \u00b7 nessuna data n\u00e9 composti</span></div></div></div>';
+  /* obiettivi: posizione sul range, colore solo se dentro (nessun giudizio inventato) */
   var dx=DEXA.length?DEXA[DEXA.length-1]:null, pe=cyLastNum("peso"), wa=WAIST.filter(function(q){ return q.cm!=null; });
-  var tile=function(l,v,u,sub){ return '<div class="an-cy-tile"><span class="an-cy-l">'+l+'</span><b>'+(v==null?"\u2014":v)+'<small> '+u+'</small></b><span class="an-cy-s">'+sub+'</span></div>'; };
-  h+='<div class="an-cy-t">Percorso di ricomposizione \u00b7 in corso</div><div class="an-cy-g">'+
-    tile("Massa magra",dx&&dx.lean_kg!=null?it(dx.lean_kg,1):null,"kg","obiettivo "+it(CY_GOALS.lean[0],0)+"\u2013"+it(CY_GOALS.lean[1],0)+" \u00b7 "+(dx&&dx.lean_kg!=null?cyRange(dx.lean_kg,CY_GOALS.lean,"kg",1):"DEXA mancante"))+
-    tile("% grasso",dx&&dx.fat_pct!=null?it(dx.fat_pct,1):null,"%","obiettivo "+it(CY_GOALS.fat[0],1)+"\u2013"+it(CY_GOALS.fat[1],0)+" \u00b7 "+(dx&&dx.fat_pct!=null?cyRange(dx.fat_pct,CY_GOALS.fat,"pt",1):"DEXA mancante"))+
-    tile("Peso",pe?it(pe.v,1):null,"kg","obiettivo "+it(CY_GOALS.peso[0],1)+"\u2013"+it(CY_GOALS.peso[1],1)+" (scala DEXA)")+
-    tile("Girovita",wa.length?it(wa[wa.length-1].cm,1):null,"cm",wa.length>1?itSigned(wa[wa.length-1].cm-wa[0].cm,1)+" cm dalla prima misura \u00b7 nessun obiettivo fissato":"nessun obiettivo fissato")+
-    '</div><div class="an-cy-n">Obiettivi finali del 21/09, scala DEXA, indicativi. Massa magra e % grasso: ultima DEXA'+(dx?' ('+fmtDM(mkDate(dx.date))+')':'')+'. La bilancia di casa legge circa 1 kg in meno (un solo confronto).</div>';
+  var gauge=function(v,r,ax,judge){
+    if (v==null) return "";
+    var pos=function(q){ return Math.max(0,Math.min(100,(q-ax[0])/(ax[1]-ax[0])*100)); }, ins=v>=r[0]&&v<=r[1];
+    return '<div class="an-cy-gz"><i class="an-cy-gb" style="left:'+pos(r[0])+'%;width:'+Math.max(2,pos(r[1])-pos(r[0]))+'%"></i><i class="an-cy-gd'+(judge&&ins?' ok':'')+'" style="left:'+pos(v)+'%"></i></div>';
+  };
+  var tile=function(l,v,u,goal,g,dist,cls){ return '<div class="an-cy-tile"><span class="an-cy-l">'+l+'</span><b>'+(v==null?"\u2014":v)+'<small> '+u+'</small></b>'+(g||"")+'<span class="an-cy-s">'+goal+'</span>'+(dist?'<span class="an-cy-d '+(cls||"")+'">'+dist+'</span>':'')+'</div>'; };
+  var lv=dx&&dx.lean_kg!=null?dx.lean_kg:null, fp=dx&&dx.fat_pct!=null?dx.fat_pct:null;
+  var dd=function(v,r,u,dec){ return v==null?"DEXA mancante":(v>=r[0]&&v<=r[1]?"nel range":it(v<r[0]?r[0]-v:v-r[1],dec)+" "+u+(v<r[0]?" sotto":" sopra")+" il range"); };
+  h+='<div class="an-cy-t">Obiettivi del percorso di ricomposizione</div><div class="an-cy-g">'+
+    tile("Massa magra",lv!=null?it(lv,1):null,"kg","obiettivo "+it(CY_GOALS.lean[0],0)+"\u2013"+it(CY_GOALS.lean[1],0)+" kg",gauge(lv,CY_GOALS.lean,[54,62],true),dd(lv,CY_GOALS.lean,"kg",1),lv!=null&&lv>=CY_GOALS.lean[0]&&lv<=CY_GOALS.lean[1]?"ok":"")+
+    tile("% grasso",fp!=null?it(fp,1):null,"%","obiettivo "+it(CY_GOALS.fat[0],1)+"\u2013"+it(CY_GOALS.fat[1],0)+" %",gauge(fp,CY_GOALS.fat,[8,20],true),dd(fp,CY_GOALS.fat,"pt",1),fp!=null&&fp>=CY_GOALS.fat[0]&&fp<=CY_GOALS.fat[1]?"ok":"")+
+    tile("Peso",pe?it(pe.v,1):null,"kg","obiettivo "+it(CY_GOALS.peso[0],1)+"\u2013"+it(CY_GOALS.peso[1],1)+" kg",gauge(pe?pe.v:null,CY_GOALS.peso,[68,78],false),"scala DEXA \u00b7 casa \u2248 \u22121 kg","mut")+
+    tile("Girovita",wa.length?it(wa[wa.length-1].cm,1):null,"cm","nessun obiettivo fissato","",wa.length>1?itSigned(wa[wa.length-1].cm-wa[0].cm,1)+" cm dalla prima misura":"","mut")+
+    '</div><div class="an-cy-n">Obiettivi finali del 21/09, scala DEXA, indicativi. Massa magra e % grasso: ultima DEXA'+(dx?' ('+fmtDM(mkDate(dx.date))+')':'')+'.</div>';
   x.innerHTML=h;
   var warn=card.querySelector(".an-warn"); card.insertBefore(x,warn||null);
 }
