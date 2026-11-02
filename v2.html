@@ -6907,7 +6907,7 @@ return {html,
    Card in Oggi operativa dal 2026-10-12 (START). */
 const FOOD = (function () {
   const START = '2026-10-12';
-  const SL = [['caf', 'Caffè mattina', 'Caffè mat.'], ['col', 'Colazione', 'Colazione'], ['spm', 'Spuntino mattina', 'Spuntino mat.'], ['pra', 'Pranzo', 'Pranzo'], ['spp', 'Spuntino pomeriggio', 'Spuntino pom.'], ['cen', 'Cena', 'Cena'], ['ext', 'Extra / dopo cena', 'Extra']];
+  const SL = [['caf', 'Caffè mattina', 'Caffè mat.'], ['col', 'Colazione', 'Colazione'], ['spm', 'Break mattina', 'Break mat.'], ['pra', 'Pranzo', 'Pranzo'], ['spp', 'Break pomeriggio', 'Break pom.'], ['cen', 'Cena', 'Cena'], ['ext', 'Extra / dopo cena', 'Extra']];
   const SRCL = { w: ['⚖ pesato', 's-w'], l: ['▤ libreria', 's-l'], e: ['🏷 etichetta', 's-e'], s: ['≈ stima', 's-s'] };
   let L = null, sub = 'pasto', sh = null, dirty = {}, err = false, busy = false, retryT = null, flt = { ver: false, q: '', tab: 'det', more: false }, msg = '';
   const num = v => { const x = parseFloat(String(v == null ? '' : v).replace(',', '.')); return isFinite(x) ? x : NaN; };
@@ -10961,7 +10961,7 @@ var GST_ORARI = {
     ["09:15","pasto","Colazione \u2014 shaker proteico + bresaola",""],
     ["09:15","integratori","Creatina 5g","con shaker"],
     ["09:30","integratori","Omega-3 \u00d71 \u00b7 Zinco bisglicinato 15mg","dopo colazione \u00b7 in ufficio"],
-    ["11:00","pasto","Spuntino \u2014 carne secca",""],
+    ["11:00","pasto","Break \u2014 carne secca",""],
     ["13:00","pasto","Pranzo",""],
     ["13:00","integratori","Omega-3 \u00d72 \u00b7 Normocis 400",""],
     ["16:00","iniezione","Fragment 176-191 250mcg SC","3h post-pranzo"],
@@ -10995,7 +10995,7 @@ var GST_ORARI = {
     ["09:15","pasto","Colazione \u2014 shaker proteico + bresaola",""],
     ["09:15","integratori","Creatina 5g","con shaker"],
     ["09:30","integratori","Omega-3 \u00d71 \u00b7 Zinco bisglicinato 15mg","dopo colazione \u00b7 in ufficio"],
-    ["11:00","pasto","Spuntino \u2014 carne secca",""],
+    ["11:00","pasto","Break \u2014 carne secca",""],
     ["13:00","pasto","Pranzo",""],
     ["13:00","integratori","Omega-3 \u00d72 \u00b7 Normocis 400",""],
     ["16:00","iniezione","Fragment 176-191 250mcg SC","3h post-pranzo"],
@@ -11983,7 +11983,7 @@ const EN_DICT = {
 'Dosi su questo vial':'Doses on this vial','Vita residua':'Remaining life','+ Ricostituisci nuovo vial':'+ Reconstitute new vial','Scorte':'Supplies','Materiali di consumo':'Consumables','Siringhe SC':'SC syringes','Siringhe IM':'IM syringes',
 'flaconi · Limitless + Bachem · frigo':'vials · Limitless + Bachem · fridge','La scorta la aggiorni tu · flacone BAC da 10 mL: ipotesi da confermare.':'You update the stock yourself · 10 mL BAC vial: assumption to be confirmed.',
 'Flacone BAC da 10 mL: ipotesi da confermare.':'10 mL BAC vial: assumption to be confirmed.','Fuori protocollo':'Off protocol','liofilizzati · frigo':'lyophilized · fridge','Allenamento':'Workout','Weekend':'Weekend','Rest Day':'Rest Day',
-'Iniezione':'Injection','Integratori':'Supplements','Pasto':'Meal','Colazione':'Breakfast','Pranzo':'Lunch','Cena':'Dinner','Spuntino':'Snack','digiuno':'fasted','orario flessibile':'flexible time','con colazione':'with breakfast','pre-sleep':'pre-sleep',
+'Iniezione':'Injection','Integratori':'Supplements','Pasto':'Meal','Colazione':'Breakfast','Pranzo':'Lunch','Cena':'Dinner','Spuntino':'Snack','Break':'Snack','digiuno':'fasted','orario flessibile':'flexible time','con colazione':'with breakfast','pre-sleep':'pre-sleep',
 'Tutti':'All','Carne':'Meat','Pesce':'Fish','Uova & albumi':'Eggs & whites','Latticini':'Dairy','Snack':'Snacks','Carboidrati':'Carbs','Frutta':'Fruit','Verdure':'Vegetables','CARNE':'MEAT','PESCE':'FISH','UOVA & ALBUMI':'EGGS & WHITES','LATTICINI':'DAIRY',
 'INTEGRATORI':'SUPPLEMENTS','SNACK':'SNACKS','CARBOIDRATI':'CARBS','FRUTTA':'FRUIT','VERDURE':'VEGETABLES','Cerca un alimento…':'Search a food…',
 'Tocca + sull\'alimento · Regola la quantità con − e + · Il totale si aggiorna in alto':'Tap + on a food · Adjust the quantity with − and + · The total updates at the top',
@@ -12153,10 +12153,10 @@ Object.assign(EN_DICT, {
  "entro il limite": "within limit",
  "Caffè mattina": "Morning coffee",
  "Caffè mat.": "Morn. coffee",
- "Spuntino mattina": "Mid-morning snack",
- "Spuntino mat.": "AM snack",
- "Spuntino pomeriggio": "Afternoon snack",
- "Spuntino pom.": "PM snack",
+ "Break mattina": "Mid-morning snack",
+ "Break mat.": "AM snack",
+ "Break pomeriggio": "Afternoon snack",
+ "Break pom.": "PM snack",
  "Extra / dopo cena": "Extra / after dinner",
  "⚖ pesato": "⚖ weighed",
  "▤ libreria": "▤ library",
