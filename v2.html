@@ -1097,6 +1097,16 @@
 #food-sheet{background:var(--surf);color:var(--ink);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:14px 16px max(24px,env(safe-area-inset-bottom));max-height:88vh;overflow:auto;display:flex;flex-direction:column;gap:10px}
 .food-tab{flex:1 0 auto;border:0;background:transparent;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer;min-height:40px;white-space:nowrap}
 .food-tab.on{background:var(--accent);color:#fff}
+#food-sheet>*{flex-shrink:0}/* il foglio e' una colonna flex con altezza massima: senza questo le righe con min-height esplicito si schiacciano e si sovrappongono quando il contenuto supera l'altezza */
+.food-sug{display:flex;flex-direction:column;gap:4px}
+.food-sugh{font-size:var(--fs-2xs);font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em}
+.food-chips{display:flex;flex-wrap:wrap;gap:6px}
+.food-chip{display:flex;flex-direction:column;align-items:flex-start;gap:1px;max-width:100%;min-height:44px;padding:6px 10px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surf2);color:var(--ink);cursor:pointer;text-align:left;font:inherit}
+.food-chip .n{font-size:var(--fs-sm);font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.food-chip small{font-size:var(--fs-xs);color:var(--ink2);font-variant-numeric:tabular-nums}
+.food-chip:active{background:var(--accent);color:var(--on-accent)}.food-chip:active small{color:var(--on-accent)}
+.food-star{flex:0 0 auto;width:36px;height:36px;border:0;background:transparent;color:var(--ink3);font-size:var(--fs-2xl);line-height:1;cursor:pointer}
+.food-star.on{color:var(--warn-ink)}
 .fh-seg{display:flex;gap:2px;background:var(--surf2);border-radius:var(--r-md);padding:3px;width:max-content}
 .fh-seg button{border:0;background:transparent;color:var(--ink2);font:inherit;font-size:var(--fs-sm);font-weight:600;padding:6px 12px;min-height:36px;border-radius:var(--r-sm);cursor:pointer}
 .fh-seg button.on{background:var(--accent);color:var(--white)}
@@ -7137,7 +7147,9 @@ const FOOD = (function () {
   const on = () => typeof tab !== 'undefined' && tab === 'oggi' && store.loaded && selDate >= START;
   function newEntry(extra) { return Object.assign({ id: uid('e') }, extra); }
   function entryFromFood(f, q) { const v = fv(f, q); return newEntry({ n: f.n, q: qLabel(f, q), k: r1(v.k), p: r1(v.p), c: r1(v.c), g: r1(v.g), src: (q === f.ref ? 'l' : 'w'), ref: { t: 'f', id: f.id, q } }); }
-  function entryFromCombo(c, planned) { const v = comboVals(c); const e = newEntry({ n: c.n, q: '1', k: r1(v.k), p: r1(v.p), c: r1(v.c), g: r1(v.g), src: 'l', ref: { t: 'c', id: c.id } }); if (planned) e.plan = true; return e; }
+  /* combo "stima" (02/11/2026): c.est = true + c.r = [kcal min, kcal max] (es. Starbucks). La voce nasce come STIMA con il suo range, non come "libreria":
+     stessi numeri e stessa incertezza ogni volta, finche' non la sostituisci con valori verificati (togliendo c.est). */
+  function entryFromCombo(c, planned) { const v = comboVals(c); const est = !!c.est && Array.isArray(c.r) && c.r.length === 2 && c.r[0] <= v.k && v.k <= c.r[1]; const e = newEntry({ n: c.n, q: '1', k: r1(v.k), p: r1(v.p), c: r1(v.c), g: r1(v.g), src: est ? 's' : 'l', ref: { t: 'c', id: c.id } }); if (est) e.r = c.r.slice(); if (planned) e.plan = true; return e; }
 
   /* ---------- azioni ---------- */
   function addEntry(slot, e) { mut(selDate, o => { o.s[slot].push(e); }); }
@@ -7198,23 +7210,129 @@ const FOOD = (function () {
       (hasPlan ? `<div style="display:flex;gap:8px;margin-top:4px"><button style="${btn};flex:1" onclick="FOOD.cslot('${slot}')">✓ Confermo, l'ho mangiato</button><button class="an-chip" style="min-height:44px" onclick="FOOD.dplan('${slot}')">Non l'ho mangiato</button></div>` : '') + '</div>';
   }
   function comboRows(slot) {
-    const cs = lib().combos.slice().sort((a, b) => (b.slot === slot) - (a.slot === slot));
+    const cs = lib().combos.slice().sort((a, b) => (!!b.fav - !!a.fav) || ((b.slot === slot) - (a.slot === slot)));
     if (!cs.length) return '<div style="font-size:12px;color:var(--ink3)">Nessuna combo. Creale in Gestione › Alimenti › Combo.</div>';
-    return cs.map(c => { const v = comboVals(c); return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:48px;border-bottom:1px solid var(--line2)"><div style="min-width:0"><b style="font-size:13px">${esc(c.n)}</b>${c.slot === slot ? '<span class="food-src s-l">per questo slot</span>' : ''}<div style="font-size:11px;color:var(--ink2)">${esc(comboText(c))} · ${r0(v.k)} kcal · P ${fmt(v.p, 1)}</div></div><button style="${pl}" onclick="FOOD.addCombo('${slot}','${c.id}')">+</button></div>`; }).join('');
+    return cs.map(c => { const v = comboVals(c); return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:48px;border-bottom:1px solid var(--line2)"><div style="min-width:0"><b style="font-size:13px">${esc(c.n)}</b>${c.slot === slot ? '<span class="food-src s-l">per questo slot</span>' : ''}<div style="font-size:11px;color:var(--ink2)">${esc(comboText(c))} · ${r0(v.k)} kcal · P ${fmt(v.p, 1)}</div></div>${starB('c', c.id, !!c.fav)}<button style="${pl}" onclick="FOOD.addCombo('${slot}','${c.id}')">+</button></div>`; }).join('');
   }
   function listFoods() {
     const q = (sh && sh.q || '').toLowerCase();
     const fs = lib().foods.filter(f => !q || f.n.toLowerCase().includes(q) || (f.cat || '').toLowerCase().includes(q));
+    fs.sort((a, b) => (!!b.fav - !!a.fav));
     if (!fs.length) return '<div style="font-size:12px;color:var(--ink3)">Nessun alimento. Aggiungilo in Gestione › Alimenti › Libreria o usa Manuale.</div>';
-    return fs.map(f => { const v = fv(f, f.ref); return `<div style="display:flex;align-items:center;gap:8px;min-height:52px;border-bottom:1px solid var(--line2)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(f.n)}${vok(f) ? '' : `<span class="food-src s-s">${f.ver === 'C' ? 'stima' : 'da verificare'}</span>`}</div><div style="font-size:11px;color:var(--ink2)">${r0(v.k)} kcal · P ${fmt(v.p, 1)} alla porzione standard</div></div><input id="fq_${f.id}" type="number" inputmode="decimal" step="any" value="${f.ref}" style="width:68px;${inp.replace('width:100%', 'width:68px')};padding:0 6px;text-align:right"><span style="font-size:11px;color:var(--ink2);width:22px">${f.u === 'g' ? (f.ul || 'g') : 'pz'}</span><button style="${pl}" onclick="FOOD.addFood('${slot0()}','${f.id}')">+</button></div>`; }).join('');
+    return fs.map(f => { const v = fv(f, f.ref); return `<div style="display:flex;align-items:center;gap:8px;min-height:52px;border-bottom:1px solid var(--line2)"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${esc(f.n)}${vok(f) ? '' : `<span class="food-src s-s">${f.ver === 'C' ? 'stima' : 'da verificare'}</span>`}</div><div style="font-size:11px;color:var(--ink2)">${r0(v.k)} kcal · P ${fmt(v.p, 1)} alla porzione standard</div></div><input id="fq_${f.id}" type="number" inputmode="decimal" step="any" value="${f.ref}" style="width:68px;${inp.replace('width:100%', 'width:68px')};padding:0 6px;text-align:right"><span style="font-size:11px;color:var(--ink2);width:22px">${f.u === 'g' ? (f.ul || 'g') : 'pz'}</span>${starB('f', f.id, !!f.fav)}<button style="${pl}" onclick="FOOD.addFood('${slot0()}','${f.id}')">+</button></div>`; }).join('');
   }
+  /* ---------- suggerimenti e preferiti (02/11/2026) ----------
+     Tutto derivato dallo storico food_AAAAMMGG (ultimi SUG_DAYS giorni PRIMA della data scelta, per slot) e dal flag fav
+     su alimenti/combo della libreria. L'unica scrittura nuova e' il flag fav (in food_lib). Soglie: una voce serve da suggerimento
+     se compare in >= SUG_MIN_D giorni distinti nello slot; due voci di libreria insieme nello stesso slot se >= SUG_MIN_P giorni.
+     Una voce che era una STIMA o un'ETICHETTA (src s/e) o senza riferimento alla libreria viene ripresentata com'era (stessi numeri e range):
+     non diventa mai "libreria" per magia. Le altre si ricalcolano dalla libreria (correzioni incluse) e sono marcate "libreria", mai "pesato". */
+  const SUG_DAYS = 30, SUG_MIN_D = 2, SUG_MIN_P = 3;
+  const SLOT_WIN = { caf: [5, 9.5], col: [7, 11], spm: [10, 12.5], pra: [12, 15.5], spp: [15.5, 18.5], cen: [19, 23.5], ext: [21, 24] }; /* fasce orarie iniziali (ore locali), dalle mediane di registrazione 12/10-2/11 */
+  const eKey = e => e.ref ? e.ref.t + ':' + e.ref.id : 'n:' + slug(e.n);
+  const favOf = k => { const t = k.charAt(0), id = k.slice(2), x = t === 'f' ? food(id) : t === 'c' ? combo(id) : null; return !!(x && x.fav); };
+  function curSlot() {
+    if (selDate !== isoLocal(new Date())) return '';
+    const o = day(selDate), n = new Date(), h = n.getHours() + n.getMinutes() / 60;
+    for (const [id] of SL) {
+      const w = SLOT_WIN[id]; if (!w || h < w[0] || h >= w[1]) continue;
+      if (live(o, id).length || plan(o, id).length || skipOf(o)[id] || offOf(o)[id]) continue;
+      return id;
+    }
+    return '';
+  }
+  function sugHist(slot) {
+    const end = new Date(selDate + 'T00:00:00'), H = { items: {}, pairs: {}, any: {} };
+    for (let i = 1; i <= SUG_DAYS; i++) {
+      const dt = new Date(end); dt.setDate(dt.getDate() - i); const iso = isoLocal(dt);
+      const x = getKey(dkey(iso)); if (!x || !x.s) continue;
+      SL.forEach(([sid]) => { (x.s[sid] || []).forEach(e => { if (!e.plan && e.n) H.any[eKey(e)] = 1; }); });
+      if (!Array.isArray(x.s[slot])) continue;
+      const seen = {};
+      x.s[slot].filter(e => !e.plan && e.n).forEach(e => {
+        const k = eKey(e); if (seen[k]) return; seen[k] = e;
+        const it = H.items[k] || (H.items[k] = { k, days: 0, last: '', e: null });
+        it.days++; if (iso > it.last) { it.last = iso; it.e = e; }
+      });
+      const ks = Object.keys(seen).filter(k => k.charAt(0) !== 'n').sort();
+      for (let a = 0; a < ks.length; a++) for (let b = a + 1; b < ks.length; b++) {
+        const pk = ks[a] + '|' + ks[b], pr = H.pairs[pk] || (H.pairs[pk] = { a: ks[a], b: ks[b], days: 0, last: '' });
+        pr.days++; if (iso > pr.last) pr.last = iso;
+      }
+    }
+    return H;
+  }
+  function sugEntry(k, e) {
+    const t = k.charAt(0), id = k.slice(2);
+    if (e && (e.src === 's' || e.src === 'e' || t === 'n')) { /* stima / etichetta / fuori libreria: stessi numeri di prima */
+      const n = newEntry({ n: e.n, q: e.q, k: e.k, p: e.p, c: e.c, g: e.g, src: e.src });
+      if (e.ref) n.ref = clone(e.ref); if (e.r) n.r = e.r.slice(); return n;
+    }
+    if (t === 'f') { const f = food(id); if (!f) return null; const q = (e && e.ref && e.ref.q > 0) ? e.ref.q : f.ref; const n = entryFromFood(f, q); n.src = 'l'; return n; }
+    if (t === 'c') { const c = combo(id); return (c && c.items.length) ? entryFromCombo(c, false) : null; }
+    return null;
+  }
+  const sugName = (k, e) => { const t = k.charAt(0), id = k.slice(2); if (e && (e.src === 's' || e.src === 'e')) return e.n; if (t === 'f') { const f = food(id); return f ? f.n.split(' (')[0] : null; } if (t === 'c') { const c = combo(id); return c ? c.n : null; } return e ? e.n.split(' (')[0] : null; };
+  function sugList(slot) {
+    const H = sugHist(slot), o = day(selDate), L = lib(), liveK = {}; live(o, slot).forEach(e => { liveK[eKey(e)] = 1; });
+    const lim = new Date(selDate + 'T00:00:00'); lim.setDate(lim.getDate() - 7); const recent = isoLocal(lim);
+    const keys = {}; Object.keys(H.items).forEach(k => { if (H.items[k].days >= SUG_MIN_D) keys[k] = 1; });
+    L.foods.forEach(f => { if (f.fav) keys['f:' + f.id] = 1; }); L.combos.forEach(c => { if (c.fav) keys['c:' + c.id] = 1; });
+    const out = [];
+    const finish = (key, ks, sc, days, fav) => {
+      const es = [], nm = [];
+      for (const k of ks) { const e0 = H.items[k] && H.items[k].e, en = sugEntry(k, e0), n = sugName(k, e0); if (!en || !n) return; es.push(en); nm.push(n); }
+      const v = es.reduce((a, e) => { const x = vals(e); return { k: a.k + x.k, p: a.p + x.p }; }, { k: 0, p: 0 });
+      let label = nm.join(' + '); if (ks.length === 1 && es[0].src === 'l' && es[0].ref && es[0].ref.t === 'f') { const f = food(es[0].ref.id); if (f) label += ' · ' + qLabel(f, es[0].ref.q); }
+      out.push({ key, label, k: v.k, p: v.p, est: es.some(e => e.src === 's'), fav, days, sc, entries: es, last: ks.length === 1 && H.items[ks[0]] ? H.items[ks[0]].last : '' });
+    };
+    Object.keys(keys).forEach(k => {
+      if (liveK[k] || k.charAt(0) === 'n' && !(H.items[k] && H.items[k].days >= SUG_MIN_D)) return;
+      const it = H.items[k], fav = favOf(k), c = k.charAt(0) === 'c' ? combo(k.slice(2)) : null;
+      if (fav && !it && !(c && c.slot === slot) && H.any[k]) return; /* preferito usato solo in altri slot: resta in cima alla lista Alimenti/Combo, non qui */
+      const sc = (it ? it.days : 0) + (it && it.last >= recent ? 1 : 0) + (fav ? 5 : 0) + (c && c.slot === slot ? 3 : 0);
+      finish(k, [k], sc, it ? it.days : 0, fav);
+    });
+    const have = {}; L.combos.forEach(c => { const hk = c.items.map(i => i.f || '').sort().join('|'); if (!have[hk]) have[hk] = c.id; });
+    Object.keys(H.pairs).forEach(pk => {
+      const pr = H.pairs[pk]; if (pr.days < SUG_MIN_P || liveK[pr.a] || liveK[pr.b]) return;
+      if (pr.a.charAt(0) === 'f' && pr.b.charAt(0) === 'f') {
+        const cid = have[[pr.a.slice(2), pr.b.slice(2)].sort().join('|')];
+        if (cid) { /* la coppia e' gia' una combo di libreria: si suggerisce la combo, non una coppia duplicata */
+          const ck = 'c:' + cid, cc = combo(cid);
+          if (!liveK[ck] && !out.some(x => x.key === ck)) finish(ck, [ck], pr.days + 1 + (pr.last >= recent ? 1 : 0) + (cc && cc.slot === slot ? 3 : 0) + (favOf(ck) ? 5 : 0), pr.days, favOf(ck));
+          return;
+        }
+      }
+      finish('p:' + pr.a + '|' + pr.b, [pr.a, pr.b], pr.days + 1 + (pr.last >= recent ? 1 : 0), pr.days, favOf(pr.a) && favOf(pr.b));
+    });
+    return out.sort((a, b) => b.sc - a.sc || (b.last > a.last ? 1 : b.last < a.last ? -1 : 0) || (a.label < b.label ? -1 : 1));
+  }
+  const chipHTML = (slot, c) => `<button type="button" class="food-chip" onclick="FOOD.sug('${slot}','${c.key}')"><span class="n">${c.fav ? '★ ' : ''}${esc(c.label)}</span><small>${r0(c.k)} kcal · P ${fmt(c.p, 0)}${c.est ? ' · ≈ stima' : ''}${c.days ? ' · ' + c.days + ' gg' : ''}</small></button>`;
+  function sugBlock(slot, max, ttl) {
+    const cs = sugList(slot).slice(0, max); if (!cs.length) return '';
+    return `<div class="food-sug"><div class="food-sugh">${esc(ttl)}</div><div class="food-chips">${cs.map(c => chipHTML(slot, c)).join('')}</div></div>`;
+  }
+  function addSug(slot, key) {
+    const c = sugList(slot).find(x => x.key === key);
+    if (!c) { msg = 'Suggerimento non più disponibile.'; if (sh) drawSheet(); else redraw(); return; }
+    if (sh) msg = 'Aggiunto: ' + c.label + '.';
+    mut(selDate, o => { c.entries.forEach(e => o.s[slot].push(e)); });
+    if (sh) drawSheet();
+  }
+  function toggleFav(t, id) {
+    const x = t === 'f' ? food(id) : combo(id); if (!x) return;
+    if (x.fav) delete x.fav; else x.fav = true;
+    saveLib(); redraw(); if (document.querySelector('.fxc-tbl')) reGest();
+  }
+  const starB = (t, id, on) => `<button type="button" class="food-star${on ? ' on' : ''}" aria-pressed="${on ? 'true' : 'false'}" aria-label="${on ? 'Togli dai preferiti' : 'Aggiungi ai preferiti'}" onclick="event.stopPropagation();FOOD.fav('${t}','${id}')">${on ? '★' : '☆'}</button>`;
   const slot0 = () => (sh && sh.slot) || '';
   function drawSheet() {
     const el = document.getElementById('food-sheet'); if (!el || !sh) return;
     if (sh.m === 'gt') return drawGT(el);
     const slot = sh.slot, name = slot ? slotName(slot) : 'scegli lo slot';
     let body = '';
-    if (!slot) body = `<div class="food-sg" style="grid-template-columns:1fr 1fr">${SL.map(([id, n]) => `<div onclick="FOOD.pick('${id}')" style="min-height:44px;font-size:12px">${n}</div>`).join('')}</div>`;
+    if (!slot) { const nowS = curSlot(); body = `<div class="food-sg" style="grid-template-columns:1fr 1fr">${SL.map(([id, n]) => `<div onclick="FOOD.pick('${id}')" style="min-height:44px;font-size:12px${id === nowS ? ';box-shadow:inset 0 0 0 2px var(--accent)' : ''}">${n}${id === nowS ? ' · ora' : ''}</div>`).join('')}</div>`; }
     else {
       const tabs = [['cmb', 'Combo'], ['ali', 'Alimenti'], ['foto', 'Foto'], ['man', 'Manuale']];
       let tb = '';
@@ -7226,7 +7344,7 @@ const FOOD = (function () {
       const tog = `<div class="food-tog" role="switch" aria-checked="${isO}" tabindex="0" onclick="FOOD.togOff('${slot}')" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();FOOD.togOff('${slot}')}"><div><b>Pasto fuori piano</b><span>${isO ? 'Attivo: conta nei totali (valore centrale e range). Nelle statistiche compare a parte.' : 'Attivalo se qui hai mangiato fuori dal piano (ristorante, evento, viaggio).'}</span></div><i class="food-sw${isO ? ' on' : ''}"></i></div>${isO && noLive ? '<div class="food-warn">Incompleto: nessuna voce in questo slot. Il giorno resta fuori dalle statistiche finché non aggiungi una stima (scheda Foto o Manuale).</div>' : ''}`;
       const isK = !!skipOf(day(selDate))[slot];
       const tgk = `<div class="food-tog sk${!noLive && !isK ? ' dis' : ''}" role="switch" aria-checked="${isK}" tabindex="0" onclick="FOOD.togSkip('${slot}')" onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();FOOD.togSkip('${slot}')}"><div><b>Pasto saltato volontariamente</b><span>${isK ? 'Attivo: 0 kcal dichiarate, non è un dato mancante. Se aggiungi una voce il segno si toglie da solo.' : !noLive ? 'Non disponibile: questo pasto ha già delle voci.' : 'Attivalo se hai deciso di non mangiare qui. Resta distinto da un pasto dimenticato.'}</span></div><i class="food-sw${isK ? ' on' : ''}"></i></div>`;
-      body = tog + tgk + entriesBlock(slot) + `<div class="seg" style="display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px">${tabs.map(([k, l]) => `<button class="food-tab ${sh.tab === k ? 'on' : ''}" onclick="FOOD.tab('${k}')">${l}</button>`).join('')}</div>` + tb;
+      body = tog + tgk + entriesBlock(slot) + sugBlock(slot, 6, 'Suggeriti per ' + name.toLowerCase()) + `<div class="seg" style="display:flex;gap:2px;background:var(--surf2);border-radius:8px;padding:3px">${tabs.map(([k, l]) => `<button class="food-tab ${sh.tab === k ? 'on' : ''}" onclick="FOOD.tab('${k}')">${l}</button>`).join('')}</div>` + tb;
     }
     el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">Aggiungi · ${esc(name)}</b><span onclick="FOOD.close()" style="font-size:22px;padding:6px 10px;cursor:pointer">✕</span></div>${body}<div style="font-size:11px;color:var(--accent-ink);font-weight:600;min-height:14px">${esc(msg)}</div><span class="food-sync" style="font-size:10px"></span>`;
     badge();
@@ -7319,14 +7437,15 @@ const FOOD = (function () {
     const pr = T.p ? (t.p >= T.p ? 'proteine: obiettivo raggiunto' : 'mancano ' + fmt(T.p - t.p) + ' g P') : 'P ' + fmt(t.p) + ' g';
     return `<div style="display:flex;justify-content:space-between;align-items:flex-end"><div>${kc}</div><span style="font-size:11px;font-weight:700;color:var(--accent-ink)">${pr}</span></div>${bar('Proteine', t.p, T.p, 'var(--accent)')}`;
   }
+  function nowStrip() { const cs = curSlot(); return cs ? sugBlock(cs, 3, 'Ora · ' + slotName(cs)) : ''; }
   function cardHTML() {
     const o = day(selDate), t = totals(selDate), T = lib().targets;
     const noT = (!T.kcal && !T.p) ? `<div style="font-size:10px;color:var(--ink3);font-weight:500">Obiettivi non impostati (Gestione › Alimenti › Obiettivi).</div>` : '';
     if (isDesktop) {
-      return `<section class="food-card" style="border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:12px 15px;display:flex;flex-direction:column;gap:7px;overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2)">Alimentazione <span class="food-sync" style="font-size:10px;font-weight:600"></span></span><span class="an-chip" style="min-height:22px;font-size:10px;padding:0 8px" onclick="FOOD.openGT()">▦ Giornata tipo</span></div>${head(t)}${planLine(o, false)}
+      return `<section class="food-card" style="border-radius:var(--r-card);background:var(--surf);box-shadow:var(--shadow);padding:12px 15px;display:flex;flex-direction:column;gap:7px;overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2)">Alimentazione <span class="food-sync" style="font-size:10px;font-weight:600"></span></span><span class="an-chip" style="min-height:22px;font-size:10px;padding:0 8px" onclick="FOOD.openGT()">▦ Giornata tipo</span></div>${head(t)}${planLine(o, false)}${nowStrip()}
 <div class="food-sg">${SL.map(([id, n, s]) => { const Lv = live(o, id), P = plan(o, id), of = !!offOf(o)[id], sk = !!skipOf(o)[id] && !Lv.length && !P.length; return `<div${of ? ' class="off"' : sk ? ' class="sk"' : ''} onclick="FOOD.open('${id}')"><i style="${dotStyle(o, id)}"></i>${s}${Lv.length ? `<b>${fmt(slotK(o, id))}</b>` : P.length ? `<b style="color:var(--accent-ink);font-style:italic">${fmt(planK(o, id))}</b>` : of ? '<b style="color:var(--off)" title="Fuori piano, nessuna voce: incompleto">inc.</b>' : sk ? '<b style="color:var(--ink3)" title="Saltato volontariamente: 0 kcal dichiarate">salt.</b>' : '<b>—</b>'}</div>`; }).join('')}<div style="background:var(--accent);color:#fff;justify-content:center" onclick="FOOD.open('')">+ Aggiungi</div></div>${splitLine(t)}${offLine(t)}${skipLine(t)}${balLine(t)}${noT}</section>`;
     }
-    return `<section class="food-card" style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2)">Alimentazione <span class="food-sync" style="font-size:10px;font-weight:600"></span></span><span class="an-chip" style="min-height:32px;font-size:11px" onclick="FOOD.openGT()">▦ Giornata tipo</span></div>${head(t)}${splitLine(t)}${offLine(t)}${skipLine(t)}${balLine(t)}${noT}${planLine(o, true)}
+    return `<section class="food-card" style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2)">Alimentazione <span class="food-sync" style="font-size:10px;font-weight:600"></span></span><span class="an-chip" style="min-height:32px;font-size:11px" onclick="FOOD.openGT()">▦ Giornata tipo</span></div>${head(t)}${splitLine(t)}${offLine(t)}${skipLine(t)}${balLine(t)}${noT}${planLine(o, true)}${nowStrip()}
 <div style="border-top:1px solid var(--line)">${SL.map(([id, n]) => { const Lv = live(o, id), P = plan(o, id), it = Lv.length ? Lv : P; const only = !Lv.length && P.length, of = !!offOf(o)[id], sk = !!skipOf(o)[id] && !it.length; return `<div${of ? ' class="off"' : sk ? ' class="sk"' : ''} style="display:grid;grid-template-columns:1fr auto 44px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line2);min-height:44px"><div style="min-width:0"><div style="font-size:12px;font-weight:600">${n}${of ? '<span class="food-src s-o">fuori piano</span>' : ''}${sk ? '<span class="food-src s-k">saltato</span>' : ''}${only ? '<span class="food-src s-l">previsto</span>' : ''}${Lv.some(e => e.src === 's') ? '<span class="food-src s-s">≈ stima</span>' : ''}</div><div style="font-size:11px;color:${it.length ? 'var(--ink2)' : 'var(--ink3)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${only ? 'font-style:italic' : ''}">${it.length ? it.map(e => esc(e.n)).join(' · ') : of ? 'incompleto: manca la stima' : sk ? 'saltato volontariamente' : 'non registrato'}</div></div><b style="font-size:12px;${only ? 'color:var(--accent-ink);font-style:italic' : ''}">${Lv.length ? fmt(slotK(o, id)) + ' kcal' : P.length ? fmt(planK(o, id)) + ' kcal' : sk ? '<span style="color:var(--ink3);font-weight:600">0 kcal</span>' : ''}</b>${only ? `<button style="${pl};background:var(--accent-ink)" onclick="FOOD.cslot('${id}')" aria-label="Conferma">✓</button>` : `<button style="${pl}" onclick="FOOD.open('${id}')" aria-label="Aggiungi">+</button>`}</div>`; }).join('')}</div></section>`;
   }
   function redraw() { render(); if (sh) drawSheet(); badge(); }
@@ -7341,7 +7460,7 @@ const FOOD = (function () {
   const td = () => isoLocal(new Date());
   const dotC = f => vok(f) ? 'var(--ok)' : (f.ver === 'C' ? 'var(--warn)' : 'var(--idle)');
   const LV = { A: ['ok', 'Etichetta'], B: ['db', 'Banca dati'], C: ['est', 'Stima'], '': ['todo', 'Da verificare'] };
-  const cOk = c => c.items.length > 0 && c.items.every(it => { const f = it.f && food(it.f); return !!f && vok(f); });
+  const cOk = c => !c.est && c.items.length > 0 && c.items.every(it => { const f = it.f && food(it.f); return !!f && vok(f); });
   let openF = null, mealSlot = '', openC = {};
   const defSlot = () => { const h = new Date().getHours(); return h < 11 ? 'col' : h < 15 ? 'pra' : h < 18 ? 'spp' : 'cen'; };
   const slotSel = (id, def, extra) => `<select id="${id}" class="fx-sel" ${extra || ''}>${SL.map(([s, n]) => `<option value="${s}"${s === def ? ' selected' : ''}>${n}</option>`).join('')}</select>`;
@@ -7399,7 +7518,7 @@ ${d < START ? `<div class="an-note">La card in Oggi si attiva dal 12/10. Le voci
   function detailHTML(f) {
     const L = LV[f.ver || ''] || LV[''], rec = recentUse(f.id, 12), id = f.id;
     const ni = (k, lb) => `<label>${lb}<input class="fx-in" value="${fmt(f[k], 1)}" onchange="FOOD.g.f('${id}','${k}',this.value)"></label>`;
-    return `<div class="fxc-dh"><b>${esc(f.n)}</b><span class="fx-pill ${L[0]}">${L[1]}</span></div>
+    return `<div class="fxc-dh"><b>${esc(f.n)}</b><span style="display:flex;align-items:center;gap:6px">${starB('f', f.id, !!f.fav)}<span class="fx-pill ${L[0]}">${L[1]}</span></span></div>
 <div class="fxc-df"><label>Unità<select class="fx-sel" onchange="FOOD.g.f('${id}','u',this.value)"><option value="g"${f.u === 'g' ? ' selected' : ''}>${f.ul || 'g'}</option><option value="pz"${f.u === 'pz' ? ' selected' : ''}>pz</option></select></label>${ni('ref', 'Porzione')}${ni('k', 'kcal')}${ni('p', 'Proteine')}${ni('c', 'Carbo')}${ni('g', 'Grassi')}</div>
 <div class="fxc-dx"><label class="w">Fonte (obbligatoria per Etichetta / Banca dati)<input class="fx-in l" value="${esc(f.fonte || '')}" placeholder="es. etichetta + data; CREA / USDA + riferimento" onchange="FOOD.g.f('${id}','fonte',this.value)"></label></div>
 <div class="fxc-hint">${chk(f)} Se cambi kcal o macro la voce torna “da verificare”; la correzione si propaga a combo e storico.</div>
@@ -7538,7 +7657,7 @@ ${open && n ? rows + `<div style="display:flex;gap:8px;margin-top:8px"><button t
       let h = l.combos.map(c => {
         const v = comboVals(c), ok = cOk(c), o = openC[c.id];
         const names = c.items.map(it => { const f = it.f && food(it.f); return esc(f ? f.n.split(' (')[0] : (it.n || '?')); }).join(' · ');
-        const head = `<div class="fxc-cr"><i class="fx-dot" style="background:${ok ? 'var(--ok)' : 'var(--warn)'}"></i><input class="fx-in l" value="${esc(c.n)}" onchange="FOOD.g.cn('${c.id}',this.value)"><span class="fx-big" style="font-size:var(--fs-xl)">${fmt(v.k)} <small style="font-size:var(--fs-xs)">kcal</small></span><span class="pp" style="font-size:var(--fs-xs);color:var(--ink3);white-space:nowrap">P ${fmt(v.p, 0)}</span><button type="button" class="fx-x" onclick="FOOD.g.oc('${c.id}')" aria-label="Dettagli">${o ? '▴' : '▾'}</button></div>`;
+        const head = `<div class="fxc-cr"><i class="fx-dot" style="background:${ok ? 'var(--ok)' : 'var(--warn)'}"></i><input class="fx-in l" value="${esc(c.n)}" onchange="FOOD.g.cn('${c.id}',this.value)"><span class="fx-big" style="font-size:var(--fs-xl)">${fmt(v.k)} <small style="font-size:var(--fs-xs)">kcal</small></span><span class="pp" style="font-size:var(--fs-xs);color:var(--ink3);white-space:nowrap">P ${fmt(v.p, 0)}</span>${starB('c', c.id, !!c.fav)}<button type="button" class="fx-x" onclick="FOOD.g.oc('${c.id}')" aria-label="Dettagli">${o ? '▴' : '▾'}</button></div>`;
         const line = `<div class="fxc-cr"><span class="fx-pill ${ok ? 'ok' : 'est'}" title="${ok ? 'tutti verificati' : (c.items.length ? 'contiene stime / da verificare' : 'vuota')}">${slotName(c.slot)}</span><span class="fxc-cs">${names || 'vuota'}</span><button type="button" class="fx-ghost fx-pri" style="min-height:26px;padding:0 10px"${c.items.length ? '' : ' disabled'} onclick="FOOD.g.comboToday('${c.id}','${c.slot}')">+ oggi</button></div>`;
         const mid = `<div class="fxc-cm">${c.items.slice(0, 5).map(it => { const f = it.f && food(it.f); return `<div><span>${esc(f ? f.n.split(' (')[0] : (it.n || '?'))}</span><small>${fmt(it.q, 1)} ${f ? (f.u === 'pz' ? 'pz' : (f.ul || 'g')) : ''}</small></div>`; }).join('') || '<div><span>vuota</span></div>'}${c.items.length > 5 ? `<div><small>+${c.items.length - 5} altri</small></div>` : ''}<div class="mac"><span>P ${fmt(v.p, 1)} g</span><span>C ${fmt(v.c, 1)} g</span><span>G ${fmt(v.g, 1)} g</span></div></div>`;
         if (!o) return `<section class="an-card fxc-cb">${head}${mid}${line}</section>`;
@@ -7684,8 +7803,8 @@ ${open && n ? rows + `<div style="display:flex;gap:8px;margin-top:8px"><button t
     START, on, cardHTML, subnav, todayCard, gestView, mealActions, asGstDB, pastoNote, G, g: G,
     sub(k) { if (arguments.length) { sub = k; msg = ''; reGest(); } return sub; }, subGet: () => sub,
     open, openGT, close, tab: setTab, pick: pickSlot, setGT, q(v) { sh.q = v; const l = document.getElementById('food-list'); if (l) l.innerHTML = listFoods(); },
-    addCombo, addFood, addManual, importPhoto, togOff, periodStats, dailyRows, energy, rm: removeEntry, cslot: confirmSlot, dplan: dropPlan, confirmAll, clearPlan, applyGT, togSkip,
-    _t: { totals, day, vals, lib, comboVals, SL, sync, dirty: () => dirty, reset() { L = null; dirty = {}; } }
+    sug: addSug, fav: toggleFav, addCombo, addFood, addManual, importPhoto, togOff, periodStats, dailyRows, energy, rm: removeEntry, cslot: confirmSlot, dplan: dropPlan, confirmAll, clearPlan, applyGT, togSkip,
+    _t: { totals, day, vals, lib, comboVals, SL, sync, sugList, curSlot, sugHist, SLOT_WIN, dirty: () => dirty, reset() { L = null; dirty = {}; } }
   };
 })();
 
