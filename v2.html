@@ -729,7 +729,7 @@
 .an-cy-n{display:flex;justify-content:space-between;gap:8px;font-size:var(--fs-xs);color:var(--ink3)}
 .an-cy-ph{height:58px}
 .an-cy-open{background:linear-gradient(90deg,var(--c-ph4) 0,var(--c-ph4) 85%,transparent 100%)}
-.an-cy-eval{background:var(--ink3);opacity:.7}.an-cy-eval-l{color:var(--ink3);transform:translateX(-100%)!important}
+.an-cy-end{background:var(--ink3);opacity:.5;width:1px}.an-cy-eval{background:var(--ink3);opacity:.7}.an-cy-eval-l{color:var(--ink3);transform:translateX(-100%)!important}
 .an-cy-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
 .an-cy-tile{display:flex;flex-direction:column;gap:2px;background:var(--surf2);border-radius:var(--r-md);padding:8px 10px}
 .an-cy-l{font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase}
@@ -2990,10 +2990,15 @@ function hrvHead(days){
 function buildCycle(root){
   var host=$(root,".an-phases"); if(!host) return;
   host.innerHTML="";
-  var tot=CYCLE.days, tr=document.createElement("div"); tr.className="an-ptrack";
+  /* 02/11/2026: la linea e' quella del PERCORSO: Ciclo 1 (112 g) + Post Ciclo 1 aperto (almeno 9 settimane di riferimento, cresce se serve) */
+  var cyc=CYCLE.days, pw=Math.max(63,(Math.floor(Math.max(0,TODAY()-cyc)/7)+2)*7), tot=cyc+pw, tr=document.createElement("div"); tr.className="an-ptrack";
   PHASES.forEach(function(p){ var s=document.createElement("div"); s.className="an-pseg";
     s.style.width=(p.weeks*7/tot*100)+"%"; s.style.background=p.color; tr.appendChild(s); });
+  var po=document.createElement("div"); po.className="an-pseg an-cy-open"; po.style.width=(pw/tot*100)+"%"; tr.appendChild(po);
   host.appendChild(tr);
+  var ce=document.createElement("div"); ce.className="an-pmark an-cy-end"; ce.style.left=(cyc/tot*100)+"%"; host.appendChild(ce);
+  var gv=document.createElement("div"); gv.className="an-pmark an-cy-eval"; gv.style.left=((cyc+56)/tot*100)+"%"; host.appendChild(gv);
+  var gvl=document.createElement("div"); gvl.className="an-pmark-l an-cy-eval-l"; gvl.style.left=((cyc+56)/tot*100)+"%"; gvl.textContent="gen \u00b7 valuti Ciclo 2"; host.appendChild(gvl);
   EVENTS.forEach(function(e){
     if (e.kind==="band"){
       var a=dayOfCycle(mkDate(e.from)),b=dayOfCycle(mkDate(e.to));
@@ -3007,14 +3012,15 @@ function buildCycle(root){
       var ml=document.createElement("div"); ml.className="an-pmark-l"; ml.style.left=(x/tot*100)+"%"; ml.textContent=e.label; host.appendChild(ml);
     }
   });
-  if (TODAY()<=tot-1){ var n=document.createElement("div"); n.className="an-pnow"; n.style.left=(TODAY()/tot*100)+"%"; host.appendChild(n); }
+  { var n=document.createElement("div"); n.className="an-pnow"; n.style.left=(Math.min(TODAY(),tot-1)/tot*100)+"%"; host.appendChild(n); }
   var lg=$(root,".an-phase-legend");
   if (lg){ lg.innerHTML=""; PHASES.forEach(function(p){
     var i=document.createElement("span"); i.className="an-legend-item";
     i.innerHTML='<span class="an-sw" style="height:10px;width:10px;border-radius:var(--r-xs);background:'+p.color+'"></span>'+p.label;
-    lg.appendChild(i); }); }
+    lg.appendChild(i); });
+    var ip=document.createElement("span"); ip.className="an-legend-item"; ip.innerHTML='<span class="an-sw an-cy-open" style="height:10px;width:10px;border-radius:var(--r-xs)"></span>Post Ciclo 1 \u00b7 aperto'; lg.appendChild(ip); }
   /* 02/11/2026: dal 9/11 il Ciclo 1 e' concluso ma il percorso no: niente "g116 / 112", si conta la settimana di Post Ciclo 1 (aperta, senza denominatore) */
-  setB(root,"cycle.day", TODAY()<tot ? "g"+cycleDayNo(TODAY())+" / "+CYCLE.days : "Ciclo 1 concluso \u00b7 Post Ciclo 1 \u00b7 settimana "+(Math.floor((TODAY()-tot)/7)+1));
+  setB(root,"cycle.day", TODAY()<cyc ? "g"+cycleDayNo(TODAY())+" / "+CYCLE.days : "Ciclo 1 concluso \u00b7 Post Ciclo 1 \u00b7 settimana "+(Math.floor((TODAY()-cyc)/7)+1));
   setB(root,"cycle.week","W"+(Math.floor(TODAY()/7)+1));
   setB(root,"cycle.date",fmtDM(dateOfDay(TODAY())));
   cyExtras(root);
@@ -3039,21 +3045,12 @@ function cyExtras(root){
   var old=card.querySelector(".an-cy-x"); if(old) old.remove();
   var oc=card.querySelector(".an-cy-c1"); if(oc) oc.remove();
   var ph0=card.querySelector(".an-phases:not(.an-cy-ph)");
-  if (ph0){ var c1=document.createElement("div"); c1.className="an-cy-t an-cy-c1"; c1.textContent="Ciclo 1 \u00b7 peptidi \u00b7 20/07 \u2192 08/11"+(TODAY()>=CYCLE.days?" \u00b7 concluso":""); ph0.parentNode.insertBefore(c1,ph0); }
+  if (ph0){ var c1=document.createElement("div"); c1.className="an-cy-t an-cy-c1"; c1.textContent="Ciclo 1 \u00b7 peptidi \u00b7 20/07 \u2192 08/11"+(TODAY()>=CYCLE.days?" \u00b7 concluso":"")+" \u00b7 poi Post Ciclo 1 senza composti, aperto"; ph0.parentNode.insertBefore(c1,ph0); }
   var tot=CYCLE.days, d=TODAY(), post=d>=tot, x=document.createElement("div"); x.className="an-cy-x";
   var h="";
   if (post){
-    var pi=d-tot, N=Math.floor(pi/7)+1, Wk=Math.max(8,N), span=Wk*7, pc=function(v){ return (v/span*100)+"%"; };
-    h+='<div class="an-cy-t">Post Ciclo 1 \u00b7 senza composti \u00b7 aperto</div><div class="an-phases an-cy-ph"><div class="an-ptrack"><div class="an-pseg an-cy-open" style="width:100%"></div></div>';
-    EVENTS.forEach(function(e){
-      if (e.kind!=="band") return;
-      var a=dayOfCycle(mkDate(e.from))-tot, b=dayOfCycle(mkDate(e.to))-tot;
-      if (b<0||a>span-1) return;
-      h+='<div class="an-pband" style="left:'+pc(Math.max(0,a))+';width:'+Math.max(.6,(Math.min(span-1,b)-Math.max(0,a))/span*100)+'%"></div><div class="an-pband-l" style="left:'+pc((Math.max(0,a)+Math.min(span-1,b))/2)+'">'+e.label+'</div>';
-    });
-    h+='<div class="an-pmark an-cy-eval" style="left:'+pc(56)+'"></div><div class="an-pmark-l an-cy-eval-l" style="left:'+pc(56)+'">gen \u00b7 valuti Ciclo 2</div>';
-    h+='<div class="an-pnow" style="left:'+pc(pi)+'"></div></div>';
-    h+='<div class="an-cy-n"><span>P1 \u00b7 9/11</span><span>settimana '+N+(N>8?'':' di 8 di riferimento')+'</span></div>';
+    var pi=d-tot, N=Math.floor(pi/7)+1;
+    h+='<div class="an-cy-n"><span>Post Ciclo 1 \u00b7 dal 9/11 \u00b7 senza composti</span><span>settimana '+N+(N>8?'':' di 8 di riferimento')+'</span></div>';
   } else {
     h+='<div class="an-cy-n">Dal 9/11 \u00b7 Post Ciclo 1: finestra senza composti, aperta.</div>';
   }
