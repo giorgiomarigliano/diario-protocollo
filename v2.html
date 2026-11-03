@@ -1137,6 +1137,12 @@
 .food-sg{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px}
 .food-sg>div{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;background:var(--surf2);border-radius:8px;padding:0 8px;height:26px;cursor:pointer;color:var(--ink)}
 .food-sg i{width:8px;height:8px;border-radius:50%;flex:0 0 auto}.food-sg b{margin-left:auto;font-variant-numeric:tabular-nums}
+.fm-c{display:inline-block;width:12px;font-style:normal;font-size:10px;color:var(--ink3);transition:transform .15s}
+.fm-p{display:flex;flex-direction:column;gap:8px;margin:0 0 8px 6px;padding:2px 0 2px 10px;border-left:2px solid var(--line)}.fm-p[hidden]{display:none}
+.fm-n{font-size:12px;display:flex;flex-wrap:wrap;align-items:center;gap:2px 0}.fm-n b{font-weight:600;margin-right:2px}
+.fm-d{font-size:11px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.fm-t{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:600;border-top:1px dashed var(--line2);padding-top:6px}
+@media (prefers-reduced-motion:reduce){.fm-c{transition:none}}
 .food-src{font-size:10px;font-weight:700;border-radius:4px;padding:1px 5px;margin-left:5px;white-space:nowrap}
 .food-src.s-w{background:var(--ok);color:var(--on-ok)}.food-src.s-l{background:var(--accent);color:var(--on-accent)}.food-src.s-e{background:var(--ok);color:var(--on-ok)}.food-src.s-s{background:var(--warn);color:var(--on-warn)}
 #food-ov{position:fixed;inset:0;background:rgba(10,10,12,.5);z-index:300;display:none;align-items:flex-end;justify-content:center}
@@ -7556,6 +7562,22 @@ const FOOD = (function () {
     return `<div style="display:flex;justify-content:space-between;align-items:flex-end"><div>${kc}</div><span style="font-size:11px;font-weight:700;color:var(--accent-ink)">${pr}</span></div>${bar('Proteine', t.p, T.p, 'var(--accent)')}`;
   }
   function nowStrip() { const cs = curSlot(); return cs ? sugBlock(cs, 3, 'Ora · ' + (isDesktop ? (SL.find(x => x[0] === cs) || [])[2] || slotName(cs) : slotName(cs)), isDesktop) : ''; }
+  /* dettaglio pasto (03/11/2026): tocca la riga del pasto nella card di Oggi (mobile) per vedere tutti gli alimenti; lo stato aperto/chiuso vive solo in memoria (chiave data+slot), nessuna scrittura sui dati */
+  const openM = {};
+  function mealPanel(o, id, Lv, P, op) {
+    const it = Lv.length ? Lv : P; let k = 0, p = 0, c = 0, g = 0;
+    const rows = it.map(e => {
+      const v = vals(e); k += v.k; p += v.p; c += v.c; g += v.g;
+      return `<div class="fm-e"><div class="fm-n"><b${e.plan ? ' style="font-style:italic;color:var(--accent-ink)"' : ''}>${esc(e.n)}</b>${e.plan ? '<span class="food-src s-l">previsto</span>' : (SRCL[e.src] ? srcTag(e.src) : '')}${unvE(e) ? '<span class="food-src s-s">da verificare</span>' : ''}</div><div class="fm-d">${esc(e.q)} · ${r0(v.k)} kcal · P ${fmt(v.p, 1)} · C ${fmt(v.c, 1)} · G ${fmt(v.g, 1)}${e.r ? ' · stima ' + e.r[0] + '–' + e.r[1] + ' kcal' : ''}</div></div>`;
+    }).join('');
+    const tot = it.length > 1 ? `<div class="fm-t"><span>Totale pasto</span><b>${r0(k)} kcal · P ${fmt(p, 1)} · C ${fmt(c, 1)} · G ${fmt(g, 1)}</b></div>` : '';
+    return `<div class="fm-p" id="fmx_${id}"${op ? '' : ' hidden'}>${rows}${tot}</div>`;
+  }
+  function mx(id) {
+    const k = selDate + id, on = !openM[k]; openM[k] = on;
+    const p = document.getElementById('fmx_' + id), c = document.getElementById('fmc_' + id), h = document.getElementById('fmh_' + id);
+    if (p) p.hidden = !on; if (c) c.style.transform = on ? 'rotate(90deg)' : ''; if (h) h.setAttribute('aria-expanded', String(on));
+  }
   function cardHTML() {
     const o = day(selDate), t = totals(selDate), T = lib().targets;
     const noT = (!T.kcal && !T.p) ? `<div style="font-size:10px;color:var(--ink3);font-weight:500">Obiettivi non impostati (Gestione › Alimenti › Obiettivi).</div>` : '';
@@ -7564,7 +7586,7 @@ const FOOD = (function () {
 <div class="food-sg">${SL.map(([id, n, s]) => { const Lv = live(o, id), P = plan(o, id), of = !!offOf(o)[id], sk = !!skipOf(o)[id] && !Lv.length && !P.length; return `<div${of ? ' class="off"' : sk ? ' class="sk"' : ''} onclick="FOOD.open('${id}')"><i style="${dotStyle(o, id)}"></i>${s}${Lv.length ? `<b>${fmt(slotK(o, id))}</b>` : P.length ? `<b style="color:var(--accent-ink);font-style:italic">${fmt(planK(o, id))}</b>` : of ? '<b style="color:var(--off)" title="Fuori piano, nessuna voce: incompleto">inc.</b>' : sk ? '<b style="color:var(--ink3)" title="Saltato volontariamente: 0 kcal dichiarate">salt.</b>' : '<b>—</b>'}</div>`; }).join('')}<div style="background:var(--accent);color:#fff;justify-content:center" onclick="FOOD.open('')">+ Aggiungi</div></div>${splitLine(t)}${offLine(t)}${skipLine(t)}${balLine(t)}${noT}</section>`;
     }
     return `<section class="food-card" style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2)">Alimentazione <span class="food-sync" style="font-size:10px;font-weight:600"></span></span><span class="an-chip" style="min-height:32px;font-size:11px" onclick="FOOD.openGT()">▦ Giornata tipo</span></div>${head(t)}${splitLine(t)}${offLine(t)}${skipLine(t)}${balLine(t)}${noT}${planLine(o, true)}${nowStrip()}
-<div style="border-top:1px solid var(--line)">${SL.map(([id, n]) => { const Lv = live(o, id), P = plan(o, id), it = Lv.length ? Lv : P; const only = !Lv.length && P.length, of = !!offOf(o)[id], sk = !!skipOf(o)[id] && !it.length; return `<div${of ? ' class="off"' : sk ? ' class="sk"' : ''} style="display:grid;grid-template-columns:1fr auto 44px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line2);min-height:44px"><div style="min-width:0"><div style="font-size:12px;font-weight:600">${n}${of ? '<span class="food-src s-o">fuori piano</span>' : ''}${sk ? '<span class="food-src s-k">saltato</span>' : ''}${only ? '<span class="food-src s-l">previsto</span>' : ''}${Lv.some(e => e.src === 's') ? '<span class="food-src s-s">≈ stima</span>' : ''}</div><div style="font-size:11px;color:${it.length ? 'var(--ink2)' : 'var(--ink3)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${only ? 'font-style:italic' : ''}">${it.length ? it.map(e => esc(e.n)).join(' · ') : of ? 'incompleto: manca la stima' : sk ? 'saltato volontariamente' : 'non registrato'}</div></div><b style="font-size:12px;${only ? 'color:var(--accent-ink);font-style:italic' : ''}">${Lv.length ? fmt(slotK(o, id)) + ' kcal' : P.length ? fmt(planK(o, id)) + ' kcal' : sk ? '<span style="color:var(--ink3);font-weight:600">0 kcal</span>' : ''}</b>${only ? `<button style="${pl};background:var(--accent-ink)" onclick="FOOD.cslot('${id}')" aria-label="Conferma">✓</button>` : `<button style="${pl}" onclick="FOOD.open('${id}')" aria-label="Aggiungi">+</button>`}</div>`; }).join('')}</div></section>`;
+<div style="border-top:1px solid var(--line)">${SL.map(([id, n]) => { const Lv = live(o, id), P = plan(o, id), it = Lv.length ? Lv : P; const only = !Lv.length && P.length, of = !!offOf(o)[id], sk = !!skipOf(o)[id] && !it.length, ex = it.length > 0, op = ex && !!openM[selDate + id]; return `<div style="border-bottom:1px solid var(--line2)"><div${of ? ' class="off"' : sk ? ' class="sk"' : ''} style="display:grid;grid-template-columns:1fr auto 44px;gap:8px;align-items:center;padding:6px 0;min-height:44px${ex ? ';cursor:pointer' : ''}"${ex ? ` id="fmh_${id}" role="button" tabindex="0" aria-expanded="${op}" onclick="FOOD.mx('${id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();FOOD.mx('${id}')}"` : ''}><div style="min-width:0"><div style="font-size:12px;font-weight:600">${ex ? `<i class="fm-c" id="fmc_${id}"${op ? ' style="transform:rotate(90deg)"' : ''}>▸</i>` : ''}${n}${of ? '<span class="food-src s-o">fuori piano</span>' : ''}${sk ? '<span class="food-src s-k">saltato</span>' : ''}${only ? '<span class="food-src s-l">previsto</span>' : ''}${Lv.some(e => e.src === 's') ? '<span class="food-src s-s">≈ stima</span>' : ''}</div><div style="font-size:11px;color:${it.length ? 'var(--ink2)' : 'var(--ink3)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;${only ? 'font-style:italic' : ''}">${it.length ? it.map(e => esc(e.n)).join(' · ') : of ? 'incompleto: manca la stima' : sk ? 'saltato volontariamente' : 'non registrato'}</div></div><b style="font-size:12px;${only ? 'color:var(--accent-ink);font-style:italic' : ''}">${Lv.length ? fmt(slotK(o, id)) + ' kcal' : P.length ? fmt(planK(o, id)) + ' kcal' : sk ? '<span style="color:var(--ink3);font-weight:600">0 kcal</span>' : ''}</b>${only ? `<button style="${pl};background:var(--accent-ink)" onclick="event.stopPropagation();FOOD.cslot('${id}')" aria-label="Conferma">✓</button>` : `<button style="${pl}" onclick="event.stopPropagation();FOOD.open('${id}')" aria-label="Aggiungi">+</button>`}</div>${ex ? mealPanel(o, id, Lv, P, op) : ''}</div>`; }).join('')}</div></section>`;
   }
   function redraw() { render(); if (sh) drawSheet(); badge(); }
 
@@ -7921,7 +7943,7 @@ ${open && n ? rows + `<div style="display:flex;gap:8px;margin-top:8px"><button t
     START, on, cardHTML, subnav, todayCard, gestView, mealActions, asGstDB, pastoNote, G, g: G,
     sub(k) { if (arguments.length) { sub = k; msg = ''; reGest(); } return sub; }, subGet: () => sub,
     open, openGT, close, tab: setTab, pick: pickSlot, setGT, q(v) { sh.q = v; const l = document.getElementById('food-list'); if (l) l.innerHTML = listFoods(); },
-    sug: addSug, fav: toggleFav, addCombo, addFood, addManual, importPhoto, togOff, periodStats, dailyRows, energy, rm: removeEntry, cslot: confirmSlot, dplan: dropPlan, confirmAll, clearPlan, applyGT, togSkip,
+    sug: addSug, fav: toggleFav, addCombo, addFood, addManual, importPhoto, togOff, periodStats, dailyRows, energy, rm: removeEntry, cslot: confirmSlot, dplan: dropPlan, confirmAll, clearPlan, applyGT, togSkip, mx,
     _t: { totals, day, vals, lib, comboVals, SL, sync, sugList, curSlot, sugHist, SLOT_WIN, dirty: () => dirty, reset() { L = null; dirty = {}; } }
   };
 })();
