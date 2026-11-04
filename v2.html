@@ -8675,6 +8675,99 @@ function passiRowsLast(n, endOffset) { // n giorni chiusi, l'ultimo = ieri meno 
 }
 window.PASSI_API = { target: PASSI_TARGET, fmt: passiFmt, stats: passiStats, last: passiRowsLast, active: function () { return dayIdxFromISO(today) >= PASSI_FROM_WEEK * 7; } };
 
+/* 04/11 (Giorgio, proposta B): card nera di apertura dal Post-ciclo (indice >= 112). Niente % ciclo, T2 e fasi: verdetto della SETTIMANA su allenamenti, proteine e
+   integratori (iniezioni escluse), tre numeri (allenamenti, giorni proteine a target, media passi), sette tacche lun-dom e riga Recupero (HRV, FC a riposo, sonno:
+   ultimi 7 giorni contro i 14 precedenti, nessun obiettivo, nessun colore di giudizio). Solo giorni CHIUSI per proteine/passi/integratori; "previsti finora" = giorni di
+   allenamento previsti gia' chiusi (stessa regola di dayAdherence). Dati mancanti = "—", mai stimati. */
+function postHeroData(dayIdx) {
+  const it = LANG === 'it', t = dayIdxFromISO(today), w = Math.floor(dayIdx / 7), mon = w * 7;
+  const iso = k => { const d = new Date(CFG.CYCLE_START + 'T00:00:00'); d.setDate(d.getDate() + k); return isoLocal(d); };
+  const dow = it ? ['LUN', 'MAR', 'MER', 'GIO', 'VEN', 'SAB', 'DOM'] : ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  const ini = it ? ['L', 'M', 'M', 'G', 'V', 'S', 'D'] : ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const ticks = []; let planned = 0, plannedDone = 0, sessions = 0, excused = 0, suppD = 0, suppT = 0, closedDays = 0;
+  for (let j = 0; j < 7; j++) {
+    const k = mon + j, r = dayAdherence(iso(k)) || {}, dd = new Date(iso(k) + 'T00:00:00').getDate();
+    const b = woBase(k); if (b.bkk && b.type === 'Riposo') excused++;
+    let st;
+    if (k > t) st = 'future';
+    else if (r.woSess) st = 'done';
+    else if (k === t) st = 'today';
+    else if (r.woPlanned) st = 'missed';
+    else st = 'rest';
+    if (r.woSess && k <= t) sessions++;
+    if (k < t) { closedDays++; suppD += r.suppDone || 0; suppT += r.suppTot || 0; if (r.woPlanned) { planned++; if (r.woDone) plannedDone++; } }
+    ticks.push({ k, st, sel: k === dayIdx, lab: dow[j] + ' ' + dd, ini: ini[j] });
+  }
+  const target = Math.max(0, WO_WEEK_TARGET - excused);
+  const pr = typeof protCalc === 'function' ? protCalc(mon, mon + 7) : null;
+  const rows = []; for (let k = mon; k <= Math.min(mon + 6, t - 1); k++) rows.push({ p: passiNum(getDay(iso(k))) });
+  const ps = passiStats(rows);
+  const supp = suppT ? Math.round(suppD / suppT * 100) : null;
+  const woPct = planned ? Math.round(plannedDone / planned * 100) : null;
+  const protPct = pr && pr.val ? Math.round(pr.ok / pr.val * 100) : null;
+  /* verdetto: stesse soglie dell'app (>=90% verde, <75% allenamenti = punto debole); una voce senza dati non conta */
+  let tone, key;
+  if (!closedDays) { tone = 'neutral'; key = 'noData'; }
+  else if (woPct != null && woPct < 75) { tone = 'bad'; key = 'trainingGaps'; }
+  else if ((woPct == null || woPct >= 90) && (protPct == null || protPct >= 90) && (supp == null || supp >= 85)) { tone = 'good'; key = 'onTrack'; }
+  else { tone = 'warn'; key = 'someGaps'; }
+  const parts = [];
+  if (planned) parts.push(it ? `Allenamenti ${plannedDone} su ${planned} previsti finora` : `Workouts ${plannedDone} of ${planned} planned so far`);
+  if (pr && pr.val) parts.push(it ? `proteine a target ${pr.ok} giorni su ${pr.val}` : `protein on target ${pr.ok} of ${pr.val} days`);
+  if (supp != null) parts.push(it ? `integratori al ${supp}%` : `supplements ${supp}%`);
+  const head = { onTrack: it ? 'Post Ciclo 1 in linea.' : 'Post Ciclo 1 on track.', someGaps: it ? 'Qualche buco, niente di strutturale.' : 'A few gaps, nothing structural.', trainingGaps: it ? 'Gli allenamenti sono il punto debole.' : 'Workouts are the weak spot.', noData: it ? 'Settimana appena iniziata.' : 'Week just started.' }[key];
+  let sub = parts.length ? parts.join(', ') + '.' : (it ? 'Nessun giorno chiuso in questa settimana: i numeri compaiono da domani.' : 'No closed day yet this week: numbers appear from tomorrow.');
+  sub = sub.charAt(0).toUpperCase() + sub.slice(1);
+  if (key === 'onTrack') sub += it ? ' Nessuno dei tre scende sotto la soglia.' : ' None of the three falls below the threshold.';
+  /* Recupero: ultimi 7 giorni (fino al giorno mostrato, al massimo oggi) contro i 14 precedenti */
+  const e = Math.min(dayIdx, t), num = x => { const v = parseFloat(String(x == null ? '' : x).replace(',', '.')); return isNaN(v) ? null : v; };
+  const hrvOf = r => { const lo = num(r.hrv_min), hi = num(r.hrv_max); if (lo != null && hi != null) return (lo + hi) / 2; return num(r.hrv); };
+  const rhrOf = r => num(r.rhr);
+  const slpOf = r => { const h = parseSonnoHours(r.ore_sonno); return isNaN(h) || h <= 0 ? null : h * 60; };
+  const win = (fn, a, b) => { const o = []; for (let k = Math.max(0, a); k <= b; k++) { const v = fn(woRecAt(k)); if (v != null) o.push(v); } return o; };
+  const avg = a => a.reduce((s, x) => s + x, 0) / a.length;
+  const cmp = fn => { const c = win(fn, e - 6, e), p = win(fn, e - 20, e - 7); if (c.length < 3) return null; return { cur: avg(c), delta: p.length >= 3 ? avg(c) - avg(p) : null }; };
+  return { w, mon, ticks, target, sessions, planned, plannedDone, pr, ps, supp, tone, key, head, sub, rec: { hrv: cmp(hrvOf), rhr: cmp(rhrOf), slp: cmp(slpOf) }, text: [head, sub] };
+}
+let heroRecOpen = false;
+function heroRecToggle() {
+  heroRecOpen = !heroRecOpen;
+  const p = document.getElementById('hero-rec'), b = document.getElementById('hero-rec-b'), c = document.getElementById('hero-rec-c');
+  if (p) p.hidden = !heroRecOpen; if (b) b.setAttribute('aria-expanded', String(heroRecOpen)); if (c) c.style.transform = heroRecOpen ? 'rotate(90deg)' : '';
+}
+function postHeroHtml(P, big) {
+  const it = LANG === 'it', sz = 'var(--fs-5xl)', sm = 'var(--fs-2xl)';
+  const stat = (n, lab, al, size) => `<div style="display:flex;flex-direction:column;gap:3px;min-width:0;align-items:${al || 'flex-start'};text-align:${al === 'flex-end' ? 'right' : 'left'};"><span style="font-size:${size || sz};line-height:1.05;font-weight:700;letter-spacing:-.02em;color:var(--white);font-variant-numeric:tabular-nums;">${n}</span><span style="font-size:var(--fs-xs);font-weight:600;line-height:1.25;color:rgba(255,255,255,.66);">${lab}</span></div>`;
+  const pr = P.pr;
+  const s1 = stat(P.sessions + '/' + P.target, it ? 'allenamenti · settimana' : 'workouts · week');
+  const s2 = stat(pr && pr.val ? pr.ok + '/' + pr.val : '—', it ? 'giorni con proteine a target (' + (pr ? Math.round(pr.tgtP) : '') + ' g)' : 'days protein on target (' + (pr ? Math.round(pr.tgtP) : '') + ' g)');
+  const s3 = stat(P.ps.mean == null ? '—' : passiFmt(P.ps.mean), (it ? 'passi · media vs ' : 'steps · mean vs ') + passiFmt(PASSI_TARGET), big ? 'flex-end' : '');
+  const col = { done: 'var(--white)', missed: 'var(--bad)', rest: 'rgba(255,255,255,.4)', today: 'transparent', future: 'rgba(255,255,255,.14)' };
+  const stName = { done: it ? 'allenamento fatto' : 'workout done', missed: it ? 'previsto, non fatto' : 'planned, not done', rest: it ? 'riposo' : 'rest', today: it ? 'oggi' : 'today', future: it ? 'da venire' : 'upcoming' };
+  const aria = P.ticks.map(x => x.lab + ': ' + stName[x.st]).join('; ');
+  const bar = `<div role="img" aria-label="${esc(aria)}" style="display:flex;flex-direction:column;gap:7px;">
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:${big ? 8 : 5}px;">${P.ticks.map(x => `<div style="height:${big ? 14 : 11}px;border-radius:var(--r-pill);background:${col[x.st]};${x.st === 'today' ? 'box-shadow:inset 0 0 0 2px var(--white);' : ''}"></div>`).join('')}</div>
+      <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:${big ? 8 : 5}px;font-size:var(--fs-2xs);font-weight:600;letter-spacing:.04em;color:rgba(255,255,255,.66);font-variant-numeric:tabular-nums;white-space:nowrap;">${P.ticks.map(x => `<span style="${x.sel ? 'color:var(--white);' : ''}">${big ? x.lab : x.ini}</span>`).join('')}</div>
+    </div>`;
+  const mn = '−', sgn = d => (d < 0 ? mn : '+') + Math.abs(d);
+  const dl = (d, f, unit) => d == null ? '' : (f(d) === 0 ? '\u00b10' : (sgn(f(d)) + (unit || '')));
+  const hm = m => { const x = Math.round(m); return Math.floor(x / 60) + 'h ' + String(x % 60).padStart(2, '0'); };
+  const R = P.rec;
+  const rc = (val, unit, lab, sub, al) => `<div style="display:flex;flex-direction:column;gap:1px;min-width:0;align-items:${al || 'flex-start'};text-align:${al === 'flex-end' ? 'right' : 'left'};"><span style="display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;${al === 'flex-end' ? 'justify-content:flex-end;' : ''}font-size:${sm};line-height:1.1;font-weight:700;color:var(--white);font-variant-numeric:tabular-nums;">${val}${unit ? `<span style="font-size:var(--fs-sm);font-weight:600;color:rgba(255,255,255,.68);">${unit}</span>` : ''}${sub ? `<span style="font-size:var(--fs-xs);font-weight:600;color:rgba(255,255,255,.86);">${sub}</span>` : ''}</span><span style="font-size:var(--fs-xs);font-weight:600;color:rgba(255,255,255,.68);">${lab}</span></div>`;
+  const recBody = `<div style="border-top:1px solid rgba(255,255,255,.14);padding-top:10px;display:flex;flex-direction:column;gap:7px;">
+      <div style="font-size:var(--fs-2xs);font-weight:600;letter-spacing:.06em;color:rgba(255,255,255,.66);${big ? 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' : ''}">${it ? 'RECUPERO · 7 GIORNI, VARIAZIONE VS 14 PRECEDENTI' : 'RECOVERY · 7 DAYS, CHANGE VS PREVIOUS 14'}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:${big ? 24 : 12}px;">
+        ${rc(R.hrv ? Math.round(R.hrv.cur) : '—', R.hrv ? 'ms' : '', it ? 'HRV · punto medio' : 'HRV · midpoint', R.hrv ? dl(R.hrv.delta, d => Math.round(d)) : '', '')}
+        ${rc(R.rhr ? Math.round(R.rhr.cur) : '—', R.rhr ? 'bpm' : '', it ? 'FC a riposo' : 'resting HR', R.rhr ? dl(R.rhr.delta, d => Math.round(d)) : '', '')}
+        ${rc(R.slp ? hm(R.slp.cur) : '—', '', it ? 'sonno medio' : 'mean sleep', R.slp ? dl(R.slp.delta, d => Math.round(d), ' min') : '', big ? 'flex-end' : '')}
+      </div></div>`;
+  /* mobile: Recupero chiuso di default (la card resta vicina all'altezza del ciclo); tocco per aprire, stato in memoria */
+  const rec = big ? recBody : `<div><button type="button" id="hero-rec-b" aria-expanded="${heroRecOpen}" aria-controls="hero-rec" onclick="heroRecToggle()" style="display:flex;justify-content:space-between;align-items:center;width:100%;min-height:44px;padding:0;background:none;border:0;border-top:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.66);font:inherit;font-size:var(--fs-2xs);font-weight:600;letter-spacing:.06em;cursor:pointer;text-align:left;"><span>${it ? 'RECUPERO · 7 GIORNI' : 'RECOVERY · 7 DAYS'}</span><i id="hero-rec-c" style="font-style:normal;display:inline-block;transition:transform .15s;${heroRecOpen ? 'transform:rotate(90deg);' : ''}">\u25b8</i></button><div id="hero-rec"${heroRecOpen ? '' : ' hidden'}>${recBody}</div></div>`;
+  return `<div style="display:flex;flex-direction:column;gap:12px;">
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:${big ? 24 : 10}px;">${s1}${s2}${s3}</div>
+    ${bar}${rec}</div>`;
+}
+
 function weekAggregate(weekIdx) {
   const startIdx = weekIdx * 7;
   const todayIdx = dayIdxFromISO(today);
@@ -9792,14 +9885,17 @@ function renderOggiFull() {
       ${stat(Math.max(0, cycLeft), endLab, big ? 'var(--fs-6xl)' : 'var(--fs-5xl)', big ? 'flex-end' : '')}
     </div>`;
   };
-  const v = verdict(a);
+  /* 04/11: dal Post-ciclo la card nera non parla piu' di ciclo (vedi postHeroData) */
+  const POST = dayIdx >= CFG.CYCLE_DAYS;
+  const pH = POST ? postHeroData(dayIdx) : null;
+  const v = POST ? { tone: pH.tone, key: pH.key } : verdict(a);
   const VD = {
     good:    { dot: 'var(--ok)',   label: LANG === 'it' ? 'in linea' : 'on track' },
     warn:    { dot: 'var(--warn)', label: LANG === 'it' ? "da tenere d'occhio" : 'worth watching' },
     bad:     { dot: 'var(--bad)',  label: LANG === 'it' ? 'sotto target' : 'below target' },
     neutral: { dot: 'var(--idle)', label: LANG === 'it' ? 'senza dati' : 'no data' }
   }[v.tone];
-  const VD_TEXT = {
+  const VD_TEXT = POST ? pH.text : {
     onTrack:      [L.vdText.onTrack[0], L.vdText.onTrack[1](a)],
     someGaps:     [L.vdText.someGaps[0], L.vdText.someGaps[1](a)],
     trainingGaps: [L.vdText.trainingGaps[0], L.vdText.trainingGaps[1](a)],
@@ -9851,8 +9947,8 @@ function renderOggiFull() {
         <span style="font-size:var(--fs-2xl);line-height:1.16;letter-spacing:-.02em;font-weight:600;color:var(--white);text-wrap:pretty;">${esc(VD_TEXT[0])}</span>
         <span style="font-size:var(--fs-md);line-height:1.45;color:rgba(255,255,255,.86);text-wrap:pretty;">${esc(VD_TEXT[1])}</span>
         <div style="height:1px;background:rgba(255,255,255,.14);margin:4px 0 2px;"></div>
-        ${cycStatsHtml(false)}
-        <div style="height:7px;border-radius:var(--r-pill);background:rgba(255,255,255,.16);overflow:hidden;margin-top:2px;"><div style="width:${cycDone}%;height:100%;background:var(--white);border-radius:var(--r-pill);"></div></div>
+        ${POST ? postHeroHtml(pH, false) : `${cycStatsHtml(false)}
+        <div style="height:7px;border-radius:var(--r-pill);background:rgba(255,255,255,.16);overflow:hidden;margin-top:2px;"><div style="width:${cycDone}%;height:100%;background:var(--white);border-radius:var(--r-pill);"></div></div>`}
       </div>`;
 
     const pesoM = `
@@ -10243,7 +10339,7 @@ function renderOggiFull() {
       </div>
       <span style="font-size:var(--fs-md);line-height:1.5;color:rgba(255,255,255,.86);text-wrap:pretty;">${esc(VD_TEXT[1])}</span>
       <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:10px;justify-content:flex-end;">
-        ${cycStatsHtml(true)}
+        ${POST ? postHeroHtml(pH, true) : `${cycStatsHtml(true)}
         <div style="display:flex;gap:4px;">
           ${PHASES.map(([label, from, to]) => {
             const on = dayIdx >= from && dayIdx <= to;
@@ -10260,7 +10356,7 @@ function renderOggiFull() {
           <div style="display:flex;justify-content:space-between;font-size:var(--fs-2xs);font-weight:600;color:rgba(255,255,255,.7);font-variant-numeric:tabular-nums;">
             <span>${L.phaseDates[0]}</span><span>${L.phaseDates[1]}</span>
           </div>
-        </div>
+        </div>`}
       </div>
     </section>`;
 
