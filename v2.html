@@ -1222,7 +1222,14 @@
 .oggi-grid.food-on>:nth-child(1) [style*="font-size:var(--fs-4xl)"]{font-size:20px!important}
 .oggi-grid.food-on>:nth-child(2){grid-column:5/10!important;grid-row:1!important;padding:12px 16px!important;gap:3px!important}
 .oggi-grid.food-on>:nth-child(2) svg:not(.peso-ch){height:58px!important}   /* 19/10: il grafico annotato del peso (.peso-ch) tiene la sua altezza */
-.oggi-grid.food-on .food-card .food-bal{margin-top:auto}   /* 19/10: con più altezza disponibile il saldo di fine giornata scende in fondo alla card (le 3 card in alto restano bilanciate) */
+.oggi-grid.food-on .food-card .food-bal{margin-top:auto}
+/* 06/11 (Giorgio): la riga in alto (card nera, Peso, Alimentazione) doveva restare alta come nel Post-ciclo anche nei giorni con dati. Le note sotto le voci (stima, fuori piano, saltato) diventano UNA riga ciascuna con puntini (testo intero al passaggio del mouse) e saldo e celle si stringono: la card Alimentazione con dati non supera quella vuota. */
+@media (min-width:1024px){
+.oggi-grid.food-on .food-card{gap:5px!important}
+.oggi-grid.food-on .food-card .food-sg>div{height:22px}
+.oggi-grid.food-on .food-card .food-note{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.25}
+.oggi-grid.food-on .food-card .food-bal{min-height:26px;padding:3px 10px}
+}   /* 19/10: con più altezza disponibile il saldo di fine giornata scende in fondo alla card (le 3 card in alto restano bilanciate) */
 .oggi-grid.food-on>:nth-child(3){grid-column:1/7!important;grid-row:2!important;gap:4px!important}
 .oggi-grid.food-on>:nth-child(3)>.ctx-note{display:none!important}
 .oggi-grid.food-on>:nth-child(3) [style*="height:34px"]{height:28px!important}
@@ -4499,6 +4506,18 @@ function photoDayIndex(p){
   var parts=String(p.date).split("-");
   return dayOfCycle(new Date(+parts[0], +parts[1]-1, +parts[2]));
 }
+/* 06/11 (Giorgio): dal Post-ciclo (9/11, indice >= PROT_FROM_IDX) in TUTTE le viste foto l'indicatore Iniezioni lascia il posto alle PROTEINE del giorno dello scatto (stessa regola di protDayInfo: valutabile
+   solo se giorno chiuso e kcal >= 50% del target; in obiettivo se proteine, minimo del range per le stime, >= 90% del target). Gli scatti fino all'8/11 restano con le iniezioni. Nessun colore rosso: non c'e' una soglia "grave" dichiarata. */
+function photoLeadCell(m){
+  if (m && m.prot){
+    var di=m.prot, lab=LANG==="en"?"Protein":"Proteine", shortLab=LANG==="en"?"Prot":"Prot";
+    if (!di.closed) return { label:lab, short:shortLab, txt:di.p+"/"+di.tgtP+" g", col:"var(--ink)" };
+    if (!di.valid) return { label:lab, short:shortLab, txt:null, col:"var(--ink3)" };
+    return { label:lab, short:shortLab, txt:di.p+"/"+di.tgtP+" g", col:di.ok?"var(--ok)":"var(--warn-ink)" };
+  }
+  if (m && m.injTot!=null) return { label:T().injections, short:"Inj", txt:m.injDone+"/"+m.injTot, col:(m.injDone===m.injTot?"var(--ok)":(m.injDone>0?"var(--warn-ink)":"var(--bad)")) };
+  return null;
+}
 function photoMetrics(p){
   var m=PHOTO_METRICS[p.date]||{};
   var i=photoDayIndex(p), d=D()[i]||{};
@@ -4511,7 +4530,7 @@ function photoMetrics(p){
        photoWorkoutWeekLabel per gli allenamenti, come la Lista): le due tessere erano sempre vuote per
        OGNI scatto. Ora stessa fonte e stesso formato della Lista: iniezioni fatte/previste (colorate),
        allenamenti della settimana fatti/previsti ("WO sett."). */
-    [T().injections, m.injTot!=null ? '<span style="color:'+(m.injDone===m.injTot?"var(--ok)":(m.injDone>0?"var(--warn-ink)":"var(--bad)"))+'">'+m.injDone+"/"+m.injTot+'</span>' : null],
+    (function(){ var c=photoLeadCell(m); return [c?c.label:T().injections, (c && c.txt!=null) ? '<span style="color:'+c.col+'">'+c.txt+'</span>' : null]; })(),
     ["% "+T().supplements, m.supp!=null?m.supp+"%":null],
     ["WO sett.", photoWorkoutWeekLabel(p)]
   ];
@@ -4612,7 +4631,7 @@ function photoOverlayTiles(sh, p, i){
 function photoMetaLinesHTML(p, i, m){
   var sub=[];
   if (m.hrvHead!=null) sub.push("HRV "+m.hrvHead);
-  if (m.injTot!=null){ var injColG=m.injDone===m.injTot?"var(--ok)":(m.injDone>0?"var(--warn-ink)":"var(--bad)"); sub.push('<span style="color:'+injColG+'">Inj '+m.injDone+"/"+m.injTot+'</span>'); }
+  var leadC=photoLeadCell(m); if (leadC && leadC.txt!=null) sub.push('<span style="color:'+leadC.col+'">'+leadC.short+' '+leadC.txt+'</span>');
   if (m.supp!=null) sub.push('<span style="color:'+pctColor(m.supp)+'">Integr '+m.supp+'%</span>');
   /* FIX 08/10: m.workout non esiste piu' (vedi photoMetrics): Griglia e Per settimana non mostravano mai il "WO". */
   var woWk = photoWorkoutWeekLabel(p);
@@ -4721,13 +4740,14 @@ function buildFoto(root){
       var pesoVal = m.peso!=null?m.peso:(p.peso_manual?num(p.peso_manual):null);
       var deltaTxt = pesoVal!=null ? itSigned(pesoVal - T0_PESO, 1) : null;
       /* PORTING 26/09: iniezioni come frazione fatte/previste (2/7), come in V1 -- non percentuale. */
-      var injTxt = m.injTot!=null ? (m.injDone+"/"+m.injTot) : null;
-      var injCol = m.injTot!=null ? (m.injDone===m.injTot?"var(--ok)":(m.injDone>0?"var(--warn-ink)":"var(--bad)")) : "var(--ink3)";
+      var leadL = photoLeadCell(m);
+      var injTxt = leadL ? leadL.txt : null;
+      var injCol = leadL ? leadL.col : "var(--ink3)";
       var pills=[
         statPill(T().peso, pesoVal!=null?(it(pesoVal,1)+(deltaTxt?' <span style="font-size:var(--fs-2xs);font-weight:600;color:var(--warn-ink)">'+deltaTxt+'</span>':"")):null),
         statPill(T().hrv, m.hrvHead),
         statPill(T().sonno, m.sonno!=null?fmtHours(m.sonno):null),
-        statPill(T().injections, injTxt, injCol),
+        statPill(leadL ? leadL.label : T().injections, injTxt, injCol),
         statPill(T().supplements, m.supp!=null?m.supp+"%":null, pctColor(m.supp)),
         statPill("WO sett.", photoWorkoutWeekLabel(p))
       ].join("");
@@ -5398,7 +5418,9 @@ function AN_buildPhotoMetrics(){
        "il giorno in corso non conta come saltato" resta valido per il VERDETTO di Aderenza (i<t
        li' non cambia), ma qui e' solo un dato descrittivo, non un giudizio: niente da nascondere. */
     var x = AN_dayAdh(i);
-    if (x.injTot) { m.injDone = x.injDone; m.injTot = x.injTot; }
+    /* 06/11: dal Post-ciclo le iniezioni escono dalle viste foto e entrano le proteine (photoLeadCell) */
+    if (i >= PROT_FROM_IDX && typeof protDayInfo === "function") { var dI = new Date(CFG.CYCLE_START + "T00:00:00"); dI.setDate(dI.getDate() + i); var pdi = protDayInfo(isoLocal(dI)); if (pdi) m.prot = pdi; }
+    else if (x.injTot) { m.injDone = x.injDone; m.injTot = x.injTot; }
     if (x.suppTot) m.supp = Math.round(x.suppDone / x.suppTot * 100);
     /* PORTING 26/09: badge allenamento sempre presente, anche nei giorni di riposo (V1 mostra
        "Riposo" invece di nascondere il badge); woDone riflette il progresso reale di oggi, non
@@ -7528,15 +7550,22 @@ const FOOD = (function () {
   }
   function splitLine(t) {
     if (!t.n) return '<div style="font-size:10px;color:var(--ink3);font-weight:500">Nessuna voce registrata oggi.</div>';
-    return `<div style="font-size:10px;color:var(--ink2);font-weight:500">Non stimato ${fmt(t.k - t.est)} kcal · stimato ${fmt(t.est)} kcal${t.est ? ` → totale tra ${fmt(t.k + t.lo)} e ${fmt(t.k + t.hi)} kcal` : ''}${t.unv ? ` · ${fmt(t.unv)} kcal su valori da verificare` : ''}</div>`;
+    /* 06/11: frasi brevi (la card non deve allungarsi); il testo completo resta nel title */
+    const tx = `${t.est ? `Stim. ${fmt(t.est)} → tot. ${fmt(t.k + t.lo)}–${fmt(t.k + t.hi)} kcal` : 'Nessuna stima'}${t.unv ? ` · ${fmt(t.unv)} da verif.` : ''}`;
+    const full = `Non stimato ${fmt(t.k - t.est)} kcal · stimato ${fmt(t.est)} kcal${t.est ? ` → totale tra ${fmt(t.k + t.lo)} e ${fmt(t.k + t.hi)} kcal` : ''}${t.unv ? ` · ${fmt(t.unv)} kcal su valori da verificare` : ''}`;
+    return `<div class="food-note" title="${esc(full)}" style="font-size:10px;color:var(--ink2);font-weight:500">${tx}</div>`;
   }
   function offLine(t) {
     if (!t.off) return '';
-    return `<div style="font-size:10px;font-weight:600;color:var(--off)">● ${t.off} ${t.off === 1 ? 'pasto fuori piano' : 'pasti fuori piano'} oggi (${esc(t.offN.join(', '))})${t.inc ? ` · ${t.inc} incomplet${t.inc === 1 ? 'o' : 'i'}: totale per difetto` : ''}</div>`;
+    const tx = `● Fuori piano: ${esc(t.offN.join(', '))}${t.inc ? ' · tot. per difetto' : ''}`;
+    const full = `${t.off} ${t.off === 1 ? 'pasto fuori piano' : 'pasti fuori piano'} oggi (${t.offN.join(', ')})${t.inc ? ` · ${t.inc} incomplet${t.inc === 1 ? 'o' : 'i'}: totale per difetto` : ''}`;
+    return `<div class="food-note" title="${esc(full).replace(/"/g, '&quot;')}" style="font-size:10px;font-weight:600;color:var(--off)">${tx}</div>`;
   }
   function skipLine(t) {
     if (!t.skip) return '';
-    return `<div style="font-size:10px;font-weight:600;color:var(--ink3)">○ ${t.skip} ${t.skip === 1 ? 'pasto saltato' : 'pasti saltati'} volontariamente (${esc(t.skipN.join(', '))}): 0 kcal dichiarate</div>`;
+    const tx = `○ ${t.skip === 1 ? 'Saltato' : 'Saltati'}: ${esc(t.skipN.join(', '))} · 0 kcal`;
+    const full = `${t.skip} ${t.skip === 1 ? 'pasto saltato' : 'pasti saltati'} volontariamente (${t.skipN.join(', ')}): 0 kcal dichiarate`;
+    return `<div class="food-note" title="${esc(full).replace(/"/g, '&quot;')}" style="font-size:10px;font-weight:600;color:var(--ink3)">${tx}</div>`;
   }
   function planLine(o, mob) {
     const n = planN(o); if (!n) return '';
@@ -7558,8 +7587,8 @@ const FOOD = (function () {
   function head(t) {
     const T = lib().targets;
     const kc = `<span style="font-size:${isDesktop ? 28 : 30}px;font-weight:700;letter-spacing:-.02em">${fmt(t.k)}</span><span style="font-size:12px;color:var(--ink2);font-weight:500"> ${T.kcal ? '/ ' + T.kcal + ' ' : ''}kcal</span>`;
-    const pr = T.p ? (t.p >= T.p ? 'proteine: obiettivo raggiunto' : 'mancano ' + fmt(T.p - t.p) + ' g P') : 'P ' + fmt(t.p) + ' g';
-    return `<div style="display:flex;justify-content:space-between;align-items:flex-end"><div>${kc}</div><span style="font-size:11px;font-weight:700;color:var(--accent-ink)">${pr}</span></div>${bar('Proteine', t.p, T.p, 'var(--accent)')}`;
+    const pr = T.p ? (t.p >= T.p ? 'P: obiettivo ✓' : 'mancano ' + fmt(T.p - t.p) + ' g P') : 'P ' + fmt(t.p) + ' g';
+    return `<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px"><div style="white-space:nowrap">${kc}</div><span style="font-size:11px;font-weight:700;color:var(--accent-ink);white-space:nowrap;flex:0 0 auto">${pr}</span></div>${bar('Proteine', t.p, T.p, 'var(--accent)')}`;
   }
   function nowStrip() { const cs = curSlot(); return cs ? sugBlock(cs, 3, 'Ora · ' + (isDesktop ? (SL.find(x => x[0] === cs) || [])[2] || slotName(cs) : slotName(cs)), isDesktop) : ''; }
   /* dettaglio pasto (03/11/2026): tocca la riga del pasto nella card di Oggi (mobile) per vedere tutti gli alimenti; lo stato aperto/chiuso vive solo in memoria (chiave data+slot), nessuna scrittura sui dati */
@@ -12393,7 +12422,7 @@ Object.assign(EN_DICT, {
  "Alimentazione": "Nutrition",
  "▦ Giornata tipo": "▦ Typical day",
  "+ Aggiungi": "+ Add",
- "proteine: obiettivo raggiunto": "protein: target reached",
+ "P: obiettivo ✓": "P: target ✓",
  "Obiettivi non impostati (Gestione › Alimenti › Obiettivi).": "Targets not set (Logistics › Food › Targets).",
  "Nessuna voce registrata oggi.": "No entries logged today.",
  "Saltato volontariamente: 0 kcal dichiarate": "Skipped on purpose: 0 kcal declared",
