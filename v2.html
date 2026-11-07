@@ -6315,7 +6315,9 @@ function CLIN_fotoGroupHead(t) {
    Con 2 o piu' foto calibrate si sceglie una finestra comune di altezza 1200-(max-min), larghezza 3/4 e centrata, spostata in verticale in modo che le
    spalle cadano alla stessa altezza e alla stessa scala (ritaglio ~10% per foto, diverso in alto/basso). Foto non calibrate: "cover" come prima.
    Per aggiungere il T2: misurare la spalla (px) della nuova foto e inserirla qui. Il pulsante "vedi originali" e lo zoom mostrano la foto intera. */
-var CLIN_PHOTO_SHOULDER = { '2026-07-13_1786015601510.jpg': 522, '2026-09-12_1789187830044.jpg': 402 };
+/* 07/11: T2 aggiunto con valore STIMATO (~490, incertezza ~ +-15 px) leggendo la miniatura T2 sullo screenshot dell'app (le foto originali sono nel bucket privato:
+   non accessibili senza login). Da rimisurare sull'originale 900x1200 se si vuole la precisione dei primi due (+-6 px). */
+var CLIN_PHOTO_SHOULDER = { '2026-07-13_1786015601510.jpg': 522, '2026-09-12_1789187830044.jpg': 402, '2026-11-07_1794030885859.jpg': 490 };
 var CLIN_PHOTO_W = 900, CLIN_PHOTO_H = 1200;
 function CLIN_alignWindows(files) {
   var cal = files.filter(function (f, i) { return f && CLIN_PHOTO_SHOULDER[f] != null && files.indexOf(f) === i; });
