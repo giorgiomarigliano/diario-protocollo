@@ -3160,6 +3160,24 @@ function buildHeroNarrative(root){
   else if (a.inj < 90 || a.supp < 90 || a.wo < 90) key = "someGaps";
   else key = "onTrack";
   var tpl = L[key];
+  /* 09/11: dal Post-ciclo (giorno >= 112) il verdetto parla al passato: il ciclo e' concluso, le iniezioni sono chiuse all'8/11
+     (percentuale congelata), integratori e allenamenti restano cumulati dal 18/07. Stesse soglie, nessun dato nuovo. */
+  if (key !== "noData" && dayIdxFromISO(today) >= 112) {
+    var itl = AN_LANG === "it", ap = (a.supp === 8 || a.supp === 11 || a.supp === 18 || (a.supp >= 80 && a.supp <= 89)) ? "all\u2019" : "al ";
+    var miss = Math.max(0, a.woTot - a.woDone - (a.woExtra || 0));
+    var PT = itl ? {
+      onTrack: ["Ciclo 1 concluso in linea.", "Iniezioni al " + a.inj + "% (chiuse all\u20198/11), allenamenti al " + a.wo + "%, integratori " + ap + a.supp + "%. Nessuno dei tre \u00e8 sceso sotto la soglia."],
+      someGaps: ["Ciclo 1 concluso: qualche buco, niente di strutturale.", "Iniezioni al " + a.inj + "% (chiuse all\u20198/11), integratori " + ap + a.supp + "%. Gli allenamenti restano al " + a.wo + "%."],
+      trainingGaps: ["Ciclo 1 concluso: gli allenamenti sono stati il punto debole.", "Sedute al " + a.wo + "%: " + miss + " sedute mancanti su " + a.woTot + " (5 a settimana" + (a.woExtra ? ", " + a.woExtra + " extra" : "") + "). Iniezioni al " + a.inj + "% (chiuse all\u20198/11)."]
+    } : {
+      onTrack: ["Cycle 1 completed on track.", "Injections at " + a.inj + "% (closed 8 Nov), workouts at " + a.wo + "%, supplements at " + a.supp + "%. None of the three fell below threshold."],
+      someGaps: ["Cycle 1 completed: a few gaps, nothing structural.", "Injections at " + a.inj + "% (closed 8 Nov), supplements at " + a.supp + "%. Workouts remain at " + a.wo + "%."],
+      trainingGaps: ["Cycle 1 completed: workouts were the weak point.", "Sessions at " + a.wo + "%: " + miss + " missing out of " + a.woTot + " (5 per week" + (a.woExtra ? ", " + a.woExtra + " extra" : "") + "). Injections at " + a.inj + "% (closed 8 Nov)."]
+    };
+    setB(root, "hero.headline", PT[key][0]);
+    setB(root, "hero.sub", PT[key][1]);
+    return;
+  }
   setB(root, "hero.headline", tpl[0]);
   setB(root, "hero.sub", tpl[1](a));
 }
@@ -11408,6 +11426,8 @@ function gstCopertura(c, vd, todayStr){
 function gstE(){ return Math.max(0, Math.min(protoFineIdx(), dayIdxFromISO(today))); }
 /* 26/10: la fine del protocollo e' l'ultimo giorno prima della pausa (default 10/11), non piu' fissa a 111; in pausa = 0 e nessun allarme */
 function gstGiorniAllaFine(){ return protoFineIdx() - gstE(); }
+/* 09/11: in pausa non c'e' piu' una 'fine ciclo' futura (giorni = 0): le diciture sulla copertura del ciclo diventano "protocollo in pausa" */
+function gstInPausa(){ return protoPhase(dayIdxFromISO(today)) === 'pausa'; }
 
 // ── 1.7 materiali di consumo ──
 // PORTING 25/09: nuovo campo (decisione #1), seminato ai valori oggi fissi in V1.
@@ -11614,7 +11634,13 @@ function GST_renderAll(){
 function GST_stockHero(){
   var vd = GST_V1.stock_v2_vials || {};
   var left = gstGiorniAllaFine();
-  if (!Object.keys(vd).length) return CLIN_hero("Scorte \u00b7 peptidi", "Dati dei vial in caricamento\u2026", [{ v:String(left), l:"Giorni a fine ciclo" }]);
+  if (!Object.keys(vd).length) return CLIN_hero("Scorte \u00b7 peptidi", "Dati dei vial in caricamento\u2026", gstInPausa() ? [] : [{ v:String(left), l:"Giorni a fine ciclo" }]);
+  if (gstInPausa()) {
+    var cvs = GST_COMPOUNDS.map(function(c){ return gstCopertura(c,vd,today); });
+    var nInt = cvs.reduce(function(s,x){ return s + x.intatti; }, 0), nCon = cvs.filter(function(x){ return x.giorni > 0 || x.intatti > 0; }).length;
+    return CLIN_hero("Scorte \u00b7 protocollo in pausa", "Protocollo sospeso: nessun consumo previsto, le scorte restano ferme e non c\u2019\u00e8 allarme di copertura.", [
+      { v:String(nInt), l:"Vial intatti" }, { v:String(nCon), l:"Composti con scorta" } ]);
+  }
   var rows = GST_COMPOUNDS.map(function(c){ return { name:c.name, g:gstCopertura(c,vd,today).giorni }; });
   var red = rows.filter(function(r){ return r.g < left; }).sort(function(a,b){ return a.g-b.g; });
   var amber = rows.filter(function(r){ return r.g >= left && r.g < left+14; });
@@ -11770,13 +11796,13 @@ function GST_renderStock(){
 
   // ── 1.6 Scorte per composto (span 1/7) ──
   var giorniAllaFine = gstGiorniAllaFine();
-  html += '<section class="an-card" style="grid-column:1 / 7"><div class="an-head"><span class="an-title">Scorte per composto</span><span class="an-sub">fine ciclo '+gstFmtDate(gstAddDays(today, giorniAllaFine))+'</span></div>' +
+  html += '<section class="an-card" style="grid-column:1 / 7"><div class="an-head"><span class="an-title">Scorte per composto</span><span class="an-sub">'+(gstInPausa() ? 'protocollo in pausa' : 'fine ciclo '+gstFmtDate(gstAddDays(today, giorniAllaFine)))+'</span></div>' +
     '<div class="an-thead gst-scortehead" style="grid-template-columns:1.5fr 42px 42px 42px 1.3fr"><span>Composto</span><span class="an-num">intatti</span><span class="an-num">finiti</span><span class="an-num">persi</span><span style="text-align:right">copre fino al</span></div><div class="an-tbl">';
   GST_COMPOUNDS.forEach(function(c){
     var cov = gstCopertura(c, vd, todayStr);
     var copreTxt = cov.giorni > 400 ? "oltre 1 anno" : gstFmtDate(gstAddDays(todayStr, cov.giorni));
     var diff = cov.giorni - giorniAllaFine;
-    var margineTxt = diff>=0 ? ("+"+diff+" gg oltre fine ciclo") : ("mancano "+(-diff)+" gg");
+    var margineTxt = gstInPausa() ? (cov.giorni+" gg di scorta") : (diff>=0 ? ("+"+diff+" gg oltre fine ciclo") : ("mancano "+(-diff)+" gg"));
     var margineCol = diff>=0 ? "var(--ok)" : "var(--bad)";
     html += '<div class="an-trow gst-scorterow">' +
       '<span data-a="name" style="display:flex;align-items:center;gap:8px;min-width:0"><span style="width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span><span style="font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(c.name)+'</span></span>' +
@@ -11789,7 +11815,7 @@ function GST_renderStock(){
   var cons = gstConsumabili(), fab = gstFabbisognoConsumabili(vd);
   function consBlock(id, label, spec, scorta, necessarie, testoUso){
     var margine = scorta - necessarie;
-    var esitoTxt = margine>=0 ? ("+"+margine+" \u00b7 copre fino al "+gstFmtDate(gstAddDays(todayStr, giorniAllaFine))) : ("ne mancano "+(-margine));
+    var esitoTxt = margine>=0 ? ("+"+margine+(gstInPausa() ? "" : " \u00b7 copre fino al "+gstFmtDate(gstAddDays(todayStr, giorniAllaFine)))) : ("ne mancano "+(-margine));
     return '<div style="display:flex;flex-direction:column;gap:5px;padding:8px 0;border-top:1px solid var(--line2)">' +
       '<div style="display:flex;align-items:center;gap:10px">' +
         '<div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column"><span style="font-size:var(--fs-md);font-weight:600;color:var(--ink)">'+label+'</span><span style="font-size:var(--fs-2xs);color:var(--ink3)">'+spec+'</span></div>' +
@@ -11916,7 +11942,7 @@ function GST_renderStockMobile(host){
 
   // ── Scorte per composto ──
   var giorniAllaFine = gstGiorniAllaFine();
-  html += '<div style="'+CARD+'padding:14px 16px;display:flex;flex-direction:column;gap:4px"><span style="'+LBL+'padding-bottom:4px">Scorte \u00b7 fine ciclo '+gstFmtDate(gstAddDays(today, giorniAllaFine))+'</span>';
+  html += '<div style="'+CARD+'padding:14px 16px;display:flex;flex-direction:column;gap:4px"><span style="'+LBL+'padding-bottom:4px">Scorte \u00b7 '+(gstInPausa() ? 'protocollo in pausa' : 'fine ciclo '+gstFmtDate(gstAddDays(today, giorniAllaFine)))+'</span>';
   GST_COMPOUNDS.forEach(function(c){
     var cov = gstCopertura(c, vd, todayStr);
     var copreTxt = cov.giorni > 400 ? "oltre 1 anno" : gstFmtDate(gstAddDays(todayStr, cov.giorni));
@@ -11924,7 +11950,7 @@ function GST_renderStockMobile(host){
     html += '<div style="display:flex;align-items:center;gap:10px;min-height:48px;border-top:1px solid var(--line2)">' +
       '<span style="width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span>' +
       '<div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column"><span style="font-size:var(--fs-md);font-weight:600;color:var(--ink)">'+esc(c.name)+'</span><span style="font-size:var(--fs-xs);color:var(--ink3)">'+cov.intatti+' intatti \u00b7 '+cov.finiti+' finiti \u00b7 '+cov.persi+' persi</span></div>' +
-      '<div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font-size:var(--fs-md);font-weight:700;color:'+(diff>=0?"var(--ok)":"var(--bad)")+'">'+copreTxt+'</span><span style="font-size:var(--fs-2xs);color:var(--ink3)">'+(diff>=0?("+"+diff+" gg oltre fine ciclo"):("mancano "+(-diff)+" gg"))+'</span></div></div>';
+      '<div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font-size:var(--fs-md);font-weight:700;color:'+(diff>=0?"var(--ok)":"var(--bad)")+'">'+copreTxt+'</span><span style="font-size:var(--fs-2xs);color:var(--ink3)">'+(gstInPausa()?(cov.giorni+" gg di scorta"):(diff>=0?("+"+diff+" gg oltre fine ciclo"):("mancano "+(-diff)+" gg")))+'</span></div></div>';
   });
   html += '</div>';
 
@@ -11932,7 +11958,7 @@ function GST_renderStockMobile(host){
   var cons = gstConsumabili(), fab = gstFabbisognoConsumabili(vd);
   function consBlock(id, label, spec, scorta, necessarie, testoUso){
     var margine = scorta - necessarie;
-    var esitoTxt = margine>=0 ? ("+"+margine+" \u00b7 copre fino al "+gstFmtDate(gstAddDays(todayStr, giorniAllaFine))) : ("ne mancano "+(-margine));
+    var esitoTxt = margine>=0 ? ("+"+margine+(gstInPausa() ? "" : " \u00b7 copre fino al "+gstFmtDate(gstAddDays(todayStr, giorniAllaFine)))) : ("ne mancano "+(-margine));
     return '<div style="display:flex;flex-direction:column;gap:5px;padding:9px 0;border-top:1px solid var(--line2)">' +
       '<div style="display:flex;align-items:center;gap:10px"><div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column"><span style="font-size:var(--fs-md);font-weight:600;color:var(--ink)">'+label+'</span><span style="font-size:var(--fs-xs);color:var(--ink3)">'+spec+'</span></div>' +
       '<input type="number" min="0" step="1" data-gst-cons="'+id+'" value="'+scorta+'" style="width:78px;height:44px;box-sizing:border-box;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surf2);text-align:center;font-size:var(--fs-lg);font-weight:700;color:var(--ink)"></div>' +
@@ -12387,7 +12413,7 @@ const EN_DICT = {
 'Dati insufficienti per valutare il legame.':'Not enough data to assess the link.',
 'Servono almeno 5 valori negli ultimi 14 giorni per un confronto.':'At least 5 values in the last 14 days are needed for a comparison.','Nessuno scatto nel ciclo.':'No shots in the cycle.','Nessuno scatto registrato.':'No shots recorded.',
 'Scatti':'Shots','Ultimi 30 gg':'Last 30 d','Ultimo':'Latest','Al T2 (7 nov)':'To T2 (7 Nov)','Giorni previsti':'Planned days','Streak attuale':'Current streak','Media/sett.':'Avg/wk','Esercizi in salita':'Exercises trending up',
-'Dati dei vial in caricamento…':'Vial data loading…','Giorni a fine ciclo':'Days to cycle end','Non coprono il ciclo':'Do not last the cycle','Margine sotto 14 gg':'Margin under 14 d','Coperti':'Covered','peptidi':'peptides','giorno tipo':'typical day',
+'Dati dei vial in caricamento…':'Vial data loading…','Giorni a fine ciclo':'Days to cycle end','Vial intatti':'Intact vials','Composti con scorta':'Compounds in stock','protocollo in pausa':'protocol paused','Scorte · protocollo in pausa':'Stock · protocol paused','Protocollo sospeso: nessun consumo previsto, le scorte restano ferme e non c’è allarme di copertura.':'Protocol suspended: no consumption planned, stock stays put and there is no coverage alert.','Non coprono il ciclo':'Do not last the cycle','Margine sotto 14 gg':'Margin under 14 d','Coperti':'Covered','peptidi':'peptides','giorno tipo':'typical day',
 'Iniezioni':'Injections','Pasti':'Meals',
 'Esporta dati':'Export data','Scarica Excel':'Download Excel','Genera PDF':'Generate PDF','Excel: biometria, protocollo, allenamento (dal 18/07) e alimentazione (dal 12/10) a oggi. PDF: report a 5 pagine in italiano (vitali, forza, protocollo, laboratorio).':'Excel: biometrics, protocol, workouts (from 18 Jul) and nutrition (from 12 Oct) to today. PDF: 5-page report in Italian (vitals, strength, protocol, lab).',
 /* --- navigazione / comuni --- */
@@ -12602,6 +12628,7 @@ const EN_RULES = [
  [/^(\d+) giorni$/i, (m, n) => n + enPlural(n, ' day', ' days')],
  [/^(\d+) giorni alla fine$/i, (m, n) => n + ' days left'],
  [/^mancano (\d+) gg$/i, (m, n) => n + ' d to go'],
+ [/^(\d+) gg di scorta$/i, (m, n) => n + ' d of stock'],
  [/^\+(\d+) gg oltre fine ciclo$/i, (m, n) => '+' + n + ' d past cycle end'],
  [/^Servono (\d+) (?:fino all[’']|fino al )(.+)$/i, (m, n, d) => n + ' needed until ' + d],
  [/^Servono (\d+) in (\d+) allenamenti$/i, (m, a, b) => a + ' needed for ' + b + ' workouts'],
@@ -13299,7 +13326,7 @@ async function exportPDF(statusEl, btn) {
     y = sectionTitle(y, 'Scorte a oggi');
     const vd = (typeof GST_V1 !== 'undefined' && GST_V1.stock_v2_vials) || null, left = gstGiorniAllaFine();
     if (vd && Object.keys(vd).length) {
-      const rows = GST_COMPOUNDS.map(c => { const g = gstCopertura(c, vd, today).giorni; return [c.name, g + ' giorni', g < left ? 'non arriva a fine ciclo (mancano ' + left + ' giorni)' : (g < left + 14 ? 'copre il ciclo, margine sotto 14 giorni' : 'copre il ciclo')]; });
+      const rows = GST_COMPOUNDS.map(c => { const g = gstCopertura(c, vd, today).giorni; return [c.name, g + ' giorni', gstInPausa() ? 'protocollo in pausa' : g < left ? 'non arriva a fine ciclo (mancano ' + left + ' giorni)' : (g < left + 14 ? 'copre il ciclo, margine sotto 14 giorni' : 'copre il ciclo')]; });
       tbl2({ startY: y, head: [['Composto', 'Copertura', 'Rispetto alla fine del ciclo']], body: rows, didParseCell: d => { if (d.section === 'body' && d.column.index === 2 && String(d.cell.raw).indexOf('non arriva') === 0) { d.cell.styles.textColor = [216, 30, 5]; d.cell.styles.fontStyle = 'bold'; } } });
       y = tblY() + 8;
     } else { y = bodyText(y, 'Dati dei vial non disponibili al momento della generazione.'); }
