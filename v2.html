@@ -5712,12 +5712,12 @@ function AN_refresh(){
     return (a.date.y - b.date.y) || (a.date.m - b.date.m) || (a.date.d - b.date.d);
   });
 }
-/* record V1 (sola lettura): riepilogo muscoli, T1 ematici, DEXA T1, photo_log */
+/* record V1 (sola lettura): riepilogo muscoli, ematici T1/T2, DEXA T1/T2, photo_log */
 var AN_V1 = { status: "idle" };
 function AN_loadV1(){
   if (AN_V1.status !== "idle") return;
   AN_V1.status = "loading";
-  var q = "?user_id=eq.giorgio_protocollo_2026&select=data-%3Emuscle_volume_summary,data-%3Elab_wk8,data-%3Elab_final,data-%3Edexa_t1,data-%3Ephoto_log,data-%3Ehistory_sessions,data-%3Estock_v2_vials,data-%3Ebackup_status,data-%3Eai_evaluations";
+  var q = "?user_id=eq.giorgio_protocollo_2026&select=data-%3Emuscle_volume_summary,data-%3Elab_wk8,data-%3Elab_final,data-%3Edexa_t1,data-%3Edexa_t2,data-%3Ephoto_log,data-%3Ehistory_sessions,data-%3Estock_v2_vials,data-%3Ebackup_status,data-%3Eai_evaluations";
   fetch(CFG.PROXY_URL + q, { headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY } })
     .then(function(r){ if (!r.ok) throw new Error("v1 " + r.status); return r.json(); })
     .then(function(j){
@@ -5730,9 +5730,12 @@ function AN_loadV1(){
       LAB_T2 = {};
       var w2 = r0.lab_final || {};
       LAB_T0.forEach(function(mk){ var v = w2["lab_" + mk.id]; if (v != null && String(v).trim() !== "") LAB_T2[mk.id] = String(v).trim(); });
-      var dx = r0.dexa_t1 || {}, lean = num(dx.dexa_lean_kg), bf = num(dx.dexa_bf_pct);
-      DEXA = DEXA.filter(function(x){ return !(x.date.y === 2026 && x.date.m === 9 && x.date.d === 12); });
-      if (lean != null && bf != null) DEXA.push({ date:{y:2026,m:9,d:12}, lean_kg:lean, fat_pct:bf });
+      /* 10/11: DEXA T1 (12/09) e T2 (07/11) dal record V1; prima si leggeva solo T1 e Andamento restava fermo a 59,7 kg. */
+      [[r0.dexa_t1, 9, 12], [r0.dexa_t2, 11, 7]].forEach(function(c){
+        var dx = c[0] || {}, lean = num(dx.dexa_lean_kg), bf = num(dx.dexa_bf_pct);
+        DEXA = DEXA.filter(function(x){ return !(x.date.y === 2026 && x.date.m === c[1] && x.date.d === c[2]); });
+        if (lean != null && bf != null) DEXA.push({ date:{y:2026,m:c[1],d:c[2]}, lean_kg:lean, fat_pct:bf });
+      });
       PHOTO_LOG = (r0.photo_log || []).filter(function(p){ return p && p.date && p.filename; });
       HISTORY_SESSIONS = Array.isArray(r0.history_sessions) ? r0.history_sessions : [];
       WO_HIST_DATES = {}; HISTORY_SESSIONS.forEach(function(s){ if (s && s.date) WO_HIST_DATES[s.date] = true; });   /* 24/10: sedute V1 visibili ai conteggi 5/settimana fuori da questa closure */
@@ -5864,7 +5867,7 @@ var CTX = (function () {
     { id: 'womusc', find: byClass('c-musc'), kind: 'sub', txt: function () { return IT() ? 'cumulativo dal 9 maggio' : 'cumulative since 9 May'; } },
     { id: 'woprog', find: byClass('c-progress'), place: underHead, txt: function () { return IT() ? 'Dal 9 maggio \u00b7 serie pi\u00f9 pesante di ogni seduta \u00b7 \u0394 = ultimo \u2212 primo (kg).' : 'Since 9 May \u00b7 heaviest set of each session \u00b7 \u0394 = latest \u2212 first (kg).'; } },
     /* ---- Clinica > Corpo ---- */
-    { id: 'blmus', find: byTitle('sangue e muscolo, stessa finestra', 'blood & muscle, same window'), place: underHead, txt: function () { return IT() ? 'Variazione T0 \u2192 T1 \u00b7 forza: seduta pi\u00f9 vicina al checkpoint (\u00b17 gg).' : 'Change T0 \u2192 T1 \u00b7 strength: session closest to the checkpoint (\u00b17 d).'; } },
+    { id: 'blmus', find: byTitle('sangue e muscolo, stessa finestra', 'blood & muscle, same window'), place: underHead, txt: function () { return IT() ? 'Variazione T0 \u2192 T2 \u00b7 forza: seduta pi\u00f9 vicina al checkpoint (\u00b17 gg).' : 'Change T0 \u2192 T2 \u00b7 strength: session closest to the checkpoint (\u00b17 d).'; } },
     /* ---- Gestione > Stock ---- */
     { id: 'vialleg', find: function (app) {
         /* prima card di vial = antenato diretto della vista Stock (.an-view) che contiene la prima foglia 'Vita residua'/'Remaining life' */
@@ -6380,9 +6383,10 @@ function CLIN_renderCheckpoint(host) {
   host.innerHTML = html;
 }
 
-/* BMD T1 (MOC 12/09/2026): T-score e Z-score e nota letti da dexa_t1 (record V1), sola lettura. */
+/* BMD: T-score e Z-score letti dallo STESSO checkpoint del valore mostrato (T2 se presente, altrimenti T1), record V1, sola lettura.
+   10/11: prima leggeva sempre dexa_t1 e sotto il BMD T2 compariva il T-score del T1. */
 function CLIN_bmdNote() {
-  var dx = CLIN_EXTRA.dexa_t1 || {};
+  var dx = CLIN_dexaT('bmd', 't2') != null ? (CLIN_EXTRA.dexa_t2 || {}) : (CLIN_EXTRA.dexa_t1 || {});
   var t = parseFloat(String(dx.dexa_bmd_tscore).replace(',', '.')), z = parseFloat(String(dx.dexa_bmd_zscore).replace(',', '.'));
   if (isNaN(t) && isNaN(z)) return '';
   var txt = (isNaN(t) ? '' : 'T-score ' + t.toFixed(1).replace('.', ',')) + ((isNaN(t) || isNaN(z)) ? '' : ' \u00b7 ') + (isNaN(z) ? '' : 'Z-score ' + z.toFixed(1).replace('.', ','));
@@ -6399,8 +6403,9 @@ function CLIN_renderBody(host) {
   });
   var lean = dexa[1], fat = dexa[2], peso = dexa[0];
   var haveT1 = peso.v != null;
+  var lastDexaTag = CLIN_dexaT('peso', 't2') != null ? '7 nov' : '12 set';
   var hero = '<section class="an-card" style="grid-column:1/-1;background:var(--hero);color:var(--white);gap:8px">' +
-    '<span style="font-size:var(--fs-xs);font-weight:600;color:#ffffffb0;text-transform:uppercase">Composizione \u00b7 DEXA 9 mag \u2192 12 set</span>' +
+    '<span style="font-size:var(--fs-xs);font-weight:600;color:#ffffffb0;text-transform:uppercase">Composizione \u00b7 DEXA 9 mag \u2192 ' + lastDexaTag + '</span>' +
     (haveT1
       ? '<span style="font-size:var(--fs-3xl);font-weight:700">' + (lean.dd >= 0 ? '+' : '') + CLIN_fmtNum(lean.dd.toFixed(1)) + ' kg di massa magra, ' + (fat.dd >= 0 ? '+' : '') + CLIN_fmtNum(fat.dd.toFixed(1)) + ' kg di grasso.</span>'
       : '<span style="font-size:var(--fs-lg);font-weight:600;color:#ffffffc0">T1 non ancora inserito.</span>') +
@@ -6418,13 +6423,15 @@ function CLIN_renderBody(host) {
     }).join('') +
     '</div></section>';
   var lifts = CLIN_LIFTS_META.map(function (l) {
-    var b0 = CLIN_sentinelAt(l.id, CLIN_CK.t0), b1 = CLIN_sentinelAt(l.id, CLIN_CK.t1);
-    var leanT0 = CLIN_DEXA_META[1].t0, leanT1 = lean.v;
-    var r0 = b0 ? (b0.kg / leanT0).toFixed(2) : null, r1 = (b1 && leanT1 != null) ? (b1.kg / leanT1).toFixed(2) : null;
-    var dd = (b0 && b1) ? b1.kg - b0.kg : null;
-    return { l: l, b0: b0, b1: b1, r0: r0, r1: r1, dd: dd };
+    var b0 = CLIN_sentinelAt(l.id, CLIN_CK.t0), b1 = CLIN_sentinelAt(l.id, CLIN_CK.t1), b2 = CLIN_sentinelAt(l.id, CLIN_CK.t2);
+    /* 10/11: rapporto carico/massa magra con la massa magra DEXA DELLO STESSO checkpoint (prima T1 usava la magra del T2). */
+    var leanT0 = CLIN_DEXA_META[1].t0, leanT1 = CLIN_dexaT('lean_kg', 't1'), leanT2 = CLIN_dexaT('lean_kg', 't2');
+    var r0 = b0 ? (b0.kg / leanT0).toFixed(2) : null, r1 = (b1 && leanT1 != null) ? (b1.kg / leanT1).toFixed(2) : null, r2 = (b2 && leanT2 != null) ? (b2.kg / leanT2).toFixed(2) : null;
+    var bl = b2 || b1;   /* ultimo checkpoint con seduta */
+    var dd = (b0 && bl) ? bl.kg - b0.kg : null;
+    return { l: l, b0: b0, b1: b1, b2: b2, bl: bl, blTag: b2 ? 'T2' : 'T1', r0: r0, r1: r1, r2: r2, dd: dd };
   });
-  var sentN = lifts.filter(function (x) { return x.b0 && x.b1; }).length;
+  var sentN = lifts.filter(function (x) { return x.b0 && x.bl; }).length;
   /* SPEC: la data reale della seduta usata va SEMPRE sotto il valore, per T0 e per T1
      separatamente (prima mostravo solo quella di T0 -- corretto il 29/09). */
   function CLIN_cell(b) {
@@ -6439,10 +6446,10 @@ function CLIN_renderBody(host) {
      sproporzionate, sottotesto della data a capo su piu' righe che spingeva le celle fuori
      allineamento. Sostituita da un'unica riga a blocco, uguale su desktop e mobile. */
   forzaRows = lifts.map(function (x) {
-    var deltaTxt = x.dd != null ? (x.dd >= 0 ? '+' : '') + CLIN_fmtNum(x.dd) + ' kg' : 'non disponibile';
+    var deltaTxt = x.dd != null ? (x.dd >= 0 ? '+' : '') + CLIN_fmtNum(x.dd) + ' kg da T0' + (x.blTag === 'T1' ? ' (a T1)' : '') : 'non disponibile';
     var deltaCol = x.dd > 0 ? 'var(--ok)' : x.dd < 0 ? 'var(--bad)' : 'var(--ink3)';
-    var valTxt = (x.b0 ? CLIN_fmtNum(x.b0.kg) + ' kg' : '\u2014') + '  \u2192  ' + (x.b1 ? CLIN_fmtNum(x.b1.kg) + ' kg' : '\u2014');
-    var ratioTxt = (x.r0 || '\u2014') + (x.r1 ? ' \u2192 ' + x.r1 : '') + ' kg/kg magra';
+    var valTxt = [x.b0, x.b1, x.b2].map(function (b) { return b ? CLIN_fmtNum(b.kg) : '\u2014'; }).join(' \u2192 ') + ' kg';
+    var ratioTxt = (x.r0 || '\u2014') + ' \u2192 ' + (x.r1 || '\u2014') + ' \u2192 ' + (x.r2 || '\u2014') + ' kg/kg magra';
     if (!isDesktop) {
       /* mobile: 3 righe fisse, niente wrap -- nome | carichi, rapporto | delta, date compatte */
       var dshort = function (b) {
@@ -6459,7 +6466,7 @@ function CLIN_renderBody(host) {
           '<span style="font-size:var(--fs-xs);color:var(--ink3);font-variant-numeric:tabular-nums">' + ratioTxt + '</span>' +
           '<span style="font-size:var(--fs-xs);font-weight:700;color:' + deltaCol + ';white-space:nowrap">' + (x.dd != null ? deltaTxt : 'n/d') + '</span>' +
         '</div>' +
-        '<span style="font-size:var(--fs-2xs);color:var(--ink3)">T0 ' + dshort(x.b0) + ' \u00b7 T1 ' + dshort(x.b1) + '</span>' +
+        '<span style="font-size:var(--fs-2xs);color:var(--ink3)">T0 ' + dshort(x.b0) + ' \u00b7 T1 ' + dshort(x.b1) + ' \u00b7 T2 ' + dshort(x.b2) + '</span>' +
       '</div>';
     }
     return '<div style="display:flex;flex-direction:column;gap:4px;padding:9px 0;border-top:1px solid var(--line2)">' +
@@ -6468,7 +6475,7 @@ function CLIN_renderBody(host) {
         '<span style="font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap">' + valTxt + '</span>' +
       '</div>' +
       '<div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">' +
-        '<span style="font-size:var(--fs-2xs);color:var(--ink3)">T0: ' + esc(CLIN_when(x.b0)) + ' \u00b7 T1: ' + esc(CLIN_when(x.b1)) + '</span>' +
+        '<span style="font-size:var(--fs-2xs);color:var(--ink3)">T0: ' + esc(CLIN_when(x.b0)) + ' \u00b7 T1: ' + esc(CLIN_when(x.b1)) + ' \u00b7 T2: ' + esc(CLIN_when(x.b2)) + '</span>' +
         '<span style="font-size:var(--fs-xs);font-weight:700;color:' + deltaCol + ';white-space:nowrap">' + deltaTxt + '</span>' +
       '</div>' +
       '<span style="font-size:var(--fs-2xs);color:var(--ink3)">' + ratioTxt + '</span>' +
@@ -6479,9 +6486,9 @@ function CLIN_renderBody(host) {
     forzaRows +
     '<span class="an-sub" style="margin-top:4px">Il rapporto carico/massa magra dice se la forza cresce pi\u00f9 del muscolo.</span>' +
   '</section>';
-  var sentPct = lifts.filter(function (x) { return x.b0 && x.b1; }).reduce(function (s, x) { return s + (x.b1.kg - x.b0.kg) / x.b0.kg; }, 0) / (sentN || 1) * 100;
-  var igf0 = CLIN_parseVal(CLIN_MARKERS.igf1.t0), igf1 = CLIN_parseVal(CLIN_labT('igf1', 't1'));
-  var tlib0 = CLIN_parseVal(CLIN_MARKERS.t_lib.t0), tlib1 = CLIN_parseVal(CLIN_labT('t_lib', 't1'));
+  var sentPct = lifts.filter(function (x) { return x.b0 && x.bl; }).reduce(function (s, x) { return s + (x.bl.kg - x.b0.kg) / x.b0.kg; }, 0) / (sentN || 1) * 100;
+  var igf0 = CLIN_parseVal(CLIN_MARKERS.igf1.t0), igf1 = CLIN_parseVal(CLIN_labT('igf1', 't2')) || CLIN_parseVal(CLIN_labT('igf1', 't1'));   /* 10/11: stessa finestra T0 -> T2 della massa magra */
+  var tlib0 = CLIN_parseVal(CLIN_MARKERS.t_lib.t0), tlib1 = CLIN_parseVal(CLIN_labT('t_lib', 't2')) || CLIN_parseVal(CLIN_labT('t_lib', 't1'));
   function pctRow(label, v0, v1, bar) {
     if (v0 == null || v1 == null) return { label: label, txt: 'non disponibile', pct: null, bar: bar };
     var p = (v1 - v0) / Math.abs(v0) * 100;
@@ -6490,7 +6497,7 @@ function CLIN_renderBody(host) {
   var rows = [
     pctRow('IGF-1', igf0 && igf0.v, igf1 && igf1.v, 'var(--accent)'),
     pctRow('Massa magra', peso.d.t0 && lean.d.t0, lean.v, 'var(--ok)'),
-    { label: 'Forza sentinel (media)', txt: sentN ? ((sentPct >= 0 ? '+' : '') + CLIN_fmtNum(sentPct.toFixed(0)) + '%') : 'non disponibile', bar: 'var(--warn)', detail: sentN + ' sentinel su 5 con seduta entro \u00b1' + CLIN_WINDOW + ' giorni a entrambi i checkpoint' },
+    { label: 'Forza sentinel (media)', txt: sentN ? ((sentPct >= 0 ? '+' : '') + CLIN_fmtNum(sentPct.toFixed(0)) + '%') : 'non disponibile', bar: 'var(--warn)', detail: sentN + ' sentinel su 5 con seduta entro \u00b1' + CLIN_WINDOW + ' giorni al T0 e all\u2019ultimo checkpoint (T2 se presente)' },
     pctRow('T Libero', tlib0 && tlib0.v, tlib1 && tlib1.v, 'var(--ink3)')
   ];
   /* PORTING 30/09: la card si stirava (CSS grid stretch di default) all'altezza di "Forza
@@ -8532,6 +8539,7 @@ function weeklyTrend(values) {
 const T2_BAND = { lo: 70.5, hi: 72.0 };
 const PESO_EVENTS = [
   { iso: CAL.T1, it: 'DEXA T1', en: 'DEXA T1' },
+  { iso: CAL.T2, it: 'DEXA T2', en: 'DEXA T2' },
   { iso: '2026-10-16', it: 'Total Body', en: 'Total Body' }
 ];
 /* 19/10: 'ciclo' = tutti i giorni dall'inizio del ciclo peptidico (indice 0) fino al giorno visualizzato; i numeri passano invariati. */
@@ -12527,6 +12535,7 @@ const EN_DICT = {
 'Sangue e muscolo, stessa finestra':'Blood & muscle, same window','Forza sentinel (media)':'Sentinel strength (avg)','Foto ai checkpoint':'Photos at checkpoints','Foto (±3 gg)':'Photos (±3 d)','tocca per ingrandire':'tap to enlarge',
 'Nessuna foto entro 3 giorni':'No photo within 3 days','Dati ai checkpoint':'Checkpoint data','Foto e dati ai checkpoint':'Photos & data at checkpoints','foto più vicina alla data, entro ±3 giorni':'closest photo to the date, within ±3 days',
 'IGF-1 in µg/L. Foto: la più vicina alla data del checkpoint, entro ±3 giorni.':'IGF-1 in µg/L. Photo: closest to the checkpoint date, within ±3 days.','T1 non ancora inserito.':'T1 not entered yet.',
+'T0: nessuna seduta entro ±7 giorni':'T0: no session within ±7 days','T1: nessuna seduta entro ±7 giorni':'T1: no session within ±7 days','T2: nessuna seduta entro ±7 giorni':'T2: no session within ±7 days',   /* il rule generico "N giorni" prevaleva sulla regola dedicata */
 'un punto per prelievo, la data è sotto':'one point per sample, date below','prelievi durante il ciclo':'samples during the cycle',
 /* --- checkpoint --- */
 'T0 = basale':'T0 = baseline','T0 e T1 (punto vuoto)':'T0 and T1 (hollow dot)','T0 (punto vuoto)':'T0 (hollow dot)','dal T0':'vs T0','dal T1':'vs T1','un punto per prelievo \u00b7 tratteggio = pausa oltre 6 mesi':'one dot per blood draw \u00b7 dashed line = gap over 6 months','prelievi durante il ciclo':'draws during the cycle','T1 = attuale':'T1 = current','variazione non quantificabile (valore sotto soglia)':'change not quantifiable (value below threshold)','variazione non quantificabile (valore sopra soglia)':'change not quantifiable (value above threshold)','T1 = registrato':'T1 = recorded','T2 = attuale':'T2 = current','T2 nel range':'T2 in range','T2 fuori range':'T2 out of range','T2 sotto target clinico':'T2 below clinical target','T2 = controllo finale':'T2 = final check','T1 nel range':'T1 in range','T1 fuori range':'T1 out of range','T1 sotto target clinico':'T1 below clinical target',
@@ -12669,9 +12678,10 @@ const EN_RULES = [
  [/^T2: grasso (.+) punti da T0 \((.+) da T1\), massa magra (.+) kg da T0 \((.+) da T1\)\.$/i, (m, a, b, c, d) => 'T2: fat ' + a + ' points since T0 (' + b + ' since T1), lean mass ' + c + ' kg since T0 (' + d + ' since T1).'],
  [/^Da scattare il (.+)$/i, (m, d) => 'To be taken ' + d],
  [/^\+?(-?[\d.,]+) kg di massa magra, ([+\-−]?[\d.,]+) kg di grasso\.$/i, (m, a, b) => a + ' kg lean mass, ' + b + ' kg fat.'],
- [/^(\d+) sentinel su (\d+) con seduta entro ±7 giorni a entrambi i checkpoint$/i, (m, a, b) => a + ' of ' + b + ' sentinel lifts with a session within ±7 days at both checkpoints'],
- [/^(T[012]): seduta del (.+), (\d+) giorn[oi] (dopo|prima)$/i, (m, t, d, n, w) => t + ': session on ' + d + ', ' + n + enPlural(n, ' day ', ' days ') + (w === 'dopo' ? 'after' : 'before')],
- [/^(T[012]): seduta del (.+), il giorno del checkpoint$/i, (m, t, d) => t + ': session on ' + d + ', on checkpoint day'],
+ [/^(\d+) sentinel su (\d+) con seduta entro ±7 giorni al T0 e all’ultimo checkpoint \(T2 se presente\)$/i, (m, a, b) => a + ' of ' + b + ' sentinel lifts with a session within ±7 days at T0 and the latest checkpoint (T2 if present)'],
+ [/^(T[012]): seduta del ([^\u00b7]+), (\d+) giorn[oi] (dopo|prima)$/i, (m, t, d, n, w) => t + ': session on ' + d + ', ' + n + enPlural(n, ' day ', ' days ') + (w === 'dopo' ? 'after' : 'before')],
+ [/^(T[012]): seduta del ([^\u00b7]+), il giorno del checkpoint$/i, (m, t, d) => t + ': session on ' + d + ', on checkpoint day'],
+ [/^([+\-\u2212]?[\d.,]+) kg da T0( \(a T1\))?$/i, (m, a, t1) => a + ' kg since T0' + (t1 ? ' (at T1)' : '')],
  [/^(T[012]): nessuna seduta entro ±7 giorni$/i, (m, t) => t + ': no session within ±7 days'],
  [/^(T[012]) nessuna seduta$/i, (m, t) => t + ' no session'],
  [/^(.+) kg\/kg magra$/i, (m, a) => a + ' kg/kg lean mass'],
@@ -13218,8 +13228,8 @@ document.addEventListener('click', (ev) => {
 </script>
 <script>
 /* ==== EXPORT PDF (30/09/2026) -- report a 5 pagine, dati letti dal diario V2 ====
-   Parte 1 Ricomposizione (peso, foto T0/T1, vitali settimanali, forza), Parte 2 Protocollo (composti, aderenza,
-   scorte, fasi), Parte 3 Laboratorio (DEXA e 16 marker T0->T1, marker da seguire). Nessun numero e' scritto a mano:
+   Parte 1 Ricomposizione (peso, foto T0/T1/T2, vitali settimanali, forza), Parte 2 Protocollo (composti, aderenza,
+   scorte, fasi), Parte 3 Laboratorio (DEXA e 16 marker T0->T1->T2, marker da seguire). Nessun numero e' scritto a mano:
    tutto arriva dalle stesse funzioni che alimentano le schermate di Clinica, Gestione e Oggi. Le librerie jsPDF e
    autotable si caricano al primo click. Il PDF e' in italiano (uso clinico); caratteri limitati al set dei font
    standard, quindi frecce e simboli matematici sono resi in ASCII (pdfTxt). */
@@ -13308,7 +13318,7 @@ async function exportPDF(statusEl, btn) {
     const startPart = (label, title) => { if (doc.getNumberOfPages() > 0 && parts.length) doc.addPage(); parts.push({ label, title, page: doc.getNumberOfPages() }); return 38; };
     const sectionTitle = (y, text) => { doc.setDrawColor(0, 113, 227); doc.setLineWidth(1.2); doc.line(mL, y - 4, mL, y + 1); doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5); doc.setTextColor(28, 28, 30); doc.text(pdfTxt(text), mL + 3, y); return y + 7; };
     const bodyText = (y, text, size) => { doc.setFont('helvetica', 'normal'); doc.setFontSize(size || 9.5); doc.setTextColor(58, 58, 60); const lines = doc.splitTextToSize(pdfTxt(text), cW); doc.text(lines, mL, y); return y + lines.length * (size ? size * 0.5 : 4.6) + 4; };
-    const kpiRow = (y, items) => { const w = cW / items.length; items.forEach((k, i) => { const x = mL + i * w; doc.setFillColor(245, 245, 247); doc.roundedRect(x, y, w - 4, 20, 2, 2, 'F'); doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(134, 134, 139); doc.text(pdfTxt(k.label).toUpperCase(), x + 4, y + 7); doc.setFont('helvetica', 'bold'); doc.setFontSize(12.5); doc.setTextColor(28, 28, 30); doc.text(pdfTxt(k.val), x + 4, y + 15); }); return y + 26; };
+    const kpiRow = (y, items) => { const w = cW / items.length; items.forEach((k, i) => { const x = mL + i * w; doc.setFillColor(245, 245, 247); doc.roundedRect(x, y, w - 4, 20, 2, 2, 'F'); doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(134, 134, 139); doc.text(pdfTxt(k.label).toUpperCase(), x + 4, y + 7); doc.setFont('helvetica', 'bold'); doc.setFontSize(k.sz || 12.5); doc.setTextColor(28, 28, 30); doc.text(pdfTxt(k.val), x + 4, y + 15); }); return y + 26; };
     const tbl = (opts) => doc.autoTable(Object.assign({ willDrawCell: null, didParseCell: null, margin: { top: TOPM, left: mL, right: mR }, styles: { fontSize: 8.5, cellPadding: 2.4, textColor: [58, 58, 60] }, headStyles: { fillColor: [245, 245, 247], textColor: [110, 110, 119], fontStyle: 'bold', fontSize: 7.5 }, theme: 'striped' }, opts));
     const tblY = () => doc.lastAutoTable.finalY;
     const _tbl0 = tbl;
@@ -13319,12 +13329,18 @@ async function exportPDF(statusEl, btn) {
     y = sectionTitle(y, 'Punto della situazione');
     const wser = pdfWeightSeries(), lastW = wser[wser.length - 1];
     const d1 = CLIN_dexaT('peso', 't1'), bf1 = CLIN_dexaT('bf_pct', 't1'), ln1 = CLIN_dexaT('lean_kg', 't1');
+    const d2 = CLIN_dexaT('peso', 't2'), bf2 = CLIN_dexaT('bf_pct', 't2'), ln2 = CLIN_dexaT('lean_kg', 't2');   /* 10/11: T2 (07/11) */
+    const pdfChain = (a, b, c, dec, u) => [a, b, c].filter(v => v != null).map(v => pdfN(v, dec)).join(' -> ') + ' ' + u;
     y = bodyText(y, 'Giorno ' + elapsed + ' di ' + CAL.DAYS + ' (' + Math.round(elapsed / CAL.DAYS * 100) + '% del ciclo). ' + (lastW ? 'Ultimo peso registrato ' + pdfN(lastW.v, 1) + ' kg (' + pdfDMY(lastW.iso) + '). ' : '') +
-      (d1 != null ? 'DEXA T1 (12/09/2026): peso ' + pdfN(d1, 1) + ' kg, massa grassa ' + pdfN(bf1, 1) + '%, massa magra ' + pdfN(ln1, 1) + ' kg, contro T0 (09/05/2026) ' + pdfN(CLIN_DEXA_META[0].t0, 1) + ' kg, ' + pdfN(CLIN_DEXA_META[3].t0, 1) + '% e ' + pdfN(CLIN_DEXA_META[1].t0, 1) + ' kg.' : 'DEXA T1 non ancora inserito.'));
+      (d1 != null || d2 != null
+        ? 'DEXA T0 (09/05/2026): peso ' + pdfN(CLIN_DEXA_META[0].t0, 1) + ' kg, massa grassa ' + pdfN(CLIN_DEXA_META[3].t0, 1) + '%, massa magra ' + pdfN(CLIN_DEXA_META[1].t0, 1) + ' kg. ' +
+          (d1 != null ? 'T1 (12/09/2026): peso ' + pdfN(d1, 1) + ' kg, massa grassa ' + pdfN(bf1, 1) + '%, massa magra ' + pdfN(ln1, 1) + ' kg. ' : '') +
+          (d2 != null ? 'T2 (07/11/2026): peso ' + pdfN(d2, 1) + ' kg, massa grassa ' + pdfN(bf2, 1) + '%, massa magra ' + pdfN(ln2, 1) + ' kg.' : 'DEXA T2 non ancora inserito.')
+        : 'DEXA T1 e T2 non ancora inseriti.'));
     y = kpiRow(y, [
       { label: 'Ultimo peso', val: lastW ? pdfN(lastW.v, 1) + ' kg' : 'n/d' },
-      { label: 'Grasso DEXA T0 -> T1', val: bf1 != null ? pdfN(CLIN_DEXA_META[3].t0, 1) + ' -> ' + pdfN(bf1, 1) + ' %' : 'T0 ' + pdfN(CLIN_DEXA_META[3].t0, 1) + ' %' },
-      { label: 'Massa magra DEXA T0 -> T1', val: ln1 != null ? pdfN(CLIN_DEXA_META[1].t0, 1) + ' -> ' + pdfN(ln1, 1) + ' kg' : 'T0 ' + pdfN(CLIN_DEXA_META[1].t0, 1) + ' kg' }]);
+      { label: 'Grasso DEXA T0 -> T1 -> T2', val: pdfChain(CLIN_DEXA_META[3].t0, bf1, bf2, 1, '%'), sz: 10.5 },
+      { label: 'Massa magra DEXA T0 -> T1 -> T2', val: pdfChain(CLIN_DEXA_META[1].t0, ln1, ln2, 1, 'kg'), sz: 10.5 }]);
     y = sectionTitle(y, 'Andamento del peso: dal test protocollo a oggi');
     if (wser.length >= 2) {
       const cx = mL, cy = y, cw = cW, ch = 46;
@@ -13335,7 +13351,7 @@ async function exportPDF(statusEl, btn) {
       doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5); doc.setTextColor(134, 134, 139); doc.setDrawColor(225, 225, 230); doc.setLineWidth(0.2);
       [vMin, (vMin + vMax) / 2, vMax].forEach(v => { doc.line(cx + 11, py(v), cx + cw - 5, py(v)); doc.text(pdfN(v, 1), cx + 9, py(v) + 1, { align: 'right' }); });
       const drawnCk = [];
-      [[CLIN_CK.t0, 'T0'], [CLIN_CK.t1, 'T1']].forEach(([iso, lb]) => { if (iso >= wser[0].iso && iso <= wser[wser.length - 1].iso) { drawnCk.push(lb); doc.setDrawColor(255, 149, 0); doc.setLineDashPattern([1, 1], 0); doc.line(px(iso), cy + 4, px(iso), cy + ch - 4); doc.setLineDashPattern([], 0); doc.setTextColor(255, 149, 0); doc.text(lb, px(iso), cy + 3.2, { align: 'center' }); } });
+      [[CLIN_CK.t0, 'T0'], [CLIN_CK.t1, 'T1'], [CLIN_CK.t2, 'T2']].forEach(([iso, lb]) => { if (iso >= wser[0].iso && iso <= wser[wser.length - 1].iso) { drawnCk.push(lb); doc.setDrawColor(255, 149, 0); doc.setLineDashPattern([1, 1], 0); doc.line(px(iso), cy + 4, px(iso), cy + ch - 4); doc.setLineDashPattern([], 0); doc.setTextColor(255, 149, 0); doc.text(lb, px(iso), cy + 3.2, { align: 'center' }); } });
       doc.setDrawColor(0, 113, 227); doc.setLineWidth(0.5);
       let gaps = 0;
       for (let i = 0; i < wser.length - 1; i++) {
@@ -13346,15 +13362,15 @@ async function exportPDF(statusEl, btn) {
       doc.setFillColor(0, 113, 227); wser.forEach(p => doc.circle(px(p.iso), py(p.v), 0.6, 'F'));
       doc.setTextColor(134, 134, 139); doc.setFontSize(6.5);
       [wser[0], wser[Math.floor(wser.length / 2)], wser[wser.length - 1]].forEach((p, i) => doc.text(pdfDM(p.iso), px(p.iso), cy + ch + 5, { align: i === 0 ? 'left' : (i === 2 ? 'right' : 'center') }));
-      doc.text('Peso giornaliero (kg). ' + (drawnCk.length ? 'Verticale arancio: checkpoint ' + drawnCk.join(' e ') + (drawnCk.length < 2 ? ' (il T0 del ' + pdfDMY(CLIN_CK.t0) + ' precede la prima pesata del grafico)' : '') + '. ' : '') + 'Tratto puntinato: piu di 3 giorni senza pesata, andamento non noto.', cx + 3, cy + ch + 9.5);
+      doc.text('Peso giornaliero (kg). ' + (drawnCk.length ? 'Verticale arancio: checkpoint ' + drawnCk.join(', ') + (drawnCk.indexOf('T0') < 0 ? ' (il T0 del ' + pdfDMY(CLIN_CK.t0) + ' precede la prima pesata del grafico)' : '') + '. ' : '') + 'Tratto puntinato: piu di 3 giorni senza pesata, andamento non noto.', cx + 3, cy + ch + 9.5);
       y = cy + ch + 18;
     } else y = bodyText(y, 'Dati insufficienti per il grafico.');
-    y = sectionTitle(y, 'Confronto visivo: checkpoint T0 e T1');
+    y = sectionTitle(y, 'Confronto visivo: checkpoint T0, T1 e T2');
     try {
       set('Scarico le foto…');
-      const cps = [['T0', CLIN_CK.t0], ['T1', CLIN_CK.t1]].map(([lb, iso]) => ({ lb, iso, near: CLIN_photoNear(iso, 3) }));
+      const cps = [['T0', CLIN_CK.t0], ['T1', CLIN_CK.t1], ['T2', CLIN_CK.t2]].map(([lb, iso]) => ({ lb, iso, near: CLIN_photoNear(iso, 3) }));
       const imgs = await Promise.all(cps.map(c => c.near ? pdfPhoto(c.near.p.filename).catch(() => null) : null));
-      const iw = 55, gap = 12, x0 = mL + (cW - (2 * iw + gap)) / 2;
+      const iw = 50, gap = 8, x0 = mL + (cW - (cps.length * iw + (cps.length - 1) * gap)) / 2;
       cps.forEach((c, i) => {
         const x = x0 + i * (iw + gap), im = imgs[i];
         if (im) { const ih = Math.min(73, iw * im.h / im.w); doc.addImage(im.data, 'JPEG', x, y, iw, ih); }
@@ -13372,12 +13388,12 @@ async function exportPDF(statusEl, btn) {
     y = sectionTitle(y, 'Forza ai checkpoint (sentinel lift)');
     const leanT0 = CLIN_DEXA_META[1].t0;
     const liftRows = CLIN_LIFTS_META.map(l => {
-      const b0 = CLIN_sentinelAt(l.id, CLIN_CK.t0), b1 = CLIN_sentinelAt(l.id, CLIN_CK.t1);
-      const r0 = b0 ? pdfN(b0.kg / leanT0, 2) : '\u2014', r1 = (b1 && ln1 != null) ? pdfN(b1.kg / ln1, 2) : '\u2014';
-      return [l.label + ' (' + l.muscle + ')', b0 ? pdfN(b0.kg, 0) + ' kg' : 'n/d', b1 ? pdfN(b1.kg, 0) + ' kg' : 'n/d', (b0 && b1) ? (b1.kg - b0.kg >= 0 ? '+' : '') + pdfN(b1.kg - b0.kg, 0) + ' kg' : 'n/d', r0 + ' -> ' + r1];
+      const b0 = CLIN_sentinelAt(l.id, CLIN_CK.t0), b1 = CLIN_sentinelAt(l.id, CLIN_CK.t1), b2 = CLIN_sentinelAt(l.id, CLIN_CK.t2), bl = b2 || b1;
+      const r0 = b0 ? pdfN(b0.kg / leanT0, 2) : '\u2014', r1 = (b1 && ln1 != null) ? pdfN(b1.kg / ln1, 2) : '\u2014', r2 = (b2 && ln2 != null) ? pdfN(b2.kg / ln2, 2) : '\u2014';
+      return [l.label + ' (' + l.muscle + ')', b0 ? pdfN(b0.kg, 0) + ' kg' : 'n/d', b1 ? pdfN(b1.kg, 0) + ' kg' : 'n/d', b2 ? pdfN(b2.kg, 0) + ' kg' : 'n/d', (b0 && bl) ? (bl.kg - b0.kg >= 0 ? '+' : '') + pdfN(bl.kg - b0.kg, 0) + ' kg' + (b2 ? '' : ' (a T1)') : 'n/d', r0 + ' -> ' + r1 + ' -> ' + r2];
     });
-    tbl2({ startY: y, head: [['Esercizio', 'T0', 'T1', 'Differenza', 'kg / kg di massa magra']], body: liftRows });
-    y = tblY() + 4; bodyText(y, 'Carico della seduta piu vicina al checkpoint, entro 7 giorni. "n/d" = nessuna seduta in quella finestra. Il rapporto usa la massa magra DEXA del checkpoint.', 7.5);
+    tbl2({ startY: y, head: [['Esercizio', 'T0', 'T1', 'T2', 'Diff. da T0', 'kg / kg di massa magra']], body: liftRows });
+    y = tblY() + 4; bodyText(y, 'Carico della seduta piu vicina al checkpoint, entro 7 giorni. "n/d" = nessuna seduta in quella finestra. Diff. da T0 = ultimo checkpoint con seduta (T2, altrimenti T1) meno T0. Il rapporto usa la massa magra DEXA del checkpoint.', 7.5);
 
     /* ---------- PARTE 2 ---------- */
     y = startPart('Parte 2 di 3', 'Protocollo peptidico');
@@ -13399,27 +13415,30 @@ async function exportPDF(statusEl, btn) {
     tbl2({ startY: y, head: [['Fase', 'Periodo', 'Note']], body: [['Warm-up', '8 giu - 17 lug', 'Fase preparatoria; Tesamorelin sospeso dopo 2-3 iniezioni'], ['Test protocollo', '18-19 lug', 'Introduzione dello stack completo'], ['Ciclo 1', '20 lug - 8 nov', '112 giorni, protocollo completo'], ['Trasferta Bangkok', '7-21 ago', 'Iniezioni mantenute, allenamento adattato']] });
 
     /* ---------- PARTE 3 ---------- */
-    y = startPart('Parte 3 di 3', 'Laboratorio T0 -> T1');
-    y = bodyText(y, 'T0: DEXA 9 maggio 2026 e pannello ematico 13 luglio 2026. T1: 12 settembre 2026. Valori come registrati nel diario; i range sono quelli del laboratorio.');
+    y = startPart('Parte 3 di 3', 'Laboratorio T0 -> T1 -> T2');
+    y = bodyText(y, 'T0: DEXA 9 maggio 2026 e pannello ematico 13 luglio 2026. T1: 12 settembre 2026. T2: 7 novembre 2026. Valori come registrati nel diario; i range sono quelli del laboratorio.');
     y = sectionTitle(y, 'DEXA');
-    const dRows = CLIN_DEXA_META.map(d => { const v1 = CLIN_dexaT(d.key, 't1'), dd = v1 != null ? v1 - d.t0 : null; return [d.label + ((d.label.indexOf('(') >= 0 || (d.unit === '%' && d.label.indexOf('%') >= 0)) ? '' : ' (' + pdfTxt(d.unit) + ')'), pdfN(d.t0, d.dec), v1 != null ? pdfN(v1, d.dec) : 'n/d', dd != null ? (dd >= 0 ? '+' : '') + pdfN(dd, d.dec) : '\u2014']; });
-    tbl2({ startY: y, head: [['Parametro', 'T0 (9 mag)', 'T1 (12 set)', 'Differenza']], body: dRows, columnStyles: { 0: { fontStyle: 'bold' } } });
-    y = tblY() + 8;
-    { const dx1 = CLIN_EXTRA.dexa_t1 || {}, ts = parseFloat(String(dx1.dexa_bmd_tscore).replace(',', '.')), zs = parseFloat(String(dx1.dexa_bmd_zscore).replace(',', '.'));
-      if (!isNaN(ts) || !isNaN(zs)) { doc.setFont('helvetica', 'italic'); doc.setFontSize(7.5); doc.setTextColor(134, 134, 139);
-        doc.text(pdfTxt('BMD T1: MOC total body del 12/09/2026' + (isNaN(ts) ? '' : ', T-score ' + pdfN(ts, 1)) + (isNaN(zs) ? '' : ', Z-score ' + pdfN(zs, 1)) + ', normale secondo OMS. Stesso apparecchio della DEXA T0.'), mL, y - 4); } }
+    const dRows = CLIN_DEXA_META.map(d => { const v1 = CLIN_dexaT(d.key, 't1'), v2 = CLIN_dexaT(d.key, 't2'), vl = v2 != null ? v2 : v1, dd = vl != null ? vl - d.t0 : null; return [d.label + ((d.label.indexOf('(') >= 0 || (d.unit === '%' && d.label.indexOf('%') >= 0)) ? '' : ' (' + pdfTxt(d.unit) + ')'), pdfN(d.t0, d.dec), v1 != null ? pdfN(v1, d.dec) : 'n/d', v2 != null ? pdfN(v2, d.dec) : 'n/d', dd != null ? (dd >= 0 ? '+' : '') + pdfN(dd, d.dec) : '\u2014']; });
+    tbl2({ startY: y, head: [['Parametro', 'T0 (9 mag)', 'T1 (12 set)', 'T2 (7 nov)', 'Diff. da T0']], body: dRows, columnStyles: { 0: { fontStyle: 'bold' } } });
+    { const bn = [], sc = o => [parseFloat(String(o.dexa_bmd_tscore).replace(',', '.')), parseFloat(String(o.dexa_bmd_zscore).replace(',', '.'))];
+      const [ts1, zs1] = sc(CLIN_EXTRA.dexa_t1 || {}), [ts2, zs2] = sc(CLIN_EXTRA.dexa_t2 || {});
+      if (!isNaN(ts1) || !isNaN(zs1)) bn.push('BMD T1: MOC total body del 12/09/2026' + (isNaN(ts1) ? '' : ', T-score ' + pdfN(ts1, 1)) + (isNaN(zs1) ? '' : ', Z-score ' + pdfN(zs1, 1)) + ', normale secondo OMS. Stesso apparecchio della DEXA T0.');
+      if (!isNaN(ts2) || !isNaN(zs2)) bn.push('BMD T2: DEXA del 07/11/2026' + (isNaN(ts2) ? '' : ', T-score ' + pdfN(ts2, 1)) + (isNaN(zs2) ? '' : ', Z-score ' + pdfN(zs2, 1)) + '.');
+      doc.setFont('helvetica', 'italic'); doc.setFontSize(7.5); doc.setTextColor(134, 134, 139);
+      bn.forEach((t, i) => doc.text(pdfTxt(t), mL, tblY() + 4 + 4 * i));
+      y = tblY() + (bn.length ? 4 + 4 * bn.length : 8); }
     y = sectionTitle(y, 'Pannello ematico Santagostino');
     const mRows = [];
     Object.keys(CLIN_MARKERS).forEach(k => {
-      const m = CLIN_MARKERS[k], ref = CLIN_parseRef(m.ref), p0 = CLIN_parseVal(m.t0), p1 = CLIN_parseVal(CLIN_labT(k, 't1'));
-      const s1 = p1 ? CLIN_statusOf(p1, ref, m) : CLIN_statusOf(p0, ref, m);
-      let dl = '\u2014'; if (p1 && p0) { const dv = p1.v - p0.v, pc = p0.v !== 0 ? dv / Math.abs(p0.v) * 100 : 0; dl = (dv > 0 ? '+' : '') + (Math.abs(dv) < 0.005 ? '0' : CLIN_fmtNum(dv, CLIN_decOf(p0.v))) + ' (' + (pc > 0 ? '+' : '') + pdfN(pc, 1) + '%)'; }
-      mRows.push([m.label + (m.unit ? ' (' + m.unit + ')' : ''), CLIN_fmtP(p0), p1 ? CLIN_fmtP(p1) : 'n/d', dl, m.ref + (m.target_lo != null ? ' | target ' + m.target_lo + '+' : ''), s1 === 'out' ? '*' : (s1 === 'target' ? '\u2020' : '')]);
+      const m = CLIN_MARKERS[k], ref = CLIN_parseRef(m.ref), p0 = CLIN_parseVal(m.t0), p1 = CLIN_parseVal(CLIN_labT(k, 't1')), p2 = CLIN_parseVal(CLIN_labT(k, 't2')), pl = p2 || p1;
+      const s1 = pl ? CLIN_statusOf(pl, ref, m) : CLIN_statusOf(p0, ref, m);
+      let dl = '\u2014'; if (pl && p0) { if (pl.cens || p0.cens) dl = 'non quantif.'; else { const dv = pl.v - p0.v, pc = p0.v !== 0 ? dv / Math.abs(p0.v) * 100 : 0; dl = (dv > 0 ? '+' : '') + (Math.abs(dv) < 0.005 ? '0' : CLIN_fmtNum(dv, CLIN_decOf(p0.v))) + ' (' + (pc > 0 ? '+' : '') + pdfN(pc, 1) + '%)'; } }
+      mRows.push([m.label + (m.unit ? ' (' + m.unit + ')' : ''), CLIN_fmtP(p0), p1 ? CLIN_fmtP(p1) : 'n/d', p2 ? CLIN_fmtP(p2) : 'n/d', dl, m.ref + (m.target_lo != null ? ' | target ' + m.target_lo + '+' : ''), s1 === 'out' ? '*' : (s1 === 'target' ? '\u2020' : '')]);
     });
-    tbl2({ startY: y, head: [['Esame', 'T0', 'T1', 'Differenza', 'Riferimento', '']], body: mRows, styles: { fontSize: 8, cellPadding: 2, textColor: [58, 58, 60] }, columnStyles: { 0: { fontStyle: 'bold' }, 5: { cellWidth: 8, halign: 'center', fontStyle: 'bold', textColor: [216, 30, 5] } } });
-    y = tblY() + 5; const nOut = mRows.filter(r => r[5] === '*').length, nTg = mRows.filter(r => r[5] === '\u2020').length;
+    tbl2({ startY: y, head: [['Esame', 'T0', 'T1', 'T2', 'Diff. da T0', 'Riferimento', '']], body: mRows, styles: { fontSize: 7.8, cellPadding: 2, textColor: [58, 58, 60] }, columnStyles: { 0: { fontStyle: 'bold' }, 6: { cellWidth: 8, halign: 'center', fontStyle: 'bold', textColor: [216, 30, 5] } } });
+    y = tblY() + 5; const nOut = mRows.filter(r => r[6] === '*').length, nTg = mRows.filter(r => r[6] === '\u2020').length;
     doc.setFont('helvetica', 'italic'); doc.setFontSize(7.5); doc.setTextColor(134, 134, 139);
-    doc.text(pdfTxt('* fuori range di riferimento (' + nOut + ' su ' + mRows.length + ')' + (nTg ? '   \u2020 sotto target clinico (' + nTg + ')' : '')), mL, y);
+    doc.text(pdfTxt('* fuori range di riferimento all\'ultima misura (' + nOut + ' su ' + mRows.length + ')' + (nTg ? '   \u2020 sotto target clinico (' + nTg + ')' : '')), mL, y);
     /* marker da seguire: stessa logica della vista Referti > Da seguire */
     doc.addPage(); parts.push({ label: 'Parte 3 di 3', title: 'Laboratorio (segue)', page: doc.getNumberOfPages() }); y = 38;
     y = sectionTitle(y, 'Marker fuori range all\'ultima misura');
