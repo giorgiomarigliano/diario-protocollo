@@ -1783,10 +1783,17 @@ function fasiValide(l) {
   return dayIdxFromISO(l[0].dal) === 0;
 }
 /* elenco delle fasi, ricalcolato solo quando cambiano blob.fasi o proto_pausa (protoPhase viene chiamata migliaia di volte per render) */
+/* 12/11 (fasi, passo 7): le fasi salvate dall'editor di Gestione stanno in blob.fasi = { v:1, list:[...] } (lista vuota = fasi automatiche) */
+function fasiSalvate() { var f = (store && store.blob && store.blob.fasi) || null, l = Array.isArray(f) ? f : (f && f.list); return fasiValide(l) ? l : null; }
 var FASI_CACHE = { key: null, list: null };
 function fasiList() {
   var b = (store && store.blob) || {}, key = JSON.stringify(b.fasi || null) + '|' + JSON.stringify(b.proto_pausa || null);
-  if (FASI_CACHE.key !== key) { FASI_CACHE.key = key; FASI_CACHE.list = fasiValide(b.fasi) ? b.fasi : fasiDefault(); }
+  if (FASI_CACHE.key !== key) {
+    var sv = fasiSalvate(); FASI_CACHE.key = key;
+    /* fasi salvate: la pausa e i composti attivi del Post Ciclo 1 restano quelli di proto_pausa (card "Pausa protocollo" e interruttori della card Iniezioni) */
+    FASI_CACHE.list = !sv ? fasiDefault() : sv.map(function (f) { if (f.id !== 'p1') return f; var p = protoPausa(), pi = protoPauseIdx();
+      return Object.assign({}, f, { pausaDal: pi != null ? p.dal : '', ripresa: p.al || '', attivi: protoActive().filter(function (k) { return k !== '-'; }) }); });
+  }
   return FASI_CACHE.list;
 }
 /* durata prevista della fase in giorni: dichiarata (giorni) o ricavata dalle date; fase aperta senza durata = Infinity */
@@ -1800,6 +1807,8 @@ function faseDi(idx) {
   if (f.pausaDal && idx >= dayIdxFromISO(f.pausaDal) && !(f.ripresa && idx >= dayIdxFromISO(f.ripresa))) stato = 'pausa';
   return { fase: f, giorno: g, settimana: Math.floor((g - 1) / 7) + 1, stato: stato };
 }
+/* lo schema delle iniezioni scritto nell'app e' quello del primo ciclo: gli altri cicli non ne hanno uno finche' non viene definito */
+function faseHaSchema(f) { var l = fasiList(); for (var i = 0; i < l.length; i++) if (l[i].tipo === f.tipo) return l[i].id === f.id; return true; }   /* vale per il primo ciclo e per il suo Post-ciclo */
 function faseCorrente() { return faseDi(dayIdxFromISO(today)); }
 /* 12/11 (fasi, passo 4): primo giorno (indice) della prima fase 'post'; senza fasi post (pausa disattivata) resta la fine del Ciclo 1 come prima. Da qui in poi l'anello Iniezioni lascia il posto alle Proteine. */
 function protDaIdx() { var l = fasiList(); for (var i = 0; i < l.length; i++) if (l[i].tipo === 'post') return dayIdxFromISO(l[i].dal); return CAL.DAYS; }
@@ -1808,7 +1817,7 @@ function protDaSett() { return Math.floor(protDaIdx() / 7); }
    cosi' il Ciclo 1 resta chiuso alla sua data anche se il protocollo viene riattivato a mano */
 function fasiCalendario() {
   var b = (store && store.blob) || {};
-  if (fasiValide(b.fasi)) return b.fasi;
+  if (fasiSalvate()) return fasiList();
   var l = fasiList();
   return l.length > 1 ? l : [{ id: 'c1', nome: 'Ciclo 1', tipo: 'ciclo', dal: CAL.START, al: CAL.END, giorni: CAL.DAYS }, { id: 'p1', nome: 'Post Ciclo 1', tipo: 'post', dal: faseIsoDaIdx(CAL.DAYS), al: '' }];
 }
@@ -1820,7 +1829,7 @@ function protoCompToggle(ck) { const a = protoActive(), i = a.indexOf(ck); if (i
 /* Slot per la card Iniezioni: nel Post-ciclo mostra TUTTI i composti, quelli non attivi (e tutti in pausa) in grigio (s.off) */
 function getInjectionSlotsUI(dayIdx) {
   const ph = protoPhase(dayIdx);
-  if (ph === 'ciclo') return getInjectionSlots2(dayIdx);
+  if (ph === 'ciclo' || !faseHaSchema(faseDi(dayIdx).fase)) return getInjectionSlots2(dayIdx);
   const act = protoActive();
   return getInjectionSlotsFull(dayIdx).map(sl => { const off = {}; sl.fields.forEach(f => { if (ph === 'pausa' || act.indexOf(protoCompKey(f)) < 0) off[f] = true; }); return Object.assign({}, sl, { off }); });
 }
@@ -1845,6 +1854,65 @@ function protoPausaCardHtml(mobile) {
     '<span><button type="button" onclick="protoPausaSet(\'on\',\'0\')" style="border:none;background:var(--accent-soft);color:var(--accent-ink);font:inherit;font-size:var(--fs-sm);font-weight:600;padding:6px 14px;border-radius:var(--r-pill);cursor:pointer;margin-top:4px;">' + (it ? 'Riattiva protocollo' : 'Resume protocol') + '</button></span></section>';
 }
 /* Gestione: impostazioni della pausa */
+/* ===== 12/11 (fasi, passo 7): editor delle fasi in Gestione > Stock =====
+   Si puo' solo AGGIUNGERE un ciclo futuro (con il suo Post-ciclo, aperto) e togliere l'ultimo ciclo non ancora iniziato.
+   Le fasi gia' iniziate non si toccano: gli indici giorno restano continui e lo storico non si sposta. */
+var FASI_ED = { open: false, nome: '', dal: '', giorni: '112', ask: false };
+function fasiEdDmy(iso) { return iso ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : ''; }
+function fasiEdRefresh() { render(); if (typeof GST_renderAll === 'function' && document.querySelector('[data-gst-view="stock"]')) { try { GST_renderAll(); } catch (e) {} } }
+function fasiEdBase() { return fasiCalendario().map(function (f) { var o = { id: f.id, nome: f.nome, tipo: f.tipo, dal: f.dal, al: f.al || '' }; if (f.giorni) o.giorni = f.giorni; if (f.checkpoint) o.checkpoint = f.checkpoint; return o; }); }
+function fasiEdProposta() {
+  var it = LANG === 'it', base = fasiEdBase(), last = base[base.length - 1], n = base.filter(function (f) { return f.tipo === 'ciclo'; }).length + 1;
+  var nome = (FASI_ED.nome || '').trim() || ((it ? 'Ciclo ' : 'Cycle ') + n), dal = FASI_ED.dal, g = parseInt(FASI_ED.giorni, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dal)) return { err: it ? 'Scegli la data di inizio.' : 'Pick the start date.' };
+  if (!(dal > today)) return { err: it ? 'La data di inizio deve essere futura.' : 'The start date must be in the future.' };
+  if (last.al || !(dal > last.dal)) return { err: it ? 'Il nuovo ciclo deve iniziare dopo l’inizio di «' + last.nome + '».' : 'The new cycle must start after “' + last.nome + '” begins.' };
+  if (!(g >= 7 && g <= 365) || String(g) !== String(FASI_ED.giorni).trim()) return { err: it ? 'Durata: da 7 a 365 giorni.' : 'Length: 7 to 365 days.' };
+  var i0 = dayIdxFromISO(dal), fine = faseIsoDaIdx(i0 + g - 1);
+  last.al = faseIsoDaIdx(i0 - 1);
+  base.push({ id: 'c' + n, nome: nome, tipo: 'ciclo', dal: dal, al: fine, giorni: g });
+  base.push({ id: 'p' + n, nome: 'Post ' + nome, tipo: 'post', dal: faseIsoDaIdx(i0 + g), al: '' });
+  if (!fasiValide(base)) return { err: it ? 'Elenco delle fasi non valido (buchi o sovrapposizioni).' : 'Invalid phase list (gaps or overlaps).' };
+  return { list: base, chiude: last, ciclo: base[base.length - 2], post: base[base.length - 1] };
+}
+function fasiEdSet(k, v) { FASI_ED[k] = v; FASI_ED.ask = false; fasiEdRefresh(); }
+function fasiEdSalva() { var p = fasiEdProposta(); if (p.err) return; patchKey('fasi', 'v', 1); patchKey('fasi', 'list', p.list); FASI_ED = { open: false, nome: '', dal: '', giorni: '112', ask: false }; fasiEdRefresh(); }
+function fasiEdRimovibile() { var sv = fasiSalvate(); if (!sv || sv.length < 4) return null; var c = sv[sv.length - 2]; return (c.tipo === 'ciclo' && c.dal > today) ? c : null; }
+function fasiEdRimuovi() {
+  var sv = fasiSalvate(), c = fasiEdRimovibile(); if (!c) return;
+  var l = sv.slice(0, sv.length - 2).map(function (f) { return Object.assign({}, f); }); l[l.length - 1].al = '';
+  patchKey('fasi', 'v', 1); patchKey('fasi', 'list', l.length > 2 ? l : []);   /* tolto l'unico ciclo aggiunto: si torna alle fasi automatiche */
+  FASI_ED.ask = false; fasiEdRefresh();
+}
+function fasiEditorHtml() {
+  var it = LANG === 'it', l = fasiCalendario(), tIdx = dayIdxFromISO(today), salvate = !!fasiSalvate();
+  var btn = 'border:none;background:var(--accent-soft);color:var(--accent-ink);font:inherit;font-size:var(--fs-sm);font-weight:600;padding:6px 14px;border-radius:var(--r-pill);cursor:pointer;';
+  var inp = 'font:inherit;font-size:var(--fs-sm);border:1px solid var(--line);border-radius:var(--r-md);background:var(--surf2);color:var(--ink);padding:4px 8px;';
+  var row = function (a, b) { return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line2);flex-wrap:wrap;"><span style="font-size:var(--fs-base);color:var(--ink);">' + a + '</span><span style="font-size:var(--fs-sm);color:var(--ink2);text-align:right;">' + b + '</span></div>'; };
+  var per = function (f) { return fasiEdDmy(f.dal) + ' – ' + (f.al ? fasiEdDmy(f.al) + ' · ' + (dayIdxFromISO(f.al) - dayIdxFromISO(f.dal) + 1) + (it ? ' giorni' : ' days') : (it ? 'aperta' : 'open')); };
+  var stato = function (f) { var a = dayIdxFromISO(f.dal), b = f.al ? dayIdxFromISO(f.al) : Infinity; return tIdx > b ? (it ? 'conclusa' : 'done') : (tIdx < a ? (it ? 'prevista' : 'planned') : (it ? 'in corso' : 'current')); };
+  var h = '<section class="an-card" style="grid-column:1 / -1" data-fasi-editor><div class="an-head"><span class="an-title">' + (it ? 'Fasi del percorso' : 'Journey phases') + '</span><span class="an-sub">' + (salvate ? (it ? 'personalizzate' : 'custom') : (it ? 'automatiche' : 'automatic')) + '</span></div>';
+  l.forEach(function (f) { h += row(esc(f.nome) + ' · ' + stato(f), per(f)); });
+  var rim = fasiEdRimovibile();
+  if (!FASI_ED.open) {
+    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;padding-top:10px;border-top:1px solid var(--line2);"><button type="button" style="' + btn + '" onclick="fasiEdSet(\'open\',true)">' + (it ? 'Aggiungi un ciclo' : 'Add a cycle') + '</button>' +
+      (rim ? (FASI_ED.ask ? '<button type="button" style="' + btn + 'background:var(--bad);color:#fff;" onclick="fasiEdRimuovi()">' + (it ? 'Conferma: togli ' : 'Confirm: remove ') + esc(rim.nome) + '</button><button type="button" style="' + btn + '" onclick="fasiEdSet(\'ask\',false)">' + (it ? 'Annulla' : 'Cancel') + '</button>'
+        : '<button type="button" style="' + btn + '" onclick="FASI_ED.ask=true;fasiEdRefresh()">' + (it ? 'Togli ' : 'Remove ') + esc(rim.nome) + '</button>') : '') + '</div>';
+  } else {
+    var p = fasiEdProposta();
+    h += row(it ? 'Nome' : 'Name', '<input type="text" maxlength="30" value="' + esc(FASI_ED.nome) + '" placeholder="' + (it ? 'Ciclo ' : 'Cycle ') + (l.filter(function (f) { return f.tipo === 'ciclo'; }).length + 1) + '" onchange="fasiEdSet(\'nome\',this.value)" style="' + inp + 'width:150px;">') +
+      row(it ? 'Primo giorno' : 'First day', '<input type="date" value="' + esc(FASI_ED.dal) + '" min="' + faseIsoDaIdx(tIdx + 1) + '" onchange="fasiEdSet(\'dal\',this.value)" style="' + inp + '">') +
+      row(it ? 'Durata (giorni)' : 'Length (days)', '<input type="number" min="7" max="365" step="1" value="' + esc(FASI_ED.giorni) + '" onchange="fasiEdSet(\'giorni\',this.value)" style="' + inp + 'width:80px;">') +
+      '<div style="font-size:var(--fs-sm);color:' + (p.err ? 'var(--warn-ink)' : 'var(--ink)') + ';padding:10px 0;border-top:1px solid var(--line2);">' + (p.err ? p.err
+        : (it ? 'Anteprima: «' + esc(p.chiude.nome) + '» si chiude il ' + fasiEdDmy(p.chiude.al) + '; «' + esc(p.ciclo.nome) + '» dal ' + fasiEdDmy(p.ciclo.dal) + ' al ' + fasiEdDmy(p.ciclo.al) + ' (' + p.ciclo.giorni + ' giorni); poi «' + esc(p.post.nome) + '» dal ' + fasiEdDmy(p.post.dal) + ', aperta.'
+              : 'Preview: “' + esc(p.chiude.nome) + '” ends on ' + fasiEdDmy(p.chiude.al) + '; “' + esc(p.ciclo.nome) + '” from ' + fasiEdDmy(p.ciclo.dal) + ' to ' + fasiEdDmy(p.ciclo.al) + ' (' + p.ciclo.giorni + ' days); then “' + esc(p.post.nome) + '” from ' + fasiEdDmy(p.post.dal) + ', open.')) + '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;">' + (p.err ? '' : '<button type="button" style="' + btn + '" onclick="fasiEdSalva()">' + (it ? 'Salva' : 'Save') + '</button>') + '<button type="button" style="' + btn + '" onclick="fasiEdSet(\'open\',false)">' + (it ? 'Annulla' : 'Cancel') + '</button></div>';
+  }
+  h += '<div style="font-size:var(--fs-xs);color:var(--ink2);padding-top:8px;">' + (it ? 'Si può solo aggiungere un ciclo futuro o togliere l’ultimo non ancora iniziato: le fasi già iniziate non cambiano e lo storico non si sposta. Composti e dosi di un nuovo ciclo non sono definiti nell’app: nei suoi giorni non viene proposta nessuna iniezione.'
+    : 'You can only add a future cycle or remove the last one not yet started: phases already started do not change and history does not move. Compounds and doses of a new cycle are not defined in the app: no injection is proposed on its days.') + '</div>';
+  return h + '</section>';
+}
+
 function protoPausaSettingsHtml() {
   const it = LANG === 'it', p = protoPausa();
   const inp = (f, v) => '<input type="date" value="' + (v || '') + '" onchange="protoPausaSet(\'' + f + '\', this.value)" style="font:inherit;font-size:var(--fs-sm);border:1px solid var(--line);border-radius:var(--r-md);background:var(--surf2);color:var(--ink);padding:4px 8px;">';
@@ -2193,6 +2261,7 @@ function getPlannedWorkout2(idx) {
 function getInjectionSlots2(dayIdx) {
   const ph = protoPhase(dayIdx);
   if (ph === 'pausa') return []; // pausa completa dai peptidi: nessuna iniezione prevista
+  if (!faseHaSchema(faseDi(dayIdx).fase)) return []; // ciclo aggiunto dall'editor: composti e dosi non sono definiti nell'app, nessuna iniezione proposta
   if (ph === 'residuo') { // Post-ciclo, dosi rimaste: solo BPC-157 e TB-500 (gli altri composti si fermano a fine ciclo)
     const act = protoActive();
     return getInjectionSlotsFull(dayIdx).map(s => Object.assign({}, s, { fields: s.fields.filter(f => act.indexOf(protoCompKey(f)) >= 0) })).filter(s => s.fields.length);
@@ -11909,7 +11978,7 @@ function GST_renderStock(){
   if (!isDesktop) { GST_renderStockMobile(host); return; }
   var vd = GST_V1.stock_v2_vials || {};
   var todayStr = today;
-  var html = GST_stockHero() + protoPausaSettingsHtml();
+  var html = GST_stockHero() + protoPausaSettingsHtml() + fasiEditorHtml();
 
   /* PORTING 26/09: riscritta per rispecchiare esattamente il layout del mockup approvato --
      griglia a 12 colonne con span espliciti (Convertitore + Ricostituzione affiancate,
@@ -12097,7 +12166,7 @@ function gstTagInk(tag){
   return "var(--ink3)";
 }
 function GST_renderStockMobile(host){
-  var vd = GST_V1.stock_v2_vials || {}, todayStr = today, html = GST_stockHero() + protoPausaSettingsHtml();
+  var vd = GST_V1.stock_v2_vials || {}, todayStr = today, html = GST_stockHero() + protoPausaSettingsHtml() + fasiEditorHtml();
   var CARD = "border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);";
   var LBL = "font-size:var(--fs-xs);font-weight:600;color:var(--ink2);text-transform:uppercase;";
   var FLD = "width:100%;min-width:0;height:44px;box-sizing:border-box;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surf2);text-align:center;font-size:var(--fs-lg);font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);";
