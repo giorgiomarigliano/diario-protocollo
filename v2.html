@@ -6085,7 +6085,11 @@ var CLIN_LIFTS_META = [
   { id: 'dbcurl', label: 'Curl manubri', muscle: 'Braccia' },
   { id: 'legpress', label: 'Leg press', muscle: 'Gambe' }
 ];
-var CLIN_CK = { t0: CAL.T0, t1: CAL.T1, t2: CAL.T2 };
+/* 12/11 (fasi, passo 6): i checkpoint si leggono dal ciclo di riferimento della Clinica (il primo ciclo nell'elenco delle fasi, oggi il Ciclo 1);
+   se la fase non li dichiara valgono quelli di CAL. I dati clinici (CLIN_DATA) sono ancora quelli del Ciclo 1: checkpoint di altri cicli arriveranno con i dati su Supabase. */
+function CLIN_faseRif() { var l = fasiList(); for (var i = 0; i < l.length; i++) if (l[i].tipo === 'ciclo') return l[i]; return l[0]; }
+function CLIN_ckIso(k) { var f = CLIN_faseRif(), c = (f && f.checkpoint) || {}; return /^\d{4}-\d{2}-\d{2}$/.test(c[k] || '') ? c[k] : CAL[k]; }
+var CLIN_CK = { get t0() { return CLIN_ckIso('T0'); }, get t1() { return CLIN_ckIso('T1'); }, get t2() { return CLIN_ckIso('T2'); } };
 var CLIN_WINDOW = 7;
 var CLIN_V1_DAY0 = '2026-06-08';
 
@@ -6903,7 +6907,7 @@ function CLIN_renderProg(host) {
   var minP = pts.reduce(function (a, b) { return (!a || b.v < a.v) ? b : a; }, null);
   var maxP = pts.reduce(function (a, b) { return (!a || b.v > a.v) ? b : a; }, null);
   var lastKind = last ? CLIN_kindOf(last, sel) : null;
-  var CYCLE0 = CAL.START, CYCLE1 = CAL.END;
+  var fRif = CLIN_faseRif(), CYCLE0 = fRif.dal, CYCLE1 = faseIsoDaIdx(dayIdxFromISO(fRif.dal) + faseGiorni(fRif) - 1);
 
   var selectorDesk = '<section class="an-card" style="grid-column:span 3;align-self:start;max-height:900px;overflow-y:auto">' +
     '<div class="an-head"><span class="an-title">Scegli il parametro</span></div>' +
@@ -13522,7 +13526,7 @@ async function exportPDF(statusEl, btn) {
     const pageW = 210, mL = 16, mR = 16, cW = pageW - mL - mR, TOPM = 34;
     const now = new Date(today + 'T00:00:00');
     const todayStr = now.toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' });
-    const tIdx = dayIdxFromISO(today), elapsed = Math.max(0, Math.min(111, tIdx)) + 1;
+    const tIdx = dayIdxFromISO(today), pdfFase = CLIN_faseRif(), pdfTot = faseGiorni(pdfFase), elapsed = Math.max(0, Math.min(pdfTot - 1, tIdx - dayIdxFromISO(pdfFase.dal))) + 1;
     const parts = [];
     const startPart = (label, title) => { if (doc.getNumberOfPages() > 0 && parts.length) doc.addPage(); parts.push({ label, title, page: doc.getNumberOfPages() }); return 38; };
     const sectionTitle = (y, text) => { doc.setDrawColor(0, 113, 227); doc.setLineWidth(1.2); doc.line(mL, y - 4, mL, y + 1); doc.setFont('helvetica', 'bold'); doc.setFontSize(11.5); doc.setTextColor(28, 28, 30); doc.text(pdfTxt(text), mL + 3, y); return y + 7; };
@@ -13540,7 +13544,7 @@ async function exportPDF(statusEl, btn) {
     const d1 = CLIN_dexaT('peso', 't1'), bf1 = CLIN_dexaT('bf_pct', 't1'), ln1 = CLIN_dexaT('lean_kg', 't1');
     const d2 = CLIN_dexaT('peso', 't2'), bf2 = CLIN_dexaT('bf_pct', 't2'), ln2 = CLIN_dexaT('lean_kg', 't2');   /* 10/11: T2 (07/11) */
     const pdfChain = (a, b, c, dec, u) => [a, b, c].filter(v => v != null).map(v => pdfN(v, dec)).join(' -> ') + ' ' + u;
-    y = bodyText(y, 'Giorno ' + elapsed + ' di ' + CAL.DAYS + ' (' + Math.round(elapsed / CAL.DAYS * 100) + '% del ciclo). ' + (lastW ? 'Ultimo peso registrato ' + pdfN(lastW.v, 1) + ' kg (' + pdfDMY(lastW.iso) + '). ' : '') +
+    y = bodyText(y, 'Giorno ' + elapsed + ' di ' + pdfTot + ' (' + Math.round(elapsed / pdfTot * 100) + '% del ciclo). ' + (lastW ? 'Ultimo peso registrato ' + pdfN(lastW.v, 1) + ' kg (' + pdfDMY(lastW.iso) + '). ' : '') +
       (d1 != null || d2 != null
         ? 'DEXA T0 (09/05/2026): peso ' + pdfN(CLIN_DEXA_META[0].t0, 1) + ' kg, massa grassa ' + pdfN(CLIN_DEXA_META[3].t0, 1) + '%, massa magra ' + pdfN(CLIN_DEXA_META[1].t0, 1) + ' kg. ' +
           (d1 != null ? 'T1 (12/09/2026): peso ' + pdfN(d1, 1) + ' kg, massa grassa ' + pdfN(bf1, 1) + '%, massa magra ' + pdfN(ln1, 1) + ' kg. ' : '') +
