@@ -3067,7 +3067,7 @@ function buildCycle(root){
   var pc=function(v){ return (v/tot*100)+"%"; }, E=function(c,st,tx){ var e=document.createElement("div"); e.className=c; if(st) e.style.cssText=st; if(tx!=null) e.textContent=tx; host.appendChild(e); return e; };
   var tr=E("an-cy-trk",""), PS={adatt:"Adatt.",costr:"Costruzione",peak:"Peak",mant:"Mantenim.",fine:"Fine ciclo"};
   PHASES.forEach(function(p){ var sg=document.createElement("div"); sg.className="an-cy-seg an-cy-"+p.id; sg.style.width=pc(p.weeks*7); sg.title=p.label; sg.innerHTML="<span>"+(PS[p.id]||p.label)+"</span>"; tr.appendChild(sg); });
-  var po=document.createElement("div"); po.className="an-cy-seg an-cy-post"; po.style.width=pc(pw); po.title="Post Ciclo 1"; po.innerHTML="<span>Post Ciclo 1 \u00b7 senza composti</span>"; tr.appendChild(po);
+  var po=document.createElement("div"); po.className="an-cy-seg an-cy-post"; po.style.width=pc(pw); po.title="Post Ciclo 1"; po.innerHTML="<span>Post Ciclo 1</span>";   /* 12/11: i composti residui sono descritti nella riga sopra e nella pillola */ tr.appendChild(po);
   var bk=0, trips=[];
   EVENTS.forEach(function(e){
     if (e.kind==="band"){
@@ -3751,7 +3751,8 @@ function buildBackup(root){
   var col=level==="ok"?"var(--ok)":level==="warn"?"var(--warn-ink)":"var(--bad)";
   var dot=level==="ok"?"var(--ok)":level==="warn"?"var(--warn)":"var(--bad)";
   var hoursTxt=hoursAgo<1?"meno di un\u2019ora fa":hoursAgo<48?Math.round(hoursAgo)+"h fa":Math.round(hoursAgo/24)+" giorni fa";
-  var expected7d=28, runs7d=(s.runs_last_7d!=null)?s.runs_last_7d:null;
+  /* 12/11: GitHub esegue 2-3 dei 4 backup programmati al giorno; l'atteso realistico e' 2 al giorno (14 in 7 giorni) */
+  var expected7d=14, runs7d=(s.runs_last_7d!=null)?s.runs_last_7d:null;
   var affid=runs7d!=null?Math.min(100,Math.round(runs7d/expected7d*100)):null;
   host.innerHTML='<div style="display:flex;align-items:center;gap:8px">'+
     '<span style="width:8px;height:8px;border-radius:50%;background:'+dot+';flex:0 0 auto"></span>'+
