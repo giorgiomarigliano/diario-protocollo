@@ -28,11 +28,32 @@ CLICKABLE = '#app button, #app [data-an-tab], #app [data-an-fmode], #app summary
 CYCLE_START = datetime.date(2026, 7, 20)
 
 
+BACKUP_NAMES = {'giorgio_protocollo_2026': 'diario_v1_', 'giorgio_proto2_2026': 'proto_v2_'}
+
+
+def snapshots_from_backup(folder):
+    """Dal 14/10/2026 il proxy vuole il login: i dati si prendono dall'ultimo snapshot del repo privato
+    diario-protocollo-backups (cartella snapshots/AAAA-MM-GG/). Restano in .snap/ (ignorata da git)."""
+    root = Path(folder); root = root / 'snapshots' if (root / 'snapshots').is_dir() else root
+    days = sorted(d for d in root.iterdir() if d.is_dir())
+    if not days: sys.exit(f'nessuno snapshot in {root}')
+    SNAP.mkdir(exist_ok=True)
+    for rec in RECORDS:
+        files = sorted(f for d in days[-3:] for f in d.glob(BACKUP_NAMES[rec] + '*.json'))
+        if not files: sys.exit(f'snapshot di {rec} non trovato in {root}')
+        rows = json.loads(files[-1].read_text())
+        if not rows or not rows[0].get('data'): sys.exit(f'snapshot vuoto per {rec}: audit interrotto (dati non verificabili)')
+        (SNAP / f'{rec}.json').write_text(json.dumps([{'data': rows[0]['data']}]))
+        print(f'[dati] {rec}: {files[-1].name}')
+
+
 def fetch_snapshots():
     SNAP.mkdir(exist_ok=True)
     for rec in RECORDS:
         req = urllib.request.Request(f'{PROXY}?user_id=eq.{rec}&select=data', headers={'apikey': KEY, 'Authorization': f'Bearer {KEY}', 'Origin': 'https://giorgiomarigliano.github.io'})  # il proxy v12 richiede l'Origin esatto
-        body = urllib.request.urlopen(req, timeout=60).read()
+        try: body = urllib.request.urlopen(req, timeout=60).read()
+        except urllib.error.HTTPError as e:
+            sys.exit(f'proxy: HTTP {e.code} (dal 14/10/2026 serve il login). Usare --backup-dir <cartella del repo privato dei backup> oppure --offline con .snap/ gia\' presente')
         rows = json.loads(body)
         if not rows or not rows[0].get('data'):
             sys.exit(f'snapshot vuoto per {rec}: audit interrotto (dati non verificabili)')
@@ -125,7 +146,7 @@ CONSIST_JS = '''()=>{
  const ad=adherence(store.blob); let s={injDone:0,injTot:0,suppDone:0,suppTot:0,woDone:0,woTot:0};
  const ts=new Date(TEST_PROTO_START+'T00:00:00'),td=new Date(today+'T00:00:00');
  for(let d=new Date(ts);d<=td;d.setDate(d.getDate()+1)){const r=dayAdherence(isoLocal(d));s.injDone+=r.injDone;s.injTot+=r.injTot;s.suppDone+=r.suppDone;s.suppTot+=r.suppTot;if(r.woPlanned){s.woTot++;if(r.woDone)s.woDone++;}}
- out.B={adherence:ad,sumDay:s};
+ const ws=woCycleStats(); out.B={adherence:ad,sumDay:s,ws:{woDone:ws.woDone,woTot:ws.woTot}};
  return out;}'''
 
 
@@ -136,12 +157,20 @@ def consist(p, port):
     problems = list(r['A'])
     ad, sm = r['B']['adherence'], r['B']['sumDay']
     for k, v in sm.items():
+        if k in ('woDone', 'woTot'): continue   # dal 24/10/2026 standard 5/settimana (woCycleStats): confrontato sotto
         if k in ad and ad[k] != v: problems.append(f'adherence().{k}={ad[k]} ma somma giorni={v}')
+    ws = r['B'].get('ws') or {}
+    for k in ('woDone', 'woTot'):
+        if ad.get(k) != ws.get(k): problems.append(f'adherence().{k}={ad.get(k)} ma woCycleStats()={ws.get(k)}')
     return problems, r['B']
 
 
 def build(src):
     BUILD.mkdir(exist_ok=True)
+    # accesso obbligatorio dal 16/10/2026: la copia di prova gira in modalita' permissiva (il login si prova con tools/auth/test_auth.py)
+    raw = Path(src).read_text(); noauth = re.sub(r'var AUTH_REQUIRED\s*=\s*true\s*;', 'var AUTH_REQUIRED = false;', raw)
+    if 'AUTH_REQUIRED' in raw and 'var AUTH_REQUIRED = false;' not in noauth: sys.exit('interruttore AUTH_REQUIRED non trovato: aggiornare audit.py')
+    src = BUILD / 'src_noauth.html'; src.write_text(noauth)
     r = subprocess.run(['node', str(HERE / 'instr.js'), str(src), str(BUILD / 'instr.html')], capture_output=True, text=True)
     if r.returncode or 'fails []' not in r.stdout: sys.exit('strumentazione fallita: ' + (r.stdout + r.stderr)[-400:])
     html = Path(src).read_text()
@@ -157,9 +186,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--src', default=str(ROOT / 'v2.html')); ap.add_argument('--quick', action='store_true')
     ap.add_argument('--en', action='store_true'); ap.add_argument('--offline', action='store_true')
-    ap.add_argument('--update-baseline', action='store_true')
+    ap.add_argument('--update-baseline', action='store_true'); ap.add_argument('--backup-dir')
     a = ap.parse_args()
-    if not a.offline or not all((SNAP / f'{r}.json').exists() for r in RECORDS): fetch_snapshots()
+    if a.backup_dir: snapshots_from_backup(a.backup_dir)
+    elif not a.offline or not all((SNAP / f'{r}.json').exists() for r in RECORDS): fetch_snapshots()
     if not (HERE / 'node_modules' / 'acorn').exists(): subprocess.run(['npm', 'install', '--silent'], cwd=HERE, check=True)
     build(a.src); OUT.mkdir(exist_ok=True)
     srv, port = serve(); fails = []; allnever = set(); runs = [(1440, 'it'), (390, 'it')] + ([(1440, 'en')] if a.en else [])

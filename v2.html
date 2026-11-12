@@ -1777,7 +1777,7 @@ function protoPausaSettingsHtml() {
     row(it ? 'Pausa attiva' : 'Pause on', '<button type="button" onclick="protoPausaSet(\'on\',\'' + (p.on ? '0' : '1') + '\')" style="border:none;background:var(--accent-soft);color:var(--accent-ink);font:inherit;font-size:var(--fs-sm);font-weight:600;padding:6px 14px;border-radius:var(--r-pill);cursor:pointer;">' + (p.on ? (it ? 'Riattiva protocollo' : 'Resume protocol') : (it ? 'Sospendi dal giorno scelto' : 'Pause from chosen day')) + '</button>') +
     row(it ? 'Inizio pausa completa (nessun peptide)' : 'Full pause starts (no peptides)', inp('dal', p.dal)) +
     row(it ? 'Ripresa (facoltativa)' : 'Resume on (optional)', inp('al', p.al)) +
-    '<div style="font-size:var(--fs-xs);color:var(--ink2);padding-top:6px;">' + (it ? 'Dal 9/11 (Post-ciclo) restano solo BPC-157 e TB-500 per finire i vial; la pausa completa parte alla data indicata, stimata sulla fine dei vial (dosi rimaste non verificate): modificala a mano se serve. Lo storico non cambia.' : 'Date estimated from the end of the BPC-157 and TB-500 vials; edit by hand if needed.') + '</div></section>';
+    '<div style="font-size:var(--fs-xs);color:var(--ink2);padding-top:6px;">' + (it ? 'Dal 9/11 (Post-ciclo) restano attivi solo i composti scelti nella card Iniezioni (ora: ' + gstAttiviNomi() + ') per finire i vial; la pausa completa parte alla data indicata (dosi rimaste non verificate): modificala a mano se serve. Lo storico non cambia.' : 'From 9 Nov (Post-cycle) only the compounds chosen in the Injections card stay active (now: ' + gstAttiviNomi().replace('nessuno', 'none') + ') to finish the vials; the full pause starts on the date shown (remaining doses not verified): edit by hand if needed.') + '</div></section>';
 }
 
 // Bug reale trovato il 10/09/2026: ".toISOString().slice(0,10)" converte
@@ -3126,12 +3126,13 @@ function cyExtras(root){
   /* striscia "adesso": cosa sono oggi, in grande */
   var cum=0, fase=null; PHASES.forEach(function(p){ if(fase===null && d<cum+p.weeks*7) fase=p.label; cum+=p.weeks*7; });
   var now=document.createElement("div"); now.className="an-cy-now"+(post?" is-post":"");
-  if (post){ var N=Math.floor((d-cyc)/7)+1; now.innerHTML='<b>Post Ciclo 1</b><span>settimana '+N+(N>8?'':' di 8 di riferimento')+' \u00b7 senza composti \u00b7 aperto</span>'; }
+  var postTxt=(gstInResiduo() && gstAttivi().length) ? 'dosi residue ('+gstAttiviNomi()+') fino al '+protoDmy(isoLocal(gstAddDays(today, gstGiorniAllaFine()))) : 'senza composti';
+  if (post){ var N=Math.floor((d-cyc)/7)+1; now.innerHTML='<b>Post Ciclo 1</b><span>settimana '+N+(N>8?'':' di 8 di riferimento')+' \u00b7 '+postTxt+' \u00b7 aperto</span>'; }
   else { var left=cyc-1-d; now.innerHTML='<b>'+(fase||"Ciclo 1")+'</b><span>giorno '+cycleDayNo(d)+' di '+cyc+' \u00b7 '+(left>0?'mancano '+left+(left===1?' giorno':' giorni')+' all\u20198/11':'ultimo giorno')+' \u00b7 poi Post Ciclo 1</span>'; }
   if (ph0) ph0.parentNode.insertBefore(now,ph0);
   var h='<div class="an-cy-pills">'+
     '<div class="an-cy-pill p1'+(post?' is-done':' is-cur')+'"><i></i><div><b>Ciclo 1 \u00b7 peptidi</b><span>20/07 \u2192 08/11 \u00b7 '+(post?'concluso':'in corso')+'</span></div></div>'+
-    '<div class="an-cy-pill pp'+(post?' is-cur':'')+'"><i></i><div><b>Post Ciclo 1</b><span>dal 9/11 \u00b7 senza composti \u00b7 aperto</span></div></div>'+
+    '<div class="an-cy-pill pp'+(post?' is-cur':'')+'"><i></i><div><b>Post Ciclo 1</b><span>dal 9/11 \u00b7 '+postTxt+' \u00b7 aperto</span></div></div>'+
     '<div class="an-cy-pill p2"><i></i><div><b>Ciclo 2</b><span>da valutare \u00b7 nessuna data n\u00e9 composti</span></div></div></div>';
   /* obiettivi: posizione sul range, colore solo se dentro (nessun giudizio inventato) */
   var dx=DEXA.length?DEXA[DEXA.length-1]:null, pe=cyLastNum("peso"), wa=WAIST.filter(function(q){ return q.cm!=null; });
@@ -3428,6 +3429,13 @@ function buildAdherence(root){
 
 /* Marker clinici T0 → T1. Colore dalla regola `better` di ciascun
    marker. Se T1 manca, la riga lo dichiara.                     */
+/* 12/11: valori di laboratorio mostrati con la virgola in italiano e senza decimali se sono tutti zero (solo formato: il numero non viene arrotondato) */
+function fmtLabVal(v){
+  if (v==null||v==="") return v;
+  var m=/^([<>]?\s*-?\d+)\.(\d+)$/.exec(String(v)); if(!m) return v;
+  var dec=/^0+$/.test(m[2]) ? "" : m[2];   /* 86.00 -> 86; 1.20 resta 1,20 (precisione del referto) */
+  return m[1]+(dec ? ((typeof LANG!=="undefined" && LANG==="en") ? "." : ",")+dec : "");
+}
 function buildClinical(root){
   var host=ch(root,"clin.rows"); if(!host) return;
   host.innerHTML="";
@@ -3444,10 +3452,10 @@ function buildClinical(root){
     var el=document.createElement("div"); el.className="an-trow";
     el.style.gridTemplateColumns="1fr 52px 10px 52px 10px 52px 66px";
     el.innerHTML='<span style="display:flex;align-items:center;gap:7px"><span style="width:7px;height:7px;border-radius:50%;background:'+col+'"></span>'+m.label+'</span>'+
-      '<span class="an-num">'+(m.val||"\u2014")+'</span><span style="text-align:center;font-size:var(--fs-2xs);color:var(--ink3)">\u2192</span>'+
-      '<strong class="an-num" data-bind="clin.'+m.id+'">'+(t1||"\u2014")+'</strong>'+
+      '<span class="an-num">'+(fmtLabVal(m.val)||"\u2014")+'</span><span style="text-align:center;font-size:var(--fs-2xs);color:var(--ink3)">\u2192</span>'+
+      '<strong class="an-num" data-bind="clin.'+m.id+'">'+(fmtLabVal(t1)||"\u2014")+'</strong>'+
       '<span style="text-align:center;font-size:var(--fs-2xs);color:var(--ink3)">\u2192</span>'+
-      '<strong class="an-num" data-bind="clin2.'+m.id+'">'+(t2||"\u2014")+'</strong>'+
+      '<strong class="an-num" data-bind="clin2.'+m.id+'">'+(fmtLabVal(t2)||"\u2014")+'</strong>'+
       '<span class="an-num" style="font-size:var(--fs-2xs);color:var(--ink3)">'+m.ref+" "+m.unit+'</span>';
     host.appendChild(el);
   });
@@ -3459,7 +3467,10 @@ function buildStock(root){
   var host=ch(root,"stock.rows"); if(!host) return;
   host.innerHTML="";
   var left=CYCLE.days-TODAY()-1;
-  setB(root,"stock.left",left+" "+T().days);
+  /* 12/11: dopo il ciclo il riferimento e' la pausa (solo composti attivi); in pausa nessun allarme */
+  var stPh=protoPhase(dayIdxFromISO(today));
+  if (stPh==="residuo") left=gstGiorniAllaFine();
+  setB(root,"stock.left", stPh==="pausa" ? "protocollo in pausa" : (stPh==="residuo" ? "pausa dal "+protoDmy(protoPausa().dal) : left+" "+T().days));
   /* giorni di copertura = stessa funzione di Gestione > Scorte (gstCopertura: dosi rimaste del vial in uso +
      vial intatti; congelato/attesa esclusi). Se i vial non sono ancora caricati resta lo slot vuoto. */
   var GSTID={tesamorelin:"tesa",ipamorelin:"ipa"};
@@ -3467,8 +3478,9 @@ function buildStock(root){
   var haveVd=AN_V1.status==="ok" && vdA && Object.keys(vdA).length>0;
   STOCK_ITEMS.forEach(function(s){
     var v=STOCK_DAYS[s.id];
-    if (haveVd) { var gc=GST_COMPOUNDS.find(function(x){return x.id===(GSTID[s.id]||s.id);}); if (gc) v=gstCopertura(gc,vdA,today).giorni; }
-    var col=v==null?"var(--idle)":(v<left?"var(--bad)":(v<left+14?"var(--warn)":"var(--ok)"));
+    var gcAtt=true;
+    if (haveVd) { var gc=GST_COMPOUNDS.find(function(x){return x.id===(GSTID[s.id]||s.id);}); if (gc) { v=gstCopertura(gc,vdA,today).giorni; gcAtt = stPh==="ciclo" || (stPh==="residuo" && gstIsAttivo(gc)); } }
+    var col=(v==null||!gcAtt)?"var(--idle)":(stPh==="residuo"?(v<left?"var(--warn)":"var(--ok)"):(v<left?"var(--bad)":(v<left+14?"var(--warn)":"var(--ok)")));   /* Post-ciclo: finire il vial prima della pausa non e' un allarme */
     var el=document.createElement("div"); el.className="an-trow";
     el.style.gridTemplateColumns="118px 1fr 58px";
     el.innerHTML='<span>'+s.label+'</span>'+
@@ -8953,9 +8965,19 @@ const CANON_INJ_ROWS = [
 // timing giusto in quel giorno specifico (gli slot REALI di quel
 // giorno, non un elenco fisso) e leggendo inj_{n}_{fieldKey}.
 function injCellState(dayIdx, rec, row) {
-  const slots = dayIdx > 111 ? [] : getInjectionSlots2(dayIdx);   /* 26/10: dopo la sett. 16 le iniezioni non entrano nell'aderenza */
+  /* 12/11: nel Post-ciclo getInjectionSlots2 restituisce i soli composti attivi (residuo) o nulla (pausa): prima qui c'era [] per dayIdx > 111 e le dosi di Fragment
+     registrate in settimana 17 non comparivano. Le iniezioni restano comunque fuori dall'aderenza complessiva dopo la sett. 16 (vedi overallParts). */
+  const slots = getInjectionSlots2(dayIdx);
   const slot = slots.find(s => s.label === row.timing && s.fields.includes(row.field));
-  if (!slot) return { state: 'non-prevista' }; // IGF in un giorno di riposo
+  if (!slot) {
+    /* dose registrata su un composto non (piu') attivo o in pausa: si mostra comunque, non e' una dose dovuta ma e' un dato reale */
+    if (dayIdx > 111) {
+      const sf = getInjectionSlotsFull(dayIdx).find(s => s.label === row.timing && s.fields.includes(row.field));
+      const vf = sf && rec['inj_' + sf.n + '_' + fieldKey(row.field)];
+      if (vf === 'fatto') return { state: 'fatto' };
+    }
+    return { state: 'non-prevista' }; // IGF in un giorno di riposo
+  }
   const v = rec['inj_' + slot.n + '_' + fieldKey(row.field)] || '';
   return { state: v || 'vuoto' };
 }
@@ -9184,7 +9206,7 @@ function weekAggregate(weekIdx) {
   const injPct = pct(injDoneTot, injApplTot), suppPct = pct(suppDoneTot, suppApplTot), woPct = pct(woDone, woTot);
   const woExtra = Math.max(0, woReal - WO_WEEK_TARGET);   /* sedute oltre le 5 (extra) */
   /* 26/10: in pausa/Post-ciclo non ci sono iniezioni dovute (0/0): la componente esce dalla media, non vale 0% */
-  const overallParts = [suppPct, woPct]; if (injApplTot > 0) overallParts.push(injPct);
+  const overallParts = [suppPct, woPct]; if (injApplTot > 0 && weekIdx < PROT_FROM_WEEK) overallParts.push(injPct);   /* 12/11: dal Post-ciclo le iniezioni si mostrano ma non entrano nel punteggio (decisione 26/10) */
   const overall = Math.round(overallParts.reduce((a, b) => a + b, 0) / overallParts.length);
 
   // ---- Confronto con la settimana precedente (solo se non è la prima) ----
@@ -9502,8 +9524,8 @@ function renderWeekFull() {
     recapTone = 'neutral';
     recapTitle = LANG === 'it' ? 'Per ora nessuno scivolone.' : 'No slip-ups so far.';
     recapText = LANG === 'it'
-      ? `Nei primi ${wk.elapsed} giorni: iniezioni ${wk.injApplTot ? wk.injPct + '%' : '—'}, integratori ${wk.suppPct}%, allenamenti ${wk.woPct}%. Il confronto con le settimane chiuse non regge ancora.`
-      : `In the first ${wk.elapsed} days: injections ${wk.injApplTot ? wk.injPct + '%' : '—'}, supplements ${wk.suppPct}%, workouts ${wk.woPct}%. Comparison with closed weeks doesn't hold yet.`;
+      ? `Nei primi ${wk.elapsed} giorni: iniezioni ${wk.injApplTot && wk.weekIdx < PROT_FROM_WEEK ? wk.injPct + '%' : '—'}, integratori ${wk.suppPct}%, allenamenti ${wk.woPct}%. Il confronto con le settimane chiuse non regge ancora.`
+      : `In the first ${wk.elapsed} days: injections ${wk.injApplTot && wk.weekIdx < PROT_FROM_WEEK ? wk.injPct + '%' : '—'}, supplements ${wk.suppPct}%, workouts ${wk.woPct}%. Comparison with closed weeks doesn't hold yet.`;
   } else {
     recapTone = wk.overall >= 85 ? 'good' : wk.overall >= 65 ? 'warn' : 'bad';
     recapTitle = recapTone === 'good'
@@ -11499,6 +11521,26 @@ function gstE(){ return Math.max(0, Math.min(protoFineIdx(), dayIdxFromISO(today
 function gstGiorniAllaFine(){ return protoFineIdx() - gstE(); }
 /* 09/11: in pausa non c'e' piu' una 'fine ciclo' futura (giorni = 0): le diciture sulla copertura del ciclo diventano "protocollo in pausa" */
 function gstInPausa(){ return protoPhase(dayIdxFromISO(today)) === 'pausa'; }
+/* 12/11 (due diligence): Post-ciclo con dosi residue ('residuo'). Gestione e Andamento leggono composti attivi e data di pausa
+   da proto_pausa invece di testi fissi sul ciclo. Chiavi di proto_pausa.attivi -> id di GST_COMPOUNDS. */
+function gstInResiduo(){ return protoPhase(dayIdxFromISO(today)) === 'residuo'; }
+var GST_PROTO_ID = { frag:'fragment', tb:'tb500' };
+function gstAttivi(){ var a = protoActive().map(function(k){ return GST_PROTO_ID[k] || k; }); return GST_COMPOUNDS.filter(function(c){ return a.indexOf(c.id) >= 0; }); }
+function gstAttiviNomi(){ var n = gstAttivi().map(function(c){ return c.name; }); return n.length ? n.join(', ') : 'nessuno'; }
+function gstIsAttivo(c){ return !gstInResiduo() || gstAttivi().indexOf(c) >= 0; }
+function gstGg(n){ return n + (n === 1 ? ' giorno' : ' giorni'); }
+function gstFinoAl(d){ var t = gstFmtDate(d); return (/^(8|11) /.test(t) ? 'all\u2019' : 'al ') + t; }
+/* margine di una scorta: nel ciclo rispetto alla fine, nel Post-ciclo rispetto alla pausa (solo composti attivi), in pausa solo i giorni di scorta */
+function gstMargine(c, cov, giorniAllaFine){
+  var diff = cov.giorni - giorniAllaFine;
+  if (gstInPausa()) return { txt: cov.giorni+" gg di scorta", col: diff>=0 ? "var(--ok)" : "var(--bad)" };
+  if (gstInResiduo()) {
+    if (!gstIsAttivo(c)) return { txt: cov.giorni+" gg di scorta \u00b7 non attivo", col: "var(--ink2)" };
+    return { txt: diff>=0 ? ("+"+diff+" gg oltre la pausa") : ("finisce "+(-diff)+" gg prima della pausa"), col: diff>=0 ? "var(--ok)" : "var(--warn-ink)" };
+  }
+  return { txt: diff>=0 ? ("+"+diff+" gg oltre fine ciclo") : ("mancano "+(-diff)+" gg"), col: diff>=0 ? "var(--ok)" : "var(--bad)" };
+}
+function gstScorteSub(giorniAllaFine){ return gstInPausa() ? 'protocollo in pausa' : (gstInResiduo() ? 'pausa dal '+protoDmy(protoPausa().dal) : 'fine ciclo '+gstFmtDate(gstAddDays(today, giorniAllaFine))); }
 
 // ── 1.7 materiali di consumo ──
 // PORTING 25/09: nuovo campo (decisione #1), seminato ai valori oggi fissi in V1.
@@ -11517,8 +11559,14 @@ function gstFabbisognoConsumabili(vd){
   var giorniAllaFine = gstGiorniAllaFine();
   var scNecessarie = 7 * giorniAllaFine;
   var imNecessarie = 2 * gstGiorniWoRimasti();
+  if (gstInResiduo()) {   /* Post-ciclo: solo le iniezioni dei composti attivi, da domani alla vigilia della pausa */
+    scNecessarie = 0;
+    for (var gi = dayIdxFromISO(today)+1; gi <= protoFineIdx(); gi++) getInjectionSlots2(gi).forEach(function(sl){ scNecessarie += sl.fields.filter(function(f){ return protoCompKey(f) !== 'igf'; }).length; });
+    if (!gstAttivi().some(function(c){ return c.id === 'igf'; })) imNecessarie = 0;
+  }
   var mlBac = 0, vialTotali = 0;
   GST_COMPOUNDS.forEach(function(c){
+    if (!gstIsAttivo(c)) return;   /* Post-ciclo: nessun vial da aprire per i composti non attivi */
     var cov = gstCopertura(c, vd, today);
     var usoRimasti = cov.statoInUso ? Math.min(cov.statoInUso.rimaste/c.voltePerDie, cov.statoInUso.vitaResidua) : 0;
     var vialDaAprire = Math.max(0, Math.ceil((giorniAllaFine - usoRimasti) / gstDurataVial(c)));
@@ -11674,7 +11722,7 @@ function GST_mount(){
   var root = document.querySelector('[data-gst-view="stock"]') ? document.body : null;
   root = document.body;
   var cycleEl = document.querySelector('[data-gst-cycle]');
-  if (cycleEl) cycleEl.textContent = (protoPhase(dayIdxFromISO(today))==="pausa") ? ("Protocollo sospeso dal "+protoDmy(protoPausa().dal)) : ("Ciclo 1 \u00b7 giorno "+(gstE()+1)+" di "+CAL.DAYS+" \u00b7 "+gstGiorniAllaFine()+" giorni alla fine");
+  if (cycleEl) cycleEl.textContent = (protoPhase(dayIdxFromISO(today))==="pausa") ? ("Protocollo sospeso dal "+protoDmy(protoPausa().dal)) : gstInResiduo() ? ("Post-ciclo \u00b7 giorno "+(dayIdxFromISO(today)-CAL.DAYS+1)+" \u00b7 pausa completa dal "+protoDmy(protoPausa().dal)+" (tra "+gstGg(protoPauseIdx()-dayIdxFromISO(today))+")") : ("Ciclo 1 \u00b7 giorno "+(gstE()+1)+" di "+CAL.DAYS+" \u00b7 "+gstGiorniAllaFine()+" giorni alla fine");
   document.querySelectorAll('[data-gst-tab]').forEach(function(b){
     if (b.dataset.bound) return; b.dataset.bound = "1";
     b.addEventListener("click", function(){
@@ -11712,12 +11760,19 @@ function GST_stockHero(){
     return CLIN_hero("Scorte \u00b7 protocollo in pausa", "Protocollo sospeso: nessun consumo previsto, le scorte restano ferme e non c\u2019\u00e8 allarme di copertura.", [
       { v:String(nInt), l:"Vial intatti" }, { v:String(nCon), l:"Composti con scorta" } ]);
   }
+  if (gstInResiduo()) {
+    var att = gstAttivi(), allaPausa = protoPauseIdx() - dayIdxFromISO(today);
+    var nIntR = GST_COMPOUNDS.reduce(function(s,c){ return s + gstCopertura(c,vd,today).intatti; }, 0);
+    var frase = (att.length ? (att.length===1 ? "Attivo solo " : "Attivi solo ")+gstAttiviNomi()+" per finire i vial" : "Nessun composto attivo")+"; pausa completa dal "+protoDmy(protoPausa().dal)+".";
+    return CLIN_hero("Scorte \u00b7 Post-ciclo, dosi residue", frase, [
+      { v:String(allaPausa), l:"Giorni alla pausa" }, { v:String(att.length), l:att.length===1 ? "Composto attivo" : "Composti attivi" }, { v:String(nIntR), l:"Vial intatti" } ]);
+  }
   var rows = GST_COMPOUNDS.map(function(c){ return { name:c.name, g:gstCopertura(c,vd,today).giorni }; });
   var red = rows.filter(function(r){ return r.g < left; }).sort(function(a,b){ return a.g-b.g; });
   var amber = rows.filter(function(r){ return r.g >= left && r.g < left+14; });
   var green = rows.length - red.length - amber.length;
   var sentence = red.length
-    ? (red.length===1 ? red[0].name+" finisce tra "+red[0].g+" giorni, prima della fine del ciclo (tra "+left+")." :
+    ? (red.length===1 ? red[0].name+" finisce tra "+gstGg(red[0].g)+", prima della fine del ciclo (tra "+left+")." :
        red.length+" composti non arrivano a fine ciclo: "+red.slice(0,3).map(function(r){ return r.name+" ("+r.g+" gg)"; }).join(", ")+(red.length>3?"\u2026":"")+".")
     : "Tutte le scorte coprono il ciclo (fine tra "+left+" giorni).";
   return CLIN_hero("Scorte \u00b7 fine ciclo tra "+left+" giorni", sentence, [
@@ -11867,14 +11922,13 @@ function GST_renderStock(){
 
   // ── 1.6 Scorte per composto (span 1/7) ──
   var giorniAllaFine = gstGiorniAllaFine();
-  html += '<section class="an-card" style="grid-column:1 / 7"><div class="an-head"><span class="an-title">Scorte per composto</span><span class="an-sub">'+(gstInPausa() ? 'protocollo in pausa' : 'fine ciclo '+gstFmtDate(gstAddDays(today, giorniAllaFine)))+'</span></div>' +
+  html += '<section class="an-card" style="grid-column:1 / 7"><div class="an-head"><span class="an-title">Scorte per composto</span><span class="an-sub">'+gstScorteSub(giorniAllaFine)+'</span></div>' +
     '<div class="an-thead gst-scortehead" style="grid-template-columns:1.5fr 42px 42px 42px 1.3fr"><span>Composto</span><span class="an-num">intatti</span><span class="an-num">finiti</span><span class="an-num">persi</span><span style="text-align:right">copre fino al</span></div><div class="an-tbl">';
   GST_COMPOUNDS.forEach(function(c){
     var cov = gstCopertura(c, vd, todayStr);
     var copreTxt = cov.giorni > 400 ? "oltre 1 anno" : gstFmtDate(gstAddDays(todayStr, cov.giorni));
     var diff = cov.giorni - giorniAllaFine;
-    var margineTxt = gstInPausa() ? (cov.giorni+" gg di scorta") : (diff>=0 ? ("+"+diff+" gg oltre fine ciclo") : ("mancano "+(-diff)+" gg"));
-    var margineCol = diff>=0 ? "var(--ok)" : "var(--bad)";
+    var mg = gstMargine(c, cov, giorniAllaFine), margineTxt = mg.txt, margineCol = mg.col;
     html += '<div class="an-trow gst-scorterow">' +
       '<span data-a="name" style="display:flex;align-items:center;gap:8px;min-width:0"><span style="width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span><span style="font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(c.name)+'</span></span>' +
       '<span data-a="intatti" data-lbl="Intatti" class="an-num">'+cov.intatti+'</span><span data-a="finiti" data-lbl="Finiti" class="an-num">'+cov.finiti+'</span><span data-a="persi" data-lbl="Persi" class="an-num" style="color:var(--ink3)">'+cov.persi+'</span>' +
@@ -11896,8 +11950,8 @@ function GST_renderStock(){
     '</div>';
   }
   html += '<section class="an-card" style="grid-column:7 / 11"><div class="an-head"><span class="an-title">Materiali di consumo</span><span class="an-sub">scorta \u00b7 aggiornala a mano</span></div>' +
-    consBlock("sc", "Siringhe SC", "PIC 31G 8mm \u00b7 7 punture al giorno", cons.sc, fab.scNecessarie, "Servono "+fab.scNecessarie+" fino all\'8 nov") +
-    consBlock("im", "Siringhe IM", "PIC 29G 12,7mm \u00b7 IGF-1 bilaterale", cons.im, fab.imNecessarie, "Servono "+fab.imNecessarie+" in "+gstGiorniWoRimasti()+" allenamenti") +
+    consBlock("sc", "Siringhe SC", "PIC 31G 8mm \u00b7 "+(gstInResiduo() ? "solo composti attivi" : "7 punture al giorno"), cons.sc, fab.scNecessarie, "Servono "+fab.scNecessarie+" fino "+gstFinoAl(gstAddDays(today, gstGiorniAllaFine()))) +
+    consBlock("im", "Siringhe IM", "PIC 29G 12,7mm \u00b7 IGF-1 bilaterale", cons.im, fab.imNecessarie, (gstInResiduo() && !fab.imNecessarie ? "Non servono: IGF-1 DES non attivo" : "Servono "+fab.imNecessarie+" in "+gstGiorniWoRimasti()+" allenamenti")) +
     consBlock("bac", "BAC Water", "flaconi \u00b7 Limitless + Bachem \u00b7 frigo", cons.bac, fab.flaconiBac, "Servono "+Math.ceil(fab.mlBac)+" mL per "+fab.vialTotali+" vial da aprire") +
   '<span class="an-note">Flacone BAC da 10 mL: ipotesi da confermare.</span></section>';
 
@@ -12013,7 +12067,7 @@ function GST_renderStockMobile(host){
 
   // ── Scorte per composto ──
   var giorniAllaFine = gstGiorniAllaFine();
-  html += '<div style="'+CARD+'padding:14px 16px;display:flex;flex-direction:column;gap:4px"><span style="'+LBL+'padding-bottom:4px">Scorte \u00b7 '+(gstInPausa() ? 'protocollo in pausa' : 'fine ciclo '+gstFmtDate(gstAddDays(today, giorniAllaFine)))+'</span>';
+  html += '<div style="'+CARD+'padding:14px 16px;display:flex;flex-direction:column;gap:4px"><span style="'+LBL+'padding-bottom:4px">Scorte \u00b7 '+gstScorteSub(giorniAllaFine)+'</span>';
   GST_COMPOUNDS.forEach(function(c){
     var cov = gstCopertura(c, vd, todayStr);
     var copreTxt = cov.giorni > 400 ? "oltre 1 anno" : gstFmtDate(gstAddDays(todayStr, cov.giorni));
@@ -12021,7 +12075,7 @@ function GST_renderStockMobile(host){
     html += '<div style="display:flex;align-items:center;gap:10px;min-height:48px;border-top:1px solid var(--line2)">' +
       '<span style="width:8px;height:8px;border-radius:50%;flex:0 0 auto;background:'+c.color+'"></span>' +
       '<div style="flex:1 1 auto;min-width:0;display:flex;flex-direction:column"><span style="font-size:var(--fs-md);font-weight:600;color:var(--ink)">'+esc(c.name)+'</span><span style="font-size:var(--fs-xs);color:var(--ink3)">'+cov.intatti+' intatti \u00b7 '+cov.finiti+' finiti \u00b7 '+cov.persi+' persi</span></div>' +
-      '<div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font-size:var(--fs-md);font-weight:700;color:'+(diff>=0?"var(--ok)":"var(--bad)")+'">'+copreTxt+'</span><span style="font-size:var(--fs-2xs);color:var(--ink3)">'+(gstInPausa()?(cov.giorni+" gg di scorta"):(diff>=0?("+"+diff+" gg oltre fine ciclo"):("mancano "+(-diff)+" gg")))+'</span></div></div>';
+      '<div style="display:flex;flex-direction:column;align-items:flex-end"><span style="font-size:var(--fs-md);font-weight:700;color:'+gstMargine(c, cov, giorniAllaFine).col+'">'+copreTxt+'</span><span style="font-size:var(--fs-2xs);color:var(--ink3)">'+gstMargine(c, cov, giorniAllaFine).txt+'</span></div></div>';
   });
   html += '</div>';
 
@@ -12036,8 +12090,8 @@ function GST_renderStockMobile(host){
       '<div style="display:flex;justify-content:space-between;gap:8px;font-size:var(--fs-xs)"><span style="color:var(--ink2)">'+testoUso+'</span><span style="font-weight:700;text-align:right;color:'+(margine>=0?"var(--ok)":"var(--bad)")+'">'+esitoTxt+'</span></div></div>';
   }
   html += '<div style="'+CARD+'padding:14px 16px;display:flex;flex-direction:column;gap:4px"><span style="'+LBL+'padding-bottom:4px">Materiali di consumo</span>' +
-    consBlock("sc","Siringhe SC","PIC 31G 8mm \u00b7 7 punture al giorno",cons.sc,fab.scNecessarie,"Servono "+fab.scNecessarie+" fino all\u20198 nov") +
-    consBlock("im","Siringhe IM","PIC 29G 12,7mm \u00b7 IGF-1 bilaterale",cons.im,fab.imNecessarie,"Servono "+fab.imNecessarie+" in "+gstGiorniWoRimasti()+" allenamenti") +
+    consBlock("sc","Siringhe SC","PIC 31G 8mm \u00b7 "+(gstInResiduo() ? "solo composti attivi" : "7 punture al giorno"),cons.sc,fab.scNecessarie,"Servono "+fab.scNecessarie+" fino "+gstFinoAl(gstAddDays(today, gstGiorniAllaFine()))) +
+    consBlock("im","Siringhe IM","PIC 29G 12,7mm \u00b7 IGF-1 bilaterale",cons.im,fab.imNecessarie,(gstInResiduo() && !fab.imNecessarie ? "Non servono: IGF-1 DES non attivo" : "Servono "+fab.imNecessarie+" in "+gstGiorniWoRimasti()+" allenamenti")) +
     consBlock("bac","BAC Water","flaconi \u00b7 Limitless + Bachem \u00b7 frigo",cons.bac,fab.flaconiBac,"Servono "+Math.ceil(fab.mlBac)+" mL per "+fab.vialTotali+" vial da aprire") +
     '<span style="font-size:var(--fs-xs);color:var(--ink3)">La scorta la aggiorni tu \u00b7 flacone BAC da 10 mL: ipotesi da confermare.</span></div>';
 
@@ -12484,7 +12538,7 @@ const EN_DICT = {
 'Dati insufficienti per valutare il legame.':'Not enough data to assess the link.',
 'Servono almeno 5 valori negli ultimi 14 giorni per un confronto.':'At least 5 values in the last 14 days are needed for a comparison.','Nessuno scatto nel ciclo.':'No shots in the cycle.','Nessuno scatto registrato.':'No shots recorded.',
 'Scatti':'Shots','Ultimi 30 gg':'Last 30 d','Ultimo':'Latest','Al T2 (7 nov)':'To T2 (7 Nov)','Giorni previsti':'Planned days','Streak attuale':'Current streak','Media/sett.':'Avg/wk','Esercizi in salita':'Exercises trending up',
-'Dati dei vial in caricamento…':'Vial data loading…','Giorni a fine ciclo':'Days to cycle end','Vial intatti':'Intact vials','Composti con scorta':'Compounds in stock','protocollo in pausa':'protocol paused','Scorte · protocollo in pausa':'Stock · protocol paused','Protocollo sospeso: nessun consumo previsto, le scorte restano ferme e non c’è allarme di copertura.':'Protocol suspended: no consumption planned, stock stays put and there is no coverage alert.','Non coprono il ciclo':'Do not last the cycle','Margine sotto 14 gg':'Margin under 14 d','Coperti':'Covered','peptidi':'peptides','giorno tipo':'typical day',
+'Dati dei vial in caricamento…':'Vial data loading…','Giorni a fine ciclo':'Days to cycle end','Giorni alla pausa':'Days to pause','Composti attivi':'Active compounds','Composto attivo':'Active compound','senza composti':'no compounds','aperto':'open','Non servono: IGF-1 DES non attivo':'None needed: IGF-1 DES not active','solo composti attivi':'active compounds only','Scorte · Post-ciclo, dosi residue':'Stock · Post-cycle, remaining doses','Vial intatti':'Intact vials','Composti con scorta':'Compounds in stock','protocollo in pausa':'protocol paused','Scorte · protocollo in pausa':'Stock · protocol paused','Protocollo sospeso: nessun consumo previsto, le scorte restano ferme e non c’è allarme di copertura.':'Protocol suspended: no consumption planned, stock stays put and there is no coverage alert.','Non coprono il ciclo':'Do not last the cycle','Margine sotto 14 gg':'Margin under 14 d','Coperti':'Covered','peptidi':'peptides','giorno tipo':'typical day',
 'Iniezioni':'Injections','Pasti':'Meals',
 'Esporta dati':'Export data','Scarica Excel':'Download Excel','Genera PDF':'Generate PDF','Excel: biometria, protocollo, allenamento (dal 18/07) e alimentazione (dal 12/10) a oggi. PDF: report a 5 pagine in italiano (vitali, forza, protocollo, laboratorio).':'Excel: biometrics, protocol, workouts (from 18 Jul) and nutrition (from 12 Oct) to today. PDF: 5-page report in Italian (vitals, strength, protocol, lab).',
 /* --- navigazione / comuni --- */
@@ -12536,7 +12590,7 @@ const EN_DICT = {
 'Nessuna foto entro 3 giorni':'No photo within 3 days','Dati ai checkpoint':'Checkpoint data','Foto e dati ai checkpoint':'Photos & data at checkpoints','foto più vicina alla data, entro ±3 giorni':'closest photo to the date, within ±3 days',
 'IGF-1 in µg/L. Foto: la più vicina alla data del checkpoint, entro ±3 giorni.':'IGF-1 in µg/L. Photo: closest to the checkpoint date, within ±3 days.','T1 non ancora inserito.':'T1 not entered yet.',
 'T0: nessuna seduta entro ±7 giorni':'T0: no session within ±7 days','T1: nessuna seduta entro ±7 giorni':'T1: no session within ±7 days','T2: nessuna seduta entro ±7 giorni':'T2: no session within ±7 days',   /* il rule generico "N giorni" prevaleva sulla regola dedicata */
-'un punto per prelievo, la data è sotto':'one point per sample, date below','prelievi durante il ciclo':'samples during the cycle',
+'un punto per prelievo, la data è sotto':'one point per sample, date below',
 /* --- checkpoint --- */
 'T0 = basale':'T0 = baseline','T0 e T1 (punto vuoto)':'T0 and T1 (hollow dot)','T0 (punto vuoto)':'T0 (hollow dot)','dal T0':'vs T0','dal T1':'vs T1','un punto per prelievo \u00b7 tratteggio = pausa oltre 6 mesi':'one dot per blood draw \u00b7 dashed line = gap over 6 months','prelievi durante il ciclo':'draws during the cycle','T1 = attuale':'T1 = current','variazione non quantificabile (valore sotto soglia)':'change not quantifiable (value below threshold)','variazione non quantificabile (valore sopra soglia)':'change not quantifiable (value above threshold)','T1 = registrato':'T1 = recorded','T2 = attuale':'T2 = current','T2 nel range':'T2 in range','T2 fuori range':'T2 out of range','T2 sotto target clinico':'T2 below clinical target','T2 = controllo finale':'T2 = final check','T1 nel range':'T1 in range','T1 fuori range':'T1 out of range','T1 sotto target clinico':'T1 below clinical target',
 /* --- andamento --- */
@@ -12557,7 +12611,7 @@ const EN_DICT = {
 'Durata':'Duration','Fase':'Phase','Sedute':'Sessions','Lun':'Mon','Mar':'Tue','Mer':'Wed','Gio':'Thu','Ven':'Fri','Sab':'Sat','Dom':'Sun',
 'Volume medio per giorno della settimana, in tonnellate. n sempre visibile.':'Average volume per weekday, in tonnes. n always shown.','20 esercizi sentinella in 6 gruppi. Δ = ultimo carico meno il primo registrato.':'20 sentinel exercises in 6 groups. Δ = latest load minus the first recorded.',
 'Muscolo':'Muscle','Quota':'Share','Dorso (lat)':'Back (lats)','Quadricipiti':'Quadriceps','Glutei':'Glutes','Trapezi':'Traps','Femorali':'Hamstrings','Polpacci':'Calves','Lombari':'Lower back',
-'Volume cumulativo per muscolo, dal riepilogo del diario V1: non dipende dall\'intervallo.':'Cumulative volume per muscle, from the V1 diary summary: independent of the range.','Progressione esercizi':'Exercise progression','Andamento per esercizio':'Progress by exercise','Per esercizio':'By exercise','Per slot':'By slot','Spalle · deltoidi posteriori':'Shoulders · rear delts','Spalle · trapezi / upright row':'Shoulders · traps / upright row','Spalle · alzate laterali':'Shoulders · lateral raises','Spalle · alzate frontali':'Shoulders · front raises','Spalle · spinte':'Shoulders · presses','Petto · spinte inclinate':'Chest · incline presses','Petto · croci':'Chest · flies','Petto · spinte piane / declinate':'Chest · flat / decline presses','Dorso · braccia tese':'Back · straight-arm pulldowns','Dorso · tirate verticali':'Back · vertical pulls','Dorso · tirate orizzontali':'Back · horizontal rows','Gambe · leg curl':'Legs · leg curl','Gambe · leg extension':'Legs · leg extension','Gambe · pressa / squat':'Legs · leg press / squat','Gambe · stacchi':'Legs · deadlifts','Glutei · hip thrust':'Glutes · hip thrust','Polpacci':'Calves','Tricipiti · sopra la testa':'Triceps · overhead','Tricipiti · pushdown / estensioni':'Triceps · pushdowns / extensions','Bicipiti · curl a martello':'Biceps · hammer curls','Bicipiti · curl':'Biceps · curls','indice forza':'strength index','Più recenti':'Most recent','Più frequenti':'Most frequent','Maggior progresso':'Most progress','Tutti':'All','Mostra solo le ultime 10':'Show only the last 10','Nascondi gli esercizi con meno di 3 sedute':'Hide exercises with fewer than 3 sessions','serie migliore':'best set','1RM stim.':'est. 1RM','serie':'sets','soglia 2 sessioni':'2-session threshold',
+'Volume cumulativo per muscolo, dal riepilogo del diario V1: non dipende dall\'intervallo.':'Cumulative volume per muscle, from the V1 diary summary: independent of the range.','Progressione esercizi':'Exercise progression','Andamento per esercizio':'Progress by exercise','Per esercizio':'By exercise','Per slot':'By slot','Spalle · deltoidi posteriori':'Shoulders · rear delts','Spalle · trapezi / upright row':'Shoulders · traps / upright row','Spalle · alzate laterali':'Shoulders · lateral raises','Spalle · alzate frontali':'Shoulders · front raises','Spalle · spinte':'Shoulders · presses','Petto · spinte inclinate':'Chest · incline presses','Petto · croci':'Chest · flies','Petto · spinte piane / declinate':'Chest · flat / decline presses','Dorso · braccia tese':'Back · straight-arm pulldowns','Dorso · tirate verticali':'Back · vertical pulls','Dorso · tirate orizzontali':'Back · horizontal rows','Gambe · leg curl':'Legs · leg curl','Gambe · leg extension':'Legs · leg extension','Gambe · pressa / squat':'Legs · leg press / squat','Gambe · stacchi':'Legs · deadlifts','Glutei · hip thrust':'Glutes · hip thrust','Tricipiti · sopra la testa':'Triceps · overhead','Tricipiti · pushdown / estensioni':'Triceps · pushdowns / extensions','Bicipiti · curl a martello':'Biceps · hammer curls','Bicipiti · curl':'Biceps · curls','indice forza':'strength index','Più recenti':'Most recent','Più frequenti':'Most frequent','Maggior progresso':'Most progress','Tutti':'All','Mostra solo le ultime 10':'Show only the last 10','Nascondi gli esercizi con meno di 3 sedute':'Hide exercises with fewer than 3 sessions','serie migliore':'best set','1RM stim.':'est. 1RM','serie':'sets','soglia 2 sessioni':'2-session threshold',
 'Per esercizio esatto (non per macchina generica), da history_sessions: segue da sola le sostituzioni in palestra.':'Per exact exercise (not generic machine), from history_sessions: it follows gym substitutions on its own.',
 'Frequenza per gruppo muscolare':'Frequency per muscle group','ultime 4 settimane':'last 4 weeks','Sessioni':'Sessions','Ultima volta':'Last time','Completa il volume cumulativo: dice se un gruppo è trascurato di recente.':'Complements cumulative volume: shows whether a group has been neglected recently.',
 'Coppia':'Pair','Giorno':'Day','Mostra tutte le 12 settimane':'Show all 12 weeks','WO sett.':'WO wk',
@@ -12569,7 +12623,7 @@ const EN_DICT = {
 'flaconi · Limitless + Bachem · frigo':'vials · Limitless + Bachem · fridge','La scorta la aggiorni tu · flacone BAC da 10 mL: ipotesi da confermare.':'You update the stock yourself · 10 mL BAC vial: assumption to be confirmed.',
 'Flacone BAC da 10 mL: ipotesi da confermare.':'10 mL BAC vial: assumption to be confirmed.','Fuori protocollo':'Off protocol','liofilizzati · frigo':'lyophilized · fridge','Allenamento':'Workout','Weekend':'Weekend','Rest Day':'Rest Day',
 'Iniezione':'Injection','Integratori':'Supplements','Pasto':'Meal','Colazione':'Breakfast','Pranzo':'Lunch','Cena':'Dinner','Spuntino':'Snack','Break':'Snack','digiuno':'fasted','orario flessibile':'flexible time','con colazione':'with breakfast','pre-sleep':'pre-sleep',
-'Tutti':'All','Carne':'Meat','Pesce':'Fish','Uova & albumi':'Eggs & whites','Latticini':'Dairy','Snack':'Snacks','Carboidrati':'Carbs','Frutta':'Fruit','Verdure':'Vegetables','CARNE':'MEAT','PESCE':'FISH','UOVA & ALBUMI':'EGGS & WHITES','LATTICINI':'DAIRY',
+'Carne':'Meat','Pesce':'Fish','Uova & albumi':'Eggs & whites','Latticini':'Dairy','Snack':'Snacks','Carboidrati':'Carbs','Frutta':'Fruit','Verdure':'Vegetables','CARNE':'MEAT','PESCE':'FISH','UOVA & ALBUMI':'EGGS & WHITES','LATTICINI':'DAIRY',
 'INTEGRATORI':'SUPPLEMENTS','SNACK':'SNACKS','CARBOIDRATI':'CARBS','FRUTTA':'FRUIT','VERDURE':'VEGETABLES','Cerca un alimento…':'Search a food…',
 'Tocca + sull\'alimento · Regola la quantità con − e + · Il totale si aggiorna in alto':'Tap + on a food · Adjust the quantity with − and + · The total updates at the top',
 'Tocca + sull\'alimento · Regola la quantità con − e + · Il totale si aggiorna a destra':'Tap + on a food · Adjust the quantity with − and + · The total updates on the right',
@@ -12602,6 +12656,14 @@ function enPost(t) {
 }
 /* ---- regole per frasi con numeri (prima che vinca: la prima che combacia) ---- */
 const EN_RULES = [
+ [/^Post-ciclo · giorno (\d+) · pausa completa dal (.+) \(tra (\d+) giorn[oi]\)$/i, (m, a, b, c) => 'Post-cycle · day ' + a + ' · full pause from ' + b + ' (in ' + c + (c === '1' ? ' day)' : ' days)')],
+ [/^Attiv[oi] solo (.+) per finire i vial; pausa completa dal (.+)\.$/i, (m, a, b) => 'Only ' + a + ' active, to finish the vials; full pause from ' + b + '.'],
+ [/^Nessun composto attivo; pausa completa dal (.+)\.$/i, (m, b) => 'No active compound; full pause from ' + b + '.'],
+ [/^dosi residue \((.+)\) fino al (.+)$/i, (m, a, b) => 'remaining doses (' + a + ') until ' + b],
+ [/^pausa dal (.+)$/i, (m, d) => 'pause from ' + d],
+ [/^dal (\d+\/\d+)$/i, (m, d) => 'from ' + d],
+ [/^\+(\d+) gg oltre la pausa$/i, (m, n) => '+' + n + ' d past the pause'],
+ [/^finisce (\d+) gg prima della pausa$/i, (m, n) => 'runs out ' + n + ' d before the pause'],
  [/^(\d+) allenamenti su (\d+) previsti \((\d+)%\) dal (.+?)(, volume (.+)% rispetto alle 2 settimane precedenti)?\.$/i, (m, a, b, p, d, x, v) => a + ' workouts of ' + b + ' planned (' + p + '%) since ' + d + (v ? ', volume ' + v + '% vs the previous 2 weeks' : '') + '.'],
  [/^Workout · dal (.+)$/i, (m, d) => 'Workout · since ' + d],
  [/^su allenamenti previsti \((\d+)\/(\d+)\)$/i, (m, a, b) => 'of planned workouts (' + a + '/' + b + ')'],
@@ -12628,7 +12690,7 @@ const EN_RULES = [
  [/^(\d+)% dei giorni previsti allenati nelle ultime (\d+) settimane(?:, volume (.+?) rispetto alle 2 settimane precedenti)?\.$/i, (m, p, w, v) => p + '% of planned days trained in the last ' + w + ' weeks' + (v ? ', volume ' + v + ' vs the previous 2 weeks' : '') + '.'],
  [/^Workout · (\d+) settimane$/i, (m, n) => 'Workout · ' + n + ' weeks'],
  [/^fine ciclo tra (\d+) giorni$/i, (m, n) => 'cycle ends in ' + n + ' days'],
- [/^(.+) finisce tra (\d+) giorni, prima della fine del ciclo \(tra (\d+)\)\.$/i, (m, a, b, c) => a + ' runs out in ' + b + ' days, before the cycle ends (in ' + c + ').'],
+ [/^(.+) finisce tra (\d+) giorn[oi], prima della fine del ciclo \(tra (\d+)\)\.$/i, (m, a, b, c) => a + ' runs out in ' + b + ' days, before the cycle ends (in ' + c + ').'],
  [/^(\d+) composti non arrivano a fine ciclo: (.+)\.$/i, (m, n, r) => n + ' compounds will not last until the end of the cycle: ' + r.replace(/\((\d+) gg\)/g, '($1 d)') + '.'],
  [/^Tutte le scorte coprono il ciclo \(fine tra (\d+) giorni\)\.$/i, (m, n) => 'All supplies cover the cycle (ends in ' + n + ' days).'],
  [/^(Oggi è|Giorno tipo) (.+?) \((.+?)\): (\d+) appuntamenti, dalle (.+?) alle (.+?)\.$/i, (m, pre, lab, d, n, a, b) => {
@@ -13407,8 +13469,8 @@ async function exportPDF(statusEl, btn) {
     y = sectionTitle(y, 'Scorte a oggi');
     const vd = (typeof GST_V1 !== 'undefined' && GST_V1.stock_v2_vials) || null, left = gstGiorniAllaFine();
     if (vd && Object.keys(vd).length) {
-      const rows = GST_COMPOUNDS.map(c => { const g = gstCopertura(c, vd, today).giorni; return [c.name, g + ' giorni', gstInPausa() ? 'protocollo in pausa' : g < left ? 'non arriva a fine ciclo (mancano ' + left + ' giorni)' : (g < left + 14 ? 'copre il ciclo, margine sotto 14 giorni' : 'copre il ciclo')]; });
-      tbl2({ startY: y, head: [['Composto', 'Copertura', 'Rispetto alla fine del ciclo']], body: rows, didParseCell: d => { if (d.section === 'body' && d.column.index === 2 && String(d.cell.raw).indexOf('non arriva') === 0) { d.cell.styles.textColor = [216, 30, 5]; d.cell.styles.fontStyle = 'bold'; } } });
+      const rows = GST_COMPOUNDS.map(c => { const g = gstCopertura(c, vd, today).giorni; return [c.name, g + ' giorni', gstInPausa() ? 'protocollo in pausa' : gstInResiduo() ? (!gstIsAttivo(c) ? 'non attivo' : g < left ? 'finisce prima della pausa' : 'copre fino alla pausa') : g < left ? 'non arriva a fine ciclo (mancano ' + left + ' giorni)' : (g < left + 14 ? 'copre il ciclo, margine sotto 14 giorni' : 'copre il ciclo')]; });
+      tbl2({ startY: y, head: [['Composto', 'Copertura', gstInResiduo() ? 'Rispetto alla pausa' : 'Rispetto alla fine del ciclo']], body: rows, didParseCell: d => { if (d.section === 'body' && d.column.index === 2 && String(d.cell.raw).indexOf('non arriva') === 0) { d.cell.styles.textColor = [216, 30, 5]; d.cell.styles.fontStyle = 'bold'; } } });
       y = tblY() + 8;
     } else { y = bodyText(y, 'Dati dei vial non disponibili al momento della generazione.'); }
     y = sectionTitle(y, 'Fasi del protocollo');

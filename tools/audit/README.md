@@ -2,7 +2,7 @@
 
 Un comando, esito pass/fail (exit 0 = OK, 1 = fallito):
 
-    python3 tools/audit/audit.py            # completo (~3 min per viewport)
+    python3 tools/audit/audit.py --backup-dir ../diario-protocollo-backups   # completo (~3 min per viewport)
     python3 tools/audit/audit.py --quick    # Oggi ogni 7 giorni (controllo rapido, piu' falsi positivi sulla baseline)
     python3 tools/audit/audit.py --en       # aggiunge il giro in inglese
     python3 tools/audit/audit.py --src X    # audit di un altro file (es. versione precedente)
@@ -15,7 +15,9 @@ Requisiti: Python 3 + playwright (Chromium), Node + npm (acorn si installa da so
 3. **Coerenza**: `dayAdherence` == `AN_dayAdh` per ogni giorno del ciclo; `adherence()` == somma dei giorni.
 
 ## Dati
-Gli snapshot dei due record Supabase si scaricano a ogni run in `.snap/` (**ignorato da git: sono dati di salute, non vanno mai committati**) con la chiave pubblica gia' presente in v2.html. L'audit usa solo GET e simula il proxy in locale: non scrive mai sui dati. `--offline` riusa gli snapshot gia' scaricati.
+Dal 14/10/2026 il proxy richiede il login, quindi l'audit non scarica piu' i dati da solo: li prende dall'ultimo snapshot del repo **privato** dei backup con `--backup-dir <cartella del repo>` e li copia in `.snap/` (**ignorata da git: sono dati di salute, non vanno mai committati**). `--offline` riusa gli snapshot gia' presenti. L'audit usa solo GET e simula il proxy in locale: non scrive mai sui dati. La copia di prova gira con l'accesso in modalita' permissiva (`AUTH_REQUIRED = false` solo nella copia in `.build/`); il login si prova a parte con `tools/auth/test_auth.py`.
+
+Coerenza allenamenti: dal 24/10/2026 `adherence()` usa lo standard di 5 sedute a settimana (`woCycleStats`), quindi si confronta con quello e non con la somma del piano giornaliero.
 
 ## Baseline
 `baseline.json` = campi che legittimamente non hanno mai un valore oggi (dati assenti nel ciclo corrente). Se l'audit segnala un campo nuovo: prima verificare nel codice se e' un errore; solo se e' legittimo, `--update-baseline` su codice noto per buono e commit del file.
