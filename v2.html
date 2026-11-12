@@ -1710,7 +1710,10 @@ function protoPausa() {
   return { on: !(p.on === '0' || p.on === 0 || p.on === false), dal: p.dal || PAUSA_DEFAULT_DAL, al: p.al || '' };
 }
 function protoPauseIdx() { const p = protoPausa(); return p.on ? dayIdxFromISO(p.dal) : null; }
-function protoPhase(idx) {
+/* 12/11 (fasi, passo 2): la fase del giorno viene dal modello delle fasi (faseDi); questa e' la regola storica basata solo su
+   proto_pausa, tenuta come riferimento per l'audit (deve coincidere con faseDi finche' blob.fasi non esiste). */
+function protoPhase(idx) { return faseDi(idx).stato; }
+function protoPhaseDaPausa(idx) {
   const pi = protoPauseIdx();
   if (pi != null && idx >= pi) {
     const al = protoPausa().al;
@@ -1726,15 +1729,17 @@ function protoFineIdx() { const pi = protoPauseIdx(); return pi == null ? CAL.DA
 const POST_WEEKS = 8;
 function navDays() { const need = Math.max(CAL.DAYS + POST_WEEKS * 7, dayIdxFromISO(today) + 1, protoFineIdx() + 1, dayIdxFromISO(BKK_TRIPS[BKK_TRIPS.length - 1][1]) + 1); return Math.ceil(need / 7) * 7; }
 function cycleDayLabel(idx, cap) {
-  const it = LANG === 'it', ph = protoPhase(idx);
+  const it = LANG === 'it', fd = faseDi(idx);
   let t;
-  if (ph === 'pausa' || ph === 'residuo') { const k = idx - CAL.DAYS + 1; t = it ? ('Post-ciclo \u00b7 giorno ' + k) : ('Post-cycle \u00b7 day ' + k); }
-  else t = (it ? 'giorno ' : 'day ') + cycleDayNo(idx) + (it ? ' di ' : ' of ') + CAL.DAYS;
+  if (fd.stato !== 'ciclo') t = it ? ('Post-ciclo \u00b7 giorno ' + fd.giorno) : ('Post-cycle \u00b7 day ' + fd.giorno);
+  else t = (it ? 'giorno ' : 'day ') + fd.giorno + (it ? ' di ' : ' of ') + faseGiorni(fd.fase);
   return cap ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 }
 /* Etichetta settimana: W1..W16 nel ciclo, P1.. dopo (Post-ciclo, settimana 1 = 9-15/11) */
-function weekTag(w) { return w >= Math.ceil(CAL.DAYS / 7) ? 'P' + (w - Math.ceil(CAL.DAYS / 7) + 1) : 'W' + (w + 1); }
-function weekTagLong(w) { const it = LANG === 'it', n = Math.ceil(CAL.DAYS / 7); return w >= n ? (it ? 'Post-ciclo \u00b7 sett. ' : 'Post-cycle \u00b7 wk ') + (w - n + 1) : (it ? 'Settimana ' : 'Week ') + (w + 1); }
+/* settimana w (0 = prima del percorso) -> sigla: W1.. dentro la durata prevista di un ciclo, P1.. dopo (Post-ciclo) */
+function weekTagParts(w) { const fd = faseDi(w * 7), f = fd.fase; if (f.tipo === 'post') return { post: true, n: fd.settimana }; const nW = Math.ceil(faseGiorni(f) / 7); return fd.settimana > nW ? { post: true, n: fd.settimana - nW } : { post: false, n: fd.settimana }; }
+function weekTag(w) { const t = weekTagParts(w); return (t.post ? 'P' : 'W') + t.n; }
+function weekTagLong(w) { const it = LANG === 'it', t = weekTagParts(w); return t.post ? (it ? 'Post-ciclo \u00b7 sett. ' : 'Post-cycle \u00b7 wk ') + t.n : (it ? 'Settimana ' : 'Week ') + t.n; }
 function protoDmy(iso) { return iso ? (iso.slice(8, 10) + '/' + iso.slice(5, 7)) : ''; }
 /* ===== FASI DEL PERCORSO (12/11/2026, passo 1: sola lettura, nessun cambiamento visibile) =====
    Obiettivo: date, durata e composti di ogni fase letti dai DATI e non dal codice, cosi' Ciclo 2, pause e mantenimento
@@ -1747,9 +1752,10 @@ function faseIsoDaIdx(idx) { var d = new Date(CAL.START + 'T00:00:00'); d.setDat
 function fasiDefault() {
   var p = protoPausa(), pi = protoPauseIdx();
   /* pausa disattivata = il protocollo prosegue: come protoPhase(), un solo ciclo aperto */
-  if (pi == null) return [{ id: 'c1', nome: 'Ciclo 1', tipo: 'ciclo', dal: CAL.START, al: '', checkpoint: { T0: CAL.T0, T1: CAL.T1, T2: CAL.T2 } }];
+  if (pi == null) return [{ id: 'c1', nome: 'Ciclo 1', tipo: 'ciclo', dal: CAL.START, al: '', giorni: CAL.DAYS, checkpoint: { T0: CAL.T0, T1: CAL.T1, T2: CAL.T2 } }];
   return [
-    { id: 'c1', nome: 'Ciclo 1', tipo: 'ciclo', dal: CAL.START, al: CAL.END, checkpoint: { T0: CAL.T0, T1: CAL.T1, T2: CAL.T2 } },
+    { id: 'c1', nome: 'Ciclo 1', tipo: 'ciclo', dal: CAL.START, al: CAL.END, giorni: CAL.DAYS, checkpoint: { T0: CAL.T0, T1: CAL.T1, T2: CAL.T2 },
+      pausaDal: pi < CAL.DAYS ? p.dal : '', ripresa: pi < CAL.DAYS ? (p.al || '') : '' },   /* pausa iniziata dentro il ciclo */
     { id: 'p1', nome: 'Post Ciclo 1', tipo: 'post', dal: faseIsoDaIdx(CAL.DAYS), al: '',
       pausaDal: pi != null ? p.dal : '', ripresa: p.al || '', attivi: protoActive().filter(function (k) { return k !== '-'; }) }
   ];
@@ -1767,20 +1773,33 @@ function fasiValide(l) {
   }
   return dayIdxFromISO(l[0].dal) === 0;
 }
-function fasiList() { var l = store && store.blob && store.blob.fasi; return fasiValide(l) ? l : fasiDefault(); }
+/* elenco delle fasi, ricalcolato solo quando cambiano blob.fasi o proto_pausa (protoPhase viene chiamata migliaia di volte per render) */
+var FASI_CACHE = { key: null, list: null };
+function fasiList() {
+  var b = (store && store.blob) || {}, key = JSON.stringify(b.fasi || null) + '|' + JSON.stringify(b.proto_pausa || null);
+  if (FASI_CACHE.key !== key) { FASI_CACHE.key = key; FASI_CACHE.list = fasiValide(b.fasi) ? b.fasi : fasiDefault(); }
+  return FASI_CACHE.list;
+}
+/* durata prevista della fase in giorni: dichiarata (giorni) o ricavata dalle date; fase aperta senza durata = Infinity */
+function faseGiorni(f) { return f.giorni || (f.al ? dayIdxFromISO(f.al) - dayIdxFromISO(f.dal) + 1 : Infinity); }
 /* fase del giorno idx: { fase, giorno (1 = primo giorno della fase), settimana (1..), stato: 'ciclo' | 'residuo' | 'pausa' } */
 function faseDi(idx) {
   var l = fasiList(), f = null;
   for (var i = 0; i < l.length; i++) { var a = dayIdxFromISO(l[i].dal), b = l[i].al ? dayIdxFromISO(l[i].al) : Infinity; if (idx >= a && idx <= b) { f = l[i]; break; } }
   if (!f) f = idx < 0 ? l[0] : l[l.length - 1];
-  var g = idx - dayIdxFromISO(f.dal) + 1, stato = 'ciclo';
-  if (f.tipo === 'post') {
-    stato = 'residuo';
-    if (f.pausaDal && idx >= dayIdxFromISO(f.pausaDal) && !(f.ripresa && idx >= dayIdxFromISO(f.ripresa))) stato = 'pausa';
-  }
+  var g = idx - dayIdxFromISO(f.dal) + 1, stato = f.tipo === 'post' ? 'residuo' : 'ciclo';
+  if (f.pausaDal && idx >= dayIdxFromISO(f.pausaDal) && !(f.ripresa && idx >= dayIdxFromISO(f.ripresa))) stato = 'pausa';
   return { fase: f, giorno: g, settimana: Math.floor((g - 1) / 7) + 1, stato: stato };
 }
 function faseCorrente() { return faseDi(dayIdxFromISO(today)); }
+/* fasi "di calendario" per le schede di riepilogo (Stato del percorso): come fasiList(), ma senza il caso "pausa disattivata = ciclo aperto",
+   cosi' il Ciclo 1 resta chiuso alla sua data anche se il protocollo viene riattivato a mano */
+function fasiCalendario() {
+  var b = (store && store.blob) || {};
+  if (fasiValide(b.fasi)) return b.fasi;
+  var l = fasiList();
+  return l.length > 1 ? l : [{ id: 'c1', nome: 'Ciclo 1', tipo: 'ciclo', dal: CAL.START, al: CAL.END, giorni: CAL.DAYS }, { id: 'p1', nome: 'Post Ciclo 1', tipo: 'post', dal: faseIsoDaIdx(CAL.DAYS), al: '' }];
+}
 const PROTO_COMP_KEYS = [['frag', /^Fragment/], ['bpc', /^BPC-157/], ['tb', /^TB-500/], ['tesa', /^Tesamorelin/], ['ipa', /^Ipamorelin/], ['igf', /^IGF-1/]];
 function protoCompKey(field) { const m = PROTO_COMP_KEYS.find(x => x[1].test(field)); return m ? m[0] : ''; }
 /* Composti attivi nel Post-ciclo (dosi rimaste): default BPC-157 e TB-500; ognuno si attiva/disattiva con un interruttore sulla card Iniezioni */
@@ -3171,14 +3190,25 @@ function cyExtras(root){
   /* striscia "adesso": cosa sono oggi, in grande */
   var cum=0, fase=null; PHASES.forEach(function(p){ if(fase===null && d<cum+p.weeks*7) fase=p.label; cum+=p.weeks*7; });
   var now=document.createElement("div"); now.className="an-cy-now"+(post?" is-post":"");
+  /* 12/11 (fasi, passo 3): riga "adesso" e pillole costruite dall'elenco delle fasi (fasiCalendario), non piu' da testi fissi */
   var postTxt=(gstInResiduo() && gstAttivi().length) ? 'dosi residue ('+gstAttiviNomi()+') fino al '+protoDmy(isoLocal(gstAddDays(today, gstGiorniAllaFine()))) : 'senza composti';
-  if (post){ var N=Math.floor((d-cyc)/7)+1; now.innerHTML='<b>Post Ciclo 1</b><span>settimana '+N+(N>8?'':' di 8 di riferimento')+' \u00b7 '+postTxt+' \u00b7 aperto</span>'; }
-  else { var left=cyc-1-d; now.innerHTML='<b>'+(fase||"Ciclo 1")+'</b><span>giorno '+cycleDayNo(d)+' di '+cyc+' \u00b7 '+(left>0?'mancano '+left+(left===1?' giorno':' giorni')+' all\u20198/11':'ultimo giorno')+' \u00b7 poi Post Ciclo 1</span>'; }
+  var FL=fasiCalendario(), tIdx=dayIdxFromISO(today), cur=FL[FL.length-1], curI=FL.length-1;
+  FL.forEach(function(f,k){ var a=dayIdxFromISO(f.dal), b=f.al?dayIdxFromISO(f.al):Infinity; if (tIdx>=a && tIdx<=b){ cur=f; curI=k; } });
+  var dmS=function(iso){ return parseInt(iso.slice(8,10),10)+'/'+iso.slice(5,7); };
+  var alS=function(iso){ var g=parseInt(iso.slice(8,10),10); return ((g===8||g===11)?'all’':'al ')+dmS(iso); };
+  var gCur=tIdx-dayIdxFromISO(cur.dal)+1;
+  if (cur.tipo==='post'){ var N=Math.floor((gCur-1)/7)+1, rif=cur.al?Math.ceil(faseGiorni(cur)/7):POST_WEEKS;
+    now.innerHTML='<b>'+cur.nome+'</b><span>settimana '+N+(N>rif?'':' di '+rif+(cur.al?'':' di riferimento'))+' · '+postTxt+' · '+(cur.al?'fino '+alS(cur.al):'aperto')+'</span>'; }
+  else { var tot=faseGiorni(cur), left=tot-gCur, nxt=FL[curI+1];
+    now.innerHTML='<b>'+((cur.id==='c1'&&fase)||cur.nome)+'</b><span>giorno '+gCur+(isFinite(tot)?' di '+tot:'')+(isFinite(tot)?' · '+(left>0?'mancano '+left+(left===1?' giorno':' giorni')+' '+alS(cur.al||faseIsoDaIdx(dayIdxFromISO(cur.dal)+tot-1)):'ultimo giorno'):'')+' · poi '+(nxt?nxt.nome:'Post Ciclo')+'</span>'; }
   if (ph0) ph0.parentNode.insertBefore(now,ph0);
-  var h='<div class="an-cy-pills">'+
-    '<div class="an-cy-pill p1'+(post?' is-done':' is-cur')+'"><i></i><div><b>Ciclo 1 \u00b7 peptidi</b><span>20/07 \u2192 08/11 \u00b7 '+(post?'concluso':'in corso')+'</span></div></div>'+
-    '<div class="an-cy-pill pp'+(post?' is-cur':'')+'"><i></i><div><b>Post Ciclo 1</b><span>dal 9/11 \u00b7 '+postTxt+' \u00b7 aperto</span></div></div>'+
-    '<div class="an-cy-pill p2"><i></i><div><b>Ciclo 2</b><span>da valutare \u00b7 nessuna data n\u00e9 composti</span></div></div></div>';
+  var nCicli=FL.filter(function(f){ return f.tipo==='ciclo'; }).length;
+  var h='<div class="an-cy-pills">'+FL.map(function(f,k){
+      var st=k===curI?' is-cur':(k<curI?' is-done':'');
+      if (f.tipo==='post') return '<div class="an-cy-pill pp'+st+'"><i></i><div><b>'+f.nome+'</b><span>dal '+dmS(f.dal)+' · '+(k===curI?postTxt:'senza composti')+' · '+(f.al?'fino '+alS(f.al):'aperto')+'</span></div></div>';
+      return '<div class="an-cy-pill p1'+st+'"><i></i><div><b>'+f.nome+' · peptidi</b><span>'+(f.al?protoDmy(f.dal)+' → '+protoDmy(f.al):'dal '+protoDmy(f.dal))+' · '+(k<curI?'concluso':(k===curI?'in corso':'previsto'))+'</span></div></div>';
+    }).join('')+
+    (FL[FL.length-1].tipo==='post' ? '<div class="an-cy-pill p2"><i></i><div><b>Ciclo '+(nCicli+1)+'</b><span>da valutare · nessuna data né composti</span></div></div>' : '')+'</div>';
   /* obiettivi: posizione sul range, colore solo se dentro (nessun giudizio inventato) */
   var dx=DEXA.length?DEXA[DEXA.length-1]:null, pe=cyLastNum("peso"), wa=WAIST.filter(function(q){ return q.cm!=null; });
   var gauge=function(v,r,ax,judge){
