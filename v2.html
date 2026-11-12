@@ -5889,7 +5889,10 @@ var CTX = (function () {
             var a = e; while (a.parentElement && !a.parentElement.classList.contains('an-view')) a = a.parentElement;
             return a.parentElement ? a : null; } }
         return null; },
-      place: function (card, note) { note.style.cssText = 'grid-column:1/-1;margin:0 0 -4px;padding:0 4px;'; card.insertAdjacentElement('beforebegin', note); },
+      place: function (card, note) { note.style.cssText = 'grid-column:1/-1;margin:0 0 -4px;padding:0 4px;';
+        /* 12/11: se le prime card non hanno un vial in uso (nessuna barra) la nota va comunque prima di tutte le card dei vial */
+        var first = card, pv; while ((pv = first.previousElementSibling) && pv.querySelector && pv.querySelector('[data-gst-reco-open],[data-gst-reco-save],[data-gst-close-ok]')) first = pv;
+        first.insertAdjacentElement('beforebegin', note); },
       txt: function () { return IT() ? 'Barre = vial consumato: verde <70%, giallo 70\u201390%, rosso >90% (dosi e vita).' : 'Bars = vial used up: green <70%, yellow 70\u201390%, red >90% (doses and shelf life).'; } },
     /* ---- Oggi: gli anelli vanno in fondo alla card a tutta larghezza; le iniezioni sotto l'intestazione con lo stesso margine del titolo ---- */
     { id: 'rings', find: function (app) { return (typeof oggiViewMode !== 'undefined' && oggiViewMode === 'week') ? null : ringsCard(app); }, place: function (card, note) {
@@ -11333,7 +11336,7 @@ window.addEventListener('resize', () => {
 //    evitare altrove in questo progetto.
 // 7) Stabilità IGF-1 DES -- 30 giorni nel calcolo, come indicato dalla specifica.
 
-var GST = { recoOpen: null, recoForm: {}, subtab: "stock", ucPeptide: "bpc", ucMg: 10, ucBac: 2, ucDose: 250, orariType: null, mealCat: "all", mealQuery: "" };
+var GST = { recoOpen: null, closeAsk: null, recoForm: {}, subtab: "stock", ucPeptide: "bpc", ucMg: 10, ucBac: 2, ucDose: 250, orariType: null, mealCat: "all", mealQuery: "" };
 var GST_V1 = { loaded: false, stock_v2_vials: {} };
 var GST_MEAL = {}; // { foodName: qty } -- solo in sessione, come V1 (decisione #2)
 
@@ -12159,7 +12162,14 @@ function GST_recoSummary(c, vd, av){
 }
 function GST_recoBlock(c, vd, av){
   var btn = "align-self:flex-start;border:1px solid var(--line);background:var(--surf2);color:var(--accent-ink);font-size:var(--fs-xs);font-weight:700;border-radius:var(--r-md);padding:5px 10px;cursor:pointer";
-  if (GST.recoOpen !== c.id) return '<button type="button" data-gst-reco-open="'+c.id+'" style="'+btn+'">+ Ricostituisci nuovo vial</button>';
+  /* 12/11 (Giorgio): un vial finito o scaduto si puo' chiudere senza ricostituirne un altro (in pausa non se ne aprono) */
+  if (av && GST.closeAsk === c.id) return '<div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line2);padding-top:9px">' +
+    '<span style="font-size:var(--fs-xs);line-height:1.4;color:var(--ink2)">Il vial '+av.n+' ('+esc(av.sup)+') verr\u00e0 segnato come <strong>esaurito</strong>. Le iniezioni gi\u00e0 registrate non cambiano.</span>' +
+    '<div data-gst-reco-msg style="font-size:var(--fs-xs);font-weight:600;color:var(--bad)"></div>' +
+    '<div style="display:flex;gap:8px"><button type="button" data-gst-close-ok="'+c.id+'" data-gst-close-key="'+esc(av.key)+'" style="border:none;background:var(--accent);color:var(--white);font-size:var(--fs-xs);font-weight:700;border-radius:var(--r-md);padding:6px 12px;cursor:pointer">Conferma esaurito</button>' +
+    '<button type="button" data-gst-close-cancel style="border:1px solid var(--line);background:var(--surf2);color:var(--ink2);font-size:var(--fs-xs);font-weight:700;border-radius:var(--r-md);padding:6px 12px;cursor:pointer">Annulla</button></div></div>';
+  if (GST.recoOpen !== c.id) return '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" data-gst-reco-open="'+c.id+'" style="'+btn+'">+ Ricostituisci nuovo vial</button>' +
+    (av ? '<button type="button" data-gst-close-ask="'+c.id+'" style="'+btn+';color:var(--ink2)">Segna esaurito</button>' : '') + '</div>';
   var intact = gstAllVials(c, vd).filter(function(v){return v.stato==="intatto";});
   if (!intact.length) return '<span style="font-size:var(--fs-xs);font-weight:600;color:var(--bad)">Nessun vial intatto disponibile per questo composto.</span><button type="button" data-gst-reco-cancel style="'+btn+'">Chiudi</button>';
   var f = GST.recoForm;
@@ -12212,7 +12222,38 @@ function GST_saveReco(cid){
   });
 }
 
+/* Chiude il vial in uso (stato -> esaurito) senza aprirne un altro: stessa scrittura di GST_saveReco
+   (lettura fresca del record V1, controllo che il vial in uso sia ancora quello mostrato, PATCH, rilettura di verifica). */
+function GST_closeVial(cid, key){
+  var c = GST_COMPOUNDS.find(function(x){return x.id===cid;});
+  var btn = document.querySelector('[data-gst-close-ok]'); if (btn){ btn.disabled = true; btn.textContent = "Salvataggio\u2026"; }
+  var url = CFG.PROXY_URL + "?user_id=eq.giorgio_protocollo_2026";
+  var hdr = { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY };
+  fetch(url + "&select=data", { headers: hdr }).then(function(r){ return r.json(); }).then(function(rows){
+    var data = rows[0] && rows[0].data; if (!data) throw new Error("record V1 non trovato");
+    var vd = data.stock_v2_vials || {};
+    var cur = gstActiveVial(c, vd);
+    if (!cur || cur.key !== key) throw new Error("il vial in uso \u00e8 cambiato: ricarica la pagina");
+    vd[key] = Object.assign({}, vd[key] || {}, { stato: "esaurito" });
+    data.stock_v2_vials = vd;
+    return fetch(url, { method: "PATCH", headers: Object.assign({ "Content-Type": "application/json", Prefer: "return=minimal" }, hdr), body: JSON.stringify({ data: data }) })
+      .then(function(r){ if (!r.ok) throw new Error("salvataggio non riuscito ("+r.status+")"); });
+  }).then(function(){
+    return fetch(url + "&select=data-%3Estock_v2_vials", { headers: hdr }).then(function(r){ return r.json(); });
+  }).then(function(rows){
+    var got = (rows[0] && rows[0].stock_v2_vials) || {};
+    if (!got[key] || got[key].stato !== "esaurito") throw new Error("verifica dopo la scrittura fallita: ricarica la pagina");
+    GST_V1.stock_v2_vials = got; GST.closeAsk = null; GST_renderStock();
+  }).catch(function(e){
+    if (btn){ btn.disabled = false; btn.textContent = "Conferma esaurito"; }
+    GST_recoMsg("Errore: " + e.message);
+  });
+}
+
 function GST_bindStock(host){
+  host.querySelectorAll('[data-gst-close-ask]').forEach(function(b){ b.addEventListener("click", function(){ GST.closeAsk = b.getAttribute("data-gst-close-ask"); GST.recoOpen = null; GST_renderStock(); }); });
+  host.querySelectorAll('[data-gst-close-cancel]').forEach(function(b){ b.addEventListener("click", function(){ GST.closeAsk = null; GST_renderStock(); }); });
+  host.querySelectorAll('[data-gst-close-ok]').forEach(function(b){ b.addEventListener("click", function(){ GST_closeVial(b.getAttribute("data-gst-close-ok"), b.getAttribute("data-gst-close-key")); }); });
   host.querySelectorAll('[data-gst-uc]').forEach(function(el){
     el.addEventListener("input", function(){
       var k = el.getAttribute("data-gst-uc");
@@ -12619,7 +12660,7 @@ const EN_DICT = {
 'Stock':'Stock','Orari':'Schedule','Alimenti':'Foods','Convertitore · U-100':'Converter · U-100','Personalizzato':'Custom','Vial · mg':'Vial · mg','BAC · mL':'BAC · mL','Dose · mcg':'Dose · mcg','Da prelevare':'To draw',
 'dose intera, un’iniezione':'full dose, one injection','dose intera, un\'iniezione':'full dose, one injection','Ricostituzione e vial in uso':'Reconstitution & vials in use',
 'Modifica mg o BAC: le unità si ricalcolano · IGF-1 DES è bilaterale, metà per lato':'Edit mg or BAC: units are recalculated · IGF-1 DES is bilateral, half per side',
-'Dosi su questo vial':'Doses on this vial','Vita residua':'Remaining life','+ Ricostituisci nuovo vial':'+ Reconstitute new vial','Scorte':'Supplies','Materiali di consumo':'Consumables','Siringhe SC':'SC syringes','Siringhe IM':'IM syringes',
+'Dosi su questo vial':'Doses on this vial','Vita residua':'Remaining life','+ Ricostituisci nuovo vial':'+ Reconstitute new vial','Segna esaurito':'Mark as finished','Conferma esaurito':'Confirm finished','Scorte':'Supplies','Materiali di consumo':'Consumables','Siringhe SC':'SC syringes','Siringhe IM':'IM syringes',
 'flaconi · Limitless + Bachem · frigo':'vials · Limitless + Bachem · fridge','La scorta la aggiorni tu · flacone BAC da 10 mL: ipotesi da confermare.':'You update the stock yourself · 10 mL BAC vial: assumption to be confirmed.',
 'Flacone BAC da 10 mL: ipotesi da confermare.':'10 mL BAC vial: assumption to be confirmed.','Fuori protocollo':'Off protocol','liofilizzati · frigo':'lyophilized · fridge','Allenamento':'Workout','Weekend':'Weekend','Rest Day':'Rest Day',
 'Iniezione':'Injection','Integratori':'Supplements','Pasto':'Meal','Colazione':'Breakfast','Pranzo':'Lunch','Cena':'Dinner','Spuntino':'Snack','Break':'Snack','digiuno':'fasted','orario flessibile':'flexible time','con colazione':'with breakfast','pre-sleep':'pre-sleep',
@@ -12656,6 +12697,7 @@ function enPost(t) {
 }
 /* ---- regole per frasi con numeri (prima che vinca: la prima che combacia) ---- */
 const EN_RULES = [
+ [/^Il vial (\S+) \((.+)\) verrà segnato come esaurito\. Le iniezioni già registrate non cambiano\.$/i, (m, n, sup) => 'Vial ' + n + ' (' + sup + ') will be marked as finished. Injections already logged do not change.'],
  [/^Post-ciclo · giorno (\d+) · pausa completa dal (.+) \(tra (\d+) giorn[oi]\)$/i, (m, a, b, c) => 'Post-cycle · day ' + a + ' · full pause from ' + b + ' (in ' + c + (c === '1' ? ' day)' : ' days)')],
  [/^Attiv[oi] solo (.+) per finire i vial; pausa completa dal (.+)\.$/i, (m, a, b) => 'Only ' + a + ' active, to finish the vials; full pause from ' + b + '.'],
  [/^Nessun composto attivo; pausa completa dal (.+)\.$/i, (m, b) => 'No active compound; full pause from ' + b + '.'],

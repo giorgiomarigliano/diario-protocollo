@@ -23,7 +23,7 @@ KEY = 'sb_publishable_ppqlo1IbPDjWqnkw_h5wuA_WH8dCtPx'   # chiave pubblica, la s
 RECORDS = ('giorgio_proto2_2026', 'giorgio_protocollo_2026')
 PNG = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==')
 BAD = re.compile(r'undefined|NaN|\[object|Infinity|\bnull\b')
-DANGER = re.compile(r'elimina|cancella|reset|svuota|salva|registra|importa|scarica|genera|esporta|delete|remove|logout|backup|ripristina|sync|invia|copia|nuovo scatto|excel|pdf', re.I)
+DANGER = re.compile(r'esaurito|elimina|cancella|reset|svuota|salva|registra|importa|scarica|genera|esporta|delete|remove|logout|backup|ripristina|sync|invia|copia|nuovo scatto|excel|pdf', re.I)
 CLICKABLE = '#app button, #app [data-an-tab], #app [data-an-fmode], #app summary, #app [role=tab], #app [onclick]'
 CYCLE_START = datetime.date(2026, 7, 20)
 
