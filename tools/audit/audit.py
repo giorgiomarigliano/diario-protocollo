@@ -146,6 +146,8 @@ CONSIST_JS = '''()=>{
  const ad=adherence(store.blob); let s={injDone:0,injTot:0,suppDone:0,suppTot:0,woDone:0,woTot:0};
  const ts=new Date(TEST_PROTO_START+'T00:00:00'),td=new Date(today+'T00:00:00');
  for(let d=new Date(ts);d<=td;d.setDate(d.getDate()+1)){const r=dayAdherence(isoLocal(d));s.injDone+=r.injDone;s.injTot+=r.injTot;s.suppDone+=r.suppDone;s.suppTot+=r.suppTot;if(r.woPlanned){s.woTot++;if(r.woDone)s.woDone++;}}
+ /* fasi (12/11): faseDi() deve coincidere con protoPhase() per ogni giorno navigabile, e contare i giorni come cycleDayLabel */
+ if (typeof faseDi==='function') { for(let i=0;i<navDays();i++){ const ph=protoPhase(i), fd=faseDi(i); if(fd.stato!==ph) out.A.push('fase idx '+i+': faseDi='+fd.stato+' protoPhase='+ph); const att=ph==='ciclo'?i+1:i-CAL.DAYS+1; if(fd.giorno!==att) out.A.push('fase idx '+i+': giorno '+fd.giorno+' atteso '+att); } }
  const ws=woCycleStats(); out.B={adherence:ad,sumDay:s,ws:{woDone:ws.woDone,woTot:ws.woTot}};
  return out;}'''
 

@@ -1736,6 +1736,51 @@ function cycleDayLabel(idx, cap) {
 function weekTag(w) { return w >= Math.ceil(CAL.DAYS / 7) ? 'P' + (w - Math.ceil(CAL.DAYS / 7) + 1) : 'W' + (w + 1); }
 function weekTagLong(w) { const it = LANG === 'it', n = Math.ceil(CAL.DAYS / 7); return w >= n ? (it ? 'Post-ciclo \u00b7 sett. ' : 'Post-cycle \u00b7 wk ') + (w - n + 1) : (it ? 'Settimana ' : 'Week ') + (w + 1); }
 function protoDmy(iso) { return iso ? (iso.slice(8, 10) + '/' + iso.slice(5, 7)) : ''; }
+/* ===== FASI DEL PERCORSO (12/11/2026, passo 1: sola lettura, nessun cambiamento visibile) =====
+   Obiettivo: date, durata e composti di ogni fase letti dai DATI e non dal codice, cosi' Ciclo 2, pause e mantenimento
+   non richiedono di riscrivere schede e testi. Gli indici giorno restano continui (p2_day_N, N=0 il primo giorno del Ciclo 1):
+   una fase e' un intervallo di date sullo stesso asse, lo storico non si sposta.
+   Sorgente: blob.fasi = [{ id, nome, tipo:'ciclo'|'post', dal:'AAAA-MM-GG', al:'AAAA-MM-GG'|'' (aperta), ... }] se presente e valida;
+   altrimenti l'elenco di ripiego costruito da CAL e proto_pausa (identico al comportamento attuale).
+   Per ora nessuna scheda li usa: l'audit (tools/audit) verifica che faseDi() coincida con protoPhase() giorno per giorno. */
+function faseIsoDaIdx(idx) { var d = new Date(CAL.START + 'T00:00:00'); d.setDate(d.getDate() + idx); return isoLocal(d); }
+function fasiDefault() {
+  var p = protoPausa(), pi = protoPauseIdx();
+  /* pausa disattivata = il protocollo prosegue: come protoPhase(), un solo ciclo aperto */
+  if (pi == null) return [{ id: 'c1', nome: 'Ciclo 1', tipo: 'ciclo', dal: CAL.START, al: '', checkpoint: { T0: CAL.T0, T1: CAL.T1, T2: CAL.T2 } }];
+  return [
+    { id: 'c1', nome: 'Ciclo 1', tipo: 'ciclo', dal: CAL.START, al: CAL.END, checkpoint: { T0: CAL.T0, T1: CAL.T1, T2: CAL.T2 } },
+    { id: 'p1', nome: 'Post Ciclo 1', tipo: 'post', dal: faseIsoDaIdx(CAL.DAYS), al: '',
+      pausaDal: pi != null ? p.dal : '', ripresa: p.al || '', attivi: protoActive().filter(function (k) { return k !== '-'; }) }
+  ];
+}
+function fasiValide(l) {
+  if (!Array.isArray(l) || !l.length) return false;
+  var re = /^\d{4}-\d{2}-\d{2}$/, prevEnd = null;
+  for (var i = 0; i < l.length; i++) {
+    var f = l[i];
+    if (!f || !f.id || !f.nome || (f.tipo !== 'ciclo' && f.tipo !== 'post') || !re.test(f.dal || '')) return false;
+    if (f.al && (!re.test(f.al) || f.al < f.dal)) return false;
+    if (!f.al && i < l.length - 1) return false;            /* solo l'ultima fase puo' essere aperta */
+    if (prevEnd != null && dayIdxFromISO(f.dal) !== prevEnd + 1) return false;   /* fasi contigue, senza buchi ne' sovrapposizioni */
+    prevEnd = f.al ? dayIdxFromISO(f.al) : null;
+  }
+  return dayIdxFromISO(l[0].dal) === 0;
+}
+function fasiList() { var l = store && store.blob && store.blob.fasi; return fasiValide(l) ? l : fasiDefault(); }
+/* fase del giorno idx: { fase, giorno (1 = primo giorno della fase), settimana (1..), stato: 'ciclo' | 'residuo' | 'pausa' } */
+function faseDi(idx) {
+  var l = fasiList(), f = null;
+  for (var i = 0; i < l.length; i++) { var a = dayIdxFromISO(l[i].dal), b = l[i].al ? dayIdxFromISO(l[i].al) : Infinity; if (idx >= a && idx <= b) { f = l[i]; break; } }
+  if (!f) f = idx < 0 ? l[0] : l[l.length - 1];
+  var g = idx - dayIdxFromISO(f.dal) + 1, stato = 'ciclo';
+  if (f.tipo === 'post') {
+    stato = 'residuo';
+    if (f.pausaDal && idx >= dayIdxFromISO(f.pausaDal) && !(f.ripresa && idx >= dayIdxFromISO(f.ripresa))) stato = 'pausa';
+  }
+  return { fase: f, giorno: g, settimana: Math.floor((g - 1) / 7) + 1, stato: stato };
+}
+function faseCorrente() { return faseDi(dayIdxFromISO(today)); }
 const PROTO_COMP_KEYS = [['frag', /^Fragment/], ['bpc', /^BPC-157/], ['tb', /^TB-500/], ['tesa', /^Tesamorelin/], ['ipa', /^Ipamorelin/], ['igf', /^IGF-1/]];
 function protoCompKey(field) { const m = PROTO_COMP_KEYS.find(x => x[1].test(field)); return m ? m[0] : ''; }
 /* Composti attivi nel Post-ciclo (dosi rimaste): default BPC-157 e TB-500; ognuno si attiva/disattiva con un interruttore sulla card Iniezioni */
@@ -11480,6 +11525,23 @@ function gstAddDays(dateStr, n){ var d=new Date(dateStr+"T00:00:00"); d.setDate(
 function gstFmtDate(d){ return d.getDate()+" "+["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"][d.getMonth()]; }
 
 // ── esito 1.4: vince la prima condizione vera ──
+/* 12/11: giorni coperti dalle dosi rimaste. Nel ciclo = dosi / dosi al giorno (invariato). Nel Post-ciclo, per i composti attivi,
+   si contano le dosi REALMENTE previste giorno per giorno fino alla vigilia della pausa: slot attivi del giorno, escluse le dosi gia'
+   fatte e quelle dichiarate saltate / skip / non applicabili. avanzo = dosi che restano quando arriva la pausa (null = non calcolato). */
+function gstGiorniPerDosi(c, rimaste, todayStr){
+  if (!(typeof gstInResiduo === "function" && gstInResiduo() && todayStr === today && gstIsAttivo(c))) return { giorni: rimaste / c.voltePerDie, avanzo: null };
+  var t = dayIdxFromISO(today), fine = protoFineIdx(), rem = rimaste;
+  for (var i = t; i <= fine; i++) {
+    var rec = (store.blob && store.blob['p2_day_' + i]) || {}, n = 0;
+    getInjectionSlots2(i).forEach(function(sl){ sl.fields.forEach(function(f){
+      var ck = protoCompKey(f); if ((GST_PROTO_ID[ck] || ck) !== c.id) return;
+      var v = rec['inj_' + sl.n + '_' + fieldKey(f)] || '';
+      if (v === 'fatto' || v === 'saltata' || v === 'skip' || v === 'na') return;
+      n++; }); });
+    if (n > 0) { rem -= n; if (rem <= 0) return { giorni: i - t, avanzo: 0 }; }
+  }
+  return { giorni: Infinity, avanzo: rem };
+}
 function gstVialStatus(c, av, todayStr){
   if (!av || !av.reco) return null;
   var fatte = gstDosesUsed(c.name, c.id, c.dose_mcg, av.reco);
@@ -11488,13 +11550,13 @@ function gstVialStatus(c, av, todayStr){
   var rimaste = Math.max(0, totali - Math.round(fatte));
   var etaGiorni = gstDaysBetween(av.reco, todayStr);
   var vitaResidua = Math.max(0, c.stabilityDays - etaGiorni);
-  var esito;
+  var esito, giorniPerDosi = 0;
   if (vitaResidua <= 0) esito = { tipo:"scaduto", testo:"Scaduto: segna il vial come esaurito", col:"var(--bad)" };
   else if (rimaste === 0) esito = { tipo:"esaurite", testo:"Dosi esaurite: segna il vial come esaurito", col:"var(--bad)" };
   else {
-    var giorniPerDosi = rimaste / c.voltePerDie;
+    var gp = gstGiorniPerDosi(c, rimaste, todayStr); giorniPerDosi = gp.giorni;
     if (giorniPerDosi > vitaResidua) {
-      var N = Math.round(rimaste - vitaResidua*c.voltePerDie);
+      var N = gp.avanzo != null ? gp.avanzo : Math.round(rimaste - vitaResidua*c.voltePerDie);
       var scadeIl = gstAddDays(todayStr, vitaResidua);
       esito = { tipo:"scade", testo:"Scade il "+gstFmtDate(scadeIl)+" con "+N+" dosi non usate", col:"var(--warn-ink)" };
     } else {
@@ -11502,7 +11564,7 @@ function gstVialStatus(c, av, todayStr){
       esito = { tipo:"finisce", testo:"Finisce per dosi il "+gstFmtDate(finisceIl), col:"var(--ink2)" };
     }
   }
-  return { fatte:fatte, totali:totali, rimaste:rimaste, vitaResidua:vitaResidua, etaGiorni:etaGiorni, esito:esito };
+  return { fatte:fatte, totali:totali, rimaste:rimaste, vitaResidua:vitaResidua, etaGiorni:etaGiorni, esito:esito, giorniPerDosi:giorniPerDosi };
 }
 
 // ── copertura 1.6 (esclude congelato/attesa: decisione #5) ──
@@ -11514,7 +11576,7 @@ function gstCopertura(c, vd, todayStr){
   var finiti = vs.filter(function(v){return v.stato==="esaurito";}).length;
   var persi = vs.filter(function(v){return v.stato==="perso";}).length;
   var usoRimasti = 0, st = null;
-  if (av) { st = gstVialStatus(c, av, todayStr); if (st) usoRimasti = Math.min(st.rimaste/c.voltePerDie, st.vitaResidua); }
+  if (av) { st = gstVialStatus(c, av, todayStr); if (st) usoRimasti = Math.min(st.giorniPerDosi, st.vitaResidua); }
   var giorni = Math.floor(usoRimasti + intatti*gstDurataVial(c));
   return { intatti:intatti, finiti:finiti, persi:persi, giorni:giorni, vialInUso:av, statoInUso:st };
 }
@@ -11565,14 +11627,15 @@ function gstFabbisognoConsumabili(vd){
   var imNecessarie = 2 * gstGiorniWoRimasti();
   if (gstInResiduo()) {   /* Post-ciclo: solo le iniezioni dei composti attivi, da domani alla vigilia della pausa */
     scNecessarie = 0;
-    for (var gi = dayIdxFromISO(today)+1; gi <= protoFineIdx(); gi++) getInjectionSlots2(gi).forEach(function(sl){ scNecessarie += sl.fields.filter(function(f){ return protoCompKey(f) !== 'igf'; }).length; });
+    for (var gi = dayIdxFromISO(today)+1; gi <= protoFineIdx(); gi++) (function(gi){ var rec = (store.blob && store.blob['p2_day_' + gi]) || {};
+      getInjectionSlots2(gi).forEach(function(sl){ scNecessarie += sl.fields.filter(function(f){ var v = rec['inj_' + sl.n + '_' + fieldKey(f)] || ''; return protoCompKey(f) !== 'igf' && v !== 'saltata' && v !== 'skip' && v !== 'na'; }).length; }); })(gi);   /* escluse le dosi gia' dichiarate saltate */
     if (!gstAttivi().some(function(c){ return c.id === 'igf'; })) imNecessarie = 0;
   }
   var mlBac = 0, vialTotali = 0;
   GST_COMPOUNDS.forEach(function(c){
-    if (!gstIsAttivo(c)) return;   /* Post-ciclo: nessun vial da aprire per i composti non attivi */
+    if (gstInResiduo()) return;   /* Post-ciclo: si finiscono i vial in uso, nessun vial nuovo da aprire */
     var cov = gstCopertura(c, vd, today);
-    var usoRimasti = cov.statoInUso ? Math.min(cov.statoInUso.rimaste/c.voltePerDie, cov.statoInUso.vitaResidua) : 0;
+    var usoRimasti = cov.statoInUso ? Math.min(cov.statoInUso.giorniPerDosi, cov.statoInUso.vitaResidua) : 0;
     var vialDaAprire = Math.max(0, Math.ceil((giorniAllaFine - usoRimasti) / gstDurataVial(c)));
     vialTotali += vialDaAprire;
     mlBac += vialDaAprire * c.defaultBac;
