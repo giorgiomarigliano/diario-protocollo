@@ -1722,7 +1722,16 @@ function protoPhaseDaPausa(idx) {
   return (pi != null && idx > CAL.DAYS - 1) ? 'residuo' : 'ciclo';
 }
 /* ultimo giorno (indice) in cui il protocollo e' attivo: serve a copertura scorte e giorni alla fine */
-function protoFineIdx() { const pi = protoPauseIdx(); return pi == null ? CAL.DAYS - 1 : Math.max(CAL.DAYS - 1, pi - 1); }
+/* 12/11 (fasi, passo 5): si legge dalla fase in corso. Con pausa prevista = vigilia della pausa (mai prima dell'inizio della fase); altrimenti l'ultimo giorno della fase. */
+function protoFineIdx() {
+  var f = faseCorrente().fase, s0 = dayIdxFromISO(f.dal);
+  if (f.pausaDal) return Math.max(s0 - 1, dayIdxFromISO(f.pausaDal) - 1);
+  if (f.al) return dayIdxFromISO(f.al);
+  return f.giorni ? s0 + f.giorni - 1 : dayIdxFromISO(today);
+}
+/* data di inizio pausa e composti attivi della fase in corso (ripiego: proto_pausa) */
+function fasePausaDal() { return faseCorrente().fase.pausaDal || protoPausa().dal; }
+function faseAttivi() { var f = faseCorrente().fase; return (f.tipo === 'post' && Array.isArray(f.attivi)) ? f.attivi : protoActive(); }
 /* quanti giorni mostrare nel selettore: ciclo + estensione + fino a oggi */
 /* 26/10: il selettore arriva fino a fine Bangkok di dicembre (14/12), a settimane intere lun-dom, cosi' P1, P2... sono sempre visibili e navigabili */
 /* 31/10 (Giorgio): il Post-ciclo dura almeno 8 settimane (P1 = 9-15/11 ... P8 = 28/12-3/1/2027); prima era 6, fissate dalla trasferta BKK del 4-14/12 */
@@ -3548,7 +3557,7 @@ function buildStock(root){
   /* 12/11: dopo il ciclo il riferimento e' la pausa (solo composti attivi); in pausa nessun allarme */
   var stPh=protoPhase(dayIdxFromISO(today));
   if (stPh==="residuo") left=gstGiorniAllaFine();
-  setB(root,"stock.left", stPh==="pausa" ? "protocollo in pausa" : (stPh==="residuo" ? "pausa dal "+protoDmy(protoPausa().dal) : left+" "+T().days));
+  setB(root,"stock.left", stPh==="pausa" ? "protocollo in pausa" : (stPh==="residuo" ? "pausa dal "+protoDmy(fasePausaDal()) : left+" "+T().days));
   /* giorni di copertura = stessa funzione di Gestione > Scorte (gstCopertura: dosi rimaste del vial in uso +
      vial intatti; congelato/attesa esclusi). Se i vial non sono ancora caricati resta lo slot vuoto. */
   var GSTID={tesamorelin:"tesa",ipamorelin:"ipa"};
@@ -6224,7 +6233,7 @@ function CLIN_HTML() {
 
 function CLIN_cycleText() {
   var d = dayIdxFromISO(today);
-  return protoPhase(d) === 'pausa' ? ('Protocollo sospeso dal ' + protoDmy(protoPausa().dal)) : (protoPhase(d) === 'residuo' ? ('Post-ciclo \u00b7 giorno ' + (d - CAL.DAYS + 1)) : ('Ciclo 1 \u00b7 giorno ' + Math.max(1, Math.min(CAL.DAYS, cycleDayNo(d))) + ' di ' + CAL.DAYS));
+  return protoPhase(d) === 'pausa' ? ('Protocollo sospeso dal ' + protoDmy(fasePausaDal())) : (protoPhase(d) === 'residuo' ? ('Post-ciclo \u00b7 giorno ' + faseDi(d).giorno) : (faseDi(d).fase.nome + ' \u00b7 giorno ' + Math.max(1, Math.min(faseGiorni(faseDi(d).fase), faseDi(d).giorno)) + ' di ' + faseGiorni(faseDi(d).fase)));
 }
 
 function CLIN_renderAll() {
@@ -11623,7 +11632,7 @@ function gstInPausa(){ return protoPhase(dayIdxFromISO(today)) === 'pausa'; }
    da proto_pausa invece di testi fissi sul ciclo. Chiavi di proto_pausa.attivi -> id di GST_COMPOUNDS. */
 function gstInResiduo(){ return protoPhase(dayIdxFromISO(today)) === 'residuo'; }
 var GST_PROTO_ID = { frag:'fragment', tb:'tb500' };
-function gstAttivi(){ var a = protoActive().map(function(k){ return GST_PROTO_ID[k] || k; }); return GST_COMPOUNDS.filter(function(c){ return a.indexOf(c.id) >= 0; }); }
+function gstAttivi(){ var a = faseAttivi().map(function(k){ return GST_PROTO_ID[k] || k; }); return GST_COMPOUNDS.filter(function(c){ return a.indexOf(c.id) >= 0; }); }
 function gstAttiviNomi(){ var n = gstAttivi().map(function(c){ return c.name; }); return n.length ? n.join(', ') : 'nessuno'; }
 function gstIsAttivo(c){ return !gstInResiduo() || gstAttivi().indexOf(c) >= 0; }
 function gstGg(n){ return n + (n === 1 ? ' giorno' : ' giorni'); }
@@ -11638,7 +11647,7 @@ function gstMargine(c, cov, giorniAllaFine){
   }
   return { txt: diff>=0 ? ("+"+diff+" gg oltre fine ciclo") : ("mancano "+(-diff)+" gg"), col: diff>=0 ? "var(--ok)" : "var(--bad)" };
 }
-function gstScorteSub(giorniAllaFine){ return gstInPausa() ? 'protocollo in pausa' : (gstInResiduo() ? 'pausa dal '+protoDmy(protoPausa().dal) : 'fine ciclo '+gstFmtDate(gstAddDays(today, giorniAllaFine))); }
+function gstScorteSub(giorniAllaFine){ return gstInPausa() ? 'protocollo in pausa' : (gstInResiduo() ? 'pausa dal '+protoDmy(fasePausaDal()) : 'fine ciclo '+gstFmtDate(gstAddDays(today, giorniAllaFine))); }
 
 // ── 1.7 materiali di consumo ──
 // PORTING 25/09: nuovo campo (decisione #1), seminato ai valori oggi fissi in V1.
@@ -11821,7 +11830,7 @@ function GST_mount(){
   var root = document.querySelector('[data-gst-view="stock"]') ? document.body : null;
   root = document.body;
   var cycleEl = document.querySelector('[data-gst-cycle]');
-  if (cycleEl) cycleEl.textContent = (protoPhase(dayIdxFromISO(today))==="pausa") ? ("Protocollo sospeso dal "+protoDmy(protoPausa().dal)) : gstInResiduo() ? ("Post-ciclo \u00b7 giorno "+(dayIdxFromISO(today)-CAL.DAYS+1)+" \u00b7 pausa completa dal "+protoDmy(protoPausa().dal)+" (tra "+gstGg(protoPauseIdx()-dayIdxFromISO(today))+")") : ("Ciclo 1 \u00b7 giorno "+(gstE()+1)+" di "+CAL.DAYS+" \u00b7 "+gstGiorniAllaFine()+" giorni alla fine");
+  if (cycleEl) cycleEl.textContent = (protoPhase(dayIdxFromISO(today))==="pausa") ? ("Protocollo sospeso dal "+protoDmy(fasePausaDal())) : gstInResiduo() ? ("Post-ciclo \u00b7 giorno "+faseCorrente().giorno+" \u00b7 pausa completa dal "+protoDmy(fasePausaDal())+" (tra "+gstGg(dayIdxFromISO(fasePausaDal())-dayIdxFromISO(today))+")") : (faseCorrente().fase.nome+" \u00b7 giorno "+Math.min(faseGiorni(faseCorrente().fase), faseCorrente().giorno)+" di "+faseGiorni(faseCorrente().fase)+" \u00b7 "+gstGiorniAllaFine()+" giorni alla fine");
   document.querySelectorAll('[data-gst-tab]').forEach(function(b){
     if (b.dataset.bound) return; b.dataset.bound = "1";
     b.addEventListener("click", function(){
@@ -11860,9 +11869,9 @@ function GST_stockHero(){
       { v:String(nInt), l:"Vial intatti" }, { v:String(nCon), l:"Composti con scorta" } ]);
   }
   if (gstInResiduo()) {
-    var att = gstAttivi(), allaPausa = protoPauseIdx() - dayIdxFromISO(today);
+    var att = gstAttivi(), allaPausa = dayIdxFromISO(fasePausaDal()) - dayIdxFromISO(today);
     var nIntR = GST_COMPOUNDS.reduce(function(s,c){ return s + gstCopertura(c,vd,today).intatti; }, 0);
-    var frase = (att.length ? (att.length===1 ? "Attivo solo " : "Attivi solo ")+gstAttiviNomi()+" per finire i vial" : "Nessun composto attivo")+"; pausa completa dal "+protoDmy(protoPausa().dal)+".";
+    var frase = (att.length ? (att.length===1 ? "Attivo solo " : "Attivi solo ")+gstAttiviNomi()+" per finire i vial" : "Nessun composto attivo")+"; pausa completa dal "+protoDmy(fasePausaDal())+".";
     return CLIN_hero("Scorte \u00b7 Post-ciclo, dosi residue", frase, [
       { v:String(allaPausa), l:"Giorni alla pausa" }, { v:String(att.length), l:att.length===1 ? "Composto attivo" : "Composti attivi" }, { v:String(nIntR), l:"Vial intatti" } ]);
   }
