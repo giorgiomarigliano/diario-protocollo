@@ -1727,7 +1727,7 @@ function protoFineIdx() { const pi = protoPauseIdx(); return pi == null ? CAL.DA
 /* 26/10: il selettore arriva fino a fine Bangkok di dicembre (14/12), a settimane intere lun-dom, cosi' P1, P2... sono sempre visibili e navigabili */
 /* 31/10 (Giorgio): il Post-ciclo dura almeno 8 settimane (P1 = 9-15/11 ... P8 = 28/12-3/1/2027); prima era 6, fissate dalla trasferta BKK del 4-14/12 */
 const POST_WEEKS = 8;
-function navDays() { const need = Math.max(CAL.DAYS + POST_WEEKS * 7, dayIdxFromISO(today) + 1, protoFineIdx() + 1, dayIdxFromISO(BKK_TRIPS[BKK_TRIPS.length - 1][1]) + 1); return Math.ceil(need / 7) * 7; }
+function navDays() { const need = Math.max(protDaIdx() + POST_WEEKS * 7, dayIdxFromISO(today) + 1, protoFineIdx() + 1, dayIdxFromISO(BKK_TRIPS[BKK_TRIPS.length - 1][1]) + 1); return Math.ceil(need / 7) * 7; }
 function cycleDayLabel(idx, cap) {
   const it = LANG === 'it', fd = faseDi(idx);
   let t;
@@ -1792,6 +1792,9 @@ function faseDi(idx) {
   return { fase: f, giorno: g, settimana: Math.floor((g - 1) / 7) + 1, stato: stato };
 }
 function faseCorrente() { return faseDi(dayIdxFromISO(today)); }
+/* 12/11 (fasi, passo 4): primo giorno (indice) della prima fase 'post'; senza fasi post (pausa disattivata) resta la fine del Ciclo 1 come prima. Da qui in poi l'anello Iniezioni lascia il posto alle Proteine. */
+function protDaIdx() { var l = fasiList(); for (var i = 0; i < l.length; i++) if (l[i].tipo === 'post') return dayIdxFromISO(l[i].dal); return CAL.DAYS; }
+function protDaSett() { return Math.floor(protDaIdx() / 7); }
 /* fasi "di calendario" per le schede di riepilogo (Stato del percorso): come fasiList(), ma senza il caso "pausa disattivata = ciclo aperto",
    cosi' il Ciclo 1 resta chiuso alla sua data anche se il protocollo viene riattivato a mano */
 function fasiCalendario() {
@@ -2288,7 +2291,7 @@ function dayAdherence(dateISO, blobArg) {
   /* 24/10: woSess = seduta REALE nel diario di quel giorno (calorie/volume/RPE), indipendente dal "coperto" (woDone include i previsti recuperati da un extra) */
   const r = { injDone: 0, injTot: 0, suppDone: 0, suppTot: 0, woPlanned: false, woDone: false, woType: '', woSess: woSessDone(rec) };
   /* 26/10 (Giorgio): la % di aderenza delle iniezioni si chiude con la settimana 16 (idx 111, 8/11): le dosi del Post-ciclo non sono dovute ne' contate */
-  (woIdx > 111 ? [] : getInjectionSlots2(woIdx)).forEach(s => {
+  (woIdx >= protDaIdx() ? [] : getInjectionSlots2(woIdx)).forEach(s => {
     s.fields.forEach(f => {
       const v = rec['inj_' + s.n + '_' + fieldKey(f)] || '';
       if (v === 'skip' || v === 'na') return;
@@ -3243,7 +3246,7 @@ function buildHeroNarrative(root){
   var tpl = L[key];
   /* 09/11: dal Post-ciclo (giorno >= 112) il verdetto parla al passato: il ciclo e' concluso, le iniezioni sono chiuse all'8/11
      (percentuale congelata), integratori e allenamenti restano cumulati dal 18/07. Stesse soglie, nessun dato nuovo. */
-  if (key !== "noData" && dayIdxFromISO(today) >= 112) {
+  if (key !== "noData" && dayIdxFromISO(today) >= protDaIdx()) {
     var itl = AN_LANG === "it", ap = (a.supp === 8 || a.supp === 11 || a.supp === 18 || (a.supp >= 80 && a.supp <= 89)) ? "all\u2019" : "al ";
     var miss = Math.max(0, a.woTot - a.woDone - (a.woExtra || 0));
     var PT = itl ? {
@@ -4848,7 +4851,7 @@ function photoDayIndex(p){
   var parts=String(p.date).split("-");
   return dayOfCycle(new Date(+parts[0], +parts[1]-1, +parts[2]));
 }
-/* 06/11 (Giorgio): dal Post-ciclo (9/11, indice >= PROT_FROM_IDX) in TUTTE le viste foto l'indicatore Iniezioni lascia il posto alle PROTEINE del giorno dello scatto (stessa regola di protDayInfo: valutabile
+/* 06/11 (Giorgio): dal Post-ciclo (9/11, indice >= protDaIdx()) in TUTTE le viste foto l'indicatore Iniezioni lascia il posto alle PROTEINE del giorno dello scatto (stessa regola di protDayInfo: valutabile
    solo se giorno chiuso e kcal >= 50% del target; in obiettivo se proteine, minimo del range per le stime, >= 90% del target). Gli scatti fino all'8/11 restano con le iniezioni. Nessun colore rosso: non c'e' una soglia "grave" dichiarata. */
 function photoLeadCell(m){
   if (m && m.prot){
@@ -5761,7 +5764,7 @@ function AN_buildPhotoMetrics(){
        li' non cambia), ma qui e' solo un dato descrittivo, non un giudizio: niente da nascondere. */
     var x = AN_dayAdh(i);
     /* 06/11: dal Post-ciclo le iniezioni escono dalle viste foto e entrano le proteine (photoLeadCell) */
-    if (i >= PROT_FROM_IDX && typeof protDayInfo === "function") { var dI = new Date(CFG.CYCLE_START + "T00:00:00"); dI.setDate(dI.getDate() + i); var pdi = protDayInfo(isoLocal(dI)); if (pdi) m.prot = pdi; }
+    if (i >= protDaIdx() && typeof protDayInfo === "function") { var dI = new Date(CFG.CYCLE_START + "T00:00:00"); dI.setDate(dI.getDate() + i); var pdi = protDayInfo(isoLocal(dI)); if (pdi) m.prot = pdi; }
     else if (x.injTot) { m.injDone = x.injDone; m.injTot = x.injTot; }
     if (x.suppTot) m.supp = Math.round(x.suppDone / x.suppTot * 100);
     /* PORTING 26/09: badge allenamento sempre presente, anche nei giorni di riposo (V1 mostra
@@ -5937,7 +5940,7 @@ var CTX = (function () {
       : 'Bar = progress toward the goal \u00b7 weight and volume: ' + sc() + ' \u00b7 HRV: last 14 d vs first 14 \u00b7 adherence: since 18 Jul.'; } },
     { id: 'recomp', find: byClass('c-recomp'), kind: 'sub', txt: function () { return sc(); } },
     { id: 'load', find: byClass('c-load'), place: underHead, txt: function () { return IT() ? 'Per settimana \u00b7 colonne = volume, linea = HRV.' : 'Per week \u00b7 columns = volume, line = HRV.'; } },
-    { id: 'adh', find: byClass('c-adh'), place: underHead, txt: function () { var post = dayIdxFromISO(today) >= 112;   /* 26/10: iniezioni chiuse a fine W16 (8/11): questo e' il posto dello storico del ciclo */
+    { id: 'adh', find: byClass('c-adh'), place: underHead, txt: function () { var post = dayIdxFromISO(today) >= protDaIdx();   /* 26/10: iniezioni chiuse a fine W16 (8/11): questo e' il posto dello storico del ciclo */
       return IT() ? 'Dal 18/07 a oggi \u00b7 colonne = settimane: \u226590% verde, 75\u201389% giallo, <75% rosso.' + (post ? ' Iniezioni: ciclo concluso all\u20198/11, valore finale.' : '') : 'Since 18 Jul \u00b7 columns = weeks: \u226590% green, 75\u201389% yellow, <75% red.' + (post ? ' Injections: cycle closed on 8 Nov, final value.' : ''); } },
     { id: 'clin', find: byClass('c-clin'), place: underHead, txt: function () { return IT() ? 'T0 \u2192 T1 \u2192 T2 \u00b7 pallino: verde = migliora, arancio = peggiora, grigio = invariato (non \u00e8 il range).' : 'T0 \u2192 T1 \u2192 T2 \u00b7 dot: green = better, orange = worse, grey = unchanged (not the range).'; } },
     /* ---- Andamento > Insights ---- */
@@ -5976,7 +5979,7 @@ var CTX = (function () {
         if (cs.display === 'flex' && cs.flexDirection === 'row') card.style.flexWrap = 'wrap';
         note.style.cssText = 'flex:0 0 100%;width:100%;box-sizing:border-box;margin:0;padding:8px 6px 0;';
         card.appendChild(note); }, txt: function () {
-      var post = typeof dayIdxFromISO === 'function' && dayIdxFromISO(selDate) >= 112;   /* 26/10: dal Post-ciclo l'anello Proteine sostituisce Iniezioni, conteggio dal 9/11 */
+      var post = typeof dayIdxFromISO === 'function' && dayIdxFromISO(selDate) >= protDaIdx();   /* 26/10: dal Post-ciclo l'anello Proteine sostituisce Iniezioni, conteggio dal 9/11 */
       return IT() ? 'Dal 18/07: fatte su previste \u00b7 barra sotto = giorno mostrato.' + (post ? ' Proteine: giorni in obiettivo dal 9/11 (iniezioni chiuse all\u20198/11, vedi Andamento).' : '') : 'Since 18 Jul: done of planned \u00b7 bar below = day shown.' + (post ? ' Protein: days on target since 9 Nov (injections closed on 8 Nov, see Andamento).' : ''); } },
     { id: 'inj', leaf: leafCard(function (t) { return /^iniezioni e distretto$/i.test(t) || /^injections (and|&) (site|district)$/i.test(t); }), place: function (el, note) {
         var head = el.leaf.parentElement || el.leaf; head.insertAdjacentElement('afterend', note);
@@ -8988,12 +8991,12 @@ function renderDayNav() {
 /* 26/10: interruttore a tre fasi (Pre-ciclo | Ciclo 1 | Post-ciclo) al posto di "Mostra pre-ciclo" / "Ciclo 1 ->". La fase attiva mostra solo le sue settimane;
    il punto blu marca la fase che contiene oggi. Un eventuale "Ciclo 2" sara' una quarta voce. */
 const PHASE_LAST = {};
-function phaseOfWeek(w) { return w >= Math.ceil(CAL.DAYS / 7) ? 'post' : 'ciclo'; }
-function weeksOfPhase(ph, total) { const n = Math.ceil(CAL.DAYS / 7); return Array.from({ length: Math.max(total, 0) }, (_, w) => w).filter(w => ph === 'post' ? w >= n : w < n); }
+function phaseOfWeek(w) { return w >= protDaSett() ? 'post' : 'ciclo'; }
+function weeksOfPhase(ph, total) { const n = protDaSett(); return Array.from({ length: Math.max(total, 0) }, (_, w) => w).filter(w => ph === 'post' ? w >= n : w < n); }
 function gotoPhase(ph) {
   if (ph === 'pre') { PRE.open(); return; }
   if (PRE.active()) PRE.close();
-  const n = Math.ceil(CAL.DAYS / 7), selW = Math.floor(dayIdxFromISO(selDate) / 7);
+  const n = protDaSett(), selW = Math.floor(dayIdxFromISO(selDate) / 7);
   let w;
   if (phaseOfWeek(selW) === ph) w = selW;
   else if (PHASE_LAST[ph] != null) w = PHASE_LAST[ph];
@@ -9050,7 +9053,7 @@ function injCellState(dayIdx, rec, row) {
   const slot = slots.find(s => s.label === row.timing && s.fields.includes(row.field));
   if (!slot) {
     /* dose registrata su un composto non (piu') attivo o in pausa: si mostra comunque, non e' una dose dovuta ma e' un dato reale */
-    if (dayIdx > 111) {
+    if (dayIdx >= protDaIdx()) {
       const sf = getInjectionSlotsFull(dayIdx).find(s => s.label === row.timing && s.fields.includes(row.field));
       const vf = sf && rec['inj_' + sf.n + '_' + fieldKey(row.field)];
       if (vf === 'fatto') return { state: 'fatto' };
@@ -9064,7 +9067,7 @@ function injCellState(dayIdx, rec, row) {
 /* 26/10 (Giorgio): dal Post-ciclo (settimana 17+, weekIdx >= 16) l'anello Iniezioni lascia il posto a PROTEINE. Giorno valutabile = chiuso e con almeno il 50% delle kcal del target
    registrate (altrimenti il diario e' quasi certamente incompleto: ne' riuscito ne' fallito). Riuscito = proteine (minimo del range per le voci stimate) >= 90% del target.
    Target unico (food_lib.targets). Le kcal medie sono SOLO informative: media dei giorni valutabili, nessuna soglia, fuori dall'aderenza complessiva. */
-const PROT_FROM_WEEK = 16, PROT_TOL = 0.9, PROT_MIN_KCAL = 0.5;
+const PROT_TOL = 0.9, PROT_MIN_KCAL = 0.5;   /* 12/11: l'inizio del Post-ciclo (prima fissato a settimana 16) si legge dalle fasi: protDaIdx()/protDaSett() */
 function protCalc(idxFrom, idxTo) {   /* giorni del ciclo idxFrom..idxTo-1 (indice diario), solo chiusi */
   if (typeof FOOD === 'undefined' || !FOOD.dailyRows) return null;
   const R = FOOD.dailyRows(0), T = R.targets; if (!T || !(T.p > 0) || !(T.kcal > 0)) return null;
@@ -9080,9 +9083,8 @@ function protCalc(idxFrom, idxTo) {   /* giorni del ciclo idxFrom..idxTo-1 (indi
   }
   return { val, ok, closed, pct: val ? Math.round(ok / val * 100) : 0, kMean: val ? Math.round(kSum / val) : null, kDelta: val ? Math.round(kSum / val - T.kcal) : null, kPct: val ? Math.round((kSum / val / T.kcal - 1) * 100) : null, est, tgtP: T.p, tgtK: T.kcal };
 }
-function protAdh(weekIdx) { return weekIdx < PROT_FROM_WEEK ? null : protCalc(weekIdx * 7, weekIdx * 7 + 7); }
+function protAdh(weekIdx) { return weekIdx < protDaSett() ? null : protCalc(weekIdx * 7, weekIdx * 7 + 7); }
 /* 26/10: vista GIORNO dal Post-ciclo (indice >= 112). Anello = proteine cumulative dal 9/11 (giorni chiusi fino a ieri); barra "oggi" = proteine del giorno selezionato. */
-const PROT_FROM_IDX = PROT_FROM_WEEK * 7;
 function protDayInfo(iso) {
   if (typeof FOOD === 'undefined' || !FOOD.dailyRows) return null;
   const R = FOOD.dailyRows(0), T = R.targets; if (!T || !(T.p > 0) || !(T.kcal > 0)) return null;
@@ -9091,8 +9093,8 @@ function protDayInfo(iso) {
   return { p: r ? Math.round(r.p) : 0, plo: r ? r.plo : 0, k: r ? r.k : 0, closed, valid: enough, ok: enough && r.plo >= PROT_TOL * T.p, est: !!(r && r.est > 0), tgtP: T.p };
 }
 function protDayRing(wide) {
-  const idx = dayIdxFromISO(selDate); if (idx < PROT_FROM_IDX) return null;
-  const c = protCalc(PROT_FROM_IDX, dayIdxFromISO(today));   /* cumulativo fino a ieri, come gli altri anelli del ciclo */
+  const idx = dayIdxFromISO(selDate); if (idx < protDaIdx()) return null;
+  const c = protCalc(protDaIdx(), dayIdxFromISO(today));   /* cumulativo fino a ieri, come gli altri anelli del ciclo */
   if (!c) return null;
   const it = LANG === 'it', di = protDayInfo(selDate);
   const lab = selDate === today ? (it ? 'Oggi' : 'Today') : (() => { const x = new Date(selDate + 'T00:00:00').toLocaleDateString(it ? 'it-IT' : 'en-GB', { weekday: 'short', day: 'numeric' }); return x.charAt(0).toUpperCase() + x.slice(1); })();
@@ -9285,7 +9287,7 @@ function weekAggregate(weekIdx) {
   const injPct = pct(injDoneTot, injApplTot), suppPct = pct(suppDoneTot, suppApplTot), woPct = pct(woDone, woTot);
   const woExtra = Math.max(0, woReal - WO_WEEK_TARGET);   /* sedute oltre le 5 (extra) */
   /* 26/10: in pausa/Post-ciclo non ci sono iniezioni dovute (0/0): la componente esce dalla media, non vale 0% */
-  const overallParts = [suppPct, woPct]; if (injApplTot > 0 && weekIdx < PROT_FROM_WEEK) overallParts.push(injPct);   /* 12/11: dal Post-ciclo le iniezioni si mostrano ma non entrano nel punteggio (decisione 26/10) */
+  const overallParts = [suppPct, woPct]; if (injApplTot > 0 && weekIdx < protDaSett()) overallParts.push(injPct);   /* 12/11: dal Post-ciclo le iniezioni si mostrano ma non entrano nel punteggio (decisione 26/10) */
   const overall = Math.round(overallParts.reduce((a, b) => a + b, 0) / overallParts.length);
 
   // ---- Confronto con la settimana precedente (solo se non è la prima) ----
@@ -9603,8 +9605,8 @@ function renderWeekFull() {
     recapTone = 'neutral';
     recapTitle = LANG === 'it' ? 'Per ora nessuno scivolone.' : 'No slip-ups so far.';
     recapText = LANG === 'it'
-      ? `Nei primi ${wk.elapsed} giorni: iniezioni ${wk.injApplTot && wk.weekIdx < PROT_FROM_WEEK ? wk.injPct + '%' : '—'}, integratori ${wk.suppPct}%, allenamenti ${wk.woPct}%. Il confronto con le settimane chiuse non regge ancora.`
-      : `In the first ${wk.elapsed} days: injections ${wk.injApplTot && wk.weekIdx < PROT_FROM_WEEK ? wk.injPct + '%' : '—'}, supplements ${wk.suppPct}%, workouts ${wk.woPct}%. Comparison with closed weeks doesn't hold yet.`;
+      ? `Nei primi ${wk.elapsed} giorni: iniezioni ${wk.injApplTot && wk.weekIdx < protDaSett() ? wk.injPct + '%' : '—'}, integratori ${wk.suppPct}%, allenamenti ${wk.woPct}%. Il confronto con le settimane chiuse non regge ancora.`
+      : `In the first ${wk.elapsed} days: injections ${wk.injApplTot && wk.weekIdx < protDaSett() ? wk.injPct + '%' : '—'}, supplements ${wk.suppPct}%, workouts ${wk.woPct}%. Comparison with closed weeks doesn't hold yet.`;
   } else {
     recapTone = wk.overall >= 85 ? 'good' : wk.overall >= 65 ? 'warn' : 'bad';
     recapTitle = recapTone === 'good'
@@ -9806,7 +9808,7 @@ function renderWeekFull() {
   };
   const prevShallow = weekIdx > 0 ? weekAggregateShallow(weekIdx - 1) : null;
   /* 26/10: dalla P1 l'anello Proteine sostituisce Iniezioni; sotto, kcal medie dei giorni valutabili (informative, nessuna soglia) */
-  const protW = protAdh(weekIdx), protPrev = weekIdx > PROT_FROM_WEEK ? protAdh(weekIdx - 1) : null;
+  const protW = protAdh(weekIdx), protPrev = weekIdx > protDaSett() ? protAdh(weekIdx - 1) : null;
   const protKcalLine = (protW && protW.val > 0)
     ? `<span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink3);text-align:center;font-variant-numeric:tabular-nums;">${LANG === 'it' ? 'kcal medie' : 'avg kcal'} <b style="color:var(--ink2);">${protW.kMean.toLocaleString(LANG === 'it' ? 'it-IT' : 'en-US')}</b> \u00b7 ${protW.kPct > 0 ? '+' : ''}${protW.kPct}% ${LANG === 'it' ? 'sul target' : 'vs target'} (${protW.kDelta > 0 ? '+' : ''}${protW.kDelta})${protW.est ? ` \u00b7 ${protW.est} ${LANG === 'it' ? (protW.est === 1 ? 'giorno con stime' : 'giorni con stime') : 'days with estimates'}` : ''}</span>`
     : '';
@@ -13366,7 +13368,7 @@ function exportRows() {
     const sp = (!isToday && a && a.suppTot > 0) ? Math.round(a.suppDone / a.suppTot * 100) : '';
     /* Proteine (dal 9/11, Post-ciclo): stesso criterio dell'anello. Giorno valutabile solo se chiuso e con kcal >= 50% del target; in obiettivo se proteine (minimo del range per le stime) >= 90% del target */
     let pg = '', pt = '', pe = '';
-    if (idx !== null && idx >= PROT_FROM_IDX && typeof protDayInfo === 'function') {
+    if (idx !== null && idx >= protDaIdx() && typeof protDayInfo === 'function') {
       const di = protDayInfo(iso);
       if (di) { pg = di.p; pt = di.tgtP; pe = !di.closed ? 'in_corso' : !di.valid ? 'non_valutabile' : di.ok ? 'in_obiettivo' : 'sotto'; }
     }
