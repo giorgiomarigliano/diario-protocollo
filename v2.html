@@ -1491,6 +1491,7 @@ const CAL = (function () {
 const CFG = {
   PROXY_URL: 'https://viarmvaukgwdoursfnwu.supabase.co/functions/v1/diario-proxy/rest/v1/diary',
   PROXY_KEY: 'sb_publishable_ppqlo1IbPDjWqnkw_h5wuA_WH8dCtPx',
+  ARCHIVE_ID: 'giorgio_protocollo_2026',   // riga archivio (ex v1): sedute, sentinelle, esami, DEXA, foto, scorte, valutazioni. 13/11: un solo punto dove e' scritta; v1 (index.html) e' in sola lettura
   USER_ID: 'giorgio_proto2_2026',   // riga v2 (Ciclo attivo) — NON 'giorgio_protocollo_2026' (v1/warm-up)
   CYCLE_START: CAL.START,
   CYCLE_DAYS: CAL.DAYS,
@@ -5020,7 +5021,7 @@ function photoDeleteBtn(filename, pos){
    presa in precedenza e mai cambiata). Stesso read-modify-write di sempre. */
 function AN_deletePhotoEntry(filename){
   if (!confirm("Eliminare questa foto dalla timeline?")) return;
-  var qs = "?user_id=eq.giorgio_protocollo_2026";
+  var qs = "?user_id=eq." + CFG.ARCHIVE_ID;
   fetch(CFG.PROXY_URL + qs + "&select=data", { headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY } })
     .then(function(r){ return r.json(); })
     .then(function(rows){
@@ -5078,7 +5079,7 @@ function photoSlot(p, cls){
 /* PORTING 24/09: salva SOLO il rating (1-5) sullo scatto -- fetch fresco, aggiorna la sola
    voce del filename in photo_log, PATCH, poi allinea PHOTO_LOG in locale e ridisegna. */
 function AN_savePhotoRating(filename, rating){
-  var base = CFG.PROXY_URL, qs = "?user_id=eq.giorgio_protocollo_2026";
+  var base = CFG.PROXY_URL, qs = "?user_id=eq." + CFG.ARCHIVE_ID;
   fetch(base + qs + "&select=data", { headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY } })
     .then(function(r){ return r.json(); })
     .then(function(rows){
@@ -5554,7 +5555,7 @@ function AN_photoUploadAndSave(root){
   var ratingRaw = g("rating"), rating = ratingRaw ? parseInt(ratingRaw, 10) : null;
   if (btn) { btn.disabled = true; btn.textContent = "Caricamento\u2026"; }
   if (statusEl) statusEl.textContent = "";
-  var base = CFG.PROXY_URL.replace(/\/rest\/v1\/diary$/, ""), qs = "?user_id=eq.giorgio_protocollo_2026";
+  var base = CFG.PROXY_URL.replace(/\/rest\/v1\/diary$/, ""), qs = "?user_id=eq." + CFG.ARCHIVE_ID;
   var form = new FormData();
   form.append("file", pend.blob, pend.filename);
   form.append("filename", pend.filename);
@@ -5601,7 +5602,7 @@ function AN_photoUpdateLast(root){
   var statusEl = root.querySelector("[data-an-photo-status]");
   var g = function(f){ var e = root.querySelector('[data-an-photo="' + f + '"]'); return e ? e.value.trim() : ""; };
   var vals = { date: g("date") || last.filename.slice(0, 10), luogo: g("luogo") || null, note: g("note") || null, peso: g("peso") || null, rating: g("rating") ? parseInt(g("rating"), 10) : null };
-  var qs = "?user_id=eq.giorgio_protocollo_2026";
+  var qs = "?user_id=eq." + CFG.ARCHIVE_ID;
   if (statusEl) statusEl.textContent = "Salvataggio modifiche\u2026";
   fetch(CFG.PROXY_URL + qs + "&select=data", { headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY } })
     .then(function(r){ return r.json(); })
@@ -5886,7 +5887,7 @@ var AN_V1 = { status: "idle" };
 function AN_loadV1(){
   if (AN_V1.status !== "idle") return;
   AN_V1.status = "loading";
-  var q = "?user_id=eq.giorgio_protocollo_2026&select=data-%3Emuscle_volume_summary,data-%3Elab_wk8,data-%3Elab_final,data-%3Edexa_t1,data-%3Edexa_t2,data-%3Ephoto_log,data-%3Ehistory_sessions,data-%3Estock_v2_vials,data-%3Ebackup_status,data-%3Eai_evaluations";
+  var q = "?user_id=eq." + CFG.ARCHIVE_ID + "&select=data-%3Emuscle_volume_summary,data-%3Elab_wk8,data-%3Elab_final,data-%3Edexa_t1,data-%3Edexa_t2,data-%3Ephoto_log,data-%3Ehistory_sessions,data-%3Estock_v2_vials,data-%3Ebackup_status,data-%3Eai_evaluations";
   fetch(CFG.PROXY_URL + q, { headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY } })
     .then(function(r){ if (!r.ok) throw new Error("v1 " + r.status); return r.json(); })
     .then(function(j){
@@ -6254,11 +6255,13 @@ function CLIN_loadExtra() {
   var t0Idx = CLIN_v1DayIdx(CLIN_CK.t0);
   var keys = [];
   for (var i = t0Idx - CLIN_WINDOW; i <= t0Idx + CLIN_WINDOW; i++) if (i >= 0) keys.push('day_' + i);
-  var sel = 'data-%3Elab_wk8,data-%3Elab_final,data-%3Edexa_t1,data-%3Edexa_t2,' + keys.map(function (k) { return 'data-%3E' + k; }).join(',');
-  fetch(CFG.PROXY_URL + '?user_id=eq.giorgio_protocollo_2026&select=' + sel, { headers: { apikey: CFG.PROXY_KEY, Authorization: 'Bearer ' + CFG.PROXY_KEY } })
+  var sel = 'data-%3Eclin_data,data-%3Elab_wk8,data-%3Elab_final,data-%3Edexa_t1,data-%3Edexa_t2,' + keys.map(function (k) { return 'data-%3E' + k; }).join(',');
+  fetch(CFG.PROXY_URL + '?user_id=eq.' + CFG.ARCHIVE_ID + '&select=' + sel, { headers: { apikey: CFG.PROXY_KEY, Authorization: 'Bearer ' + CFG.PROXY_KEY } })
     .then(function (r) { if (!r.ok) throw new Error('clin ' + r.status); return r.json(); })
     .then(function (j) {
       var r0 = (j && j[0]) || {};
+      /* 13/11 (piano, punto 5): lo storico degli esami sta nei dati (chiave clin_data della riga archivio); la copia nel codice e' solo il ripiego e il seme della prima copia */
+      if (CLIN_dataValid(r0.clin_data)) { CLIN_DATA = r0.clin_data; CLIN_DATA_SRC = 'dati'; } else if (r0.clin_data == null) CLIN_seedData();
       CLIN_EXTRA.lab_wk8 = r0.lab_wk8 || {};
       CLIN_EXTRA.lab_final = r0.lab_final || {};
       CLIN_EXTRA.dexa_t1 = r0.dexa_t1 || {};
@@ -6268,6 +6271,23 @@ function CLIN_loadExtra() {
     })
     .catch(function () { CLIN_EXTRA.status = 'err'; })
     .then(function () { if (document.querySelector('[data-clin-view]')) CLIN_renderAll(); });
+}
+/* 13/11 (piano, punto 5), fase A: copia una tantum dello storico esami dal codice ai dati. Parte solo se la chiave clin_data non esiste:
+   lettura fresca della riga archivio, aggiunta della chiave, PATCH, rilettura di verifica. Finche' non riesce, la Clinica usa la copia nel codice. */
+var CLIN_DATA_SRC = 'codice', CLIN_SEED = 'idle';
+function CLIN_dataValid(d) { return !!d && typeof d === 'object' && d.series && typeof d.series === 'object' && Array.isArray(d.instr) && Array.isArray(d.panels) && Object.keys(d.series).length > 0; }
+function CLIN_seedData() {
+  if (CLIN_SEED !== 'idle' || !CLIN_dataValid(CLIN_DATA)) return; CLIN_SEED = 'run';
+  var url = CFG.PROXY_URL + '?user_id=eq.' + CFG.ARCHIVE_ID, hdr = { apikey: CFG.PROXY_KEY, Authorization: 'Bearer ' + CFG.PROXY_KEY };
+  fetch(url + '&select=data', { headers: hdr }).then(function (r) { if (!r.ok) throw new Error('lettura ' + r.status); return r.json(); }).then(function (rows) {
+    var data = rows[0] && rows[0].data; if (!data || !data.history_sessions) throw new Error('riga archivio non trovata o incompleta');
+    if (data.clin_data != null) { CLIN_SEED = 'presente'; return null; }
+    data.clin_data = { v: 1, series: CLIN_DATA.series, instr: CLIN_DATA.instr, panels: CLIN_DATA.panels };
+    return fetch(url, { method: 'PATCH', headers: Object.assign({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }, hdr), body: JSON.stringify({ data: data }) })
+      .then(function (r) { if (!r.ok) throw new Error('scrittura ' + r.status); return fetch(url + '&select=data-%3Eclin_data', { headers: hdr }); })
+      .then(function (r) { return r.json(); })
+      .then(function (v) { if (!CLIN_dataValid(v[0] && v[0].clin_data)) throw new Error('verifica non riuscita'); CLIN_SEED = 'ok'; CLIN_DATA_SRC = 'dati'; console.info('storico esami copiato nei dati (clin_data)'); });
+  }).catch(function (e) { CLIN_SEED = 'err'; console.warn('copia dello storico esami nei dati non riuscita: resta la copia nel codice', e); });
 }
 /* T1/T2 di un marker Santagostino: stringa grezza o null (nessun valore inventato). */
 function CLIN_labT(key, which) {
@@ -7509,7 +7529,7 @@ function load(){
   status='loading';
   const keys=[];for(let i=0;i<40;i++)keys.push('day_'+i);
   const sel=keys.map(k=>'data-%3E'+k).join(',');
-  fetch(CFG.PROXY_URL+'?user_id=eq.giorgio_protocollo_2026&select='+sel,{headers:{apikey:CFG.PROXY_KEY,Authorization:'Bearer '+CFG.PROXY_KEY}})
+  fetch(CFG.PROXY_URL+'?user_id=eq.' + CFG.ARCHIVE_ID + '&select='+sel,{headers:{apikey:CFG.PROXY_KEY,Authorization:'Bearer '+CFG.PROXY_KEY}})
    .then(r=>{if(!r.ok)throw new Error('pre '+r.status);return r.json();})
    .then(j=>{const r0=(j&&j[0])||{};const arr=[];for(let i=0;i<40;i++){if(r0['day_'+i]&&typeof r0['day_'+i]==='object')arr.push(norm(i,r0['day_'+i]));else break;}
      if(!arr.length)throw new Error('pre vuoto');
@@ -11914,7 +11934,7 @@ function GST_mount(){
   });
   if (!GST_V1.loaded) {
     GST_V1.loaded = true; // evita fetch doppie durante il caricamento
-    fetch(CFG.PROXY_URL + "?user_id=eq.giorgio_protocollo_2026&select=data-%3Estock_v2_vials", {
+    fetch(CFG.PROXY_URL + "?user_id=eq." + CFG.ARCHIVE_ID + "&select=data-%3Estock_v2_vials", {
       headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY }
     }).then(function(r){ return r.json(); }).then(function(rows){
       GST_V1.stock_v2_vials = (rows[0] && rows[0].stock_v2_vials) || {};
@@ -12375,7 +12395,7 @@ function GST_saveReco(cid){
   if (!f.date || f.date > today) return GST_recoMsg("La data della ricostituzione non pu\u00f2 essere futura.");
   if (!f.key) return GST_recoMsg("Scegli il vial da ricostituire.");
   var btn = document.querySelector('[data-gst-reco-save]'); if (btn){ btn.disabled = true; btn.textContent = "Salvataggio\u2026"; }
-  var url = CFG.PROXY_URL + "?user_id=eq.giorgio_protocollo_2026";
+  var url = CFG.PROXY_URL + "?user_id=eq." + CFG.ARCHIVE_ID;
   var hdr = { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY };
   fetch(url + "&select=data", { headers: hdr }).then(function(r){ return r.json(); }).then(function(rows){
     var data = rows[0] && rows[0].data; if (!data) throw new Error("record V1 non trovato");
@@ -12405,7 +12425,7 @@ function GST_saveReco(cid){
 function GST_closeVial(cid, key){
   var c = GST_COMPOUNDS.find(function(x){return x.id===cid;});
   var btn = document.querySelector('[data-gst-close-ok]'); if (btn){ btn.disabled = true; btn.textContent = "Salvataggio\u2026"; }
-  var url = CFG.PROXY_URL + "?user_id=eq.giorgio_protocollo_2026";
+  var url = CFG.PROXY_URL + "?user_id=eq." + CFG.ARCHIVE_ID;
   var hdr = { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY };
   fetch(url + "&select=data", { headers: hdr }).then(function(r){ return r.json(); }).then(function(rows){
     var data = rows[0] && rows[0].data; if (!data) throw new Error("record V1 non trovato");

@@ -132,6 +132,34 @@
 })();
 </script>
 <!-- DP-AUTH:END -->
+<!-- V1-READONLY:BEGIN -->
+<script>
+/* 13/11/2026 (piano di lavoro, punto 4): questa pagina (v1) e' un ARCHIVIO IN SOLA LETTURA.
+   Il diario si usa da v2.html. Qui ogni scrittura verso i dati (PATCH/POST su /rest/v1/diary e caricamento foto) viene fermata nel browser:
+   v1 salvava l'intero record, anche quello di v2, e una pagina rimasta aperta con dati vecchi poteva sovrascrivere quelli nuovi.
+   Per tornare a scrivere da v1 (non previsto): V1_READONLY = false. */
+(function () {
+  var V1_READONLY = true; window.DP_V1_READONLY = V1_READONLY;
+  if (!V1_READONLY) return;
+  var _fetch = window.fetch;
+  window.fetch = function (input, init) {
+    var url = typeof input === 'string' ? input : ((input && input.url) || '');
+    var method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+    if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS' && /\/rest\/v1\/diary|\/photo-upload/.test(url)) {
+      console.warn('v1 in sola lettura: scrittura bloccata', method, url.split('?')[0]);
+      return Promise.resolve(new Response(JSON.stringify({ message: 'v1 in sola lettura' }), { status: 403, headers: { 'Content-Type': 'application/json' } }));
+    }
+    return _fetch.apply(this, arguments);
+  };
+  document.addEventListener('DOMContentLoaded', function () {
+    var b = document.createElement('div'); b.id = 'v1-readonly-banner';
+    b.style.cssText = 'position:sticky;top:0;z-index:9999;background:#1c1c1e;color:#fff;font:600 13px/1.35 -apple-system,BlinkMacSystemFont,sans-serif;padding:8px 14px;text-align:center;';
+    b.innerHTML = 'Archivio in sola lettura · le modifiche fatte qui non vengono salvate. <a href="v2.html" style="color:#64d2ff;text-decoration:underline;">Apri il diario (v2)</a>';
+    document.body.insertBefore(b, document.body.firstChild);
+  });
+})();
+</script>
+<!-- V1-READONLY:END -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <link rel="apple-touch-icon" sizes="512x512" href="apple-touch-icon.png">
