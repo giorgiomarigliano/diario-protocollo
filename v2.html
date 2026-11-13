@@ -1939,6 +1939,41 @@ function isoLocal(d) {
   return y + '-' + m + '-' + day;
 }
 
+/* ===== 13/11/2026 (piano, punto 6): copia locale dell'ultimo blob letto, per aprire l'app anche senza rete =====
+   Prima di oggi, senza rete l'app restava ferma su "Caricamento…" e non si poteva registrare nulla.
+   Regole: la copia si usa SOLO se esiste una sessione valida e non scaduta (l'accesso non viene aggirato),
+   si dichiara sempre da quando sono i dati, e le modifiche fatte senza rete restano in coda (store.pending,
+   gia' salvata in localStorage) e vengono unite ai dati freschi al primo salvataggio riuscito. */
+const BLOB_LS = 'dp2.blob';
+let OFFLINE_AT = null;   // quando non e' null: i dati a schermo vengono dalla copia locale, scattata in quel momento
+function cacheBlob(d) { try { localStorage.setItem(BLOB_LS, JSON.stringify({ at: Date.now(), data: d })); } catch (e) { /* spazio esaurito o storage non disponibile: la copia e' un di piu', si prosegue */ } }
+function cachedBlob() { try { const r = JSON.parse(localStorage.getItem(BLOB_LS) || 'null'); return (r && r.data && typeof r.data === 'object' && Object.keys(r.data).length) ? r : null; } catch (e) { return null; } }
+function sessioneValida() {
+  try {
+    const s = (window.dpAuth && window.dpAuth.session && window.dpAuth.session()) || JSON.parse(localStorage.getItem('dp-auth') || 'null');
+    const exp = s && (s.expires_at || (s.currentSession && s.currentSession.expires_at));
+    return !!exp && exp * 1000 > Date.now();
+  } catch (e) { return false; }
+}
+function avviaDallaCopia() {
+  const c = cachedBlob();
+  if (!c || !sessioneValida()) return false;   // nessuna copia o nessuna sessione valida: non si mostra nulla
+  store.blob = c.data; store.loaded = true; OFFLINE_AT = c.at;
+  restorePending(); render();
+  return true;
+}
+function barraOffline() {
+  const el = document.getElementById('dp-offline');
+  if (!OFFLINE_AT) { if (el) el.remove(); return; }
+  const d = new Date(OFFLINE_AT), it = LANG === 'it';
+  const quando = ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  const txt = (it ? 'Senza rete · dati del ' + quando + ' · le modifiche vengono salvate appena torna la connessione'
+                  : 'Offline · data from ' + quando + ' · changes are saved as soon as the connection is back');
+  const b = el || document.createElement('div');
+  if (!el) { b.id = 'dp-offline'; b.style.cssText = 'position:sticky;top:0;z-index:9999;background:var(--warn-ink,#8a5a00);color:#fff;font-size:var(--fs-sm);font-weight:600;padding:8px 14px;text-align:center;'; document.body.insertBefore(b, document.body.firstChild); }
+  b.innerHTML = txt + ' <button type="button" onclick="location.reload()" style="margin-left:8px;border:none;background:rgba(255,255,255,.2);color:#fff;font:inherit;font-weight:600;padding:3px 10px;border-radius:var(--r-pill);cursor:pointer;">' + (it ? 'Riprova' : 'Retry') + '</button>';
+}
+
 async function loadBlob() {
   const res = await fetch(`${CFG.PROXY_URL}?user_id=eq.${CFG.USER_ID}&select=data`, {
     headers: { apikey: CFG.PROXY_KEY, Authorization: `Bearer ${CFG.PROXY_KEY}` }
@@ -1947,6 +1982,8 @@ async function loadBlob() {
   const rows = await res.json();
   store.blob = (rows[0] && rows[0].data) || {};
   store.loaded = true;
+  OFFLINE_AT = null;
+  cacheBlob(store.blob);
   return store.blob;
 }
 
@@ -2107,6 +2144,7 @@ async function flush() {
       body: JSON.stringify({ data: fresh, updated_at: new Date().toISOString() })
     });
     if (!res.ok) throw new Error(`save ${res.status}`);
+    OFFLINE_AT = null; cacheBlob(fresh);
     /* Conferma SOLO cio' che e' stato davvero inviato: un campo compilato o cambiato mentre il
        PATCH era in volo resta in coda e parte col prossimo salvataggio. */
     Object.keys(sent).forEach(key => {
@@ -8494,6 +8532,7 @@ ${open && n ? rows + `<div style="display:flex;gap:8px;margin-top:8px"><button t
 })();
 
 function render() {
+  if (typeof barraOffline === 'function') barraOffline();   // 13/11: avviso "senza rete, dati del ..." quando si usa la copia locale
   // Bug corretto 16/09/2026: flush() ora chiama render() all'inizio del
   // salvataggio (per mostrare "Salvataggio…"), ma render() ricostruisce
   // TUTTA la pagina con innerHTML — se l'utente sta ancora scrivendo in
@@ -12735,7 +12774,12 @@ function GST_updateMealHero(){ /* il ridisegno completo di GST_renderAlimenti gi
 
 document.documentElement.lang = LANG;
 render();
-loadBlob().then(() => { restorePending(); render(); }).catch(e => console.error('Errore caricamento dati', e));
+loadBlob().then(() => { restorePending(); render(); })
+  .catch(e => { console.error('Errore caricamento dati', e); if (avviaDallaCopia()) console.info('avvio dalla copia locale: dati del ' + new Date(OFFLINE_AT).toLocaleString('it-IT')); });
+/* service worker: solo in produzione (https). In locale e negli audit non viene registrato, cosi' non interferisce con le prove. */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(e => console.warn('service worker non registrato', e)); });
+}
 </script>
 
 <script>
