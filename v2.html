@@ -1972,6 +1972,8 @@ store.pending = {}; // { 'p2_day_44': { peso: '73.2', ... } }
    energia, recupero, umore, chiarezza... Ora si conferma SOLO cio' che e' stato davvero inviato.
    In piu': salvataggio immediato quando l'app va in secondo piano, e copia locale delle
    modifiche in coda (ripristinate al prossimo avvio se l'app viene chiusa prima del salvataggio). */
+/* 13/11/2026: ogni PATCH di v2 porta anche updated_at. Prima lo faceva solo v1 (ora archivio in sola lettura) e il campo restava indietro:
+   la data «ultimo aggiornamento» delle righe dati era falsa. Le scritture fatte in SQL non passano di qui: per quelle serve il trigger (tools/db/003_touch_updated_at.sql). */
 const PENDING_LS = 'dp2.pending';
 function pendingKeys() { return Object.keys(store.pending).filter(k => Object.keys(store.pending[k] || {}).length); }
 function persistPending() {
@@ -2102,7 +2104,7 @@ async function flush() {
         'Content-Type': 'application/json',
         Prefer: 'return=minimal'
       },
-      body: JSON.stringify({ data: fresh })
+      body: JSON.stringify({ data: fresh, updated_at: new Date().toISOString() })
     });
     if (!res.ok) throw new Error(`save ${res.status}`);
     /* Conferma SOLO cio' che e' stato davvero inviato: un campo compilato o cambiato mentre il
@@ -5030,7 +5032,7 @@ function AN_deletePhotoEntry(filename){
       return fetch(CFG.PROXY_URL + qs, {
         method: "PATCH",
         headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
-        body: JSON.stringify({ data: d })
+        body: JSON.stringify({ data: d, updated_at: new Date().toISOString() })
       });
     })
     .then(function(res){
@@ -5093,7 +5095,7 @@ function AN_savePhotoRating(filename, rating){
       return fetch(base + qs, {
         method: "PATCH",
         headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
-        body: JSON.stringify({ data: d })
+        body: JSON.stringify({ data: d, updated_at: new Date().toISOString() })
       });
     })
     .then(function(){
@@ -5575,7 +5577,7 @@ function AN_photoUploadAndSave(root){
       return fetch(CFG.PROXY_URL + qs, {
         method: "PATCH",
         headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" },
-        body: JSON.stringify({ data: freshData })
+        body: JSON.stringify({ data: freshData, updated_at: new Date().toISOString() })
       }).then(function(patchRes){
         if (!patchRes.ok) throw new Error("Salvataggio riferimento foto fallito (HTTP " + patchRes.status + ")");
         PHOTO_LOG.push(entry); AN_PHOTO_LAST_ENTRY = entry;
@@ -5613,7 +5615,7 @@ function AN_photoUpdateLast(root){
       e.date = vals.date; e.luogo = vals.luogo; e.note = vals.note;
       if (vals.peso) e.peso_manual = vals.peso; else delete e.peso_manual;
       if (vals.rating) e.rating = vals.rating; else delete e.rating;
-      return fetch(CFG.PROXY_URL + qs, { method: "PATCH", headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" }, body: JSON.stringify({ data: fd }) })
+      return fetch(CFG.PROXY_URL + qs, { method: "PATCH", headers: { apikey: CFG.PROXY_KEY, Authorization: "Bearer " + CFG.PROXY_KEY, "Content-Type": "application/json", "Prefer": "return=minimal" }, body: JSON.stringify({ data: fd, updated_at: new Date().toISOString() }) })
         .then(function(res){ if (!res.ok) throw new Error("HTTP " + res.status); });
     })
     .then(function(){
@@ -7699,7 +7701,7 @@ const FOOD = (function () {
       if (!rows[0] || !rows[0].data || typeof rows[0].data !== 'object') throw new Error('dati non validi');
       const d = rows[0].data;
       keys.forEach(k => { d[k] = JSON.parse(sent[k]); });
-      const w = await fetch(CFG.PROXY_URL + '?user_id=eq.' + CFG.USER_ID, { method: 'PATCH', headers: hdrs(true), body: JSON.stringify({ data: d }) });
+      const w = await fetch(CFG.PROXY_URL + '?user_id=eq.' + CFG.USER_ID, { method: 'PATCH', headers: hdrs(true), body: JSON.stringify({ data: d, updated_at: new Date().toISOString() }) });
       if (!w.ok) throw new Error('save ' + w.status);
       /* rilettura di controllo: un salvataggio dei giorni (flush) partito con una copia più vecchia
          potrebbe aver riscritto il record senza le mie chiavi. Se non coincidono resto in coda. */
@@ -12406,7 +12408,7 @@ function GST_saveReco(cid){
     if (old) vd[old.key] = Object.assign({}, vd[old.key] || {}, { stato: "esaurito" });
     vd[target.key] = Object.assign({}, vd[target.key] || {}, { mg: String(mg), bac: String(bac), reco: f.date, stato: "in_uso" });
     data.stock_v2_vials = vd;
-    return fetch(url, { method: "PATCH", headers: Object.assign({ "Content-Type": "application/json", Prefer: "return=minimal" }, hdr), body: JSON.stringify({ data: data }) })
+    return fetch(url, { method: "PATCH", headers: Object.assign({ "Content-Type": "application/json", Prefer: "return=minimal" }, hdr), body: JSON.stringify({ data: data, updated_at: new Date().toISOString() }) })
       .then(function(r){ if (!r.ok) throw new Error("salvataggio non riuscito ("+r.status+")"); });
   }).then(function(){
     return fetch(url + "&select=data-%3Estock_v2_vials", { headers: hdr }).then(function(r){ return r.json(); });
@@ -12434,7 +12436,7 @@ function GST_closeVial(cid, key){
     if (!cur || cur.key !== key) throw new Error("il vial in uso \u00e8 cambiato: ricarica la pagina");
     vd[key] = Object.assign({}, vd[key] || {}, { stato: "esaurito" });
     data.stock_v2_vials = vd;
-    return fetch(url, { method: "PATCH", headers: Object.assign({ "Content-Type": "application/json", Prefer: "return=minimal" }, hdr), body: JSON.stringify({ data: data }) })
+    return fetch(url, { method: "PATCH", headers: Object.assign({ "Content-Type": "application/json", Prefer: "return=minimal" }, hdr), body: JSON.stringify({ data: data, updated_at: new Date().toISOString() }) })
       .then(function(r){ if (!r.ok) throw new Error("salvataggio non riuscito ("+r.status+")"); });
   }).then(function(){
     return fetch(url + "&select=data-%3Estock_v2_vials", { headers: hdr }).then(function(r){ return r.json(); });
@@ -12514,7 +12516,7 @@ function GST_saveRecon(el){
       store.blob.peptide_reconstitution = list;
       return fetch(CFG.PROXY_URL + "?user_id=eq.giorgio_proto2_2026", {
         method:"PATCH", headers:{ apikey:CFG.PROXY_KEY, Authorization:"Bearer "+CFG.PROXY_KEY, "Content-Type":"application/json", "Prefer":"return=minimal" },
-        body: JSON.stringify({ data: d })
+        body: JSON.stringify({ data: d, updated_at: new Date().toISOString() })
       });
     }).then(function(){ GST_renderStock(); }).catch(function(e){ alert("Errore nel salvataggio: "+e.message); });
 }
@@ -12532,7 +12534,7 @@ function GST_saveConsumabili(){
       d.consumabili_stock = val; store.blob.consumabili_stock = val;
       return fetch(CFG.PROXY_URL + "?user_id=eq.giorgio_proto2_2026", {
         method:"PATCH", headers:{ apikey:CFG.PROXY_KEY, Authorization:"Bearer "+CFG.PROXY_KEY, "Content-Type":"application/json", "Prefer":"return=minimal" },
-        body: JSON.stringify({ data: d })
+        body: JSON.stringify({ data: d, updated_at: new Date().toISOString() })
       });
     }).then(function(){ GST_renderStock(); }).catch(function(e){ alert("Errore nel salvataggio: "+e.message); });
 }
