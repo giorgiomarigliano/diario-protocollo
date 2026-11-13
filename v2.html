@@ -1982,6 +1982,85 @@ function barraOffline() {
   b.innerHTML = txt + ' <button type="button" onclick="location.reload()" style="margin-left:8px;border:none;background:rgba(255,255,255,.2);color:#fff;font:inherit;font-weight:600;padding:3px 10px;border-radius:var(--r-pill);cursor:pointer;">' + (it ? 'Riprova' : 'Retry') + '</button>';
 }
 
+
+/* ===== 13/11/2026 (richiesta di Giorgio): "tira per aggiornare" =====
+   Aperta dalla schermata Home, Safari non offre il suo aggiornamento con la tirata verso il basso: lo facciamo noi.
+   Si attiva solo se il contenitore che si sta scorrendo e' gia' in cima, il dito scende di almeno 70 px (meta' della tirata,
+   per dare resistenza) e il movimento e' verticale: lo scorrimento normale e i gesti orizzontali non vengono toccati.
+   L'aggiornamento: salva cio' che e' in coda, rilegge i dati, ridisegna e chiede al service worker se c'e' una versione nuova. */
+const PTR_SOGLIA = 70;
+const PTR = { y0: 0, x0: 0, dy: 0, attivo: false, inCorso: false, sc: null };
+function ptrScroller(t) {
+  for (let e = t; e && e !== document.body; e = e.parentElement) {
+    const o = getComputedStyle(e).overflowY;
+    if ((o === 'auto' || o === 'scroll') && e.scrollHeight > e.clientHeight + 2) return e;
+  }
+  return document.scrollingElement || document.documentElement;
+}
+function ptrInd() {
+  let e = document.getElementById('dp-ptr');
+  if (!e) {
+    e = document.createElement('div'); e.id = 'dp-ptr';
+    e.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9998;display:flex;align-items:center;justify-content:center;height:46px;' +
+      'font-size:var(--fs-sm);font-weight:600;color:var(--ink2);background:var(--surf);box-shadow:var(--shadow);' +
+      'transform:translateY(-46px);transition:transform .18s ease;pointer-events:none;';
+    document.body.insertBefore(e, document.body.firstChild);
+  }
+  return e;
+}
+function ptrMostra(stato, dy) {
+  const it = LANG === 'it', e = ptrInd();
+  const T = { tira: it ? 'Tira per aggiornare' : 'Pull to refresh', pronto: it ? 'Rilascia per aggiornare' : 'Release to refresh',
+    corso: it ? 'Aggiornamento…' : 'Refreshing…', fatto: it ? 'Aggiornato ✓' : 'Updated ✓', errore: it ? 'Senza rete: riprova più tardi' : 'Offline: try again later' };
+  e.textContent = T[stato] || '';
+  e.style.transition = stato === 'tira' || stato === 'pronto' ? 'none' : 'transform .18s ease';
+  e.style.transform = 'translateY(' + Math.min(0, (dy || 0) - 46) + 'px)';
+}
+function ptrChiudi() { PTR.attivo = false; PTR.dy = 0; const e = document.getElementById('dp-ptr'); if (e) { e.style.transition = 'transform .18s ease'; e.style.transform = 'translateY(-46px)'; } }
+async function ptrAggiorna() {
+  if (PTR.inCorso) return;
+  PTR.inCorso = true; ptrMostra('corso', 46);
+  try {
+    if (typeof pendingKeys === 'function' && pendingKeys().length) { clearTimeout(saveTimer); await flush(); }
+    await loadBlob();
+    restorePending(); render();
+    if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistration) {
+      navigator.serviceWorker.getRegistration().then(r => { if (r) r.update().catch(() => {}); }).catch(() => {});
+    }
+    ptrMostra('fatto', 46); setTimeout(ptrChiudi, 900);
+  } catch (e) {
+    console.warn('aggiornamento non riuscito', e);
+    if (!store.loaded) avviaDallaCopia();
+    ptrMostra('errore', 46); setTimeout(ptrChiudi, 1800);
+  } finally { PTR.inCorso = false; }
+}
+function ptrStart(ev) {
+  if (PTR.inCorso || !ev.touches || ev.touches.length !== 1 || !store.loaded) return;
+  const t = ev.target;
+  if (t && t.closest && t.closest('#food-ov,#dpa,input,textarea,select,[contenteditable]')) return;   /* niente durante moduli e sovrapposizioni */
+  const sc = ptrScroller(t);
+  if (sc.scrollTop > 0) return;
+  PTR.sc = sc; PTR.y0 = ev.touches[0].clientY; PTR.x0 = ev.touches[0].clientX; PTR.dy = 0; PTR.attivo = true;
+}
+function ptrMove(ev) {
+  if (!PTR.attivo || !ev.touches || ev.touches.length !== 1) return;
+  const dy = ev.touches[0].clientY - PTR.y0, dx = Math.abs(ev.touches[0].clientX - PTR.x0);
+  if (dy <= 0 || dx > Math.abs(dy) || (PTR.sc && PTR.sc.scrollTop > 0)) { ptrChiudi(); return; }
+  if (dy > 8) {
+    if (ev.cancelable) ev.preventDefault();          /* ferma il rimbalzo nativo solo mentre si tira dall'alto */
+    PTR.dy = Math.min(dy * 0.5, 110);
+    ptrMostra(PTR.dy >= PTR_SOGLIA ? 'pronto' : 'tira', PTR.dy);
+  }
+}
+function ptrEnd() { if (!PTR.attivo) return; const d = PTR.dy; PTR.attivo = false; if (d >= PTR_SOGLIA) ptrAggiorna(); else ptrChiudi(); }
+function ptrInstalla() {
+  if (!('ontouchstart' in window)) return;           /* solo dove c'e' il tocco: su desktop non cambia nulla */
+  document.addEventListener('touchstart', ptrStart, { passive: true });
+  document.addEventListener('touchmove', ptrMove, { passive: false });
+  document.addEventListener('touchend', ptrEnd);
+  document.addEventListener('touchcancel', ptrChiudi);
+}
+
 async function loadBlob() {
   const res = await fetch(`${CFG.PROXY_URL}?user_id=eq.${CFG.USER_ID}&select=data`, {
     headers: { apikey: CFG.PROXY_KEY, Authorization: `Bearer ${CFG.PROXY_KEY}` }
@@ -12782,6 +12861,7 @@ function GST_updateMealHero(){ /* il ridisegno completo di GST_renderAlimenti gi
 
 document.documentElement.lang = LANG;
 render();
+ptrInstalla();
 loadBlob().then(() => { restorePending(); render(); })
   .catch(e => { console.error('Errore caricamento dati', e); if (avviaDallaCopia()) console.info('avvio dalla copia locale: dati del ' + new Date(OFFLINE_AT).toLocaleString('it-IT')); });
 /* service worker: solo in produzione (https). In locale e negli audit non viene registrato, cosi' non interferisce con le prove. */
