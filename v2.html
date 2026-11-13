@@ -144,6 +144,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0c">
+<!-- 13/11/2026 (piano, punto 7): limita da dove puo' arrivare il codice e, soprattutto, DOVE possono finire i dati.
+     Gli script esterni possono venire solo dai due CDN usati (libreria di accesso, foto, Excel, PDF) e le connessioni
+     solo verso Supabase e il servizio che converte le coordinate delle foto in un luogo: se un giorno uno di quei CDN
+     servisse codice manomesso, non potrebbe comunque mandare i dati del diario altrove.
+     'unsafe-inline' e 'unsafe-eval' servono perche' l'app e' un unico file con script e stili interni e perche'
+     le librerie di esportazione costruiscono funzioni al volo: toglierli richiederebbe riscrivere l'app.
+     frame-ancestors non e' incluso perche' in un meta tag i browser lo ignorano (serve un header, che GitHub Pages non permette). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://viarmvaukgwdoursfnwu.supabase.co; font-src 'self' data:; connect-src 'self' blob: https://viarmvaukgwdoursfnwu.supabase.co https://nominatim.openstreetmap.org; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title>Diario Protocollo v2</title>
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
 <style>
