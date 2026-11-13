@@ -19,3 +19,9 @@
     select data->'p2_day_80' from diary_history where kind='snapshot' and diary_id=<id> and day='2026-10-08';
     -- cosa e' cambiato su una chiave
     select changed_at, changes->'p2_day_80' from diary_history where kind='change' and changes ? 'p2_day_80' order by id desc;
+
+## Backup: controllo e ripristino (13/11/2026)
+
+- `node tools/db/backup_check.js [cartella-backup] [--giorni N] [--verboso]` — controlla la catena di snapshot del repo privato: file leggibili e non vuoti, chiavi attese presenti, giorni consecutivi fino a oggi (i giorni futuri possono essere sparsi: dosi gia' dichiarate saltate, riposi di Bangkok), nessuna chiave sparita o rimpicciolita oltre il 20% da un giorno all'altro, ultimo snapshot non piu' vecchio di un giorno. Esce con 1 se trova un problema. Sola lettura.
+- `node tools/db/restore_from_backup.js <snapshot.json> --chiave <nome>` — stampa l'SQL per rimettere una singola chiave come nello snapshot (il caso normale: una chiave rovinata). `--tutto` rifa' l'intera riga (ultima risorsa: si perde tutto cio' che e' stato registrato dopo lo snapshot). `--prova` genera il collaudo completo su una riga separata (`prova_ripristino_AAAAMMGG`), con confronto e cancellazione finale: i dati veri non vengono toccati. Gli script non scrivono mai: l'SQL si rilegge e si esegue nel SQL Editor.
+- La cancellazione della riga di prova richiede `set local app.allow_destructive = 'on'` perche' le DELETE sono bloccate dalle guardie (001_guard_history.sql): e' inclusa nell'SQL generato da `--prova`.
