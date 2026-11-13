@@ -21,8 +21,12 @@ SRC = (ROOT / 'v2.html').read_text() + (ROOT / 'index.html').read_text()
 rnd = random.Random(20261113)
 
 KEEP = {'v', 'src', 't', 'u', 'ul', 'ver', 'slot', 'cat', 'on', 'attivi', 'dal', 'al', 'stato', 'sentinel', 'last_run_status', 'mg', 'bac_ml', 'vial_mg', 'ref', 'mig',
-        'bar', 'ok', 'fav', 'est'}
+        'bar', 'ok', 'fav', 'est', 'label', 'unit', 'better', 'key'}
 ENUM = {'abdom_full', 'sleep_inj', 'wo_override', 'muscle', 'label'}            # vocabolario del campo, estratto a caso
+# storico clinico (clin_data): si tiene l'impalcatura (nomi esami, unita', range, date, esito), si falsificano SEMPRE i valori e i testi liberi
+CLIN_PARENTS = {'points', 'instr', 'panels'}
+CLIN_KEEP = {'iso', 'date', 'unit', 'ref', 'cat', 'name', 'panel', 'id', 'cens', 'unitMismatch', 'key', 'better', 'ok'}
+CLIN_FAKE = {'v', 'val', 'src', 'note', 'label'}   # label di pannello/referto porta il nome del laboratorio
 SCALE10 = {'energia', 'umore', 'recupero', 'libido', 'chiarezza', 'appetito', 'sonno_sogg', 'rpe', 'wo_rpe', 'qualita_sonno', 'formicolio', 'pienezza_add', 'ritenzione'}
 RANGE = {  # intervalli generici (min, max, decimali): NON derivano dai dati reali
     'peso': (65, 85, 1), 'peso_manual': (65, 85, 1), 'bp_sys': (105, 135, 0), 'bp_dia': (60, 85, 0), 'rhr': (48, 65, 0), 'ore_sonno': (5.5, 8.5, 1),
@@ -30,7 +34,7 @@ RANGE = {  # intervalli generici (min, max, decimali): NON derivano dai dati rea
     'passi': (4000, 12000, 0), 'wo_durata': (40, 80, 0), 'wo_kcal': (300, 600, 0), 'wo_volume': (5000, 15000, 0), 'circ_addome': (80, 95, 1), 'girovita_cm': (80, 95, 1), 'vita': (80, 95, 1),
     'reps': (5, 15, 0), 'duration_min': (40, 80, 0), 'total_sets': (12, 24, 0), 'kcal': (300, 600, 0), 'volume_kg': (2000, 9000, 0), 'weight': (10, 60, 1), 'min_reps': (6, 12, 0),
 }
-FREE_PREFIX = {'n': 'Voce di prova', 'note': 'Nota di prova', 'wo_note': 'Nota di prova', 'photo_note': 'Nota di prova', 'testo': 'Testo di prova', 'text': 'Testo di prova',
+FREE_PREFIX = {'val': 'valore di prova', 'src': 'Laboratorio di prova', 'label': 'Pannello di prova', 'n': 'Voce di prova', 'note': 'Nota di prova', 'wo_note': 'Nota di prova', 'photo_note': 'Nota di prova', 'testo': 'Testo di prova', 'text': 'Testo di prova',
                'title': 'Seduta di prova', 'motra_log': 'Log di prova', 'fonte': 'Fonte di prova', 'name': 'Esercizio di prova', 'luogo': 'Luogo', 'q': 'porzione', 'repo': 'repo-di-prova'}
 NUMRE = re.compile(r'^([<>]?)(-?)(\d+)(?:([.,])(\d+))?$')
 DATERE = re.compile(r'^\d{4}-\d{2}-\d{2}(T[\d:.+Z-]*)?$')
@@ -77,6 +81,14 @@ class Faker:
     def value(self, key, x, parent):
         lk = leaf_key(key)
         if x is None or isinstance(x, bool) or x == '': return x
+        if parent in CLIN_PARENTS:            # prima di KEEP: in clin_data 'v' e 'src' sono valore di laboratorio e nome del laboratorio, non versione e provenienza
+            if key in CLIN_KEEP: return x
+            if key in CLIN_FAKE:
+                if isinstance(x, (int, float)):
+                    r = self.shape(repr(abs(x)) if isinstance(x, float) else str(abs(int(x))))
+                    return float(r) if isinstance(x, float) else int(r)      # stesso tipo dell'originale
+                if NUMRE.match(x): return self.shape(x)
+                return self.free('val' if key == 'val' else key, x)
         if key in KEEP or (key in ('sc', 'im', 'bac') and parent != 'consumabili_stock'): return x
         if isinstance(x, (int, float)):
             if lk in RANGE: return self.ranged(lk, False)

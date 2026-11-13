@@ -1,19 +1,30 @@
 #!/usr/bin/env node
-/* Inserisce un nuovo pannello esami in CLIN_DATA (v2.html).
+/* Inserisce un nuovo pannello esami nello storico clinico.
+   Dal 13/11/2026 lo storico sta nei DATI (chiave `clin_data` della riga archivio su Supabase), non piu' in v2.html:
+   questo script non modifica piu' il codice, ma STAMPA l'SQL da incollare nel SQL Editor di Supabase (lo esegue Giorgio).
    Uso:
      node tools/clin_add.js template > pannello.json     # modulo da compilare (31 esami prescritti 05/11/2026)
-     node tools/clin_add.js add pannello.json [--dry]    # --dry = solo anteprima, non scrive
-     node tools/clin_add.js promote [--dry]              # una tantum: omocisteina/PTH/magnesio/AST/ALT -> serie
+     node tools/clin_add.js add pannello.json > add.sql  # anteprima a schermo (stderr) + SQL da eseguire (stdout)
+   Lo stato attuale si legge da una copia locale dei dati (mai in git): per default
+   tools/audit/.snap/giorgio_protocollo_2026.json (si crea con `python3 tools/audit/audit.py --backup-dir ../diario-protocollo-backups`),
+   oppure si indica con CLIN_DATA_FILE=<file.json>. L'SQL e' additivo e ha i controlli per non applicarsi due volte.
    Regole: valori null = esame non ancora ricevuto (saltato, segnalato). 'ok' e' calcolato dal range di riferimento;
    per esami qualitativi indicare "ok" a mano. Nessun valore viene stimato. */
 const fs = require('fs'), path = require('path');
-const FILE = process.env.CLIN_FILE || path.join(__dirname, '..', 'v2.html');
-const DRY = process.argv.includes('--dry');
-const src = fs.readFileSync(FILE, 'utf8');
-const lines = src.split('\n');
-const li = lines.findIndex(l => l.startsWith('var CLIN_DATA = '));
-if (li < 0) throw new Error('CLIN_DATA non trovato');
-const D = JSON.parse(lines[li].match(/^var CLIN_DATA = (.*);\s*$/)[1]);
+const USER = 'giorgio_protocollo_2026';   // riga archivio (CFG.ARCHIVE_ID in v2.html)
+const DATA_FILE = process.env.CLIN_DATA_FILE || path.join(__dirname, 'audit', '.snap', USER + '.json');
+function loadData() {
+  if (!fs.existsSync(DATA_FILE)) throw new Error('copia locale dei dati non trovata: ' + DATA_FILE +
+    '\n  creala con: python3 tools/audit/audit.py --backup-dir ../diario-protocollo-backups   (oppure CLIN_DATA_FILE=<file.json>)');
+  let j = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+  if (Array.isArray(j)) j = j[0];
+  const d = (j && j.data && j.data.clin_data) || (j && j.clin_data) || j;
+  if (!d || !d.series || !Array.isArray(d.instr) || !Array.isArray(d.panels)) throw new Error('clin_data non valido in ' + DATA_FILE);
+  return d;
+}
+const D = loadData();
+const log = (...a) => console.error(...a);   // il resoconto va su stderr: su stdout resta solo l'SQL
+const q = o => "'" + JSON.stringify(o).replace(/'/g, "''") + "'::jsonb";
 const MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
 const itDate = iso => { const [y, m, d] = iso.split('-'); return (+d) + ' ' + MESI[+m - 1] + ' ' + y; };
 const num = s => parseFloat(String(s).replace(',', '.'));
@@ -47,12 +58,28 @@ const TEMPLATE_ITEMS = [
 ];
 const NEWSER = { tibc: { label: 'TIBC', better: 'neutral', unit: 'µg/dL' } };
 
-function writeBack() {
-  const out = lines.slice(); out[li] = 'var CLIN_DATA = ' + JSON.stringify(D) + ';';
-  let t = out.join('\n');
-  return t;
+/* SQL additivo: aggiunge il pannello, le righe strumentali e i punti alle serie, riordina per data le serie toccate.
+   Ogni istruzione ha un controllo che la rende innocua se eseguita due volte (stesso panel id = nessuna modifica). */
+function sql(panel, instr, addPts, newSer) {
+  const W = " where user_id = '" + USER + "'";
+  const noPanel = " and not exists (select 1 from jsonb_array_elements(data->'clin_data'->'panels') e where e->>'id' = '" + panel.id + "')";
+  const out = ['-- pannello ' + panel.id + ' (' + panel.iso + ') — generato da tools/clin_add.js, da eseguire nel SQL Editor',
+    '-- controllo prima di eseguire:',
+    "select jsonb_array_length(data->'clin_data'->'panels') panels, jsonb_array_length(data->'clin_data'->'instr') instr from diary" + W + ';',
+    'begin;'];
+  Object.keys(newSer).forEach(k => out.push("update diary set data = jsonb_set(data, '{clin_data,series," + k + "}', " + q(newSer[k]) + ")" + W + " and not (data->'clin_data'->'series' ? '" + k + "');"));
+  Object.keys(addPts).forEach(k => {
+    out.push("update diary set data = jsonb_set(data, '{clin_data,series," + k + ",points}', coalesce(data->'clin_data'->'series'->'" + k + "'->'points', '[]'::jsonb) || " + q(addPts[k]) + ")" +
+      W + " and (data->'clin_data'->'series') ? '" + k + "'" + " and not exists (select 1 from jsonb_array_elements(data->'clin_data'->'series'->'" + k + "'->'points') e where e->>'panel' = '" + panel.id + "');");
+    out.push("update diary set data = jsonb_set(data, '{clin_data,series," + k + ",points}', coalesce((select jsonb_agg(e order by e->>'iso') from jsonb_array_elements(data->'clin_data'->'series'->'" + k + "'->'points') e), '[]'::jsonb))" + W + " and jsonb_typeof(data->'clin_data'->'series'->'" + k + "'->'points') = 'array';");
+  });
+  if (instr.length) out.push("update diary set data = jsonb_set(data, '{clin_data,instr}', coalesce(data->'clin_data'->'instr', '[]'::jsonb) || " + q(instr) + ")" + W + noPanel + ';');
+  out.push("update diary set data = jsonb_set(data, '{clin_data,panels}', coalesce(data->'clin_data'->'panels', '[]'::jsonb) || " + q([panel]) + ")" + W + noPanel + ';');
+  out.push('commit;', '-- verifica dopo l\'esecuzione (atteso: +1 pannello, +' + instr.length + ' righe strumentali):',
+    "select jsonb_array_length(data->'clin_data'->'panels') panels, jsonb_array_length(data->'clin_data'->'instr') instr," +
+    " (select count(*) from jsonb_object_keys(data->'clin_data'->'series')) serie from diary" + W + ';');
+  return out.join('\n');
 }
-function apply(t) { if (DRY) { console.log('[dry] nessuna scrittura'); return; } fs.writeFileSync(FILE, t); console.log('v2.html aggiornato'); }
 
 const cmd = process.argv[2];
 if (cmd === 'template') {
@@ -65,6 +92,7 @@ if (cmd === 'template') {
   if (D.panels.some(p => p.id === P.id)) throw new Error('panel gia presente: ' + P.id);
   const panel = { id: P.id, date: itDate(P.iso), iso: P.iso, label: P.label, note: P.note || '' };
   let nSer = 0, nIns = 0; const skipped = [], warn = [], flags = [];
+  const addPts = {}, newSer = {}, newInstr = [];
   for (const it of spec.items) {
     const hasV = it.v !== null && it.v !== undefined && it.v !== '';
     if (!hasV) { skipped.push(it.name || it.key); continue; }
@@ -78,61 +106,29 @@ if (cmd === 'template') {
     if (it.key && isNum) {
       if (!D.series[it.key]) {
         const ns = NEWSER[it.key]; if (!ns) { warn.push(it.key + ': serie inesistente, esame messo come riga strumentale'); }
-        else { D.series[it.key] = { key: it.key, label: ns.label, better: ns.better, points: [], unit: ns.unit, ref: it.ref || '' }; nSer++; }
+        else { D.series[it.key] = { key: it.key, label: ns.label, better: ns.better, points: [], unit: ns.unit, ref: it.ref || '' }; newSer[it.key] = D.series[it.key]; nSer++; }
       }
       const s = D.series[it.key];
       if (s) {
         const um = !!(it.unit && s.unit && it.unit !== s.unit); if (um) warn.push(it.name + ': unita ' + it.unit + ' diversa da serie ' + s.unit + ' (unitMismatch)');
-        s.points.push({ iso: P.iso, date: itDate(P.iso), src: P.label, v, cens, unit: it.unit || s.unit, ref: it.ref || '', ok, note: it.note || '', unitMismatch: um, panel: P.id });
-        s.points.sort((a, b) => a.iso < b.iso ? -1 : 1); continue;
+        const pt = { iso: P.iso, date: itDate(P.iso), src: P.label, v, cens, unit: it.unit || s.unit, ref: it.ref || '', ok, note: it.note || '', unitMismatch: um, panel: P.id };
+        if (s.points.some(x => x.panel === P.id)) throw new Error('serie ' + it.key + ': punto del pannello ' + P.id + ' gia presente');
+        s.points.push(pt); s.points.sort((a, b) => a.iso < b.iso ? -1 : 1);
+        (addPts[it.key] = addPts[it.key] || []).push(pt); continue;
       }
     }
-    D.instr.push({ panel: P.id, date: panel.date, iso: P.iso, label: P.label, cat: it.cat || 'Chimica clinica', name: it.name,
-      val: isNum ? ((cens || '') + v + (it.unit ? ' ' + it.unit : '')) : String(it.v), ref: it.ref || '—', ok, note: it.note || '' }); nIns++;
+    const row = { panel: P.id, date: panel.date, iso: P.iso, label: P.label, cat: it.cat || 'Chimica clinica', name: it.name,
+      val: isNum ? ((cens || '') + v + (it.unit ? ' ' + it.unit : '')) : String(it.v), ref: it.ref || '—', ok, note: it.note || '' };
+    D.instr.push(row); newInstr.push(row); nIns++;
   }
   D.panels.push(panel);
-  console.log('pannello', P.id, '| punti serie:', spec.items.filter(i => i.v != null && i.v !== '').length - nIns, '| righe strumentali:', nIns, '| nuove serie:', nSer);
-  if (skipped.length) console.log('SALTATI (v null):', skipped.length, '->', skipped.join('; '));
-  if (flags.length) console.log('FUORI RANGE:', flags.join(' | '));
-  if (warn.length) console.log('AVVISI:\n - ' + warn.join('\n - '));
-  apply(writeBack());
+  log('pannello', P.id, '| punti serie:', spec.items.filter(i => i.v != null && i.v !== '').length - nIns, '| righe strumentali:', nIns, '| nuove serie:', nSer);
+  if (skipped.length) log('SALTATI (v null):', skipped.length, '->', skipped.join('; '));
+  if (flags.length) log('FUORI RANGE:', flags.join(' | '));
+  if (warn.length) log('AVVISI:\n - ' + warn.join('\n - '));
+  console.log(sql(panel, newInstr, addPts, newSer));
+  log('\nSQL scritto su stdout: rileggilo, eseguilo nel SQL Editor e poi ricarica l\'app.');
 } else if (cmd === 'promote') {
-  const defs = [
-    { key: 'omocisteina', label: 'Omocisteina', better: 'down', unit: 'µmol/L', names: ['Omocisteina'] },
-    { key: 'pth', label: 'PTH', better: 'neutral', unit: 'ng/L', names: ['Paratormone Intatto (PTH)'] },
-    { key: 'magnesio', label: 'Magnesio', better: 'neutral', unit: 'mg/dL', names: ['Magnesio', 'Magnesio totale'] }
-  ];
-  const seen = new Set();
-  for (const d of defs) {
-    if (D.series[d.key]) continue;
-    const pts = []; let ref = '';
-    for (const r of D.instr.filter(r => d.names.includes(r.name))) {
-      const k = r.iso + '|' + d.key; if (seen.has(k)) continue; seen.add(k);
-      const m = String(r.val).match(/^([<>])?\s*(-?[\d.,]+)\s*(.*)$/); if (!m) continue;
-      pts.push({ iso: r.iso, date: r.date, src: r.label, v: num(m[2]), cens: m[1] || null, unit: m[3] || d.unit, ref: r.ref, ok: r.ok, note: r.note || '', unitMismatch: false, panel: r.panel }); ref = r.ref;
-    }
-    pts.sort((a, b) => a.iso < b.iso ? -1 : 1);
-    D.series[d.key] = { key: d.key, label: d.label, better: d.better, points: pts, unit: d.unit, ref };
-    console.log('serie', d.key, pts.length, 'punti:', pts.map(p => p.iso + '=' + p.v).join(', '));
-  }
-  /* AST/ALT: le righe 2026 sono solo strumentali -> aggiungo i punti mancanti alle serie esistenti */
-  for (const [key, nm] of [['ast', 'AST/GOT'], ['alt', 'ALT/GPT']]) {
-    const s = D.series[key]; const have = new Set(s.points.map(p => p.iso));
-    for (const r of D.instr.filter(r => r.name === nm && !have.has(r.iso))) {
-      const m = String(r.val).match(/^([<>])?\s*(-?[\d.,]+)\s*(.*)$/); if (!m) continue;
-      s.points.push({ iso: r.iso, date: r.date, src: r.label, v: num(m[2]), cens: m[1] || null, unit: m[3] || s.unit, ref: r.ref, ok: r.ok, note: r.note || '', unitMismatch: false, panel: r.panel }); have.add(r.iso);
-    }
-    s.points.sort((a, b) => a.iso < b.iso ? -1 : 1); console.log('serie', key, s.points.length, 'punti');
-  }
-  let t = writeBack();
-  const rep = (a, b) => { if (!t.includes(a)) throw new Error('ancora non trovata: ' + a); t = t.replace(a, b); };
-  rep("{ label: 'Rene', keys: ['creat', 'egfr', 'clcr', 'urea', 'urico', 'potassio', 'calcio'] }", "{ label: 'Rene', keys: ['creat', 'egfr', 'clcr', 'urea', 'urico', 'potassio', 'calcio', 'magnesio', 'pth'] }");
-  rep("{ label: 'Fegato', keys: ['ast', 'alt', 'ggt'] }", "{ label: 'Fegato', keys: ['ast', 'alt', 'ggt', 'omocisteina'] }");
-  rep("rene: ['creat', 'egfr', 'clcr', 'urea', 'urico', 'potassio', 'calcio', 'pth']", "rene: ['creat', 'egfr', 'clcr', 'urea', 'urico', 'potassio', 'calcio', 'magnesio', 'pth']");
-  rep("fegato: ['ast', 'alt', 'ggt', 'gluc',", "fegato: ['ast', 'alt', 'ggt', 'omocisteina', 'gluc',");
-  /* nome alternativo righe strumentali nascoste in 'Per apparato' quando esiste la serie */
-  rep("var taken = {}; seriesRows.forEach(function (r) { taken[r.name.toLowerCase()] = 1; });",
-      "var taken = {}; seriesRows.forEach(function (r) { taken[r.name.toLowerCase()] = 1; });\n      (CLIN_SERIES_ALIAS[key] || []).forEach(function (n) { taken[n.toLowerCase()] = 1; });");
-  rep("var CLIN_TEXTCAT =", "var CLIN_SERIES_ALIAS = { rene: ['Magnesio totale', 'Paratormone Intatto (PTH)'], fegato: ['AST/GOT', 'ALT/GPT'] };\nvar CLIN_TEXTCAT =");
-  apply(t);
-} else { console.log('comandi: template | add <file.json> [--dry] | promote [--dry]'); process.exit(1); }
+  console.error('comando non piu' + String.fromCharCode(39) + 'disponibile: era una tantum (gia applicata il 5/11/2026) e modificava CLIN_DATA nel codice, che dal 13/11/2026 non esiste piu.');
+  process.exit(1);
+} else { console.error('comandi: template | add <file.json>   (stampa l\'SQL su stdout)'); process.exit(1); }
