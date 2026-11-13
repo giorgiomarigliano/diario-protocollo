@@ -22,6 +22,7 @@ jobs:
           python-version: '3.12'
       - name: Test statici e di regressione
         run: |
+          (cd tools/audit && npm install --silent)
           node tests/v2.static.test.js
           node tests/regression.test.js
       - name: Installa Playwright
