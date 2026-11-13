@@ -26,6 +26,13 @@ BAD = re.compile(r'undefined|NaN|\[object|Infinity|\bnull\b')
 DANGER = re.compile(r'esaurito|elimina|cancella|reset|svuota|salva|registra|importa|scarica|genera|esporta|delete|remove|logout|backup|ripristina|sync|invia|copia|nuovo scatto|excel|pdf', re.I)
 CLICKABLE = '#app button, #app [data-an-tab], #app [data-an-fmode], #app summary, #app [role=tab], #app [onclick]'
 CYCLE_START = datetime.date(2026, 7, 20)
+TODAY = None   # --today AAAA-MM-GG: orologio del browser fermo a quella data (dati finti nei test automatici)
+
+
+def new_page(b, vw):
+    pg = b.new_page(viewport={'width': vw, 'height': 900})
+    if TODAY: pg.clock.set_fixed_time(datetime.datetime.combine(TODAY, datetime.time(12, 0)))
+    return pg
 
 
 BACKUP_NAMES = {'giorgio_protocollo_2026': 'diario_v1_', 'giorgio_proto2_2026': 'proto_v2_'}
@@ -97,14 +104,14 @@ def crawl(p, port, vw, lang, quick):
             res['bad'].append((label, t[max(0, m.start() - 40):m.end() + 40].replace('\n', ' | ')))
         o = pg.evaluate('[document.documentElement.scrollWidth,document.documentElement.clientWidth]')
         if o[0] > o[1] + 1: res['overflow'].append((label, o))
-    b = p.chromium.launch(); pg = b.new_page(viewport={'width': vw, 'height': 900}); pg.add_init_script("try{localStorage.setItem('dp-auth-skip','1')}catch(e){}"); pg.route('**/*', make_handler(SNAP))
+    b = p.chromium.launch(); pg = new_page(b, vw); pg.add_init_script("try{localStorage.setItem('dp-auth-skip','1')}catch(e){}"); pg.route('**/*', make_handler(SNAP))
     pg.on('pageerror', lambda e: res['errors'].append(('pageerror', str(e)[:200])))
     pg.on('console', lambda m: res['errors'].append(('console', m.text[:200])) if m.type == 'error' and 'ERR_' not in m.text and 'Failed to load' not in m.text else None)
     pg.goto(f'http://127.0.0.1:{port}/instr.html'); pg.wait_for_timeout(5000)
     if lang == 'en':
         pg.evaluate("[...document.querySelectorAll('button')].find(b=>b.innerText.trim()==='EN').click()"); pg.wait_for_timeout(500)
     views = ('Giorno', 'Settimana') if lang == 'it' else ('Day', 'Week')
-    n_days = (datetime.date.today() - CYCLE_START).days + 8   # fino a una settimana oltre oggi (prima si fermava al giorno 81)
+    n_days = ((TODAY or datetime.date.today()) - CYCLE_START).days + 8   # fino a una settimana oltre oggi (prima si fermava al giorno 81)
     for i in range(0, n_days, 7 if quick else 1):
         iso = (CYCLE_START + datetime.timedelta(days=i)).isoformat()
         for v in views:
@@ -154,7 +161,7 @@ CONSIST_JS = '''()=>{
 
 
 def consist(p, port):
-    b = p.chromium.launch(); pg = b.new_page(viewport={'width': 1440, 'height': 900}); pg.add_init_script("try{localStorage.setItem('dp-auth-skip','1')}catch(e){}"); pg.route('**/*', make_handler(SNAP))
+    b = p.chromium.launch(); pg = new_page(b, 1440); pg.add_init_script("try{localStorage.setItem('dp-auth-skip','1')}catch(e){}"); pg.route('**/*', make_handler(SNAP))
     pg.goto(f'http://127.0.0.1:{port}/exp.html'); pg.wait_for_timeout(4500)
     r = pg.evaluate(CONSIST_JS); b.close()
     problems = list(r['A'])
@@ -190,8 +197,16 @@ def main():
     ap.add_argument('--src', default=str(ROOT / 'v2.html')); ap.add_argument('--quick', action='store_true')
     ap.add_argument('--en', action='store_true'); ap.add_argument('--offline', action='store_true')
     ap.add_argument('--update-baseline', action='store_true'); ap.add_argument('--backup-dir')
+    ap.add_argument('--data-dir', help='cartella con i due record gia\' pronti (es. tests/fixtures: dati finti)'); ap.add_argument('--today', help='AAAA-MM-GG: data fissa del browser')
+    ap.add_argument('--baseline', default=str(HERE / 'baseline.json'))
     a = ap.parse_args()
-    if a.backup_dir: snapshots_from_backup(a.backup_dir)
+    global SNAP, TODAY
+    if a.today: TODAY = datetime.date.fromisoformat(a.today)
+    if a.data_dir:
+        SNAP = Path(a.data_dir).resolve()
+        if not all((SNAP / f'{r}.json').exists() for r in RECORDS): sys.exit(f'dati non trovati in {SNAP}')
+    if a.data_dir: pass
+    elif a.backup_dir: snapshots_from_backup(a.backup_dir)
     elif not a.offline or not all((SNAP / f'{r}.json').exists() for r in RECORDS): fetch_snapshots()
     if not (HERE / 'node_modules' / 'acorn').exists(): subprocess.run(['npm', 'install', '--silent'], cwd=HERE, check=True)
     build(a.src); OUT.mkdir(exist_ok=True)
@@ -207,7 +222,7 @@ def main():
         problems, B = consist(p, port)
         print(f'[coerenza] {len(problems)} divergenze  (woDone/woTot {B["adherence"].get("woDone")}/{B["adherence"].get("woTot")})')
         fails += [f'[coerenza] {x}' for x in problems[:10]]
-    bl = HERE / 'baseline.json'
+    bl = Path(a.baseline)
     if a.update_baseline: bl.write_text(json.dumps(sorted(allnever), indent=1)); print('baseline aggiornata:', len(allnever), 'campi')
     elif bl.exists():
         new = sorted(allnever - set(json.load(open(bl))))

@@ -24,3 +24,13 @@ Coerenza allenamenti: dal 24/10/2026 `adherence()` usa lo standard di 5 sedute a
 
 ## Limiti (non verificabile qui)
 Non copre Safari/iPhone reale, i flussi che scrivono dati (salva, importa, esporta Excel/PDF), ne' la correttezza clinica dei valori: controlla coerenza interna e assenza di rotture visibili.
+
+## Test automatici (GitHub Actions) e dati finti
+A ogni push su `main` il workflow `.github/workflows/test.yml` esegue test statici, test di regressione e questo audit (desktop, iPhone, inglese) su **dati finti**:
+
+    python3 tools/audit/audit.py --data-dir tests/fixtures --today 2026-11-12 --baseline tools/audit/baseline.fake.json --en
+
+- `tests/fixtures/*.json` si rigenerano con `python3 tools/audit/make_fixture.py` a partire dalla sola STRUTTURA degli snapshot reali in `.snap/`: testi liberi sostituiti da segnaposto, misure/esami/DEXA/carichi/nutrienti sostituiti da numeri casuali, stati (iniezioni, integratori, scale 1-10) estratti a caso. Lo script termina con errore se un testo reale sopravvive.
+- Restano reali solo struttura e configurazione gia' pubbliche nel codice: nomi dei campi, date (giorni con dati, sedute, foto), stato e date dei vial, pausa.
+- `--today` ferma l'orologio del browser: il test non dipende dal giorno in cui gira. Dopo aver rigenerato i dati finti: aggiornare `--today` nel workflow e `baseline.fake.json` (`--update-baseline` con gli stessi parametri).
+- L'audit sui dati reali (`--backup-dir`) resta il controllo da fare in locale prima di pubblicare: i dati finti non coprono i casi particolari dei dati veri.
