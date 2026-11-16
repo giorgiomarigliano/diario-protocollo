@@ -1763,10 +1763,14 @@ function faseAttivi() { var f = faseCorrente().fase; return (f.tipo === 'post' &
 const POST_WEEKS = 8;
 function navDays() { const need = Math.max(protDaIdx() + POST_WEEKS * 7, dayIdxFromISO(today) + 1, protoFineIdx() + 1, dayIdxFromISO(BKK_TRIPS[BKK_TRIPS.length - 1][1]) + 1); return Math.ceil(need / 7) * 7; }
 function cycleDayLabel(idx, cap) {
-  const it = LANG === 'it', fd = faseDi(idx);
+  const it = LANG === 'it', fd = faseDi(idx), tot = faseGiorni(fd.fase);
   let t;
-  if (fd.stato !== 'ciclo') t = it ? ('Post-ciclo \u00b7 giorno ' + fd.giorno) : ('Post-cycle \u00b7 day ' + fd.giorno);
-  else t = (it ? 'giorno ' : 'day ') + fd.giorno + (it ? ' di ' : ' of ') + faseGiorni(fd.fase);
+  /* 16/11: la distinzione e' il TIPO della fase, non lo stato: una pausa dentro un ciclo resta "giorno N di 112"
+     (la sospensione la dice la card Iniezioni), e una fase di ciclo aperta, senza durata, mostra solo il giorno. */
+  if (fd.fase.tipo === 'post') t = it ? ('Post-ciclo \u00b7 giorno ' + fd.giorno) : ('Post-cycle \u00b7 day ' + fd.giorno);
+  /* il denominatore si mostra solo se ha senso: fase aperta senza durata, o giorno oltre la durata prevista (protocollo riattivato) = solo il giorno */
+  else if (!isFinite(tot) || fd.giorno > tot) t = (it ? 'giorno ' : 'day ') + fd.giorno;
+  else t = (it ? 'giorno ' : 'day ') + fd.giorno + (it ? ' di ' : ' of ') + tot;
   return cap ? t.charAt(0).toUpperCase() + t.slice(1) : t;
 }
 /* Etichetta settimana: W1..W16 nel ciclo, P1.. dopo (Post-ciclo, settimana 1 = 9-15/11) */
@@ -3356,7 +3360,9 @@ function buildCycle(root){
   var pc=function(v){ return (v/tot*100)+"%"; }, E=function(c,st,tx){ var e=document.createElement("div"); e.className=c; if(st) e.style.cssText=st; if(tx!=null) e.textContent=tx; host.appendChild(e); return e; };
   var tr=E("an-cy-trk",""), PS={adatt:"Adatt.",costr:"Costruzione",peak:"Peak",mant:"Mantenim.",fine:"Fine ciclo"};
   PHASES.forEach(function(p){ var sg=document.createElement("div"); sg.className="an-cy-seg an-cy-"+p.id; sg.style.width=pc(p.weeks*7); sg.title=p.label; sg.innerHTML="<span>"+(PS[p.id]||p.label)+"</span>"; tr.appendChild(sg); });
-  var po=document.createElement("div"); po.className="an-cy-seg an-cy-post"; po.style.width=pc(pw); po.title="Post Ciclo 1"; po.innerHTML="<span>Post Ciclo 1</span>";   /* 12/11: i composti residui sono descritti nella riga sopra e nella pillola */ tr.appendChild(po);
+  /* 16/11: il nome del segmento viene dalla fase, non dal testo fisso "Post Ciclo 1" */
+  var FLp=fasiCalendario().filter(function(f){return f.tipo==='post';}), nomePost=FLp.length?FLp[0].nome:"Post Ciclo 1";
+  var po=document.createElement("div"); po.className="an-cy-seg an-cy-post"; po.style.width=pc(pw); po.title=nomePost; po.innerHTML="<span>"+nomePost+"</span>";   /* 12/11: i composti residui sono descritti nella riga sopra e nella pillola */ tr.appendChild(po);
   var bk=0, trips=[];
   EVENTS.forEach(function(e){
     if (e.kind==="band"){
@@ -3383,11 +3389,13 @@ function buildCycle(root){
     var i=document.createElement("span"); i.className="an-legend-item";
     i.innerHTML='<span class="an-sw an-cy-'+p.id+'" style="height:10px;width:10px;border-radius:var(--r-xs)"></span>'+p.label;
     lg.appendChild(i); });
-    var ip=document.createElement("span"); ip.className="an-legend-item"; ip.innerHTML='<span class="an-sw" style="height:10px;width:10px;border-radius:var(--r-xs);background:var(--cy-post)"></span>Post Ciclo 1'; lg.appendChild(ip);
+    var ip=document.createElement("span"); ip.className="an-legend-item"; ip.innerHTML='<span class="an-sw" style="height:10px;width:10px;border-radius:var(--r-xs);background:var(--cy-post)"></span>'+nomePost; lg.appendChild(ip);
     var it2=document.createElement("span"); it2.className="an-legend-item an-cy-lgtr"; it2.innerHTML='<span class="an-sw" style="height:10px;width:10px;border-radius:var(--r-xs);background:var(--cy-trip)"></span>Viaggi: '+trips.sort(function(x,y){return x.a-y.a;}).map(function(q){return q.t;}).join(" \u00b7 "); lg.appendChild(it2); }
   /* 02/11/2026: dal 9/11 il Ciclo 1 e' concluso ma il percorso no: niente "g116 / 112", si conta la settimana di Post Ciclo 1 (aperta, senza denominatore) */
-  setB(root,"cycle.day", TODAY()<cyc ? "g"+cycleDayNo(TODAY())+" / "+CYCLE.days : "Ciclo 1 concluso \u00b7 Post Ciclo 1 \u00b7 settimana "+(Math.floor((TODAY()-cyc)/7)+1));
-  setB(root,"cycle.week","W"+(Math.floor(TODAY()/7)+1));
+  /* 16/11: nomi e durate dalle fasi, non dai testi fissi "Ciclo 1" / "Post Ciclo 1"; la sigla della settimana e' quella delle fasi (W.. nel ciclo, P.. dopo) */
+  var fdT=faseDi(TODAY()), FLd=fasiList(), kd=FLd.indexOf(fdT.fase), prevF=kd>0?FLd[kd-1]:null, totF=faseGiorni(fdT.fase);
+  setB(root,"cycle.day", fdT.fase.tipo!=='post' ? ("g"+fdT.giorno+(isFinite(totF)&&fdT.giorno<=totF?" / "+totF:"")) : ((prevF?prevF.nome+" concluso \u00b7 ":"")+fdT.fase.nome+" \u00b7 settimana "+fdT.settimana));
+  setB(root,"cycle.week",weekTag(Math.floor(TODAY()/7)));
   setB(root,"cycle.date",fmtDM(dateOfDay(TODAY())));
   cyExtras(root);
 }
@@ -3645,7 +3653,7 @@ function buildLoad(root){
     series:[{type:"bar",data:vols,color:"var(--accent-soft)",label:T().volume},
             {type:"line",data:hrvPlot,color:"var(--c-s1)",label:T().hrv,markExtremes:false,dash:"4 4"}],
     options:{height:124,clampZero:true,loading:AN.loading,xMax:Math.max(1,nW-1),
-      xLabels:vols.map(function(p){return {x:p.x,label:"W"+(Math.floor(w.from/7)+p.x+1)};}),
+      xLabels:vols.map(function(p){return {x:p.x,label:weekTag(Math.floor(w.from/7)+p.x)};}),   /* 16/11: sigla dalle fasi (W.. nel ciclo, P.. nel Post-ciclo) */
       emptyText:T().noData,fmtY:function(v){return it(Math.round(v/100)/10,1);}}
   });
   /* PORTING: solo settimane intere e concluse (la settimana in corso e quella tagliata dalla finestra non contano) */
@@ -5114,11 +5122,17 @@ function photoT1T2Label(p){
 function photoDayWeekLabel(p){
   var i = photoDayIndex(p);
   if (i < 0) return "Pre-ciclo";
-  var wk = Math.floor(i / 7) + 1;
+  /* 16/11/2026: nomenclatura delle fasi (prima: "Giorno 115/112 . Settimana 17", che dopo l'8/11 non vuol dire nulla).
+     Dentro un ciclo il formato resta identico, ma giorno e durata sono quelli della FASE (per il Ciclo 1: gli stessi di prima);
+     nel Post-ciclo il denominatore non esiste, quindi "Post-ciclo . giorno N . P2" come nella scheda Oggi. */
+  var fd = faseDi(i), tot = faseGiorni(fd.fase), tag = weekTag(Math.floor(i / 7));
+  if (fd.fase.tipo === 'post')
+    return isDesktop ? ("Post-ciclo \u00b7 giorno " + fd.giorno + " \u00b7 " + tag) : ("Post \u00b7 g" + fd.giorno + " \u00b7 " + tag);
+  var den = (isFinite(tot) && fd.giorno <= tot) ? ("/" + tot) : "";   /* niente denominatore oltre la durata prevista o in una fase aperta */
   /* PORTING 30/09: a 393px, in una tessera da 3 colonne, "Giorno 71/112 . Settimana 10"
      non entrava e finiva troncato in "Giorno 71/112 . Set..." (perdendo il numero di
      settimana). Versione compatta solo su mobile, il dato e' lo stesso. */
-  return isDesktop ? ("Giorno " + cycleDayNo(i) + "/" + CYCLE.days + " \u00b7 Settimana " + wk) : ("G" + cycleDayNo(i) + "/" + CYCLE.days + " \u00b7 Sett " + wk);
+  return isDesktop ? ("Giorno " + fd.giorno + den + " \u00b7 Settimana " + fd.settimana) : ("G" + fd.giorno + den + " \u00b7 Sett " + fd.settimana);
 }
 /* PORTING 26/09: quota allenamenti della settimana, congelata alla data dello scatto (non a
    oggi) -- stesso identico criterio (AN_dayAdh) gia' usato ovunque, letto giorno per giorno
@@ -5352,7 +5366,7 @@ function buildFoto(root){
     if (!ks.length) hw.innerHTML='<div class="an-chart-state">'+T().noShots+'</div>';
     ks.forEach(function(k){
       var blk=document.createElement("div");
-      blk.innerHTML='<div class="an-fweek-h">'+(+k<0?"Pre-ciclo":"W"+(+k+1))+' \u00b7 '+byW[k].length+' '+T().shots+'</div>';
+      blk.innerHTML='<div class="an-fweek-h">'+(+k<0?"Pre-ciclo":weekTag(+k))+' \u00b7 '+byW[k].length+' '+T().shots+'</div>';   /* 16/11: sigla dalle fasi */
       var g=document.createElement("div"); g.className="an-fgrid"; g.style.marginTop="8px";
       /* PORTING 26/09: mancavano tutti i dati oltre al peso -- stessi helper di Griglia, non
          una copia ridotta a parte. */
@@ -10112,7 +10126,7 @@ function renderWeekFull() {
       </div>
       ${protKcalLine}
       <div style="flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:7px;padding-top:10px;border-top:1px solid var(--line);">
-        <span style="flex:0 0 auto;font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Le 16 settimane, la stessa misura' : 'All 16 weeks, same measure'}</span>
+        <span style="flex:0 0 auto;font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Tutte le settimane, la stessa misura' : 'All weeks, same measure'}</span>
         <div style="flex:1 1 auto;min-height:0;display:flex;align-items:flex-end;gap:3px;">${barsHtml}</div>
         <span style="flex:0 0 auto;font-size:var(--fs-2xs);font-weight:500;color:var(--ink3);text-wrap:pretty;">${LANG === 'it' ? 'Aderenza complessiva per settimana · fondo scala 50%' : 'Overall adherence per week · 50% baseline'}</span>
       </div>
@@ -10301,7 +10315,7 @@ function renderWeekFull() {
       </div>
       ${protKcalLine}
       <div style="display:flex;flex-direction:column;gap:6px;padding:0 6px;">
-        <span style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Le 16 settimane' : 'All 16 weeks'}</span>
+        <span style="font-size:var(--fs-2xs);font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.01em;">${LANG === 'it' ? 'Tutte le settimane' : 'All weeks'}</span>
         <div style="height:46px;display:flex;align-items:flex-end;gap:3px;">${barsHtml}</div>
       </div>
     </div>`;
@@ -13161,6 +13175,11 @@ const EN_RULES = [
  [/^Prelievo ore (.+)$/i, (m, r) => 'Sample taken at ' + r],
  [/^Giorno (\d+)\/(\d+) · Settimana (\d+)(.*)$/i, (m, a, b, c, r) => 'Day ' + a + '/' + b + ' · Week ' + c + r],
  [/^G(\d+)\/(\d+) · Sett (\d+)(.*)$/i, (m, a, b, c, r) => 'D' + a + '/' + b + ' · Wk ' + c + r],
+ [/^Giorno (\d+) · Settimana (\d+)$/i, (m, g, w) => 'Day ' + g + ' · Week ' + w],
+ [/^G(\d+) · Sett (\d+)$/i, (m, g, w) => 'D' + g + ' · Wk ' + w],
+ [/^Post-ciclo · giorno (\d+) · (P\d+)$/i, (m, g, t) => 'Post-cycle · day ' + g + ' · ' + t],
+ [/^Post · g(\d+) · (P\d+)$/i, (m, g, t) => 'Post · d' + g + ' · ' + t],
+ [/^(.+) concluso · (.+) · settimana (\d+)$/i, (m, a, b, n) => a + ' finished · ' + b + ' · week ' + n],
  [/^Sett (\d+)$/i, (m, n) => 'Wk ' + n],
  [/^(\d+) sett\.$/i, (m, n) => n + ' wk'],
  [/^(\d+)gg$/i, (m, n) => n + 'd'],
@@ -13642,10 +13661,15 @@ function exportRows() {
     const vol = getWorkoutVolume2(rec);
     wo.push([iso, label, (a && ((a.woPlanned && a.woDone) || a.woExtra)) ? 1 : 0, type === 'Riposo' ? '' : type, expNum(rec.wo_durata), vol !== null ? vol : expNum(rec.wo_volume), expNum(rec.wo_kcal)]);
   }
+  /* 16/11: le note che parlano di fasi, settimane e date si leggono dalle fasi e da proto_pausa, non da testi fissi
+     (prima dicevano "pausa dall'11/11" e "W1-W16" mentre la pausa era al 16/11 e il percorso era gia' nel Post-ciclo). */
+  const nFineIdx = protDaIdx(), nTagFine = weekTag(protDaSett() - 1), nPausa = protoPausa(), nPausaIdx = protoPauseIdx();
+  const nPostDal = faseIsoDaIdx(nFineIdx), nPostP1Al = faseIsoDaIdx(nFineIdx + 6);
+  const nResAl = (nPausaIdx != null && nPausaIdx > nFineIdx) ? faseIsoDaIdx(nPausaIdx - 1) : '';
   const note = [['voce', 'descrizione'],
     ['Origine', 'Diario Protocollo v2 - esportato il ' + todayISO],
-    ['Periodo', 'dal 18/07/2026 (rodaggio TP1-TP2) a oggi; il ciclo di 112 giorni parte il 20/07/2026'],
-    ['giorno_ciclo', '1 = 20/07/2026; TP1-TP2 = rodaggio del 18-19/07'],
+    ['Periodo', 'dal 18/07/2026 (rodaggio TP1-TP2) a oggi; il ciclo di ' + CAL.DAYS + ' giorni parte il ' + fasiEdDmy(CAL.START)],
+    ['giorno_ciclo', '1 = ' + fasiEdDmy(CAL.START) + '; TP1-TP2 = rodaggio del 18-19/07'],
     ['ore_sonno_decimali', 'ore vere (es. 5h18m = 5,30), convertite dalla notazione H.MM usata nel diario'],
     ['celle vuote', 'dato non registrato'],
     ['hrv_ms_media', 'media giornaliera dell\'HRV: disponibile fino al 14/09/2026. Dal 15/09 Salute (iOS) mostra solo un intervallo: la media non viene stimata e la colonna resta vuota'],
@@ -13653,10 +13677,10 @@ function exportRows() {
     ['hrv_centro_intervallo', '(hrv_min + hrv_max) / 2. NON e la media giornaliera: e solo il centro dell\'intervallo, utile per vedere l\'andamento con una serie continua. Non confrontarla con hrv_ms_media'],
     ['hrv_tipo', 'media = solo media; intervallo = solo min-max; media+intervallo = entrambi (giorni di transizione)'],
     ['ader_iniezioni_pct / ader_integratori_pct', 'dosi fatte su dovute; dosi saltate o non applicabili escluse; vuoto per il giorno in corso'],
-    ['settimana_tag (Biometria)', 'W1-W16 = settimane del ciclo (112 giorni); P1... = Post-ciclo (P1 = 9-15/11/2026). La colonna "settimana" resta il numero progressivo'],
-    ['fase', 'rodaggio = TP1-TP2; ciclo = protocollo attivo (giorni 1-112); residuo = 9-10/11, dosi rimaste di BPC-157/TB-500; pausa = peptidi sospesi (dall\'11/11, data stimata finche non confermata)'],
-    ['ader_iniezioni_pct (chiusura)', 'la % delle iniezioni si chiude con la W16 (giorno 112): dopo, dosi dovute = 0 e la cella resta vuota. Allenamenti (5 a settimana) e integratori continuano come prima'],
-    ['proteine_esito (Protocollo)', 'solo dal 9/11/2026 (Post-ciclo). non_valutabile = giorno chiuso con kcal registrate < 50% del target; in_obiettivo = proteine >= 90% del target (per le voci stimate si usa il minimo del range); sotto = altrimenti; in_corso = oggi. Target unico da Gestione > Alimenti > Obiettivi (oggi 180 g, 1800 kcal), non storicizzato: se cambia, cambia anche per i giorni passati'],
+    ['settimana_tag (Biometria)', 'W1-' + nTagFine + ' = settimane del ciclo (' + nFineIdx + ' giorni); P1... = Post-ciclo (P1 = ' + protoDmy(nPostDal) + '-' + fasiEdDmy(nPostP1Al) + '). La colonna "settimana" resta il numero progressivo'],
+    ['fase', 'rodaggio = TP1-TP2; ciclo = protocollo attivo (giorni 1-' + nFineIdx + '); residuo = dosi rimaste dei composti ancora attivi dopo la fine del ciclo, dal ' + protoDmy(nPostDal) + (nResAl ? ' al ' + protoDmy(nResAl) : '') + '; pausa = peptidi sospesi' + (nPausaIdx != null ? ' dal ' + fasiEdDmy(nPausa.dal) : ' (non attiva)')],
+    ['ader_iniezioni_pct (chiusura)', 'la % delle iniezioni si chiude con la ' + nTagFine + ' (giorno ' + nFineIdx + '): dopo, dosi dovute = 0 e la cella resta vuota. Allenamenti (5 a settimana) e integratori continuano come prima'],
+    ['proteine_esito (Protocollo)', 'solo dal ' + fasiEdDmy(nPostDal) + ' (Post-ciclo). non_valutabile = giorno chiuso con kcal registrate < 50% del target; in_obiettivo = proteine >= 90% del target (per le voci stimate si usa il minimo del range); sotto = altrimenti; in_corso = oggi. Target unico da Gestione > Alimenti > Obiettivi (oggi 180 g, 1800 kcal), non storicizzato: se cambia, cambia anche per i giorni passati'],
     ['workout_fatto', '1 se sono presenti calorie, volume o RPE; vuoto il tipo nei giorni di riposo'],
     ['wo_volume_kg', 'volume totale della seduta (kg), dal campo volume o dal log Motra'],
     ['Alimentazione', 'foglio dal 12/10/2026 (inizio del diario alimentare): una riga per giorno, solo totali, valori centrali. kcal_min/kcal_max = intervallo delle voci stimate (uguali al valore se non ci sono stime); quota_stimata_pct = kcal da voci stimate sul totale del giorno'],
@@ -13877,7 +13901,20 @@ async function exportPDF(statusEl, btn) {
       y = tblY() + 8;
     } else { y = bodyText(y, 'Dati dei vial non disponibili al momento della generazione.'); }
     y = sectionTitle(y, 'Fasi del protocollo');
-    tbl2({ startY: y, head: [['Fase', 'Periodo', 'Note']], body: [['Warm-up', '8 giu - 17 lug', 'Fase preparatoria; Tesamorelin sospeso dopo 2-3 iniezioni'], ['Test protocollo', '18-19 lug', 'Introduzione dello stack completo'], ['Ciclo 1', '20 lug - 8 nov', '112 giorni, protocollo completo'], ['Trasferta Bangkok', '7-21 ago', 'Iniezioni mantenute, allenamento adattato']] });
+    /* 16/11: le fasi del percorso vengono dall'elenco delle fasi (fasiCalendario), non piu' da una riga fissa "Ciclo 1 / 112 giorni":
+       cosi' il Post-ciclo compare e Ciclo 2, pause e mantenimento non richiedono di riscrivere la tabella. Le due fasi storiche
+       (Warm-up, rodaggio) e la trasferta restano testi fissi: sono fatti chiusi, fuori dall'asse dei giorni del diario. */
+    const pdfPausa = protoPausa();
+    const pdfMesiBr = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+    const pdfGiornoMese = iso => parseInt(iso.slice(8, 10), 10) + ' ' + pdfMesiBr[+iso.slice(5, 7) - 1];   /* "8 nov", come le righe storiche della tabella */
+    const pdfFasi = fasiCalendario().map(function (f) {
+      const g = faseGiorni(f);
+      const nota = f.tipo === 'post'
+        ? ((pdfPausa.on ? 'peptidi sospesi dal ' + pdfGiornoMese(pdfPausa.dal) + '; ' : 'dosi residue; ') + 'integrazione, allenamento, dieta e parametri proseguono')
+        : ((isFinite(g) ? g + ' giorni, ' : '') + 'protocollo completo');
+      return [f.nome, pdfGiornoMese(f.dal) + ' - ' + (f.al ? pdfGiornoMese(f.al) : 'in corso'), nota];
+    });
+    tbl2({ startY: y, head: [['Fase', 'Periodo', 'Note']], body: [['Warm-up', '8 giu - 17 lug', 'Fase preparatoria; Tesamorelin sospeso dopo 2-3 iniezioni'], ['Test protocollo', '18-19 lug', 'Introduzione dello stack completo']].concat(pdfFasi, [['Trasferta Bangkok', '7-21 ago', 'Iniezioni mantenute, allenamento adattato']]) });
 
     /* ---------- PARTE 3 ---------- */
     y = startPart('Parte 3 di 3', 'Laboratorio T0 -> T1 -> T2');
