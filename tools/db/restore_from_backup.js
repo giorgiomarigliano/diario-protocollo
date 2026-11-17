@@ -30,19 +30,29 @@ if (PROVA) {
      La riga di prova si cancella solo con l'override delle guardie (il trigger diary_block_destructive blocca le DELETE). */
   const prova = 'prova_ripristino_' + new Date().toISOString().slice(0, 10).replace(/-/g, '');
   out.push(`-- COLLAUDO: scrive su una riga di prova (${prova}), confronta con la riga vera e poi la elimina. I dati veri non vengono toccati.`,
+    `-- Il SQL Editor mostra solo il risultato dell'ULTIMA istruzione, quindi il confronto viene messo da parte`,
+    `-- in una tabella temporanea e riletto in coda: un solo giro, una sola tabella di risultati da leggere.`,
     'begin;',
-    `insert into diary (user_id, data) values ('${prova}', ${q(data)}) on conflict (user_id) do update set data = excluded.data;`,
+    'drop table if exists collaudo_esito;',
+    `-- la tabella non ha un vincolo unico su user_id (la chiave primaria e' id), quindi niente ON CONFLICT:`,
+    `-- l'eventuale riga di prova rimasta da un tentativo precedente va cancellata prima di inserire.`,
+    `-- L'override delle guardie vale solo dentro questa transazione, che tocca solo la riga di prova.`,
+    `set local app.allow_destructive = 'on';`,
+    `delete from diary where user_id = '${prova}';`,
+    `insert into diary (user_id, data) values ('${prova}', ${q(data)});`,
     `-- confronto: stesse chiavi e stesse dimensioni della riga vera?`,
-    `select (select count(*) from jsonb_object_keys(p.data)) chiavi_prova, (select count(*) from jsonb_object_keys(v.data)) chiavi_vere,
+    `create temp table collaudo_esito as
+     select (select count(*) from jsonb_object_keys(p.data)) chiavi_prova, (select count(*) from jsonb_object_keys(v.data)) chiavi_vere,
        length(p.data::text) byte_prova, length(v.data::text) byte_veri,
        (select count(*) from jsonb_each(p.data) a full join jsonb_each(v.data) b on a.key = b.key where a.value is distinct from b.value) chiavi_diverse
      from diary p, diary v where p.user_id = '${prova}' and v.user_id = '${USER}';`,
-    `-- pulizia: le DELETE sono bloccate dalle guardie, serve l'override esplicito solo per questa riga di prova`,
-    `set local app.allow_destructive = 'on';`,
+    `-- pulizia finale della riga di prova (l'override e' gia' attivo in questa transazione)`,
     `delete from diary where user_id = '${prova}';`,
     'commit;',
-    `-- verifica finale: la riga di prova non deve piu' esistere e la riga vera deve essere intatta`,
-    `select user_id, (select count(*) from jsonb_object_keys(data)) chiavi, length(data::text) byte from diary where user_id in ('${prova}', '${USER}');`);
+    `-- esito: le 5 colonne del confronto + la prova che la riga di prova e' sparita e la riga vera e' intatta`,
+    `select e.*, (select count(*) from diary where user_id = '${prova}') righe_prova_residue,
+       (select length(data::text) from diary where user_id = '${USER}') byte_riga_vera_adesso
+     from collaudo_esito e;`);
 } else if (TUTTO) {
   out.push(`-- ATTENZIONE: riscrive l'INTERA riga. Tutto cio' che e' stato registrato dopo lo snapshot viene perso.`,
     `-- Prima di eseguire, confronta cosa c'e' adesso:`,
