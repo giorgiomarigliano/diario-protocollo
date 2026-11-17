@@ -22,6 +22,12 @@ Coerenza allenamenti: dal 24/10/2026 `adherence()` usa lo standard di 5 sedute a
 ## Baseline
 `baseline.json` = campi che legittimamente non hanno mai un valore oggi (dati assenti nel ciclo corrente). Se l'audit segnala un campo nuovo: prima verificare nel codice se e' un errore; solo se e' legittimo, `--update-baseline` su codice noto per buono e commit del file.
 
+**Un campo esce dalla baseline solo se il suo punto di lettura viene raggiunto SEMPRE.** La segnalazione e' per punto di lettura (`campo@riga`): basta un giro in cui quel punto vede solo oggetti senza quel campo e il campo torna a comparire. `passi` e `ref` sono cosi': dipendono da quali giorni e quali alimenti finiscono sotto il cursore, quindi restano in baseline. Il modo giusto di toglierne uno davvero e' aggiungere lo stato che lo esercita a `KNOWN_STATES` (vedi sotto), non `--update-baseline` dopo un giro fortunato.
+
+## Stati noti (`KNOWN_STATES`)
+
+Dopo il crawl l'audit forza alcune viste che il giro automatico non raggiunge (chip fuori schermo, pannelli chiusi) e le controlla come le altre: oggi Workout > «Per slot» e Gestione > Alimenti > Libreria con la coda aperta. **Se uno stato non si raggiunge, l'audit fallisce**: e' il modo per accorgersi che un chip o una sotto-vista hanno cambiato nome. I selettori usano gli attributi (`data-an-tab`, `data-gst-tab`), quindi valgono anche in inglese.
+
 ## Limiti (non verificabile qui)
 Non copre Safari/iPhone reale, i flussi che scrivono dati (salva, importa, esporta Excel/PDF), ne' la correttezza clinica dei valori: controlla coerenza interna e assenza di rotture visibili.
 

@@ -11,10 +11,13 @@
    - tutto il resto: passa senza intermediazione.
 
    Per forzare l'aggiornamento della cache dopo una pubblicazione importante basta cambiare VERSIONE. */
-const VERSIONE = 'dp2-2026-11-13';
+const VERSIONE = 'dp2-2026-11-17';
 const SHELL = [
   './v2.html',
   './apple-touch-icon-v2.png',
+  './manifest.webmanifest',   /* 17/11: icona sulla home e apertura a schermo intero, disponibili anche senza rete */
+  './icon-192.png',
+  './icon-512.png',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4/dist/umd/supabase.js',
 ];
 const ATTESA_RETE = 4000;

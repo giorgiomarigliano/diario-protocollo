@@ -212,6 +212,9 @@ def build(src):
     src = BUILD / 'src_noauth.html'; src.write_text(noauth)
     r = subprocess.run(['node', str(HERE / 'instr.js'), str(src), str(BUILD / 'instr.html')], capture_output=True, text=True)
     if r.returncode or 'fails []' not in r.stdout: sys.exit('strumentazione fallita: ' + (r.stdout + r.stderr)[-400:])
+    # 17/11: manifest e icone accanto alla copia di prova, cosi' il browser li carica davvero (e un manifest rotto si vede)
+    for extra in ('manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon-v2.png'):
+        if (ROOT / extra).exists(): shutil.copy(ROOT / extra, BUILD / extra)
     html = Path(src).read_text()
     if 'function AN_dayAdh(' not in html: sys.exit('AN_dayAdh non trovata: aggiornare audit.py (test di coerenza)')
     (BUILD / 'exp.html').write_text(html.replace('function AN_dayAdh(', 'window.__AN_dayAdh=AN_dayAdh;\nfunction AN_dayAdh(', 1))
