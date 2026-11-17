@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
-# Calcola gli hash SRI degli script CDN di v2.html/index.html e (con --apply) li inserisce nei tag.
-# 13/11/2026: aggiunta la libreria di accesso (@supabase/supabase-js da jsDelivr), che e' la piu' delicata:
-# gira con la sessione e con accesso a tutti i dati. Non e' in un tag <script> ma nella stringa LIB del blocco DP-AUTH,
-# quindi per quella lo script stampa solo l'hash: va messo a mano in dp-auth.js (campo integrity del tag creato da loadLib).
-# Va eseguito da un computer con accesso a cdnjs (la sandbox di Claude non lo ha).
-# Uso: bash tools/sri/add-sri.sh          # stampa gli hash
-#      bash tools/sri/add-sri.sh --apply  # aggiunge integrity+crossorigin a v2.html (e index.html per heic2any/exif)
+# Stampa le impronte SRI delle librerie esterne. Va eseguito da un computer con accesso ai CDN
+# (la sandbox di Claude non ce l'ha). NON modifica nessun file: gli hash si incollano a mano, vedi sotto.
+#
+#   bash tools/sri/add-sri.sh
+#
+# 17/11/2026: tolto --apply. Faceva due danni: usava `sed -i -E`, sintassi GNU che su macOS lascia file
+# spuri invece di modificare in posto, e comunque copriva solo 2 librerie su 6, perche' le altre non sono
+# tag <script> ma vengono caricate da JavaScript al primo uso.
+#
+# Dove va ogni hash:
+#   heic2any, exif-js            -> attributo integrity dei tag <script> in v2.html e index.html
+#   xlsx, jspdf, jspdf-autotable -> CDN_SRI in v2.html (v2 le carica a richiesta); tag <script> in index.html
+#   @supabase/supabase-js        -> LIB_SRI in tools/auth/dp-auth.js (poi tools/auth/apply.py per riportarlo
+#                                   in v2.html e index.html: e' la piu' delicata, gira con la sessione)
+#
+# Gli hash cambiano solo se cambia la VERSIONE della libreria: le URL sono bloccate su una versione precisa.
 set -euo pipefail
-cd "$(dirname "$0")/../.."
 URLS=(
  https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js
  https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js
@@ -17,14 +25,9 @@ URLS=(
  https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.4/dist/umd/supabase.js
 )
 for u in "${URLS[@]}"; do
-  h="sha384-$(curl -fsSL "$u" | openssl dgst -sha384 -binary | openssl base64 -A)"
-  echo "$h  $u"
-  if [ "${1:-}" = "--apply" ]; then
-    for f in v2.html index.html; do
-      grep -q "$u" "$f" || continue
-      grep -q "integrity=\"$h\"" "$f" && continue
-      # solo i tag <script src="URL"> senza integrity; le URL in stringhe JS (xlsx/jspdf) vanno trattate a mano
-      sed -i -E "s#<script src=\"$u\"([^>]*)>#<script src=\"$u\" integrity=\"$h\" crossorigin=\"anonymous\"\1>#" "$f"
-    done
-  fi
+  echo "sha384-$(curl -fsSL "$u" | openssl dgst -sha384 -binary | openssl base64 -A)  $u"
 done
+echo
+echo "Confronto con quanto e' gia' nel codice:"
+cd "$(dirname "$0")/../.."
+grep -o 'sha384-[A-Za-z0-9+/=]\{64\}' v2.html index.html tools/auth/dp-auth.js 2>/dev/null | sort -u || true
