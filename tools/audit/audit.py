@@ -96,8 +96,28 @@ def serve():
     return srv, srv.server_address[1]
 
 
+KNOWN_STATES = [
+    # 17/11/2026: stati che il giro automatico non raggiunge (chip fuori schermo, pannelli chiusi) e che percio'
+    # facevano finire in baseline campi letti e mai trovati (slot, inb, inbp). Ogni voce: sequenza di click, poi scan.
+    # i selettori usano gli attributi (data-an-tab, data-gst-tab) e non il testo: valgono anche in inglese
+    ('workout per slot', [
+        "document.querySelector('[data-tab=andamento]').click()",
+        "document.querySelector('[data-an-tab=\"workout\"]').click()",
+        "document.querySelector('[data-exp-mode=\"slot\"]').click()",
+        "document.querySelector('[data-exp-open]').click()",
+    ]),
+    ('coda alimenti', [
+        "document.querySelector('[data-tab=gestione]').click()",
+        "document.querySelector('[data-gst-tab=\"alimenti\"]').click()",
+        "FOOD.sub('lib')",                                               # la coda sta nella sotto-vista Libreria
+        "document.querySelector('[onclick=\"FOOD.g.inbToggle()\"]').click()",
+        "document.querySelector('[onclick=\"FOOD.g.inbPasteToggle()\"]').click()",
+    ]),
+]
+
+
 def crawl(p, port, vw, lang, quick):
-    res = {'bad': [], 'overflow': [], 'errors': [], 'clicked': 0}
+    res = {'bad': [], 'overflow': [], 'errors': [], 'clicked': 0, 'states': []}
     def scan(pg, label):
         t = pg.evaluate('document.body.innerText')
         for m in BAD.finditer(t):
@@ -135,6 +155,15 @@ def crawl(p, port, vw, lang, quick):
                 except Exception as e:
                     res['errors'].append(('driver', str(e)[:120]))
             pg.wait_for_timeout(300)
+    for label, steps in KNOWN_STATES:
+        for s in steps:
+            try:
+                pg.evaluate(f'()=>{{{s}}}'); pg.wait_for_timeout(350)
+            except Exception as e:
+                res['errors'].append((f'stato {label}', str(e)[:120]))
+                break
+        else:
+            res['states'].append(label); scan(pg, f'stato {label}')
     miss = pg.evaluate('window.__miss'); tot = pg.evaluate('window.__tot'); b.close()
     return res, miss, tot
 
@@ -216,7 +245,9 @@ def main():
             res, miss, tot = crawl(p, port, vw, lang, a.quick)
             allnever |= set(never_present(miss, tot))
             tag = f'{vw}/{lang}'
-            print(f'[{tag}] click {res["clicked"]}  anomali {len(res["bad"])}  overflow {len(res["overflow"])}  errori {len(res["errors"])}')
+            print(f'[{tag}] click {res["clicked"]}  stati {len(res["states"])}/{len(KNOWN_STATES)}  anomali {len(res["bad"])}  overflow {len(res["overflow"])}  errori {len(res["errors"])}')
+            for label, _ in KNOWN_STATES:
+                if label not in res['states']: fails.append(f'[{tag}] stato non raggiunto: {label}')
             for k in ('bad', 'overflow', 'errors'):
                 for x in res[k][:8]: fails.append(f'[{tag}] {k}: {x}')
         problems, B = consist(p, port)
