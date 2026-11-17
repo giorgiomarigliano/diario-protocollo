@@ -25,6 +25,7 @@ jobs:
           (cd tools/audit && npm install --silent)
           node tests/v2.static.test.js
           node tests/regression.test.js
+          node tests/motra.test.js
       - name: Installa Playwright
         run: |
           pip install playwright

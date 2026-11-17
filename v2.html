@@ -6144,7 +6144,12 @@ var AN_HTML = "<div class=\"an-root\">\n  <div class=\"an-subnav\">\n    <div cl
    questa closure finora. Esposti qui, nessun comportamento esistente cambia. */
 /* 02/10: intervallo selezionato in Andamento (30/60/90/ciclo), per le righe di contesto delle card (CTX). */
 function AN_scope(wo){ var w=wo?WW():W(); return { days:wo?CYCLE.days:R(), cycle:wo?true:AN.range===0, from:fmtDM(dateOfDay(w.from)), to:fmtDM(dateOfDay(w.from+w.slice.length-1)) }; }
-return { html: function(){ return AN_HTML; }, mount: AN_mount, loadV1: AN_loadV1, lazyPhoto: AN_lazyPhoto, photoUrl: AN_photoUrl, getPhotoLog: function(){ return PHOTO_LOG; }, scope: AN_scope };
+return { html: function(){ return AN_HTML; }, mount: AN_mount, loadV1: AN_loadV1, lazyPhoto: AN_lazyPhoto, photoUrl: AN_photoUrl, getPhotoLog: function(){ return PHOTO_LOG; }, scope: AN_scope,
+  /* 17/11: dopo un import Motra i dati del record archivio sono cambiati (una seduta in
+     piu', riepilogo muscoli e sentinelle): AN_loadV1 da solo non ricarica nulla perche'
+     esce subito se lo stato non e' "idle". AN_V1 vive dentro questa closure, quindi il
+     rientro passa di qui invece che toccare una variabile che da fuori non esiste. */
+  reloadV1: function(){ AN_V1.status = "idle"; AN_loadV1(); } };
 })();
 
 /* ===== 02/10: CHIAREZZA DELLE CARD =====
@@ -10882,7 +10887,9 @@ function renderOggiFull() {
       <div style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);padding:13px 16px;display:flex;flex-direction:column;gap:11px;">
         <div style="display:flex;align-items:baseline;justify-content:space-between;">
           <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${L.training} · ${esc(wo.type)}</span>
-          <a href="${CFG.OLD_APP}" style="text-decoration:none;padding:5px 10px;border-radius:var(--r-sm);background:${exList ? 'var(--accent-soft)' : 'var(--surf2)'};color:${exList ? 'var(--accent)' : 'var(--ink3)'};font-size:var(--fs-xs);font-weight:600;">${exList ? (LANG === 'it' ? 'Log Motra importato' : 'Motra log imported') : (LANG === 'it' ? 'Importa da Motra…' : 'Import from Motra…')}</a>
+          ${exList
+            ? `<span style="padding:5px 10px;border-radius:var(--r-sm);background:var(--accent-soft);color:var(--accent);font-size:var(--fs-xs);font-weight:600;">${LANG === 'it' ? 'Log Motra importato' : 'Motra log imported'}</span>`
+            : `<button type="button" onclick="motraOpen()" style="border:none;min-height:34px;padding:0 12px;border-radius:var(--r-sm);background:var(--accent-soft);color:var(--accent-ink);font:inherit;font-size:var(--fs-xs);font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;"><svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1.5v8M3.6 6.3L7 9.7l3.4-3.4M1.8 12h10.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>${LANG === 'it' ? 'Importa da Motra' : 'Import from Motra'}</button>`}
         </div>
         ${woChips(day, defaultType, wo.type)}
         ${rest ? `<div style="font-size:var(--fs-sm);color:var(--ink2);">${L.restDay}</div>` : `
@@ -11220,7 +11227,9 @@ function renderOggiFull() {
     <section style="grid-column:5 / 8;grid-row:3 / 4;${card}padding:12px 15px;display:flex;flex-direction:column;gap:8px;overflow:hidden;">
       <div style="flex:0 0 auto;display:flex;align-items:baseline;justify-content:space-between;">
         <span style="${lbl}">${L.training}</span>
-        <a href="${CFG.OLD_APP}" style="text-decoration:none;padding:4px 9px;border-radius:var(--r-sm);background:${exList ? 'var(--accent-soft)' : 'var(--surf2)'};color:${exList ? 'var(--accent)' : 'var(--ink3)'};font-size:var(--fs-2xs);font-weight:600;">${exList ? (LANG === 'it' ? 'Log Motra importato' : 'Motra log imported') : (LANG === 'it' ? 'Importa da Motra…' : 'Import from Motra…')}</a>
+        ${exList
+          ? `<span style="padding:4px 9px;border-radius:var(--r-sm);background:var(--accent-soft);color:var(--accent);font-size:var(--fs-2xs);font-weight:600;">${LANG === 'it' ? 'Log Motra importato' : 'Motra log imported'}</span>`
+          : `<button type="button" onclick="motraOpen()" style="border:none;padding:6px 11px;border-radius:var(--r-sm);background:var(--accent-soft);color:var(--accent-ink);font:inherit;font-size:var(--fs-2xs);font-weight:600;cursor:pointer;">${LANG === 'it' ? 'Importa da Motra…' : 'Import from Motra…'}</button>`}
       </div>
       ${woChips(day, defaultType, wo.type)}
       ${rest ? `<div style="font-size:var(--fs-sm);color:var(--ink2);">${L.restDay}</div>` : `
@@ -11460,7 +11469,8 @@ function renderOggiSections() {
         const reps = working[0] ? working[0].reps : (ex.sets && ex.sets[0] ? ex.sets[0].reps : '—');
         return `<div class="exercise-row"><span>${ex.name}</span><span class="exercise-sets">${working.length || (ex.sets || []).length}×${reps}</span></div>`;
       }).join('')}
-    </div>` : `<div class="exercise-empty">${LANG === 'it' ? 'Nessun log Motra importato per questo giorno.' : 'No Motra log imported for this day.'}</div>`;
+    </div>` : `<div class="exercise-empty">${LANG === 'it' ? 'Nessun log Motra importato per questo giorno.' : 'No Motra log imported for this day.'}</div>
+    <button type="button" onclick="motraOpen()" style="margin-top:6px;min-height:44px;padding:0 15px;border:none;border-radius:999px;background:var(--accent-soft);color:var(--accent-ink);font:inherit;font-size:var(--fs-sm);font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1.5v8M3.6 6.3L7 9.7l3.4-3.4M1.8 12h10.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>${LANG === 'it' ? 'Importa da Motra' : 'Import from Motra'}</button>`;
 
   const allenamento = `
     <div class="section">
@@ -12896,6 +12906,546 @@ function GST_bindAlimenti(host){
 }
 function GST_updateMealHero(){ /* il ridisegno completo di GST_renderAlimenti gia' aggiorna il totale */ }
 
+
+
+/* ====================== IMPORT MOTRA (percorso di riserva) ======================
+   Deciso il 17/11/2026: il percorso normale resta «Giorgio manda il log a Claude,
+   Claude scrive via SQL». Questo e' la riserva, per fare l'import da soli.
+
+   UNA SOLA IMPLEMENTAZIONE (vincolo di progetto): parseMotraText e
+   MOTRA_SENTINEL_MAP vivono QUI, e il percorso SQL di Claude le legge da questo
+   file. Prima stavano solo in index.html (v1, dal 13/11 in sola lettura): due
+   copie sarebbero divergute.
+
+   Regole del volume e delle sentinelle (KB sezione 12, invariate):
+   - wo_volume = il totale DICHIARATO da Motra, convertito dalla stringa
+     ("14,5K kg" -> 14500). Mai una somma calcolata qui.
+   - muscle_volume_summary = somma GREZZA kg x ripetizioni, tutte le serie
+     (riscaldamento incluso), mai raddoppiata; tag combinato = volume pieno a
+     ciascun muscolo elencato.
+   - I raddoppi (manubri, cavi a doppio stack, «Single-Arm») esistono SOLO nel
+     controllo di coerenza col totale di Motra, tolleranza +-60 kg. Se non torna,
+     l'app NON forza: lo dice, mostra lo scarto e chiede una conferma in piu'.
+   - MOTRA_SENTINEL_MAP non si estende per far entrare una variante: un esercizio
+     che non corrisponde resta senza sentinella.
+
+   Scritture (le stesse cinque del percorso SQL, checklist KB 12):
+   riga v2  -> motra_log, wo_durata, wo_volume, wo_kcal, sl_*_kg/_reps/_sets
+   riga v1  -> history_sessions, muscle_volume_summary, history_sentinels
+*/
+
+function parseMotraText(text) {
+  const lines = text.trim().split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('http') && l !== 'Tracciato con Motra.');
+  const result = { title: '', date: '', durata: '', volume: '', calorie: '', exercises: [] };
+  let i = 0;
+  if (lines[i] && lines[i].toLowerCase().includes('allenamento')) i++;
+  if (lines[i] && !lines[i].match(/^\d/) && !lines[i].includes(':')) { result.title = lines[i]; i++; }
+  if (lines[i] && lines[i].match(/\d+ \w+ \d+/)) { result.date = lines[i]; i++; }
+  while (i < lines.length) {
+    const l = lines[i];
+    if (l.startsWith('Durata:')) { result.durata = l.replace('Durata:', '').trim(); i++; continue; }
+    if (l.startsWith('Voume:') || l.startsWith('Volume:')) { result.volume = l.replace(/Vo[lu]+me:/i, '').trim(); i++; continue; }
+    if (l.startsWith('Calorie:')) { result.calorie = l.replace('Calorie:', '').trim(); i++; continue; }
+    if (l.startsWith('Esercizi:')) { i++; break; }
+    i++;
+  }
+  const setPattern = /^(\d+|[Rr]iscaldamento):\s*(\d+)\s+ripetizioni\s+x\s+([\d,\.]+)\s*kg/i;
+  let currentEx = null;
+  while (i < lines.length) {
+    const l = lines[i];
+    const setMatch = l.match(setPattern);
+    if (setMatch) {
+      if (currentEx) {
+        const label = setMatch[1].toLowerCase() === 'riscaldamento' ? 'W' : setMatch[1];
+        currentEx.sets.push({ label, reps: parseInt(setMatch[2]), kg: parseFloat(setMatch[3].replace(',', '.')) });
+      }
+    } else if (l) {
+      if (currentEx && currentEx.sets.length > 0) result.exercises.push(currentEx);
+      currentEx = { name: l, sets: [] };
+    }
+    i++;
+  }
+  if (currentEx && currentEx.sets.length > 0) result.exercises.push(currentEx);
+  return result;
+}
+
+/* Matching Motra -> sentinella. 'kw' = parole che devono comparire nel nome,
+   'ex' = parole che ESCLUDONO il match anche se una kw combacia (servono dove
+   una keyword generica prenderebbe attrezzi diversi da quello che la sentinella
+   traccia: incbench/lat/rdl/legpress/pecfly). Copia unica, identica a quella
+   storica di index.html: non si estende per agganciare una variante. */
+const MOTRA_SENTINEL_MAP = {
+  'bench':      { kw: ['barbell bench press', 'bb bench press', 'panca piana bilanciere'], ex: [] },
+  'incbench':   { kw: ['machine incline bench press', 'incline bench press machine', 'incline bench press'], ex: ['dumbbell', 'smith machine'] },
+  'pecfly':     { kw: ['machine fly', 'pec dec', 'pec-dec'], ex: ['cable'] },
+  'cablefly':   { kw: ['cable fly', 'crossover', 'cable crossover'], ex: ['machine'] },
+  'lat':        { kw: ['lat pull down wide', 'lat pulldown wide', 'wide grip pulldown', 'wide-grip pulldown', 'wide grip lat', 'machine lat pull down wide'], ex: ['cable'] },
+  'tbar':       { kw: ['t-bar row', 't bar row', 'machine t-bar', 'tbar row'], ex: [] },
+  'bbrow':      { kw: ['barbell bent over row', 'barbell row', 'bb bent over row', 'bent over row barbell'], ex: [] },
+  'bbohp':      { kw: ['barbell overhead press', 'barbell military press', 'overhead press / military press', 'barbell ohp', 'bb overhead press'], ex: [] },
+  'dbpress':    { kw: ['dumbbell shoulder press', 'db shoulder press', 'dumbbell press seated', 'db press shoulder'], ex: [] },
+  'dblateral':  { kw: ['dumbbell lateral raise', 'db lateral raise', 'lateral raise dumbbell'], ex: [] },
+  'dbcurl':     { kw: ['dumbbell bicep curl', 'db bicep curl', 'dumbbell curl', 'db curl'], ex: [] },
+  'hammercurl': { kw: ['dumbbell hammer curl', 'db hammer curl', 'hammer curl', 'curl martello manubri'], ex: [] },
+  'tridown':    { kw: ['rope tricep pushdown', 'cable rope tricep pushdown', 'rope pushdown', 'tricep pushdown rope'], ex: [] },
+  'triover':    { kw: ['rope overhead tricep', 'cable rope overhead tricep', 'overhead tricep extension high', 'overhead tricep rope'], ex: [] },
+  'legext':     { kw: ['machine leg extension', 'leg extension', 'estensione gambe'], ex: [] },
+  'legpress':   { kw: ['machine leg press', 'leg press'], ex: ['moving chair'] },
+  'rdl':        { kw: ['barbell romanian deadlift', 'romanian deadlift', 'rdl', 'stacco rumeno'], ex: ['dumbbell', 'smith machine'] },
+  'calf':       { kw: ['machine seated calf raise', 'seated calf raise', 'calf raise seated'], ex: [] },
+  'hipthrust':  { kw: ['machine hip thrust', 'hip thrust', 'glute bridge', 'hip-thrust'], ex: [] },
+  'legcurl':    { kw: ['machine leg / hamstring curl prone', 'hamstring curl prone', 'leg curl prone', 'leg / hamstring curl'], ex: [] },
+};
+
+const MOTRA_SENT_LABEL = {
+  bench: 'Panca piana bilanciere', incbench: 'Panca inclinata macchina', pecfly: 'Pec dec', cablefly: 'Croci ai cavi',
+  lat: 'Lat machine presa larga', tbar: 'T-bar row', bbrow: 'Rematore bilanciere', bbohp: 'Military press bilanciere',
+  dbpress: 'Shoulder press manubri', dblateral: 'Alzate laterali manubri', dbcurl: 'Curl manubri', hammercurl: 'Hammer curl',
+  tridown: 'Pushdown corda', triover: 'French press corda', legext: 'Leg extension', legpress: 'Leg press',
+  rdl: 'Stacco rumeno bilanciere', calf: 'Calf seduto', hipthrust: 'Hip thrust', legcurl: 'Leg curl',
+};
+
+const MOTRA_MESI = { gen: 0, jan: 0, feb: 1, mar: 2, apr: 3, mag: 4, may: 4, giu: 5, jun: 5, lug: 6, jul: 6, ago: 7, aug: 7, set: 8, sep: 8, ott: 9, oct: 9, nov: 10, dic: 11, dec: 11 };
+
+/* "15 nov 2026, 9:39" -> { iso: '2026-11-15', time: '09:39' }. Ritorna null se la
+   riga non e' riconoscibile: meglio nessuna data che una data inventata. */
+function motraParseDate(s) {
+  if (!s) return null;
+  const m = String(s).match(/(\d{1,2})\s+([A-Za-zàèéìòù]+)\.?\s+(\d{4})/);
+  if (!m) return null;
+  const mese = MOTRA_MESI[m[2].slice(0, 3).toLowerCase()];
+  if (mese === undefined) return null;
+  const d = new Date(parseInt(m[3], 10), mese, parseInt(m[1], 10));
+  if (isNaN(d.getTime())) return null;
+  const t = String(s).match(/(\d{1,2}):(\d{2})/);
+  return { iso: isoLocal(d), time: t ? ('0' + t[1]).slice(-2) + ':' + t[2] : null };
+}
+/* "14,5K kg" -> 14500 (stessa conversione di importMotra in v1) */
+function motraVolume(s) {
+  /* niente \s* tra numero e K: con "850 kg" la k di "kg" diventerebbe il
+     moltiplicatore e il volume salterebbe a 850.000 (trovato da tests/motra.test.js). */
+  const m = String(s || '').match(/([\d,\.]+)([Kk])?/);
+  if (!m) return null;
+  let v = parseFloat(m[1].replace(',', '.'));
+  if (!isFinite(v)) return null;
+  if (m[2]) v *= 1000;
+  return Math.round(v);
+}
+function motraDurata(s) {
+  const hm = String(s || '').match(/(\d+)\s*h\s*(\d+)\s*m/);
+  if (hm) return parseInt(hm[1], 10) * 60 + parseInt(hm[2], 10);
+  const h = String(s || '').match(/^(\d+)\s*h$/);
+  if (h) return parseInt(h[1], 10) * 60;
+  const m = String(s || '').match(/(\d+)\s*m/);
+  return m ? parseInt(m[1], 10) : null;
+}
+function motraKcal(s) {
+  const m = String(s || '').match(/(\d+)/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+/* Sentinelle: stesso algoritmo del "miglior set" di importMotra -- kg piu' alto
+   tra le serie di lavoro (tolleranza 97%), a parita' quella con piu' ripetizioni;
+   'sets' = quante serie di lavoro per quella sentinella. */
+function motraSentinels(data) {
+  const out = {};
+  Object.keys(MOTRA_SENTINEL_MAP).forEach(function (id) {
+    const cfg = MOTRA_SENTINEL_MAP[id];
+    const matches = data.exercises.filter(function (ex) {
+      const name = ex.name.toLowerCase();
+      return cfg.kw.some(function (kw) { return name.includes(kw.toLowerCase()); })
+        && !cfg.ex.some(function (e2) { return name.includes(e2.toLowerCase()); });
+    });
+    if (!matches.length) return;
+    const work = matches.reduce(function (a, ex) { return a.concat(ex.sets.filter(function (s) { return s.label !== 'W'; })); }, []);
+    if (!work.length) return;
+    const maxKg = Math.max.apply(null, work.map(function (s) { return parseFloat(s.kg); }));
+    const top = work.filter(function (s) { return parseFloat(s.kg) >= maxKg * 0.97; });
+    const best = top.reduce(function (a, b) { return parseInt(b.reps, 10) > parseInt(a.reps, 10) ? b : a; });
+    out[id] = { kg: String(best.kg), reps: String(best.reps), sets: String(work.length), esercizi: matches.map(function (e) { return e.name; }) };
+  });
+  return out;
+}
+
+/* Volume grezzo per esercizio: kg x ripetizioni su TUTTE le serie, riscaldamento
+   incluso, senza raddoppi. E' il numero che va in muscle_volume_summary. */
+function motraVolEx(ex) {
+  return (ex.sets || []).reduce(function (a, s) { return a + (parseFloat(s.kg) || 0) * (parseInt(s.reps, 10) || 0); }, 0);
+}
+/* Raddoppia SOLO nel controllo di coerenza: manubri, cavi a doppio stack e
+   monolaterali. Corde e sbarre su stack singolo (straight arm pull down, face
+   pull, rope pushdown, cable bar curl) non si raddoppiano. Quali esercizi stiano
+   sul doppio stack resta un'inferenza aritmetica: il pannello la dichiara. */
+const MOTRA_DOPPI = ['cable fly', 'cable upright rear delt fly'];
+function motraRaddoppia(name) {
+  const n = String(name || '').toLowerCase();
+  if (n.includes('dumbbell') || n.includes('manubri')) return true;
+  if (/single[- ]arm/.test(n) || n.includes('monolaterale')) return true;
+  return MOTRA_DOPPI.some(function (k) { return n.includes(k); });
+}
+function motraCoerenza(data) {
+  const dich = motraVolume(data.volume);
+  let somma = 0; const raddoppiati = [];
+  data.exercises.forEach(function (ex) {
+    const v = motraVolEx(ex);
+    if (motraRaddoppia(ex.name)) { somma += v * 2; raddoppiati.push(ex.name); }
+    else somma += v;
+  });
+  somma = Math.round(somma);
+  const scarto = dich == null ? null : somma - dich;
+  return { dichiarato: dich, somma: somma, scarto: scarto, ok: scarto != null && Math.abs(scarto) <= 60, raddoppiati: raddoppiati };
+}
+
+/* Tag muscolo: si eredita dall'ultima volta che quell'esercizio compare in
+   history_sessions. Per un esercizio mai visto NON si inventa un tag: resta
+   senza, il suo volume non entra nel riepilogo muscoli e il pannello lo dice. */
+function motraMuscleMap(sessions) {
+  const map = {};
+  (sessions || []).forEach(function (s) {
+    (s.exercises || []).forEach(function (e) {
+      if (e && e.name && e.muscle) map[String(e.name).trim().toLowerCase()] = e.muscle;
+    });
+  });
+  return map;
+}
+
+/* Piano di scrittura: tutto quello che finirebbe nel diario, calcolato PRIMA di
+   scrivere e mostrato in anteprima. Niente qui tocca il database. */
+function motraPlan(text, iso, v1) {
+  const data = parseMotraText(String(text || ''));
+  if (!data.exercises.length) return { err: mtT('Nessun esercizio riconosciuto: controlla di aver copiato tutto il testo del log.', 'No exercise recognised: check that you copied the whole log text.') };
+
+  const dt = motraParseDate(data.date);
+  const check = motraCoerenza(data);
+  const sent = motraSentinels(data);
+  const mmap = motraMuscleMap(v1.history_sessions);
+  const avvisi = [];
+
+  const campi = { motra_log: JSON.stringify(data) };
+  const dur = motraDurata(data.durata); if (dur != null) campi.wo_durata = String(dur);
+  const kc = motraKcal(data.calorie); if (kc != null) campi.wo_kcal = String(kc);
+  if (check.dichiarato != null) campi.wo_volume = String(check.dichiarato);
+  else avvisi.push(mtT('Volume non leggibile nel log: wo_volume non viene scritto.', 'Volume not readable in the log: wo_volume is not written.'));
+
+  const sentFlat = {};
+  Object.keys(sent).forEach(function (id) {
+    sentFlat['sl_' + id + '_kg'] = sent[id].kg;
+    sentFlat['sl_' + id + '_reps'] = sent[id].reps;
+    sentFlat['sl_' + id + '_sets'] = sent[id].sets;
+  });
+  Object.keys(sentFlat).forEach(function (f) { campi[f] = sentFlat[f]; });
+
+  /* Seduta per history_sessions: stessa forma delle 129 gia' in archivio --
+     solo il riscaldamento porta label 'W', le serie di lavoro no. */
+  const senzaTag = [];
+  const exercises = data.exercises.map(function (ex) {
+    const sets = ex.sets.map(function (s) {
+      return s.label === 'W' ? { kg: s.kg, reps: s.reps, label: 'W' } : { kg: s.kg, reps: s.reps };
+    });
+    const muscle = mmap[String(ex.name).trim().toLowerCase()] || '';
+    if (!muscle) senzaTag.push(ex.name);
+    return { name: ex.name, sets: sets, muscle: muscle };
+  });
+  const seduta = { date: iso, time: dt && dt.time ? dt.time : null, kcal: kc, title: data.title || '', exercises: exercises };
+
+  /* Riepilogo muscoli: somma grezza, volume pieno a ciascun tag elencato. */
+  const incrementi = {};
+  data.exercises.forEach(function (ex, i) {
+    const tag = exercises[i].muscle; if (!tag) return;
+    const v = motraVolEx(ex);
+    String(tag).split(',').forEach(function (m) {
+      m = m.trim(); if (!m) return;
+      incrementi[m] = (incrementi[m] || 0) + v;
+    });
+  });
+
+  const giaSeduta = (v1.history_sessions || []).some(function (s) { return s && s.date === iso; });
+  const giaSent = !!(v1.history_sentinels && v1.history_sentinels[iso]);
+  const bloccato = giaSeduta
+    ? mtT('In archivio esiste gia’ una seduta per il ' + iso + ': scriverne un’altra sdoppierebbe i volumi. Questo import si ferma qui, lo sistema Claude.',
+          'The archive already has a session for ' + iso + ': writing another would double the volumes. This import stops here.')
+    : '';
+
+  if (dt && dt.iso && dt.iso !== iso) avvisi.push(mtT('La data del log (' + dt.iso + ') non coincide con il giorno selezionato (' + iso + ').', 'The log date (' + dt.iso + ') does not match the selected day (' + iso + ').'));
+  if (!dt) avvisi.push(mtT('Data non leggibile nel log: si usa il giorno selezionato e l’orario della seduta resta vuoto.', 'Date not readable in the log: the selected day is used and the session time stays empty.'));
+  if (senzaTag.length) avvisi.push(mtT(senzaTag.length + ' esercizi senza tag muscolo (mai visti in archivio): il loro volume NON entra nel riepilogo muscoli. Il tag lo assegna Claude.', senzaTag.length + ' exercises without a muscle tag (never seen in the archive): their volume does NOT go into the muscle summary.'));
+  if (giaSent) avvisi.push(mtT('history_sentinels ha gia’ una voce per il ' + iso + ': le sentinelle nuove si aggiungono a quelle esistenti.', 'history_sentinels already has an entry for ' + iso + ': new sentinels are merged with the existing ones.'));
+
+  return {
+    iso: iso, data: data, check: check, campi: campi, sentFlat: sentFlat, sent: sent,
+    seduta: seduta, incrementi: incrementi, avvisi: avvisi, senzaTag: senzaTag, bloccato: bloccato,
+    dataLog: dt ? dt.iso : null, ora: dt && dt.time ? dt.time : null
+  };
+}
+
+/* Scrittura vera. Due passaggi distinti, ognuno con la sua verifica:
+   1) riga v2, con la coda di salvataggio normale dell'app (patchKey + flush);
+   2) riga archivio, read-modify-write con lettura fresca e rilettura di controllo.
+   Se il secondo fallisce il primo resta scritto: il pannello lo dice, invece di
+   far finta che sia andato tutto bene. */
+async function motraWrite(plan) {
+  const key = dayKeyFromISO(plan.iso);
+  Object.keys(plan.campi).forEach(function (f) { patchKey(key, f, plan.campi[f]); });
+  /* flush() esce subito se un salvataggio automatico e' gia' in volo: si aspetta che
+     finisca e, se serve, si riprova una volta. Altrimenti i campi appena messi in coda
+     resterebbero li' e l'import direbbe che il giorno non si e' salvato per un caso di
+     tempismo, non per un errore vero. */
+  const inCoda = function () { return !!(store.pending[key] && Object.keys(store.pending[key]).length); };
+  for (let i = 0; i < 40 && store.saving; i++) await new Promise(function (r) { setTimeout(r, 250); });
+  await flush();
+  if (inCoda() || store.saveError) {
+    await new Promise(function (r) { setTimeout(r, 1200); });
+    await flush();
+  }
+  if (inCoda() || store.saveError) {
+    throw new Error(mtT('Il giorno non si e’ salvato (rete?). Niente e’ stato scritto in archivio.', 'The day did not save (network?). Nothing was written to the archive.'));
+  }
+
+  const h = { apikey: CFG.PROXY_KEY, Authorization: 'Bearer ' + CFG.PROXY_KEY };
+  const qs = '?user_id=eq.' + CFG.ARCHIVE_ID;
+  const r = await fetch(CFG.PROXY_URL + qs + '&select=data', { headers: h });
+  if (!r.ok) throw new Error('archivio: lettura fallita (HTTP ' + r.status + ')');
+  const rows = await r.json();
+  const d = (rows[0] && rows[0].data) || {};
+
+  if (!Array.isArray(d.history_sessions)) d.history_sessions = [];
+  if (d.history_sessions.some(function (s) { return s && s.date === plan.iso; })) {
+    throw new Error(mtT('In archivio e’ comparsa una seduta per questo giorno: scrittura annullata.', 'A session for this day appeared in the archive: write cancelled.'));
+  }
+  let at = d.history_sessions.length;
+  while (at > 0 && String(d.history_sessions[at - 1].date || '') > plan.iso) at--;
+  d.history_sessions.splice(at, 0, plan.seduta);
+
+  if (!Array.isArray(d.muscle_volume_summary)) d.muscle_volume_summary = [];
+  Object.keys(plan.incrementi).forEach(function (m) {
+    let riga = d.muscle_volume_summary.filter(function (x) { return x && x.muscle === m; })[0];
+    if (!riga) { riga = { muscle: m, volume_kg: 0 }; d.muscle_volume_summary.push(riga); }
+    riga.volume_kg = Math.round(((parseFloat(riga.volume_kg) || 0) + plan.incrementi[m]) * 10) / 10;
+  });
+
+  if (Object.keys(plan.sentFlat).length) {
+    if (!d.history_sentinels || typeof d.history_sentinels !== 'object' || Array.isArray(d.history_sentinels)) d.history_sentinels = {};
+    d.history_sentinels[plan.iso] = Object.assign({}, d.history_sentinels[plan.iso] || {}, plan.sentFlat);
+  }
+
+  const pr = await fetch(CFG.PROXY_URL + qs, {
+    method: 'PATCH',
+    headers: Object.assign({ 'Content-Type': 'application/json', Prefer: 'return=minimal' }, h),
+    body: JSON.stringify({ data: d, updated_at: new Date().toISOString() })
+  });
+  if (!pr.ok) throw new Error(mtT('Archivio non salvato (HTTP ' + pr.status + '). Il giorno invece e’ scritto.', 'Archive not saved (HTTP ' + pr.status + '). The day is written, though.'));
+
+  /* Rilettura indipendente: mai dichiarare scritto cio' che non si e' riletto. */
+  const v = await fetch(CFG.PROXY_URL + qs + '&select=data-%3Ehistory_sessions', { headers: h });
+  const vrows = v.ok ? await v.json() : [];
+  const ses = (vrows[0] && vrows[0].history_sessions) || [];
+  if (!ses.some(function (s) { return s && s.date === plan.iso; })) {
+    throw new Error(mtT('La seduta non risulta in archivio alla rilettura: controllare prima di rifare l’import.', 'The session is not in the archive on re-read: check before importing again.'));
+  }
+  return true;
+}
+
+/* ---------------------------- pannello ---------------------------- */
+function mtT(it, en) { return LANG === 'en' ? en : it; }
+function mtNum(n) { return Number(n).toLocaleString(LANG === 'en' ? 'en-GB' : 'it-IT'); }
+
+var MT = { aperto: false, step: 'paste', text: '', plan: null, err: '', busy: false, v1: null, v1err: '', iso: null, forza: false };
+
+/* Ultimo valore registrato per una sentinella prima di questo giorno: serve a
+   dare un termine di paragone nell'anteprima, non entra in nessuna scrittura. */
+function motraPrevSent(id, iso, v1) {
+  const hs = (v1 && v1.history_sentinels) || {};
+  const date = Object.keys(hs).filter(function (d) { return d < iso && hs[d] && hs[d]['sl_' + id + '_kg']; }).sort();
+  if (!date.length) return null;
+  const d = date[date.length - 1];
+  return { data: d, kg: hs[d]['sl_' + id + '_kg'], reps: hs[d]['sl_' + id + '_reps'] || null };
+}
+
+function motraOpen(iso) {
+  MT = { aperto: true, step: 'paste', text: '', plan: null, err: '', busy: false, v1: null, v1err: '', iso: iso || selDate, forza: false };
+  motraRender();
+  document.addEventListener('keydown', motraKey);
+  const h = { apikey: CFG.PROXY_KEY, Authorization: 'Bearer ' + CFG.PROXY_KEY };
+  fetch(CFG.PROXY_URL + '?user_id=eq.' + CFG.ARCHIVE_ID + '&select=data-%3Ehistory_sessions,data-%3Ehistory_sentinels', { headers: h })
+    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function (j) {
+      const r0 = (j && j[0]) || {};
+      MT.v1 = { history_sessions: Array.isArray(r0.history_sessions) ? r0.history_sessions : [], history_sentinels: (r0.history_sentinels && typeof r0.history_sentinels === 'object') ? r0.history_sentinels : {} };
+      if (MT.aperto) motraRender();
+    })
+    .catch(function (e) {
+      MT.v1err = String(e.message || e);
+      if (MT.aperto) motraRender();
+    });
+}
+function motraClose() {
+  MT.aperto = false;
+  document.removeEventListener('keydown', motraKey);
+  const el = document.getElementById('motra-modal');
+  if (el) el.remove();
+  render();
+}
+function motraKey(e) { if (e.key === 'Escape' && !MT.busy) motraClose(); }
+function motraSetText(v) { MT.text = v; }
+
+function motraAnalizza() {
+  if (!MT.v1) { MT.err = mtT('Archivio non ancora caricato: riprova tra un istante.', 'Archive not loaded yet: try again in a moment.'); motraRender(); return; }
+  const p = motraPlan(MT.text, MT.iso, MT.v1);
+  if (p.err) { MT.err = p.err; motraRender(); return; }
+  MT.err = ''; MT.plan = p; MT.step = 'preview'; MT.forza = false;
+  motraRender();
+}
+function motraConferma() {
+  if (!MT.plan || MT.busy || MT.plan.bloccato) return;
+  if (!MT.plan.check.ok && !MT.forza) { MT.forza = true; motraRender(); return; }
+  MT.busy = true; MT.err = ''; motraRender();
+  motraWrite(MT.plan)
+    .then(function () {
+      MT.busy = false; MT.step = 'done'; motraRender();
+      try { ANV2.reloadV1(); } catch (e) { console.warn('ricarica archivio non riuscita', e); }
+    })
+    .catch(function (e) { MT.busy = false; MT.err = String(e.message || e); motraRender(); });
+}
+
+function motraRender() {
+  if (!MT.aperto) return;
+  let host = document.getElementById('motra-modal');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'motra-modal';
+    host.style.cssText = 'position:fixed;inset:0;z-index:400;background:rgba(10,10,14,.55);display:flex;align-items:center;justify-content:center;padding:12px;overflow:auto;';
+    host.addEventListener('click', function (e) { if (e.target === host && !MT.busy) motraClose(); });
+    document.body.appendChild(host);
+  }
+  const card = 'background:var(--surf);border-radius:var(--r-card);box-shadow:0 18px 48px -12px rgba(10,10,14,.35);width:min(560px,100%);max-height:92vh;overflow:auto;padding:16px 18px 18px;display:flex;flex-direction:column;gap:12px;';
+  const lbl = 'font-size:var(--fs-2xs);font-weight:600;letter-spacing:.01em;text-transform:uppercase;color:var(--ink2);';
+  const btn = 'min-height:44px;padding:0 16px;border:none;border-radius:999px;font:inherit;font-size:var(--fs-sm);font-weight:600;cursor:pointer;';
+  const btnPri = btn + 'background:var(--accent);color:var(--on-accent);';
+  const btnSec = btn + 'background:var(--surf2);color:var(--ink2);';
+  const giorno = new Date(MT.iso).toLocaleDateString(LANG === 'en' ? 'en-GB' : 'it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  let body = '';
+  if (MT.step === 'paste') body = motraStepPaste(lbl);
+  else if (MT.step === 'preview') body = motraStepPreview(lbl);
+  else body = motraStepDone();
+
+  const errHtml = MT.err ? '<div style="padding:10px 12px;border-radius:var(--r-md);background:color-mix(in srgb, var(--bad) 12%, transparent);color:var(--bad);font-size:var(--fs-xs);font-weight:600;">' + esc(MT.err) + '</div>' : '';
+
+  let footer = '';
+  if (MT.step === 'paste') {
+    footer = '<button type="button" style="' + btnSec + '" onclick="motraClose()">' + mtT('Annulla', 'Cancel') + '</button>'
+      + '<button type="button" style="' + btnPri + '" onclick="motraAnalizza()"' + (MT.v1 ? '' : ' disabled') + '>' + mtT('Analizza', 'Analyse') + '</button>';
+  } else if (MT.step === 'preview') {
+    const p = MT.plan;
+    const etichetta = p.bloccato ? mtT('Import fermato', 'Import stopped')
+      : MT.busy ? mtT('Scrittura…', 'Writing…')
+      : (!p.check.ok && !MT.forza) ? mtT('Controlla la somma', 'Check the sum')
+      : MT.forza ? mtT('Scrivi lo stesso', 'Write anyway')
+      : mtT('Scrivi nel diario', 'Write to the diary');
+    footer = '<button type="button" style="' + btnSec + '" onclick="MT.step=\'paste\';MT.err=\'\';motraRender()"' + (MT.busy ? ' disabled' : '') + '>' + mtT('Indietro', 'Back') + '</button>'
+      + '<button type="button" style="' + (p.bloccato ? btnSec : btnPri) + '" onclick="motraConferma()"' + (MT.busy || p.bloccato ? ' disabled' : '') + '>' + etichetta + '</button>';
+  } else {
+    footer = '<button type="button" style="' + btnPri + '" onclick="motraClose()">' + mtT('Chiudi', 'Close') + '</button>';
+  }
+
+  host.innerHTML = '<div style="' + card + '" role="dialog" aria-modal="true">'
+    + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">'
+    + '<div><div style="font-size:var(--fs-lg);font-weight:700;color:var(--ink);">' + mtT('Importa da Motra', 'Import from Motra') + '</div>'
+    + '<div style="font-size:var(--fs-xs);color:var(--ink2);margin-top:2px;">' + esc(giorno) + '</div></div>'
+    + '<button type="button" aria-label="' + mtT('Chiudi', 'Close') + '" onclick="motraClose()" style="min-width:44px;min-height:44px;border:none;background:none;font:inherit;font-size:var(--fs-lg);color:var(--ink3);cursor:pointer;">×</button>'
+    + '</div>'
+    + errHtml
+    + body
+    + '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">' + footer + '</div>'
+    + '</div>';
+
+  const ta = host.querySelector('[data-mt-ta]');
+  if (ta) { ta.value = MT.text; ta.oninput = function () { motraSetText(ta.value); }; if (MT.step === 'paste' && !MT.text) ta.focus(); }
+}
+
+function motraStepPaste(lbl) {
+  const stato = MT.v1err
+    ? '<div style="font-size:var(--fs-xs);color:var(--bad);font-weight:600;">' + mtT('Archivio non raggiungibile: ', 'Archive unreachable: ') + esc(MT.v1err) + '</div>'
+    : !MT.v1 ? '<div style="font-size:var(--fs-xs);color:var(--ink3);">' + mtT('Carico l’archivio delle sedute…', 'Loading the session archive…') + '</div>' : '';
+  return '<div style="' + lbl + '">' + mtT('Testo del log', 'Log text') + '</div>'
+    + '<textarea data-mt-ta rows="9" placeholder="' + mtT('Incolla qui il log condiviso da Motra', 'Paste the log shared from Motra here') + '" style="width:100%;box-sizing:border-box;min-height:170px;padding:10px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surf2);color:var(--ink);font:inherit;font-size:16px;line-height:1.4;resize:vertical;"></textarea>'
+    + '<div style="font-size:var(--fs-xs);color:var(--ink2);line-height:1.45;">'
+    + mtT('In Motra: seduta › condividi › copia il testo. Qui non viene scritto nulla finché non confermi: prima vedi l’anteprima completa di tutto quello che finirebbe nel diario.',
+          'In Motra: session › share › copy the text. Nothing is written until you confirm: you first see a full preview of everything that would go into the diary.')
+    + '</div>' + stato;
+}
+
+function motraStepPreview(lbl) {
+  const p = MT.plan, c = p.check;
+  const tile = function (v, l) { return '<div style="background:var(--surf2);border-radius:var(--r-md);padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;"><b style="font-size:var(--fs-base);font-weight:700;color:var(--ink);">' + esc(String(v)) + '</b><span style="font-size:var(--fs-2xs);color:var(--ink2);">' + esc(l) + '</span></div>'; };
+  const tiles = '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;">'
+    + tile(p.campi.wo_durata ? p.campi.wo_durata + ' min' : '—', mtT('Durata', 'Duration'))
+    + tile(c.dichiarato != null ? mtNum(c.dichiarato) : '—', mtT('Volume', 'Volume'))
+    + tile(p.campi.wo_kcal || '—', mtT('Calorie', 'Calories'))
+    + tile(p.data.exercises.length, mtT('Esercizi', 'Exercises')) + '</div>';
+
+  const segno = c.scarto == null ? '' : (c.scarto > 0 ? '+' : '');
+  const coer = '<div style="padding:10px 12px;border-radius:var(--r-md);background:' + (c.ok ? 'color-mix(in srgb, var(--ok) 14%, transparent)' : 'color-mix(in srgb, var(--warn) 20%, transparent)') + ';font-size:var(--fs-xs);line-height:1.45;color:var(--ink);">'
+    + '<b>' + (c.ok ? mtT('Somma coerente', 'Sum consistent') : mtT('La somma non torna', 'The sum does not match')) + '</b> · '
+    + mtT('serie sommate', 'summed sets') + ' ' + mtNum(c.somma) + ' kg ' + mtT('contro', 'vs') + ' ' + (c.dichiarato != null ? mtNum(c.dichiarato) : '—') + ' kg ' + mtT('dichiarati da Motra', 'declared by Motra')
+    + (c.scarto == null ? '' : ' (' + segno + mtNum(c.scarto) + ' kg, ' + mtT('tolleranza', 'tolerance') + ' ±60)')
+    + (c.raddoppiati.length ? '<br><span style="color:var(--ink2);">' + mtT('Contati x2 nel controllo', 'Counted x2 in the check') + ': ' + esc(c.raddoppiati.join(', ')) + '</span>' : '')
+    + '<br><span style="color:var(--ink2);">' + mtT('Nel diario va comunque il totale dichiarato da Motra, mai questa somma.', 'The diary always gets Motra’s declared total, never this sum.') + '</span></div>';
+
+  const ex = '<div style="' + lbl + '">' + mtT('Esercizi', 'Exercises') + '</div><div style="display:flex;flex-direction:column;gap:4px;">'
+    + p.seduta.exercises.map(function (e) {
+      const w = e.sets.filter(function (s) { return s.label !== 'W'; });
+      const kg = w.map(function (s) { return s.kg; });
+      const uguali = kg.length && kg.every(function (v) { return v === kg[0]; });
+      return '<div style="display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);">'
+        + '<span style="flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);">' + esc(e.name) + '</span>'
+        + '<span style="flex:0 0 auto;color:' + (e.muscle ? 'var(--ink3)' : 'var(--warn-ink)') + ';font-size:var(--fs-2xs);font-weight:600;">' + esc(e.muscle || mtT('tag?', 'tag?')) + '</span>'
+        + '<span style="flex:0 0 auto;font-variant-numeric:tabular-nums;color:var(--ink2);">' + w.length + '×' + (w[0] ? w[0].reps : '—') + '</span>'
+        + '<span style="flex:0 0 auto;font-weight:600;font-variant-numeric:tabular-nums;">' + (kg.length ? (uguali ? kg[0] : kg.join('·')) + ' kg' : '—') + '</span></div>';
+    }).join('') + '</div>';
+
+  const ids = Object.keys(p.sent);
+  const sent = '<div style="' + lbl + '">' + mtT('Sentinelle riconosciute', 'Sentinels matched') + ' (' + ids.length + ')</div>'
+    + (ids.length ? '<div style="display:flex;flex-direction:column;gap:4px;">' + ids.map(function (id) {
+      const prev = motraPrevSent(id, p.iso, MT.v1);
+      const s = p.sent[id];
+      const delta = prev ? (parseFloat(s.kg) - parseFloat(prev.kg)) : null;
+      return '<div style="display:flex;align-items:center;gap:8px;font-size:var(--fs-xs);">'
+        + '<span style="flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);">' + esc(MOTRA_SENT_LABEL[id] || id) + '</span>'
+        + '<span style="flex:0 0 auto;color:var(--ink3);font-size:var(--fs-2xs);">' + (prev ? esc(prev.kg) + ' kg → ' : mtT('primo dato → ', 'first record → ')) + '</span>'
+        + '<span style="flex:0 0 auto;font-weight:600;font-variant-numeric:tabular-nums;">' + esc(s.kg) + ' kg × ' + esc(s.reps) + '</span>'
+        + (delta == null || !isFinite(delta) ? '' : '<span style="flex:0 0 36px;text-align:right;font-size:var(--fs-2xs);font-weight:700;color:' + (delta > 0 ? 'var(--ok)' : 'var(--ink3)') + ';">' + (delta === 0 ? '=' : (delta > 0 ? '+' : '') + (Math.round(delta * 10) / 10)) + '</span>')
+        + '</div>';
+    }).join('') + '</div>'
+      : '<div style="font-size:var(--fs-xs);color:var(--ink2);">' + mtT('Nessuna: la mappa delle sentinelle non si allarga per agganciare una variante, quindi questa seduta non aggiorna la forza ai checkpoint.', 'None: the sentinel map is not widened to match a variant, so this session does not update checkpoint strength.') + '</div>');
+
+  const inc = Object.keys(p.incrementi);
+  const scritture = '<div style="' + lbl + '">' + mtT('Cosa viene scritto', 'What gets written') + '</div>'
+    + '<div style="font-size:var(--fs-xs);color:var(--ink2);line-height:1.5;">'
+    + '<div><b style="color:var(--ink);">' + mtT('Giorno', 'Day') + ' ' + esc(dayKeyFromISO(p.iso)) + '</b>: motra_log, ' + ['wo_durata', 'wo_volume', 'wo_kcal'].filter(function (f) { return p.campi[f]; }).join(', ') + (Object.keys(p.sentFlat).length ? ', ' + Object.keys(p.sentFlat).length + ' ' + mtT('campi sentinella', 'sentinel fields') : '') + '</div>'
+    + '<div><b style="color:var(--ink);">' + mtT('Archivio', 'Archive') + '</b>: ' + mtT('una seduta in history_sessions', 'one session in history_sessions')
+    + (inc.length ? ', ' + mtT('riepilogo muscoli', 'muscle summary') + ' (' + inc.map(function (m) { return m + ' +' + mtNum(Math.round(p.incrementi[m])); }).join(', ') + ')' : '')
+    + (Object.keys(p.sentFlat).length ? ', history_sentinels[' + esc(p.iso) + ']' : '') + '</div></div>';
+
+  const avvisi = p.avvisi.length ? '<div style="display:flex;flex-direction:column;gap:5px;">' + p.avvisi.map(function (a) {
+    return '<div style="font-size:var(--fs-xs);line-height:1.45;color:var(--ink2);padding-left:14px;position:relative;"><span style="position:absolute;left:0;top:0;color:var(--warn-ink);">•</span>' + esc(a) + '</div>';
+  }).join('') + '</div>' : '';
+
+  const bloccato = p.bloccato ? '<div style="padding:10px 12px;border-radius:var(--r-md);background:color-mix(in srgb, var(--bad) 12%, transparent);color:var(--bad);font-size:var(--fs-xs);font-weight:600;line-height:1.45;">' + esc(p.bloccato) + '</div>' : '';
+  const forza = (!p.check.ok && MT.forza && !p.bloccato) ? '<div style="font-size:var(--fs-xs);color:var(--bad);font-weight:600;line-height:1.45;">' + mtT('La somma delle serie non torna col totale di Motra. Puoi scrivere lo stesso: il diario riceve comunque il totale dichiarato da Motra, ma vale la pena far controllare la seduta a Claude.', 'The set sum does not match Motra’s total. You can still write: the diary gets Motra’s declared total anyway, but the session is worth a check.') + '</div>' : '';
+
+  const titolo = p.data.title ? '<div style="font-size:var(--fs-sm);font-weight:600;color:var(--ink);line-height:1.35;">' + esc(p.data.title) + '</div>' : '';
+  return titolo + tiles + coer + ex + sent + scritture + avvisi + bloccato + forza;
+}
+
+function motraStepDone() {
+  const p = MT.plan;
+  return '<div style="padding:12px;border-radius:var(--r-md);background:color-mix(in srgb, var(--ok) 14%, transparent);font-size:var(--fs-sm);line-height:1.5;color:var(--ink);">'
+    + '<b>' + mtT('Importato.', 'Imported.') + '</b> ' + mtT('Giorno e archivio scritti e riletti: ', 'Day and archive written and re-read: ')
+    + p.seduta.exercises.length + ' ' + mtT('esercizi', 'exercises') + ', ' + Object.keys(p.sent).length + ' ' + mtT('sentinelle', 'sentinels') + '.'
+    + (p.senzaTag.length ? '<br>' + mtT('Restano da assegnare i tag muscolo di: ', 'Muscle tags still to assign: ') + esc(p.senzaTag.join(', ')) + '.' : '')
+    + '</div>';
+}
 
 
 /* pulsante "torna in cima": un solo elemento, creato una volta; la pagina scorre sulla finestra */

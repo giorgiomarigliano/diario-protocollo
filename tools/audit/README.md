@@ -22,6 +22,8 @@ Coerenza allenamenti: dal 24/10/2026 `adherence()` usa lo standard di 5 sedute a
 ## Baseline
 `baseline.json` = campi che legittimamente non hanno mai un valore oggi (dati assenti nel ciclo corrente). Se l'audit segnala un campo nuovo: prima verificare nel codice se e' un errore; solo se e' legittimo, `--update-baseline` su codice noto per buono e commit del file.
 
+**La baseline dipende anche dai dati.** Con `--backup-dir` (snapshot) il giro vede giorni diversi da quelli della fetch dal vivo: il 17/11 `bilat` ed `est` sono comparsi come nuovi solo per questo. Sono letture legittimamente a zero (`bilat` e' vero solo per IGF-1 DES, `est` solo nei giorni con voci alimentari stimate), verificate nel codice e nella stessa identica forma anche sulla versione precedente di `v2.html`: stanno in baseline. Prima di aggiungere un campo nuovo, rifare il giro sul codice precedente (`--src <v2.html di HEAD> --offline`): se il campo compare anche li', non e' una regressione.
+
 **Un campo esce dalla baseline solo se il suo punto di lettura viene raggiunto SEMPRE.** La segnalazione e' per punto di lettura (`campo@riga`): basta un giro in cui quel punto vede solo oggetti senza quel campo e il campo torna a comparire. `passi` e `ref` sono cosi': dipendono da quali giorni e quali alimenti finiscono sotto il cursore, quindi restano in baseline. Il modo giusto di toglierne uno davvero e' aggiungere lo stato che lo esercita a `KNOWN_STATES` (vedi sotto), non `--update-baseline` dopo un giro fortunato.
 
 ## Stati noti (`KNOWN_STATES`)
