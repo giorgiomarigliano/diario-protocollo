@@ -1290,12 +1290,13 @@
 </style>
 </head>
 <body>
-<!-- 17/11/2026: impronta (SRI) delle librerie esterne, calcolata il 17/11 da un computer con accesso ai CDN.
-     Se il file servito dal CDN non corrisponde piu' a quello verificato, il browser lo rifiuta invece di eseguirlo.
-     crossorigin="anonymous" e' obbligatorio: senza, l'impronta su una risorsa di un altro dominio non viene controllata.
-     Le altre tre librerie (xlsx, jspdf, jspdf-autotable) si caricano da JavaScript al primo uso: l'impronta e' in CDN_SRI. -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js" integrity="sha384-OTofQ0MEeiSgh62havBcemCIK0gqj809wX6UA0uPISNMRnR6NZyCdGzX3SbLrgwL" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js" integrity="sha384-lY3kvVQ+V0PVBIZXIDRHqS5puww73PS/mczZnLbmzkb4ji2AvKdckl8lSzhur8aj" crossorigin="anonymous"></script>
+<!-- 18/11/2026: qui non si carica piu' nessuna libreria esterna.
+     heic2any pesa 1,35 MB e serve SOLO a convertire le foto HEIC; exif-js serve solo a leggere data e GPS
+     di uno scatto. Finche' stavano in testa alla pagina, l'iPhone doveva leggerle ed eseguirle prima di
+     disegnare qualsiasi cosa a OGNI apertura: 240 ms misurati su CPU rallentata 4x, piu' 338 KB da
+     scaricare quando la cache era fredda. Ora si caricano al momento in cui servono (loadHeicLib /
+     loadExifLib), con la stessa impronta SRI, che e' passata da attributo del tag a voce di CDN_SRI.
+     Tutte e cinque le librerie esterne seguono adesso la stessa strada. -->
 
 <!-- ============================================================
      Diario Protocollo · v2
@@ -1999,12 +2000,16 @@ function sessioneValida() {
     return !!exp && exp * 1000 > Date.now();
   } catch (e) { return false; }
 }
-function avviaDallaCopia() {
+/* Con { offline: false } la copia locale viene usata solo per riempire subito la pagina mentre la rete
+   risponde: NON segna lo stato "senza rete" e quindi non mostra la barra gialla. Senza argomenti resta
+   il comportamento di prima (la rete ha fallito davvero). Torna il momento della copia, o false. */
+function avviaDallaCopia(opt) {
   const c = cachedBlob();
   if (!c || !sessioneValida()) return false;   // nessuna copia o nessuna sessione valida: non si mostra nulla
-  store.blob = c.data; store.loaded = true; OFFLINE_AT = c.at;
+  store.blob = c.data; store.loaded = true;
+  if (!opt || opt.offline !== false) OFFLINE_AT = c.at;
   restorePending(); render();
-  return true;
+  return c.at;
 }
 function barraOffline() {
   const el = document.getElementById('dp-offline');
@@ -5626,6 +5631,9 @@ function AN_photoIsHeic(file){
   return /heic|heif/i.test(file.type || "") || /\.(heic|heif)$/i.test(file.name || "");
 }
 function AN_photoReadExif(file){
+  /* 18/11: la libreria si carica qui, non in testa alla pagina. Se non arriva si prosegue senza EXIF:
+     data dal nome del file e nessun luogo, invece di bloccare il caricamento dello scatto. */
+  return loadExifLib().catch(function(){ /* senza EXIF si va avanti lo stesso */ }).then(function(){
   return new Promise(function(resolve){
     if (typeof EXIF === "undefined") { resolve({date:null,time:null,lat:null,lon:null}); return; }
     try {
@@ -5644,13 +5652,16 @@ function AN_photoReadExif(file){
       });
     } catch (e) { resolve({date:null,time:null,lat:null,lon:null}); }
   });
+  });
 }
 function AN_photoMaybeHeic(file){
   if (!AN_photoIsHeic(file)) return Promise.resolve(file);
-  if (typeof heic2any === "undefined") return Promise.reject(new Error("Libreria di conversione HEIC non disponibile"));
-  return heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 }).then(function(converted){
-    return Array.isArray(converted) ? converted[0] : converted;
-  });
+  /* 18/11: 1,35 MB che si scaricano solo se la foto e' davvero HEIC */
+  return loadHeicLib().then(function(){
+    return heic2any({ blob: file, toType: "image/jpeg", quality: 0.9 }).then(function(converted){
+      return Array.isArray(converted) ? converted[0] : converted;
+    });
+  }, function(){ throw new Error("Libreria di conversione HEIC non disponibile"); });
 }
 function AN_photoCompress(blob, maxDim, quality){
   return new Promise(function(resolve, reject){
@@ -5817,6 +5828,9 @@ function bindFotoNew(root){
   var fileIn = root.querySelector("[data-an-photo-file]");
   if (fileIn && !fileIn.dataset.bound) {
     fileIn.dataset.bound = "1";
+    /* 18/11: appena si apre il selettore si cominciano a scaricare EXIF e heic2any, cosi' sono
+       pronte quando lo scatto e' stato scelto. Se non lo sono, il codice le aspetta comunque. */
+    fileIn.addEventListener("click", function(){ if (typeof AN_photoPrefetchLibs === "function") AN_photoPrefetchLibs(); });
     fileIn.addEventListener("change", function(){
       var f = fileIn.files && fileIn.files[0];
       if (f) AN_photoFileSelected(root, f);
@@ -13471,8 +13485,19 @@ function motraStepDone() {
 document.documentElement.lang = LANG;
 render();
 ptrInstalla();
+/* 18/11/2026: partenza dalla copia locale mentre la richiesta dei dati e' in volo. Prima la scheda
+   restava vuota fino alla risposta del server (a ogni riapertura dell'app, non solo la prima), pur
+   avendo in localStorage i dati dell'ultima sessione. La copia riempie la pagina subito e viene
+   sostituita appena arrivano i dati freschi; le modifiche in sospeso vengono riapplicate sopra.
+   Non segna lo stato "senza rete": la barra gialla compare solo se la rete fallisce davvero.
+   I salvataggi restano al sicuro perche' flush() rilegge comunque dal server prima di scrivere. */
+const copiaAllAvvio = avviaDallaCopia({ offline: false });
 loadBlob().then(() => { restorePending(); render(); })
-  .catch(e => { console.error('Errore caricamento dati', e); if (avviaDallaCopia()) console.info('avvio dalla copia locale: dati del ' + new Date(OFFLINE_AT).toLocaleString('it-IT')); });
+  .catch(e => {
+    console.error('Errore caricamento dati', e);
+    if (copiaAllAvvio) { OFFLINE_AT = copiaAllAvvio; barraOffline(); render(); console.info('dati dalla copia locale del ' + new Date(copiaAllAvvio).toLocaleString('it-IT')); }
+    else if (avviaDallaCopia()) console.info('avvio dalla copia locale: dati del ' + new Date(OFFLINE_AT).toLocaleString('it-IT'));
+  });
 /* service worker: solo in produzione (https). In locale e negli audit non viene registrato, cosi' non interferisce con le prove. */
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
   window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(e => console.warn('service worker non registrato', e)); });
@@ -14159,7 +14184,11 @@ const XLSX_URL = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.m
 /* 17/11/2026: impronte (SRI) delle librerie caricate da qui al primo uso (Excel e PDF). Stesso scopo dei tag in testa
    alla pagina: se il CDN servisse un file diverso da quello verificato il 17/11, il browser lo rifiuta.
    Vanno aggiornate insieme alla versione della libreria: `bash tools/sri/add-sri.sh` ristampa gli hash. */
+const HEIC_URL = 'https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js';
+const EXIF_URL = 'https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js';
 const CDN_SRI = {
+  'https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js': 'sha384-OTofQ0MEeiSgh62havBcemCIK0gqj809wX6UA0uPISNMRnR6NZyCdGzX3SbLrgwL',
+  'https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js': 'sha384-lY3kvVQ+V0PVBIZXIDRHqS5puww73PS/mczZnLbmzkb4ji2AvKdckl8lSzhur8aj',
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js': 'sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js': 'sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js': 'sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3',
@@ -14170,6 +14199,25 @@ function cdnScript(u) {   /* <script> con impronta, per le librerie caricate a r
   if (CDN_SRI[u]) { s.integrity = CDN_SRI[u]; s.crossOrigin = 'anonymous'; }
   return s;
 }
+/* Caricatore generico per le librerie a richiesta: una sola promessa per libreria, e se il caricamento
+   fallisce la promessa viene buttata via, cosi' il tentativo successivo riprova davvero. */
+function libARichiesta(url, globale) {
+  if (window[globale]) return Promise.resolve(window[globale]);
+  if (!libARichiesta._p) libARichiesta._p = {};
+  if (libARichiesta._p[url]) return libARichiesta._p[url];
+  libARichiesta._p[url] = new Promise((res, rej) => {
+    const sc = cdnScript(url);
+    sc.onload = () => (window[globale] ? res(window[globale]) : rej(new Error('libreria non disponibile')));
+    sc.onerror = () => { delete libARichiesta._p[url]; rej(new Error('libreria non raggiungibile')); };
+    document.head.appendChild(sc);
+  });
+  return libARichiesta._p[url];
+}
+function loadHeicLib() { return libARichiesta(HEIC_URL, 'heic2any'); }
+function loadExifLib() { return libARichiesta(EXIF_URL, 'EXIF'); }
+/* chiamata quando si apre il selettore della foto: la libreria arriva mentre si sceglie lo scatto */
+function AN_photoPrefetchLibs() { loadExifLib().catch(function(){}); loadHeicLib().catch(function(){}); }
+
 let _xlsxPromise = null;
 function loadXLSX() {
   if (window.XLSX) return Promise.resolve(window.XLSX);

@@ -11,7 +11,7 @@
    - tutto il resto: passa senza intermediazione.
 
    Per forzare l'aggiornamento della cache dopo una pubblicazione importante basta cambiare VERSIONE. */
-const VERSIONE = 'dp2-2026-11-17b';
+const VERSIONE = 'dp2-2026-11-18';
 const SHELL = [
   './v2.html',
   './apple-touch-icon-v2.png',

@@ -50,5 +50,18 @@ const markup = html.replace(/<script[\s\S]*?<\/script>/g, '').replace(/<style[\s
 const ids = [...markup.matchAll(/\sid="([^"$`{}]+)"/g)].map(m => m[1]); const dup = ids.filter((x, i) => ids.indexOf(x) !== i);
 ok(!dup.length, 'id duplicati: ' + [...new Set(dup)].join(', '));
 
+// 5. avvio leggero (18/11/2026): nessuna libreria esterna nel markup e partenza dalla copia locale.
+//    Le librerie in testa alla pagina costavano 240 ms di CPU a ogni apertura piu' 338 KB a cache fredda;
+//    la copia locale evita la scheda vuota mentre la rete risponde. Se qualcuno rimette un tag <script src>
+//    o toglie la partenza dalla copia, questo test lo dice subito.
+const tagEsterni = [...html.matchAll(/<script[^>]*\ssrc="([^"]+)"/g)].map(m => m[1]);
+ok(!tagEsterni.length, 'librerie caricate in testa alla pagina (devono stare in CDN_SRI e caricarsi a richiesta): ' + tagEsterni.join(', '));
+['heic2any/0.0.4/heic2any.min.js', 'exif-js/2.3.0/exif.min.js', 'xlsx/0.18.5', 'jspdf/2.5.1', 'jspdf-autotable/3.8.2'].forEach(l => {
+  const riga = html.split('\n').find(r => r.includes(l) && r.includes('sha384-'));
+  ok(!!riga, 'impronta SRI mancante per ' + l);
+});
+ok(/avviaDallaCopia\(\{\s*offline:\s*false\s*\}\)/.test(html), 'avvio dalla copia locale non piu\' presente');
+ok(/function loadHeicLib\(/.test(html) && /function loadExifLib\(/.test(html), 'caricatori a richiesta di heic2any/exif mancanti');
+
 if (fails.length) { console.error('FALLITO\n - ' + fails.join('\n - ')); process.exit(1); }
-console.log('OK · ' + scripts.length + ' script, CAL coerente, 0 chiavi duplicate, 0 id duplicati');
+console.log('OK · ' + scripts.length + ' script, CAL coerente, 0 chiavi duplicate, 0 id duplicati, 0 librerie in testa');
