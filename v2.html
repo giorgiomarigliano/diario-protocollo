@@ -1891,6 +1891,31 @@ function protoCardTag(dayIdx) {
   return '';
 }
 function protoPausaSet(field, value) { patchKey('proto_pausa', field, value); render(); if (typeof GST_renderStock === 'function' && document.querySelector('[data-gst-view="stock"]')) { try { GST_mount && GST_renderAll && GST_renderAll(); } catch (e) {} } }
+/* ===== 20/11/2026: card Iniezioni richiudibile nel Post-ciclo =====
+   Nel Post-ciclo le dosi sono spente o quasi: la card resta la piu' alta di Oggi senza dire quasi nulla.
+   Si puo' chiudere, e nell'intestazione resta il conteggio "fatte/previste", che e' l'unica cosa che
+   serve a colpo d'occhio. Vale SOLO per le fasi di tipo 'post': dentro un ciclo la card non si chiude
+   mai, nemmeno nei giorni di pausa, perche' li' le dosi tornano da un giorno all'altro.
+   Lo stato sta in localStorage (preferenza di questo telefono, non un dato del diario) ed e' avvolto
+   in try/catch: in navigazione privata o con i dati del sito bloccati l'accesso puo' sollevare. */
+const INJ_LS = 'dp2.injAperta';
+function injRichiudibile(dayIdx) { try { return faseDi(dayIdx).fase.tipo === 'post'; } catch (e) { return false; } }
+function injAperta() { try { return localStorage.getItem(INJ_LS) === '1'; } catch (e) { return false; } }
+function injToggle() {
+  const nuovo = injAperta() ? '0' : '1';
+  try { localStorage.setItem(INJ_LS, nuovo); } catch (e) { /* senza memoria resta aperta solo per questa schermata */ }
+  render();
+}
+/* intestazione: freccia + titolo, cliccabili insieme. protoCardTag() NON entra qui dentro:
+   contiene il link "Riattiva" e un click su quello non deve anche chiudere la card. */
+function injTitoloHtml(dayIdx, titolo) {
+  if (!injRichiudibile(dayIdx)) return titolo;
+  const ap = injAperta(), it = LANG === 'it';
+  return '<span onclick="injToggle()" title="' + (ap ? (it ? 'Nascondi le dosi' : 'Hide the doses') : (it ? 'Mostra le dosi' : 'Show the doses')) +
+    '" style="cursor:pointer;display:inline-flex;align-items:baseline;gap:5px;">' +
+    '<span style="font-size:var(--fs-2xs);color:var(--ink3);">' + (ap ? '\u25be' : '\u25b8') + '</span>' + titolo + '</span>';
+}
+
 /* Card che sostituisce le iniezioni nei giorni di pausa */
 function protoPausaCardHtml(mobile) {
   const it = LANG === 'it', p = protoPausa();
@@ -10838,12 +10863,14 @@ function renderOggiFull() {
       }));
     });
     const injDoneM = flatDosesM.filter(fd => day[fd.stateKey] === 'fatto').length;
+    const injChiusaM = injRichiudibile(dayIdx) && !injAperta();
     const iniezioniM = `
       <div style="flex:0 0 auto;border-radius:var(--r-2xl);background:var(--surf);box-shadow:var(--shadow);">
-        <div style="padding:12px 16px 8px;display:flex;align-items:baseline;justify-content:space-between;">
-          <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${L.injections}${protoCardTag(dayIdx)}</span>
+        <div style="padding:12px 16px ${injChiusaM ? '12px' : '8px'};display:flex;align-items:baseline;justify-content:space-between;">
+          <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);">${injTitoloHtml(dayIdx, L.injections)}${protoCardTag(dayIdx)}</span>
           <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;">${injDoneM}/${flatDosesM.filter(x => !x.off).length}</span>
         </div>
+        ${injChiusaM ? '' : `
         ${flatDosesM.map((fd, k) => {
           const st = doseLook(day[fd.stateKey]);
           const siteVal = day[fd.siteKey] || '';
@@ -10874,7 +10901,7 @@ function renderOggiFull() {
             return `<span style="display:flex;align-items:center;gap:5px;font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);">
               <span style="width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--fs-2xs);font-weight:700;color:${s.ink};background:${s.bg};">${s.mark}</span>${s.label}</span>`;
           }).join('')}
-        </div>
+        </div>`}
       </div>`;
 
     const integratoriM = `
@@ -11145,16 +11172,20 @@ function renderOggiFull() {
       </div>
     </section>`;
 
+  /* chiusa: la card non deve stirarsi per tutta l'altezza della riga 2 della griglia (la vicina
+     "Aderenza" la tiene alta), quindi align-self:start e niente bordo superiore del corpo. */
+  const injChiusa = injRichiudibile(dayIdx) && !injAperta();
   const iniezioniCard = `
-    <section style="grid-column:1 / 7;grid-row:2 / 3;${card}display:flex;flex-direction:column;">
-      <div style="flex:0 0 auto;padding:11px 15px 7px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
-        <span style="${lbl}">${L.injections}${protoCardTag(dayIdx)}</span>
+    <section style="grid-column:1 / 7;grid-row:2 / 3;${injChiusa ? 'align-self:start;' : ''}${card}display:flex;flex-direction:column;">
+      <div style="flex:0 0 auto;padding:11px 15px ${injChiusa ? '11px' : '7px'};display:flex;align-items:baseline;justify-content:space-between;gap:12px;">
+        <span style="${lbl}">${injTitoloHtml(dayIdx, L.injections)}${protoCardTag(dayIdx)}</span>
         <div style="display:flex;gap:14px;align-items:baseline;">
-          <span style="display:flex;align-items:baseline;gap:5px;font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);"><span style="font-size:var(--fs-2xs);font-weight:700;color:var(--accent-ink);">SC</span>${L.injLegendSC.replace(/^SC /, '')}</span>
-          <span style="display:flex;align-items:baseline;gap:5px;font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);"><span style="font-size:var(--fs-2xs);font-weight:700;color:var(--bad);">IM</span>${L.injLegendIM.replace(/^IM /, '')}</span>
+          ${injChiusa ? '' : `<span style="display:flex;align-items:baseline;gap:5px;font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);"><span style="font-size:var(--fs-2xs);font-weight:700;color:var(--accent-ink);">SC</span>${L.injLegendSC.replace(/^SC /, '')}</span>
+          <span style="display:flex;align-items:baseline;gap:5px;font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);"><span style="font-size:var(--fs-2xs);font-weight:700;color:var(--bad);">IM</span>${L.injLegendIM.replace(/^IM /, '')}</span>`}
           <span style="font-size:var(--fs-xs);font-weight:600;color:var(--ink2);font-variant-numeric:tabular-nums;">${injDoneCount}/${flatDoses.filter(x => !x.off).length}</span>
         </div>
       </div>
+      ${injChiusa ? '' : `
       <div style="flex:1 1 auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid var(--line2);overflow:hidden;">
         ${flatDoses.map((fd, k) => {
           const st = doseLook(day[fd.stateKey]);
@@ -11188,7 +11219,7 @@ function renderOggiFull() {
           return `<span style="display:flex;align-items:center;gap:4px;font-size:var(--fs-2xs);font-weight:500;color:var(--ink2);">
             <span style="width:12px;height:12px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--fs-2xs);font-weight:700;color:${s.ink};background:${s.bg};">${s.mark}</span>${s.label}</span>`;
         }).join('')}
-      </div>
+      </div>`}
     </section>`;
 
   const adherenceCard = `
