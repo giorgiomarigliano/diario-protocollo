@@ -1894,12 +1894,16 @@ function protoPausaSet(field, value) { patchKey('proto_pausa', field, value); re
 /* ===== 20/11/2026: card Iniezioni richiudibile nel Post-ciclo =====
    Nel Post-ciclo le dosi sono spente o quasi: la card resta la piu' alta di Oggi senza dire quasi nulla.
    Si puo' chiudere, e nell'intestazione resta il conteggio "fatte/previste", che e' l'unica cosa che
-   serve a colpo d'occhio. Vale SOLO per le fasi di tipo 'post': dentro un ciclo la card non si chiude
-   mai, nemmeno nei giorni di pausa, perche' li' le dosi tornano da un giorno all'altro.
+   serve a colpo d'occhio. Due condizioni, entrambe necessarie:
+   - SOLO nelle fasi di tipo 'post': dentro un ciclo la card non si chiude mai, nemmeno nei giorni di
+     pausa, perche' li' le dosi tornano da un giorno all'altro;
+   - SOLO su mobile (20/11, richiesta di Giorgio): sul desktop lo spazio non manca e la card resta
+     sempre aperta, senza freccia. `isDesktop` si aggiorna al ridimensionamento della finestra, quindi
+     stringendo il browser sotto i 1024 px la freccia compare: e' voluto, la vista diventa quella mobile.
    Lo stato sta in localStorage (preferenza di questo telefono, non un dato del diario) ed e' avvolto
    in try/catch: in navigazione privata o con i dati del sito bloccati l'accesso puo' sollevare. */
 const INJ_LS = 'dp2.injAperta';
-function injRichiudibile(dayIdx) { try { return faseDi(dayIdx).fase.tipo === 'post'; } catch (e) { return false; } }
+function injRichiudibile(dayIdx) { try { return !isDesktop && faseDi(dayIdx).fase.tipo === 'post'; } catch (e) { return false; } }
 function injAperta() { try { return localStorage.getItem(INJ_LS) === '1'; } catch (e) { return false; } }
 function injToggle() {
   const nuovo = injAperta() ? '0' : '1';
