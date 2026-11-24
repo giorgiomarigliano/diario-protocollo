@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 /* Inserisce un nuovo pannello esami nello storico clinico.
    Dal 13/11/2026 lo storico sta nei DATI (chiave `clin_data` della riga archivio su Supabase), non piu' in v2.html:
-   questo script non modifica piu' il codice, ma STAMPA l'SQL da incollare nel SQL Editor di Supabase (lo esegue Giorgio).
+   questo script non modifica piu' il codice, ma STAMPA l'SQL che scrive il pannello.
+   Chi lo esegue (regola del 18/11/2026): l'SQL dei pannelli clinici e' una scrittura di DATI, quindi la esegue
+   CLAUDE con gli strumenti Supabase, poi Giorgio ricarica l'app. Questo script resta il modo di generare quell'SQL
+   e di rileggerlo prima di eseguirlo. A Giorgio restano solo le DDL e le migrazioni in tools/db/.
    Uso:
      node tools/clin_add.js template > pannello.json     # modulo da compilare (31 esami prescritti 05/11/2026)
      node tools/clin_add.js add pannello.json > add.sql  # anteprima a schermo (stderr) + SQL da eseguire (stdout)
@@ -63,7 +66,7 @@ const NEWSER = { tibc: { label: 'TIBC', better: 'neutral', unit: 'µg/dL' } };
 function sql(panel, instr, addPts, newSer) {
   const W = " where user_id = '" + USER + "'";
   const noPanel = " and not exists (select 1 from jsonb_array_elements(data->'clin_data'->'panels') e where e->>'id' = '" + panel.id + "')";
-  const out = ['-- pannello ' + panel.id + ' (' + panel.iso + ') — generato da tools/clin_add.js, da eseguire nel SQL Editor',
+  const out = ['-- pannello ' + panel.id + ' (' + panel.iso + ') — generato da tools/clin_add.js, lo esegue Claude via MCP Supabase',
     '-- controllo prima di eseguire:',
     "select jsonb_array_length(data->'clin_data'->'panels') panels, jsonb_array_length(data->'clin_data'->'instr') instr from diary" + W + ';',
     'begin;'];
@@ -127,7 +130,7 @@ if (cmd === 'template') {
   if (flags.length) log('FUORI RANGE:', flags.join(' | '));
   if (warn.length) log('AVVISI:\n - ' + warn.join('\n - '));
   console.log(sql(panel, newInstr, addPts, newSer));
-  log('\nSQL scritto su stdout: rileggilo, eseguilo nel SQL Editor e poi ricarica l\'app.');
+  log('\nSQL scritto su stdout: rileggilo, poi lo esegue Claude con gli strumenti Supabase e Giorgio ricarica l\'app.');
 } else if (cmd === 'promote') {
   console.error('comando non piu' + String.fromCharCode(39) + 'disponibile: era una tantum (gia applicata il 5/11/2026) e modificava CLIN_DATA nel codice, che dal 13/11/2026 non esiste piu.');
   process.exit(1);

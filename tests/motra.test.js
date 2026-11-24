@@ -102,6 +102,20 @@ eq(d.exercises.length, 4, '4 esercizi');
 eq(d.exercises[0].sets[0], { label: 'W', reps: 10, kg: 50 }, 'il riscaldamento ha label W');
 eq(d.exercises[0].sets[1].label, '1', 'le serie di lavoro tengono il numero');
 
+/* 24/11/2026: nei log veri la prima riga E' il titolo e contiene "Allenamento"
+   ("Sabato Mattina Allenamento"). Prima veniva scambiata per un'intestazione da
+   saltare e il titolo si perdeva. Qui si verificano le due forme. */
+const titoloDaIntestazione = ctx.parseMotraText([
+  'Sabato Mattina Allenamento', '21 nov 2026, 9:28', 'Durata: 1h 26m', 'Voume: 16,7K kg',
+  'Calorie: 393 cal', 'Esercizi: 1', 'Cable Fly High', '1: 10 ripetizioni x 30 kg',
+].join('\n'));
+eq(titoloDaIntestazione.title, 'Sabato Mattina Allenamento', 'il titolo che contiene "Allenamento" non si perde');
+eq(titoloDaIntestazione.date, '21 nov 2026, 9:28', 'la data resta la riga giusta');
+eq(ctx.parseMotraText([
+  'Allenamento', 'Petto e dorso', '21 nov 2026, 9:28', 'Durata: 1h', 'Esercizi: 1',
+  'Cable Fly High', '1: 10 ripetizioni x 30 kg',
+].join('\n')).title, 'Petto e dorso', 'intestazione generica seguita dal titolo vero: vince il titolo');
+
 console.log('\n2) conversioni');
 eq(ctx.motraParseDate(d.date), { iso: '2026-03-03', time: '18:30' }, 'data e ora');
 eq(ctx.motraParseDate('15 nov 2026, 9:39'), { iso: '2026-11-15', time: '09:39' }, 'mese abbreviato italiano');

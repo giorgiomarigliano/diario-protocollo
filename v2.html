@@ -12987,8 +12987,15 @@ function parseMotraText(text) {
   const lines = text.trim().split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('http') && l !== 'Tracciato con Motra.');
   const result = { title: '', date: '', durata: '', volume: '', calorie: '', exercises: [] };
   let i = 0;
-  if (lines[i] && lines[i].toLowerCase().includes('allenamento')) i++;
+  /* La prima riga puo' essere un'intestazione generica ("Allenamento") seguita dal
+     titolo vero, oppure gia' il titolo: nei log di Giorgio il titolo contiene quasi
+     sempre la parola "allenamento" ("Sabato Mattina Allenamento"). Si tiene da parte
+     e la si usa come titolo se la riga dopo e' gia' la data (24/11/2026: prima il
+     titolo andava perso e motra_log restava senza `title`). */
+  let intestazione = '';
+  if (lines[i] && lines[i].toLowerCase().includes('allenamento')) { intestazione = lines[i]; i++; }
   if (lines[i] && !lines[i].match(/^\d/) && !lines[i].includes(':')) { result.title = lines[i]; i++; }
+  else if (intestazione) result.title = intestazione;
   if (lines[i] && lines[i].match(/\d+ \w+ \d+/)) { result.date = lines[i]; i++; }
   while (i < lines.length) {
     const l = lines[i];
