@@ -9491,7 +9491,16 @@ function postHeroData(dayIdx) {
   const rows = []; for (let k = mon; k <= Math.min(mon + 6, t - 1); k++) rows.push({ p: passiNum(getDay(iso(k))) });
   const ps = passiStats(rows);
   const supp = suppT ? Math.round(suppD / suppT * 100) : null;
-  const woPct = planned ? Math.round(plannedDone / planned * 100) : null;
+  /* 27/11/2026: il confronto e' fra le sedute FATTE finora nella settimana (oggi incluso) e quelle
+     previste nei giorni gia' chiusi, non fra "sedute fatte nei soli giorni previsti" e giorni previsti.
+     Dal Post-ciclo lo standard e' 5 sedute a settimana (decisione del 26/10), quindi una seduta spostata
+     di un giorno compensa il buco e non e' un'assenza: il 25/11 segnato Riposo e recuperato il 26 dava
+     "1 su 2" e faceva scattare il verdetto "punto debole", mentre le sedute della settimana erano 2 su 2
+     attese. Math.min tiene la percentuale a 100 quando le sedute superano le previste.
+     NB: la regola del 06/10 (un "Riposo" al posto di un allenamento previsto conta come saltato) resta
+     valida per l'aderenza del ciclo in dayAdherence(): qui si misura il ritmo settimanale, non quella. */
+  const recuperi = Math.max(0, Math.min(sessions, planned) - plannedDone);
+  const woPct = planned ? Math.round(Math.min(sessions, planned) / planned * 100) : null;
   const protPct = pr && pr.val ? Math.round(pr.ok / pr.val * 100) : null;
   /* verdetto: stesse soglie dell'app (>=90% verde, <75% allenamenti = punto debole); una voce senza dati non conta */
   let tone, key;
@@ -9500,7 +9509,8 @@ function postHeroData(dayIdx) {
   else if ((woPct == null || woPct >= 90) && (protPct == null || protPct >= 90) && (supp == null || supp >= 85)) { tone = 'good'; key = 'onTrack'; }
   else { tone = 'warn'; key = 'someGaps'; }
   const parts = [];
-  if (planned) parts.push(it ? `Allenamenti ${plannedDone} su ${planned} previsti finora` : `Workouts ${plannedDone} of ${planned} planned so far`);
+  if (planned) parts.push((it ? `Allenamenti ${Math.min(sessions, planned)} su ${planned} previsti finora` : `Workouts ${Math.min(sessions, planned)} of ${planned} planned so far`)
+    + (recuperi ? (it ? ` (${recuperi} recuperat${recuperi > 1 ? 'i' : 'o'} in un altro giorno)` : ` (${recuperi} made up on another day)`) : ''));
   if (pr && pr.val) parts.push(it ? `proteine a target ${pr.ok} giorni su ${pr.val}` : `protein on target ${pr.ok} of ${pr.val} days`);
   if (supp != null) parts.push(it ? `integratori al ${supp}%` : `supplements ${supp}%`);
   const head = { onTrack: it ? 'Post Ciclo 1 in linea.' : 'Post Ciclo 1 on track.', someGaps: it ? 'Qualche buco, niente di strutturale.' : 'A few gaps, nothing structural.', trainingGaps: it ? 'Gli allenamenti sono il punto debole.' : 'Workouts are the weak spot.', noData: it ? 'Settimana appena iniziata.' : 'Week just started.' }[key];
@@ -9515,7 +9525,7 @@ function postHeroData(dayIdx) {
   const win = (fn, a, b) => { const o = []; for (let k = Math.max(0, a); k <= b; k++) { const v = fn(woRecAt(k)); if (v != null) o.push(v); } return o; };
   const avg = a => a.reduce((s, x) => s + x, 0) / a.length;
   const cmp = fn => { const c = win(fn, e - 6, e), p = win(fn, e - 20, e - 7); if (c.length < 3) return null; return { cur: avg(c), delta: p.length >= 3 ? avg(c) - avg(p) : null }; };
-  return { w, mon, ticks, target, sessions, planned, plannedDone, pr, ps, supp, tone, key, head, sub, rec: { hrv: cmp(hrvOf), rhr: cmp(rhrOf), slp: cmp(slpOf) }, text: [head, sub] };
+  return { w, mon, ticks, target, sessions, planned, plannedDone, recuperi, woPct, pr, ps, supp, tone, key, head, sub, rec: { hrv: cmp(hrvOf), rhr: cmp(rhrOf), slp: cmp(slpOf) }, text: [head, sub] };
 }
 let heroRecOpen = false;
 function heroRecToggle() {
